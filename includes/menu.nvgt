@@ -1643,6 +1643,58 @@ if(defsfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/npc
 }
 return 0;
 }
+string bossesmenu()
+{
+string[] bosstype=find_directories("data/sounds/"+soundpack+"/npc/boss/*");
+setupmenu();
+m.set_callback(@bosses_callback,"");
+for (uint i=0; i<bosstype.length(); i++)
+{
+m.add_item_tts(bosstype[i],bosstype[i],"",true);
+}
+int mres=m.run("bosses menu", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=bosses.length())
+{
+bosstyp=bosstype[mres-1];
+}
+return m.get_item_name(mres);
+}
+int bosses_callback(dynamic_menu_pro@ m, string data)
+{
+string bosstype;
+if(m.menu_position>0)
+bosstype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+string[] hurtsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*hurt*");
+if(hurtsfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+hurtsfx[random(0,hurtsfx.length()-1)],false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+string[] hurtsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*hurt*");
+if(hurtsfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+hurtsfx[random(0,hurtsfx.length()-1)],false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+string[] namesfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*loop*");
+if(namesfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+namesfx[random(0,namesfx.length()-1)],false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+string[] defsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*death*");
+if(defsfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+defsfx[random(0,defsfx.length()-1)],false);
+}
+return 0;
+}
 string turretsmenu()
 {
 string[] turtype=find_directories("data/sounds/"+soundpack+"/npc/normal/turrets/*");

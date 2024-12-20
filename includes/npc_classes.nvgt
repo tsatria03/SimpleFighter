@@ -218,8 +218,8 @@ int teltime;
 string bosstype;
 string bosstype2;
 string bosstype3;
-timer bosstimer, firetimer, launchtimer, teltimer;
-boss(int bx,int by,int bsrange,int bsrange2,int bsrange3,int bsrange4,double hp,double maxhp,int bc,int dm,int ft,int lt,int sp,int tlt,int hlt,double blv,double bxp,string bt,string bs,string bs2,bool bf,bool bm,bool bm2,bool tb,bool tb2,bool dpm,bool rgp)
+timer bosstimer, firetimer, healtimer, launchtimer, teltimer;
+boss(int bx,int by,int bsrange,int bsrange2,int bsrange3,int bsrange4,double hp,double maxhp,int bc,int dm,int ft,int lt,int sp,int tlt,int hlt,double blv,double bxp,string bt,string bs,string bs2,bool bf,bool bm,bool bm2,bool tb,bool tb2,bool rgp,bool dpm)
 {
 this.bossehealth=hp;
 bossx=bx;
@@ -247,19 +247,20 @@ moveable=bm;
 moveable2=bm2;
 telleble=tb;
 telleble2=tb2;
-dropitem=dpm;
 regenhp=rgp;
+dropitem=dpm;
 spotted=false;
 string[] spawnsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*spawn*");
 if(spawnsfx.length()!=0) spawnsound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+spawnsfx[random(0,spawnsfx.length()-1)],me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
 string[] bosesfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*taunt*");
 if(bosesfx.length()!=0) bossesound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+bosesfx[random(0,bosesfx.length()-1)],me.x,me.y,bossx,bossy,0,0,0,0,true,0,0,painvolume,painpitch,false);
 }
-void regenerate_bosshp(int amount)
+void regenerate_bosshp(double hp)
 {
 string[] healsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*heal*");
-if(healsfx.length()!=0) healsound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+healsfx[random(0,healsfx.length()-1)],me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-bosshealth+=amount;
+if(healsfx.length()!=0) healsound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+healsfx[random(0,healsfx.length()-1)],me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+bosshealth+=hp;
+bossmaxhealth+=hp;
 }
 void spawn_boss_obj(int objnum)
 {
@@ -297,7 +298,7 @@ if(bosstype2=="zombie" and facing=="right") spawn_zombie(bossx+1, bossy, 0, 0, m
 void teleport_boss(int bx,int by)
 {
 string[] telsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/*tel*");
-if(telsfx.length()!=0) telsound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+telsfx[random(0,telsfx.length()-1)],me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(telsfx.length()!=0) telsound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosstype+"/"+telsfx[random(0,telsfx.length()-1)],me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
 bossx=bx;
 bossy=by;
 }
@@ -306,13 +307,27 @@ void bossloop()
 {
 for(uint i=0; i<bosses.length(); i++)
 {
+if(bosses[i].healtimer.elapsed>=bosses[i].healtime)
+{
+if(bosses[i].regenhp==true) bosses[i].regenerate_bosshp(random(bosses[i].bossmaxhealth/20, bosses[i].bossmaxhealth/10));
+bosses[i].healtimer.restart();
+}
 if(bosses[i].launchtimer.elapsed>=bosses[i].launchtime)
 {
 string[] launchsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosses[i].bosstype+"/*launch*");
 if(launchsfx.length()!=0 and facing=="left" or facing=="right") bosses[i].firesound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosses[i].bosstype+"/"+launchsfx[random(0,launchsfx.length()-1)],me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
 bosses[i].spawn_boss_obj(random(1,6));
-bosspool.update_sound_2d(bosses[i].firesound,bosses[i].bossx,bosses[i].bossy);
 bosses[i].launchtimer.restart();
+}
+if(bosses[i].teltimer.elapsed>=bosses[i].teltime)
+{
+string[] telsfx=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosses[i].bosstype+"/*tel*");
+if(telsfx.length()!=0) bosses[i].telsound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosses[i].bosstype+"/"+telsfx[random(0,telsfx.length()-1)],me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+if(bosses[i].telleble==true) bosses[i].teleport_boss(random(0, maxx), bosses[i].bossy);
+if(bosses[i].telleble2==true) bosses[i].teleport_boss(random(0, maxx), random(0, maxy));
+bosspool.update_sound_2d(bosses[i].bossesound,bosses[i].bossx,bosses[i].bossy);
+bosspool.update_sound_2d(bosses[i].telsound,bosses[i].bossx,bosses[i].bossy);
+bosses[i].teltimer.restart();
 }
 if(bosses[i].bosstimer.elapsed>=bosses[i].bosstime)
 {
@@ -325,6 +340,7 @@ if(bosses[i].spotted)
 string[] bossesteps=find_files("data/sounds/"+soundpack+"/npc/boss/"+bosses[i].bosstype+"/*step*");
 if(bosses[i].moveable==true and bosses[i].stepsound==1 and paused==0 and bossesteps.length()!=0) bosses[i].tilesound=bosspool.play_extended_2d("data/sounds/"+soundpack+"/npc/boss/"+bosses[i].bosstype+"/"+bossesteps[random(0,bossesteps.length()-1)],me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
 bosspool.update_sound_2d(bosses[i].bossesound,bosses[i].bossx,bosses[i].bossy);
+bosspool.update_sound_2d(bosses[i].telsound,bosses[i].bossx,bosses[i].bossy);
 bosses[i].bosstimer.restart();
 if(bosses[i].bossx<me.x and bosses[i].moveable==true and paused==0)
 {
@@ -395,9 +411,9 @@ return;
 }
 }
 }
-void spawn_boss(int x,int y,int bossrange,int bossrange2,int bossrange3,int bossrange4,double hp,double maxhp,int bc,int dm,int firetime,int launchtime,int bosstime,int teltime,int healtime,double bosslevel,double xp,string bosstype,string bosstype2,string bosstype3,bool fireable,bool moveable,bool moveable2,bool telleble,bool telleble2,bool dropitem,bool regenhp)
+void spawn_boss(int x,int y,int bossrange,int bossrange2,int bossrange3,int bossrange4,double hp,double maxhp,int bc,int dm,int firetime,int launchtime,int bosstime,int teltime,int healtime,double bosslevel,double xp,string bosstype,string bosstype2,string bosstype3,bool fireable,bool moveable,bool moveable2,bool telleble,bool telleble2,bool regenhp,bool dropitem)
 {
-boss bs1(x,y,bossrange,bossrange2,bossrange3,bossrange4,hp,maxhp,bc,dm,firetime,launchtime,bosstime,teltime,healtime,bosslevel,xp,bosstype,bosstype2,bosstype3,fireable,moveable,moveable2,telleble,telleble2,dropitem,regenhp);
+boss bs1(x,y,bossrange,bossrange2,bossrange3,bossrange4,hp,maxhp,bc,dm,firetime,launchtime,bosstime,teltime,healtime,bosslevel,xp,bosstype,bosstype2,bosstype3,fireable,moveable,moveable2,telleble,telleble2,regenhp,dropitem);
 bosses.insert_last(bs1);
 }
 void destroy_all_bosses()
