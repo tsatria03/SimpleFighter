@@ -1,0 +1,297 @@
+ambsource@[] ambsources(0);
+class ambsource
+{
+    double minx, maxx, miny, maxy;
+    int sorcesound;
+    double volume;
+    double pitch;
+    string sourcetype;
+    bool is_playing;
+    ambsource(double mx, double mx2, double my, double my2, string srt, double vol, double semitone)
+    {
+        minx = mx;
+        maxx = mx2;
+        miny = my;
+        maxy = my2;
+        sourcetype = srt;
+        volume = vol;
+        pitch = semitone;
+        is_playing = false;
+        string[] srcfilesfx = find_files("data/sounds/"+soundpack+"/objects/sources/" + sourcetype + "/*loop*");
+        if (srcfilesfx.length() != 0) sorcesound = sourcepool.play_extended_2d("data/sounds/"+soundpack+"/objects/sources/" + sourcetype + "/" + srcfilesfx[random(0, srcfilesfx.length() - 1)], me.x, me.y, minx, miny, 0, 0, 0, 0, true, 0, 0, volume, pitch, false);
+            sourcepool.update_sound_2d(sorcesound, minx, miny);
+            sourcepool.update_sound_range_2d(sorcesound, 0, maxx - minx, 0, maxy - miny);
+            is_playing = true;
+        }
+void update(double listener_x, double listener_y)
+    {
+        bool in_range = (listener_x >= minx && listener_x <= maxx && listener_y >= miny && listener_y <= maxy);
+        if (in_range && !is_playing)
+        {
+            sourcepool.resume_sound(sorcesound);
+            is_playing = true;
+        }
+        else if (!in_range && is_playing)
+        {
+            sourcepool.pause_sound(sorcesound);
+            is_playing = false;
+        }
+    }
+}
+void update_ambsources(double listener_x, double listener_y)
+{
+    for (uint i = 0; i < ambsources.length(); i++)
+    {
+        ambsources[i].update(listener_x, listener_y);
+    }
+}
+void spawn_ambsource(double x1, double x2, double y1, double y2, string sourcetype, double soundvol, double soundpitch)
+{
+    ambsource amb1(x1, x2, y1, y2, sourcetype, soundvol, soundpitch);
+    ambsources.insert_last(amb1);
+}
+void destroy_all_ambsources()
+{
+    for (uint i = 0; i < ambsources.length(); i++)
+    {
+        sourcepool.destroy_sound(ambsources[i].sorcesound);
+    }
+    ambsources.resize(0);
+}
+
+soundsource@[] soundsources(0);
+class soundsource
+{
+double minx, maxx, miny, maxy;
+int sorcesound;
+double volume;
+double pitch;
+string sourcetype;
+soundsource(double mx,double mx2,double my,double my2,string srt,double vol,double semitone)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+sourcetype=srt;
+volume=vol;
+pitch=semitone;
+string[] srcfilesfx=find_files("data/sounds/"+soundpack+"/objects/sources/"+sourcetype+"/*loop*");
+if(srcfilesfx.length()!=0) sorcesound=sourcepool.play_extended_2d("data/sounds/"+soundpack+"/objects/sources/"+sourcetype+"/"+srcfilesfx[random(0,srcfilesfx.length()-1)],me.x,me.y,minx,miny,0,0,0,0,true,0,0,volume,pitch,false);
+sourcepool.update_sound_2d(sorcesound,minx,miny);
+sourcepool.update_sound_range_2d(sorcesound, 0,maxx-minx,0,maxy-miny);
+}
+}
+void spawn_soundsource(double x1,double x2,double y1,double y2,string sourcetype,double soundvol,double soundpitch)
+{
+soundsource soundsource1(x1,x2,y1,y2,sourcetype,soundvol,soundpitch);
+soundsources.insert_last(soundsource1);
+}
+void destroy_all_soundsources()
+{
+for(uint i=0; i<soundsources.length(); i++)
+{
+sourcepool.destroy_sound(soundsources[i].sorcesound);
+}
+soundsources.resize(0);
+}
+
+musicamb@[] musicambs(0);
+class musicamb
+{
+    double minx, maxx, miny, maxy;
+    int tracksound;
+    double volume;
+    double pitch;
+    string musictype;
+    bool is_playing;
+    musicamb(double mx, double mx2, double my, double my2, string mrt, double vol, double semitone)
+    {
+        minx = mx;
+        maxx = mx2;
+        miny = my;
+        maxy = my2;
+        musictype = mrt;
+        volume = vol;
+        pitch = semitone;
+        is_playing = false;
+        string[] musfilesfx = find_files("data/sounds/"+soundpack+"/objects/musics/" + musictype + "/*music*");
+        if (musfilesfx.length() != 0) tracksound = muspool.play_extended_2d("data/sounds/"+soundpack+"/objects/musics/" + musictype + "/" + musfilesfx[random(0, musfilesfx.length() - 1)], me.x, me.y, minx, miny, 0, 0, 0, 0, true, 0, 0, volume, pitch, false);
+            muspool.update_sound_2d(tracksound, minx, miny);
+            muspool.update_sound_range_2d(tracksound, 0, maxx - minx, 0, maxy - miny);
+            is_playing = true;
+        }
+void update(double listener_x, double listener_y)
+    {
+        bool in_range = (listener_x >= minx && listener_x <= maxx && listener_y >= miny && listener_y <= maxy);
+        if (in_range && !is_playing)
+        {
+            muspool.resume_sound(tracksound);
+            is_playing = true;
+        }
+        else if (!in_range && is_playing)
+        {
+            muspool.pause_sound(tracksound);
+            is_playing = false;
+        }
+    }
+}
+void update_musicambs(double listener_x, double listener_y)
+{
+    for (uint i = 0; i < musicambs.length(); i++)
+    {
+        musicambs[i].update(listener_x, listener_y);
+    }
+}
+void spawn_musicamb(double x1, double x2, double y1, double y2, string musictype, double soundvol, double soundpitch)
+{
+    musicamb amb1(x1, x2, y1, y2, musictype, soundvol, soundpitch);
+    musicambs.insert_last(amb1);
+}
+void destroy_all_musicambs()
+{
+    for (uint i = 0; i < musicambs.length(); i++)
+    {
+        muspool.destroy_sound(musicambs[i].tracksound);
+    }
+    musicambs.resize(0);
+}
+
+musicsource@[] musicsources(0);
+class musicsource
+{
+double minx, maxx, miny, maxy;
+int tracksound;
+double volume;
+double pitch;
+string musictype;
+musicsource(double mx,double mx2,double my,double my2,string mrt,double vol,double semitone)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+musictype=mrt;
+volume=vol;
+pitch=semitone;
+string[] musfilesfx=find_files("data/sounds/"+soundpack+"/objects/musics/"+musictype+"/*music*");
+if(musfilesfx.length()!=0) tracksound=muspool.play_extended_2d("data/sounds/"+soundpack+"/objects/musics/"+musictype+"/"+musfilesfx[random(0,musfilesfx.length()-1)],me.x,me.y,minx,miny,0,0,0,0,true,0,0,volume,pitch,false);
+muspool.update_sound_2d(tracksound,minx,miny);
+muspool.update_sound_range_2d(tracksound, 0,maxx-minx,0,maxy-miny);
+}
+}
+void spawn_musicsource(double x1,double x2,double y1,double y2,string musictype,double musvol,double muspitch)
+{
+musicsource musicsource1(x1,x2,y1,y2,musictype,musvol,muspitch);
+musicsources.insert_last(musicsource1);
+}
+void destroy_all_musicsources()
+{
+for(uint i=0; i<musicsources.length(); i++)
+{
+muspool.destroy_sound(musicsources[i].tracksound);
+}
+musicsources.resize(0);
+}
+
+timedmusic@[]timedmusics(0);
+class timedmusic
+{
+int tracksound;
+double minx, maxx, miny, maxy;
+double volume;
+double pitch;
+int musictime;
+string musictype;
+timer musictimer;
+timedmusic(double mx,double mx2,double my,double my2,double vol,double semitone,int sp,string srt)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+volume=vol;
+pitch=semitone;
+musictime=sp;
+musictype=srt;
+}
+}
+void timedmrcloop()
+{
+for(uint i=0; i<timedmusics.length(); i++)
+{
+if(timedmusics[i].musictimer.elapsed>=timedmusics[i].musictime)
+{
+muspool.destroy_sound(timedmusics[i].tracksound);
+string[] musfilesfx=find_files("data/sounds/"+soundpack+"/objects/musics/"+timedmusics[i].musictype+"/*music*");
+if(musfilesfx.length()!=0) timedmusics[i].tracksound=muspool.play_extended_2d("data/sounds/"+soundpack+"/objects/musics/"+timedmusics[i].musictype+"/"+musfilesfx[random(0,musfilesfx.length()-1)],me.x,me.y,timedmusics[i].minx,timedmusics[i].miny,0,0,0,0,false,0,0,volume,pitch,false);
+muspool.update_sound_2d(timedmusics[i].tracksound,timedmusics[i].minx,timedmusics[i].miny);
+muspool.update_sound_range_2d(timedmusics[i].tracksound, 0, timedmusics[i].maxx-timedmusics[i].minx, 0, timedmusics[i].maxy-timedmusics[i].miny);
+timedmusics[i].musictimer.restart();
+}
+}
+}
+void spawn_timedmusic(double x1,double x2,double y1,double y2,double musvol,double muspitch,int musictime,string musictype)
+{
+timedmusic tm1(x1,x2,y1,y2,musvol,muspitch,musictime,musictype);
+timedmusics.insert_last(tm1);
+}
+void destroy_all_timedmusics()
+{
+for(uint i=0; i<timedmusics.length(); i++)
+{
+muspool.destroy_sound(timedmusics[i].tracksound);
+}
+timedmusics.resize(0);
+}
+
+timedsource@[]timedsources(0);
+class timedsource
+{
+int sorcesound;
+double minx, maxx, miny, maxy;
+double volume;
+double pitch;
+int sourcetime;
+string sourcetype;
+timer sourcetimer;
+timedsource(double mx,double mx2,double my,double my2,double vol,double semitone,int sp,string srt)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+volume=vol;
+pitch=semitone;
+sourcetime=sp;
+sourcetype=srt;
+}
+}
+void timedsrcloop()
+{
+for(uint i=0; i<timedsources.length(); i++)
+{
+if(timedsources[i].sourcetimer.elapsed>=timedsources[i].sourcetime)
+{
+sourcepool.destroy_sound(timedsources[i].sorcesound);
+string[] srcfilesfx=find_files("data/sounds/"+soundpack+"/objects/sources/"+timedsources[i].sourcetype+"/*loop*");
+if(srcfilesfx.length()!=0) timedsources[i].sorcesound=sourcepool.play_extended_2d("data/sounds/"+soundpack+"/objects/sources/"+timedsources[i].sourcetype+"/"+srcfilesfx[random(0,srcfilesfx.length()-1)],me.x,me.y,timedsources[i].minx,timedsources[i].miny,0,0,0,0,false,0,0,volume,pitch,false);
+sourcepool.update_sound_2d(timedsources[i].sorcesound,timedsources[i].minx,timedsources[i].miny);
+sourcepool.update_sound_range_2d(timedsources[i].sorcesound, 0, timedsources[i].maxx-timedsources[i].minx, 0, timedsources[i].maxy-timedsources[i].miny);
+timedsources[i].sourcetimer.restart();
+}
+}
+}
+void spawn_timedsource(double x1,double x2,double y1,double y2,double soundvol,double soundpitch,int sourcetime,string sourcetype)
+{
+timedsource ts1(x1,x2,y1,y2,soundvol,soundpitch,sourcetime,sourcetype);
+timedsources.insert_last(ts1);
+}
+void destroy_all_timedsources()
+{
+for(uint i=0; i<timedsources.length(); i++)
+{
+sourcepool.destroy_sound(timedsources[i].sorcesound);
+}
+timedsources.resize(0);
+}
