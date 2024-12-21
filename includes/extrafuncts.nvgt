@@ -1,3 +1,340 @@
+bool alt_is_up()
+{
+if(key_up(KEY_LMENU) or key_up(KEY_RMENU))
+{
+return true;
+}
+return false;
+}
+bool control_is_up()
+{
+if(key_up(KEY_LCONTROL) or key_up(KEY_RCONTROL))
+{
+return true;
+}
+return false;
+}
+bool shift_is_up()
+{
+if(key_up(KEY_LSHIFT) or key_up(KEY_RSHIFT))
+{
+return true;
+}
+return false;
+}
+bool alt_is_down()
+{
+if(key_down(KEY_LMENU) or key_down(KEY_RMENU))
+{
+return true;
+}
+return false;
+}
+bool control_is_down()
+{
+if(key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL))
+{
+return true;
+}
+return false;
+}
+bool shift_is_down()
+{
+if(key_down(KEY_LSHIFT) or key_down(KEY_RSHIFT))
+{
+return true;
+}
+return false;
+}
+bool directory_empty(const string&in dir)
+{
+if (!directory_exists(dir))
+{
+return false;
+}
+string[] files=find_files(dir+"/*");
+string[] folders=find_directories(dir+"/*");
+return files.length()==0 and folders.length()==0;
+}
+uint64 get_directory_size(const string&in dir)
+{
+uint64 result=0;
+string[]@ subdirs = find_directories(dir + "/*");
+for (uint i = 0; i < subdirs.length(); i++)
+{
+result += get_directory_size(dir + "/" + subdirs[i]);
+}
+string[]@ files = find_files(dir + "/*");
+for (uint i = 0; i < files.length(); i++)
+{
+result += file_get_size(dir + "/" + files[i]);
+}
+return result;
+}
+bool string_file_encrypt(string input_file, string output_file, string key)
+{
+bool success;
+file f;
+success=f.open(input_file, "rb");
+if(!success) return false;
+string text=f.read();
+text=string_encrypt(text, key);
+if(text=="") return false;
+success=f.open(output_file, "wb");
+if(!success) return false;
+f.write(text);
+success=f.close();
+return success;
+}
+bool string_file_decrypt(const string& input_file, const string& output_file, const string& encryption_key)
+{
+file input;
+if (!input.open(input_file, "rb"))
+return false;
+string encrypted_content = input.read();
+input.close();
+string decrypted_content = string_decrypt(encrypted_content, encryption_key);
+file output;
+if (!output.open(output_file, "wb"))
+return false;
+output.write(decrypted_content);
+output.close();
+return true;
+}
+string file_decrypt(const string& encrypted_content, const string& encryption_key)
+{
+return string_decrypt(encrypted_content, encryption_key);
+}
+bool string_to_bool(string str)
+{
+return str.trim_whitespace().lower()=="true"? true:false;
+}
+bool string_starts_with(const string& in str, const string& in start)
+{
+if (str.length()>=start.length())
+{
+return (str.substr(0, start.length()) == start);
+}
+return false;
+}
+bool string_ends_with(const string& in str,const string& in ending)
+{
+if (str.length()>=ending.length())
+{
+return (str.substr(str.length()-ending.length())==ending);
+}
+return false;
+}
+float stn(string str)
+{
+if (string_contains(str,"random",1)>-1)
+{
+string a=string_replace(str,"random(","",true);
+a=string_replace(a,")","",true);
+string[] b=string_split(a,",",true);
+double c=0;
+c=random(string_to_number(b[0]),string_to_number(b[1]));
+return c;
+}
+else
+return string_to_number(str);
+}
+string linear(string[] a)
+{
+string final;
+for(uint i=0; i<a.length(); i++)
+{
+final+=(a[i]+"\r\n");
+}
+return final;
+}
+string[] delinear(string a)
+{
+return string_split(a, "\r\n", false);
+}
+string gmt(double x, double y)
+{
+string mt;
+for(uint i=0; i<platforms.length(); i++)
+{
+if(platforms[i].minx<=x and platforms[i].maxx>=x and platforms[i].miny<=y and platforms[i].maxy>=y)
+{
+mt=platforms[i].tile;
+tilevolume=platforms[i].volume;
+tilepitch=platforms[i].pitch;
+}
+}
+return mt;
+}
+string gct(double x, double y)
+{
+string ct;
+for(uint i=0; i<platforms.length(); i++)
+{
+if(platforms[i].minx<=x and platforms[i].maxx>=x and platforms[i].miny<=y and platforms[i].maxy>=y)
+{
+ct=platforms[i].tile;
+tilevolume=platforms[i].volume;
+tilepitch=platforms[i].pitch;
+}
+}
+return ct;
+}
+string get_new_tile(string tile,int direction)
+{
+string[] plats=find_directories("data/sounds/objects/platforms/*");
+int platindex=-1;
+for (uint i=0; i<plats.length(); i++)
+{
+if(tile==plats[i])
+{
+platindex=i;
+break;
+}
+}
+if(platindex==-1)
+return tile;
+if (direction==1)
+{
+if(platindex>-1)
+platindex--;
+if(platindex<0)
+platindex=plats.length()-1;
+}
+else if (direction==2)
+{
+if(platindex>-1)
+platindex++;
+if(platindex>=plats.length())
+platindex=0;
+}
+else if (direction==3)
+{
+if(platindex>-1)
+platindex=random(0,plats.length()-1);
+}
+return plats[platindex];
+}
+string get_new_wall(string wall,int direction)
+{
+string[] borders=find_directories("data/sounds/objects/walls/*");
+int wallindex=-1;
+for (uint i=0; i<borders.length(); i++)
+{
+if(wall==borders[i])
+{
+wallindex=i;
+break;
+}
+}
+if(wallindex==-1)
+return wall;
+if (direction==1)
+{
+if(wallindex>-1)
+wallindex--;
+if(wallindex<0)
+wallindex=borders.length()-1;
+}
+else if (direction==2)
+{
+if(wallindex>-1)
+wallindex++;
+if(wallindex>=borders.length())
+wallindex=0;
+}
+else if (direction==3)
+{
+if(wallindex>-1)
+wallindex=random(0,borders.length()-1);
+}
+return borders[wallindex];
+}
+void beep_percentage(double val)
+{
+if(val<0 && val!=val)
+{
+return;
+}
+val=round(val,0);
+val=clamp(val,0,100);
+uint freq=uint(110*pow(2,val/25));
+float dur=40;
+float amp=0.4;
+uint sr=44100;
+float[]@ samples=triangle_wave(freq,dur,amp,sr);
+samples=adsr_envelope(samples,5,0,1,5,sr);
+@progress_sound=push_audio(samples,sr);
+progress_sound.play();
+}
+void filter_empty_lines(string[] lines, string[]& filtered_lines, uint[]& original_lines)
+{
+filtered_lines.resize(0);
+original_lines.resize(0);
+for (uint i=0; i<lines.length(); i++)
+{
+if (lines[i].length()>0)
+{
+filtered_lines.insert_last(lines[i]);
+original_lines.insert_last(i);
+}
+}
+}
+double convert_to_pan(double length, double index, double range1, double range2)
+{
+try
+{
+double range = range2 - range1;
+double percent = index / (length - 1);
+double value = range1 + range * percent;
+return value;
+}
+catch
+{
+return 0;
+}
+}
+double convert_to_volume(double length,double index,double min_volume=-100,double max_volume=0)
+{
+try
+{
+double range=max_volume-min_volume;
+double percent=index/(length-1);
+double value=min_volume+range*percent;
+return value;
+}
+catch
+{
+return 0;
+}
+}
+double convert_to_pitch(double length,double index,double min_pitch=0,double max_pitch=200)
+{
+try
+{
+double range=max_pitch-min_pitch;
+double percent=index/(length-1);
+double value=min_pitch+range*percent;
+return value;
+}
+catch
+{
+return 100;
+}
+}
+uint8 active_sr()
+{
+uint8 ret=0;
+for(uint8 i=0; i<=4; i++)
+{
+if(screen_reader_is_running(i))
+{
+ret=i;
+break;
+}
+}
+return ret;
+}
 double percent(double n1, double n2)
 {
 return (n1/n2)*100;
@@ -24,6 +361,54 @@ return b? 1:0;
 int get_distance(int a, int b)
 {
 return absolute(a - b);
+}
+string measure_file_size(int64 bytes)
+{
+if(bytes<1024)
+{
+return bytes+"bytes";
+}
+else if(bytes<1024*1024)
+{
+return round(double(bytes)/1024,2)+"KB";
+}
+else if(bytes<1024*1024*1024)
+{
+return round(double(bytes)/(1024*1024),2)+"MB";
+}
+else 
+{
+return round(double(bytes)/(1024*1024*1024),2)+"GB";
+}
+}
+string measure_time_units(int64 milliseconds)
+{
+int64 seconds = milliseconds / 1000;
+if(seconds < 1)
+{
+return milliseconds + " ms";
+}
+else if(seconds < 60)
+{
+int whole_seconds = int(seconds);
+int ms = int(milliseconds % 1000);
+return whole_seconds + " seconds, " + ms + " ms";
+}
+else if(seconds < 3600)
+{
+int minutes = int(seconds / 60);
+int remaining_seconds = int(seconds % 60);
+int ms = int(milliseconds % 1000);
+return minutes + " minutes, " + remaining_seconds + " seconds, " + ms + " ms";
+}
+else
+{
+int hours = int(seconds / 3600);
+int minutes = int((seconds % 3600) / 60);
+int remaining_seconds = int(seconds % 60);
+int ms = int(milliseconds % 1000);
+return hours + " hours, " + minutes + " minutes, " + remaining_seconds + " seconds, " + ms + " ms";
+}
 }
 string string2file(string thing)
 {

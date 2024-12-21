@@ -134,31 +134,6 @@ sound_pool animalpool, beltpool, bombpool, bosspool, breakerpool, bulletpool, ca
 text_input v, v2, text, text2, input, input2;
 time_elapsed timeelapsed;
 vector cam, cam2, me, me2;
-bool directory_empty(const string&in dir)
-{
-if (!directory_exists(dir))
-{
-return false;
-}
-string[] files=find_files(dir+"/*");
-string[] folders=find_directories(dir+"/*");
-return files.length()==0 and folders.length()==0;
-}
-uint64 get_directory_size(const string&in dir)
-{
-uint64 result=0;
-string[]@ subdirs = find_directories(dir + "/*");
-for (uint i = 0; i < subdirs.length(); i++)
-{
-result += get_directory_size(dir + "/" + subdirs[i]);
-}
-string[]@ files = find_files(dir + "/*");
-for (uint i = 0; i < files.length(); i++)
-{
-result += file_get_size(dir + "/" + files[i]);
-}
-return result;
-}
 void main()
 {
 keyhook.install();
@@ -312,6 +287,48 @@ if (form.is_pressed(dockclose))
 {
 docksmenu();
 }
+}
+}
+void downloadsounds()
+{
+quest=question("Error", "There are no sounds detected in the game! Would you like to download them now?");
+if (quest==1)
+{
+if (file_exists("data/sounds.zip"))
+{
+alert("file found", "This file already exists. The downloader will now skip to the extraction process.");
+}
+else
+{
+string result=dl_file("https://github.com/tsatria03/SimpleFighter/releases/download/v5.0.0/sounds.zip", "data/sounds.zip");
+if (result != "finished")
+{
+alert("download error", "Download failed or was canceled.");
+if(file_exists("data/sounds.zip")) file_delete("data/sounds.zip");
+mainmenu();
+}
+alert("finished", "Download completed successfully.");
+}
+alert("extracting", "Extracting files.");
+progslot=temp.play_stationary_extended("pi2.ogg", true, 0, 0, 0, 100);
+if(!directory_exists("data/sounds")) directory_create("data/sounds");
+bool result=run("lib/unzip.exe", "-q -o data/sounds.zip -d data/sounds", true, true);
+if (result==true)
+{
+temp.destroy_sound(progslot);
+alert("extraction_complete", "Extraction finished successfully.");
+if(file_exists("data/sounds.zip")) file_delete("data/sounds.zip");
+restart();
+}
+else
+{
+alert("extraction_error", "Error occurred during extraction.");
+mainmenu();
+}
+}
+else
+{
+mainmenu();
 }
 }
 void fade_multi_pool(int fade_mode)
