@@ -98,3 +98,93 @@ Letter, S: Opens the shields menu, if pressed.
 Letter, E: Opens the object viewer menu, if pressed.
 Letter, O: Opens the Builder menu in the builder mode, if pressed.
 Letter, V: Opens the points menu, if pressed.
+
+Creating sound packs.
+This game allows you to create customizeable sound packs that you can use in various situations.
+
+Character sound listing
+
+cameraair.ogg
+camerahazard.ogg
+cameraplayer.ogg
+death.ogg
+fall.ogg
+healing.ogg
+healstart.ogg
+healstop.ogg
+hurt.ogg
+inv.ogg
+jump.ogg
+kill.ogg
+land.ogg
+lev.ogg
+life.ogg
+plummet.ogg
+rock.ogg
+rise.ogg
+sit.ogg
+stand.ogg
+swing.ogg
+turn.ogg
+
+Item sound listing.
+
+break.ogg
+draw.ogg
+drop.ogg
+fire.ogg
+get.ogg
+hit.ogg
+loop.ogg
+
+Shield sound listing.
+
+break.ogg
+draw.ogg
+hit.ogg
+loop.ogg
+remove.ogg
+wear.ogg
+
+Weapon sound listing.
+
+draw.ogg
+empty.ogg
+fire.ogg
+hit.ogg
+loop.ogg
+reload.ogg
+rico.ogg
+shell.ogg
+
+Menu sound listing.
+
+click.ogg
+close.ogg
+edge.ogg
+enter.ogg
+music.ogg
+open.ogg
+
+Typing sound listing
+
+cap.ogg
+delete.ogg
+return.ogg
+space.ogg
+type.ogg
+
+Npc sound listing.
+
+death.ogg
+heal.ogg
+hit.ogg
+hurt.ogg
+launch.ogg
+life.ogg
+loop.ogg
+spawn.ogg
+step.ogg
+taunt.ogg
+tel.ogg
+
