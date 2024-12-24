@@ -169,8 +169,9 @@ edge.ogg
 enter.ogg
 music.ogg
 open.ogg
+speaker.ogg
 
-Typing sound listing
+Keyboard sound listing
 
 cap.ogg
 delete.ogg
