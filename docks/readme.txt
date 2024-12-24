@@ -104,6 +104,7 @@ This game allows you to create customizeable sound packs that you can use in var
 
 Character sound listing
 
+buy.ogg
 cameraair.ogg
 camerahazard.ogg
 cameraplayer.ogg
@@ -125,6 +126,9 @@ rise.ogg
 sit.ogg
 stand.ogg
 swing.ogg
+telx.ogg
+tely.ogg
+telxy.ogg
 turn.ogg
 
 Item sound listing.

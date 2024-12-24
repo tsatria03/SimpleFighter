@@ -1,4 +1,51 @@
-//most used classes and functions
+bool alt_is_up()
+{
+if(key_up(KEY_LMENU) or key_up(KEY_RMENU))
+{
+return true;
+}
+return false;
+}
+bool control_is_up()
+{
+if(key_up(KEY_LCONTROL) or key_up(KEY_RCONTROL))
+{
+return true;
+}
+return false;
+}
+bool shift_is_up()
+{
+if(key_up(KEY_LSHIFT) or key_up(KEY_RSHIFT))
+{
+return true;
+}
+return false;
+}
+bool alt_is_down()
+{
+if(key_down(KEY_LMENU) or key_down(KEY_RMENU))
+{
+return true;
+}
+return false;
+}
+bool control_is_down()
+{
+if(key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL))
+{
+return true;
+}
+return false;
+}
+bool shift_is_down()
+{
+if(key_down(KEY_LSHIFT) or key_down(KEY_RSHIFT))
+{
+return true;
+}
+return false;
+}
 
 bool directory_empty(const string&in dir)
 {
@@ -262,7 +309,73 @@ string file_decrypt(const string& encrypted_content, const string& encryption_ke
 return string_decrypt(encrypted_content, encryption_key);
 }
 
-//unused classes and functions
+class kh
+{
+bool already_installed;
+void install()
+{
+if (screen_reader_is_running(1) and !already_installed)
+{
+install_keyhook();
+already_installed=true;
+}
+}
+void uninstall()
+{
+if (screen_reader_is_running(1) and !already_installed)
+{
+uninstall_keyhook();
+already_installed=false;
+}
+}
+}
+
+class key_hold
+{
+bool status;
+uint key_flag=0;
+int key_code;
+int repeat_time;
+int setting_1;
+int setting_2;
+timer key_timer;
+key_hold(int _key_code, int _setting_1, int _setting_2)
+{
+key_code=_key_code;
+setting_1=_setting_1;
+setting_2=_setting_2;
+repeat_time=setting_1;
+}
+bool pressing()
+{
+status=key_down(key_code);
+if(status==false)
+{
+repeat_time=0;
+key_timer.restart();
+key_flag=0;
+return false;
+}
+if(key_timer.elapsed>=repeat_time)
+{
+switch(key_flag)
+{
+case 0:
+key_flag=1;
+repeat_time=setting_1;
+key_timer.restart();
+break;
+case 1:
+repeat_time=setting_2;
+key_timer.restart();
+break;
+}
+return true;
+}
+return false;
+}
+}
+
 bool int_to_bool(int i)
 {
 return i==1? true:false;
@@ -402,6 +515,81 @@ folder+=spl[i];
 if(i<spl.length()-1) folder+="\\";
 }
 return folder;
+}
+
+class parsed_data
+{
+string[] peramitors;
+string[] values;
+string source;
+string decryption_key;
+parsed_data(string text,string decryption_key,bool filename=true)
+{
+source=text;
+this.decryption_key=decryption_key;
+if(filename)
+{
+parse_data_from_file();
+}
+else
+{
+parse_data_from_string();
+}
+}
+void parse_data_from_file()
+{
+file f;
+bool success=f.open(source,"rb");
+if(!success)
+return;
+else
+{
+string d;
+if(decryption_key!="")
+d=string_decrypt(f.read(),decryption_key);
+else
+d=f.read();
+string[] parseddata=string_split(d,"\r\n",true);
+for(int i=0; i<parseddata.length(); i++)
+{
+string[] parseddata2=string_split(parseddata[i],"=",true);
+if(parseddata2.length()!=2)
+continue;
+else
+{
+peramitors.insert_last(parseddata2[0]);
+values.insert_last(parseddata2[1]);
+}
+}
+}
+}
+void parse_data_from_string()
+{
+string d;
+if(decryption_key!="")
+d=string_decrypt(source,decryption_key);
+else
+d=source;
+string[] parseddata=string_split(d,"\r\n",true);
+for(int i=0; i<parseddata.length(); i++)
+{
+string[] parseddata2=string_split(parseddata[i],"=",true);
+if(parseddata2.length()!=2)
+continue;
+else
+{
+peramitors.insert_last(parseddata2[0]);
+values.insert_last(parseddata2[1]);
+}
+}
+}
+string get_value(string peramitor)
+{
+if(peramitors.find(peramitor)!=-1)
+return values[peramitors.find(peramitor)];
+else
+return "";
+}
 }
 
 preload@[] preloads(0);
