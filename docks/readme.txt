@@ -126,10 +126,10 @@ rise.ogg
 sit.ogg
 stand.ogg
 swing.ogg
-telx.ogg
-tely.ogg
 telxy.ogg
 turn.ogg
+xtel.ogg
+ytel.ogg
 
 Item sound listing.
 
