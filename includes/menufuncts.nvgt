@@ -1,3 +1,381 @@
+menuzone@[]menuzones(0);
+class menuzone
+{
+double minx, maxx, miny, maxy;
+menuzone(double mx,double mx2,double my,double my2)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+}
+void menzmenu()
+{
+setupmenu();
+m.add_item_tts("add a line", "addline");
+m.add_item_tts("edit a line", "editline");
+m.add_item_tts("remove a line", "remline");
+m.add_item_tts("copy raw map data to clipboard", "clboard");
+m.add_item_tts("paste raw map data from clipboard", "clboard2");
+m.add_item_tts("Go to a zone on the map.","gmz");
+m.add_item_tts("delete map", "dcm");
+m.add_item_tts("load map", "lm");
+m.add_item_tts("new map", "nm");
+m.add_item_tts("reload map", "rcm");
+int mres=m.run("Map menu",true);
+string mapem=m.get_item_name(mres);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mapem=="addline")
+{
+mapper.open("data/maps/"+mapname+".map", "ab");
+mapdata=mapper.read();
+//input.set_only_allowed_chars("none");
+string newline=virtual_input_box("","Enter the line you'd like to add.");
+resume_pools();
+mapper.write("\r\n"+newline);
+mapper.close();
+load_map(mapname);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(mapem=="remline")
+{
+mapper.open("data/maps/"+mapname+".map", "rb");
+mapdata=mapper.read();
+string[] lines=string_split(mapdata, "\r\n", true);
+string[] filtered_lines;
+uint[] original_lines;
+filter_empty_lines(lines, filtered_lines, original_lines);
+setupmenu();
+for (uint i=0; i<filtered_lines.length(); i++)
+{
+m.add_item_tts(filtered_lines[i],filtered_lines[i], "", true);
+}
+int mres=m.run("Select a line to remove", true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres>3 and mres<=filtered_lines.length())
+{
+uint original_index=original_lines[mres-1];
+lines.remove_at(original_index);
+string final;
+for (uint i=0; i<lines.length(); i++)
+{
+if(i>0) final+="\r\n";
+final+=lines[i];
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map", "wb");
+mapdata=mapper.read();
+mapper.write(final);
+mapper.close();
+load_map(mapname);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+}
+if(mapem=="editline")
+{
+mapper.open("data/maps/" + mapname + ".map", "rb");
+mapdata=mapper.read();
+mapper.close();
+string[] lines=string_split(mapdata, "\r\n", true);
+string[] filtered_lines;
+uint[] original_lines;
+filter_empty_lines(lines, filtered_lines, original_lines);
+setupmenu();
+for (uint i=0; i<filtered_lines.length(); i++)
+{
+m.add_item_tts(filtered_lines[i],filtered_lines[i], "", true);
+}
+int mres=m.run("Select a line to edit", true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres>0 and mres<=filtered_lines.length())
+{
+uint original_index=original_lines[mres-1];
+//input.set_only_allowed_chars("none");
+string final=virtual_input_box("","line editor", lines[original_index]);
+lines[original_index]=final; 
+string mapline;
+for (uint i=0; i<lines.length(); i++)
+{
+if(i>0) mapline+="\r\n";
+mapline += lines[i];
+}
+resume_pools();
+mapper.open("data/maps/" + mapname + ".map", "wb");
+mapper.write(mapline);
+mapper.close();
+load_map(mapname);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+}
+if(mapem=="dcm")
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to delete the current map? This action can't be undone.",true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+if(file_exists("data/maps/"+mapname+".map")) file_delete("data/maps/"+mapname+".map");
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+speak("map deleted");
+dlgplay("mapdelete.ogg",false);
+me.x=0;
+me.y=0;
+clearmap();
+destroymap();
+mapmenu();
+}
+if(mres==2)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+if(mapem=="gmz")
+{
+if (zones.length() == 0)
+{
+speak("There are no zones available on this map.");
+return;
+}
+setupmenu();
+for (uint i = 0; i < zones.length(); i++)
+{
+double width = zones[i].maxx - zones[i].minx + 1;
+double height = zones[i].maxy - zones[i].miny + 1;
+string zone_desc = zones[i].text + ", " +int(width) + " x " + int(height) + " zone, at " +int(zones[i].minx) + ", " + int(zones[i].miny);
+m.add_item_tts(zone_desc, zones[i].text);
+}
+int mres=m.run("Choose the zone you'd like to go to. There are "+zones.length()+" zones available on this map.", true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if (mres==0 and mres>=zones.length())
+{
+int selected_zone_index = mres - 1;
+zone@ selected_zone = zones[selected_zone_index];
+double target_x = selected_zone.minx;
+double target_y = selected_zone.miny;
+gop(int(target_x), int(target_y));
+resume_pools();
+}
+if (mres>0 and mres<=zones.length())
+{
+int selected_zone_index = mres - 1;
+zone@ selected_zone = zones[selected_zone_index];
+double target_x = selected_zone.minx;
+double target_y = selected_zone.miny;
+gop(int(target_x), int(target_y));
+resume_pools();
+}
+}
+if(mapem=="clboard")
+{
+resume_pools();
+mapper.open("data/maps/" + mapname + ".map", "rb");
+mapdata=mapper.read();
+clipboard_copy_text(mapdata);
+speak("The data of "+mapname+" has been copied to your clipboard");
+mapper.close();
+}
+if(mapem=="clboard2")
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to overwrite all existing map data with what's on your clipboard?",true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+resume_pools();
+mapper.open("data/maps/" + mapname + ".map", "wb");
+mapdata=mapper.read();
+mapdata=clipboard_read_text();
+if(mapdata=="") dlg_snd("Error. The map data you've pasted is invalid.");
+else
+{
+resume_pools();
+mapper.write(mapdata);
+mapper.close();
+load_map(mapname);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+}
+if(mres==2)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+if(mapem=="lm")
+{
+resume_pools();
+string[] maps=find_files("data/maps/*.map");
+if(maps.length()==0)
+{
+dlg_snd("Error. There are no maps available to view. Press enter to continue.");
+mapmenu();
+}
+else
+{
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+m.add_item_tts(string_replace(maps[i],".map","",true)+", size: "+measure_file_size(file_get_size("data/maps/"+maps[i])));
+}
+int mres=m.run("Maps menu", true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if (mres==0 and mres>=maps.length())
+{
+speak("canceled");
+return;
+}
+if (mres>0 and mres<=maps.length())
+{
+mapname=maps[mres-1];
+mapname=string_replace(mapname, ".map", "", true);
+me.x=0;
+me.y=0;
+load_map(mapname);
+}
+}
+}
+if(mapem=="nm")
+{
+resume_pools();
+input.set_only_allowed_chars("none");
+string name=input.input("Enter the name of this map.");
+input.set_only_allowed_chars("1234567890-");
+string mx=input.input("Enter the maximum length of this map.");
+string my=input.input("Enter the maximum height of this map.");
+if(mapname=="" and maxx=="" and maxy=="")
+return;
+mapname=name;
+maxx=string_to_number(mx);
+maxy=string_to_number(my);
+string[] platform=find_directories("data/sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+if(file_exists("data/maps/"+mapname+".map"))
+{
+dlg_snd("Error. A map with this name already exists. Press enter to continue.");
+return;
+}
+else
+{
+create_map(mapname, maxx, maxy, tiletype);
+load_map(mapname);
+}
+}
+if(mapem=="rcm")
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to reload the current map?",true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+resume_pools();
+load_map(mapname);
+speak("map reloaded");
+}
+if(mres==2)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+}
+}
+void menuzoneloop()
+{
+for(uint i=0; i<menuzones.length(); i++)
+{
+if(menuzones[i].minx<=me.x and menuzones[i].maxx>=me.x and menuzones[i].miny<=me.y and menuzones[i].maxy>=me.y and key_repeating(KEY_RETURN))
+{
+menuzones[i].menzmenu();
+}
+}
+}
+void create_menuzone(double x1,double x2,double y1,double y2)
+{
+menuzone menz1(x1,x2,y1,y2);
+menuzones.insert_last(menz1);
+}
+void destroy_all_menuzones()
+{
+menuzones.resize(0);
+}
+
 string keyboardchoosers()
 {
 string[] keyboardchanges=find_directories("data/sounds/"+soundpack+"/typing themes/*");
