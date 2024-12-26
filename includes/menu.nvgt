@@ -3839,6 +3839,8 @@ m.add_item_tts("Go to a zone on the map.","gmz");
 m.add_item_tts("copy raw map data to clipboard", "clboard");
 m.add_item_tts("paste raw map data from clipboard", "clboard2");
 m.add_item_tts("delete map", "dcm");
+m.add_item_tts("load map", "lm");
+m.add_item_tts("new map", "nm");
 m.add_item_tts("reload map", "rcm");
 int mres=m.run("Builder menu",true);
 string buildem=m.get_item_name(mres);
@@ -8107,6 +8109,81 @@ if(mres==2)
 resume_pools();
 speak("canceled");
 return;
+}
+}
+if(buildem=="lm")
+{
+resume_pools();
+string[] maps=find_files("data/maps/*.map");
+if(maps.length()==0)
+{
+dlg_snd("Error. There are no maps available to view. Press enter to continue.");
+mapmenu();
+}
+else
+{
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+m.add_item_tts(string_replace(maps[i],".map","",true)+", size: "+measure_file_size(file_get_size("data/maps/"+maps[i])));
+}
+int mres=m.run("Maps menu", true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if (mres==0 and mres>=maps.length())
+{
+speak("canceled");
+return;
+}
+if (mres>0 and mres<=maps.length())
+{
+mapname=maps[mres-1];
+mapname=string_replace(mapname, ".map", "", true);
+me.x=0;
+me.y=0;
+load_map(mapname);
+}
+}
+}
+if(buildem=="nm")
+{
+resume_pools();
+input.set_only_allowed_chars("none");
+string name=input.input("Enter the name of this map.");
+input.set_only_allowed_chars("1234567890-");
+string mx=input.input("Enter the maximum length of this map.");
+string my=input.input("Enter the maximum height of this map.");
+if(mapname=="" and maxx=="" and maxy=="")
+return;
+mapname=name;
+maxx=string_to_number(mx);
+maxy=string_to_number(my);
+string[] platform=find_directories("data/sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+mapmenu();
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+if(file_exists("data/maps/"+mapname+".map"))
+{
+dlg_snd("Error. A map with this name already exists. Please choose a different one. Press enter to continue.");
+mapmenu();
+}
+else
+{
+create_map(mapname, maxx, maxy, tiletype);
+load_map(mapname);
 }
 }
 if(buildem=="rcm")
