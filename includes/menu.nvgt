@@ -5943,37 +5943,98 @@ speak("Map updated.");
 }
 if(buildem=="rev")
 {
-string mx=virtual_input_box("","Enter the minimum x of this reverb.");
-string mx2=virtual_input_box("","Enter the maximum x of this reverb.");
-string my=virtual_input_box("","Enter the minimum y of this reverb.");
-string my2=virtual_input_box("","Enter the maximum y of this reverb.");
-string rd=virtual_input_box("","Enter the id of this reverb. Press enter to use a random reverb id, or control backspace to clear the input to type your own reverb id.", generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"));
-if(x=="" and paxx=="" and y=="" and paxy=="" and reverid=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-reverid=rd;
-create_slider();
-s.add_slider_item("dry_mix", 0.0, 1.0, 0.0, 0.1);
-s.add_slider_item("wet_mix", 0.0, 1.0, 0.0, 0.1);
-s.add_slider_item("room_size", 0.0, 1.0, 0.0, 0.1);
-s.add_slider_item("damping", 0.0, 1.0, 0.0, 0.1);
-s.add_slider_item("width", 0.0, 1.0, 0.0, 0.1);
-int sres = s.run_slider("Reverb designer. Press tab or shift tab to cycle through the reverb parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
+form.reset();
+form.create_window("reverb", false);
+int mx=form.create_input_box("Enter the minimum x of this reverb.");
+int mx2=form.create_input_box("Enter the maximum x of this reverb.");
+int my=form.create_input_box("Enter the minimum y of this reverb.");
+int my2=form.create_input_box("Enter the maximum y of this reverb.");
+int rd=form.create_input_box("Enter the id of this reverb. Press okay to use a random reverb id, or clear the input to type your own reverb id.", generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"));
+int dr=form.create_slider("&dry_mix: ", 50, 0, 100, "percent");
+int wm=form.create_slider("&wet_mix: ", 50, 0, 100, "percent");
+int rm=form.create_slider("&room_size: ", 50, 0, 100, "percent");
+int dp=form.create_slider("dam&ping: ", 50, 0, 100, "percent");
+int wt=form.create_slider("w&idth: ", 50, 0, 100, "percent");
+int revtest = form.create_checkbox("&test reverb");
+int revok = form.create_button("&okay");
+int revcn = form.create_button("&cancel");
+form.focus(mx);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+reverid=form.get_text(rd);
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
-speak("Canceled");
+speak("canceled");
 return;
 }
+if(form.is_pressed(revcn))
+{
 resume_pools();
-revdry=s.get_item_value(0);
-revwet=s.get_item_value(1);
-revsize=s.get_item_value(2);
-revdamp=s.get_item_value(3);
-revwidth=s.get_item_value(4);
+speak("canceled");
+return;
+}
+if(form.is_checked(revtest))
+{
+revdry=form.get_slider(dr)/100.0;
+revwet=form.get_slider(wm)/100.0;
+revsize=form.get_slider(rm)/100.0;
+revdamp=form.get_slider(dp)/100.0;
+revwidth=form.get_slider(wt)/100.0;
+string fxtype="$test_reverb:freeverb:"+revdry+":"+revwet+":"+revsize+":"+revdamp+":"+revwidth;
+for(uint j=0; j<pools.length(); j++)
+{
+pools[j].mixer.set_fx(fxtype);
+}
+if(movetimer.elapsed>=movetime)
+{
+p.destroy_sound(tileslot);
+tileslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*step*"),false,0,0,tilevolume,tilepitch);
+movetimer.restart();
+}
+}
+if(form.is_pressed(revok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+}
+else if(form.get_text(rd)=="")
+{
+speak("Reverb id is required.");
+form.focus(rd);
+}
+else
+{
+resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"reverb "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" "+revdry+" "+revwet+" "+revsize+" "+revdamp+" "+revwidth);
@@ -5982,6 +6043,10 @@ spawn_reverb_effect(x, paxx, y, paxy, reverid, revdry, revwet, revsize, revdamp,
 load_map(mapname);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+return;
+}
+}
+}
 }
 if(buildem=="rt")
 {
