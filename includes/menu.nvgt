@@ -5969,6 +5969,13 @@ int wm=form.create_slider("&wet_mix: ", 50, 0, 100, "percent");
 int rm=form.create_slider("&room_size: ", 50, 0, 100, "percent");
 int dp=form.create_slider("dam&ping: ", 50, 0, 100, "percent");
 int wt=form.create_slider("w&idth: ", 50, 0, 100, "percent");
+int platile = form.create_list("&surface");
+string[] plats = find_directories("data/sounds/" + soundpack + "/objects/platforms/*");
+for (uint i = 0; i < plats.length(); i++)
+{
+form.add_list_item(platile, plats[i], plats[i]);
+if (i == 0) tiletype = plats[i];
+}
 int revtest = form.create_checkbox("&test reverb");
 int revok = form.create_button("&okay",true);
 int revcn = form.create_button("&cancel");
@@ -5989,6 +5996,11 @@ revwet = form.get_slider(wm) / 100.0;
 revsize = form.get_slider(rm) / 100.0;
 revdamp = form.get_slider(dp) / 100.0;
 revwidth = form.get_slider(wt) / 100.0;
+int list_position = form.get_list_position(platile);
+if (list_position != -1)
+{
+tiletype = form.get_list_item(platile, list_position);
+}
 if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
@@ -6015,8 +6027,7 @@ pools[j].mixer.set_fx(fxtype);
 }
 if(movetimer.elapsed>=movetime)
 {
-p.destroy_sound(tileslot);
-tileslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*step*"),false,0,0,tilevolume,tilepitch);
+tileslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+tiletype+"/*step*"),false,0,0,tilevolume,tilepitch);
 movetimer.restart();
 }
 }
