@@ -3119,35 +3119,49 @@ void settingsmenu()
 {
 form.reset();
 form.create_window("preferences", false);
-int slt = form.create_button("Select c&haracter type for the " + soundpack + " sound pack. Currently set to " + chartype+".");
-int slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to " + keyboardtheme+".");
-int slm = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to " + menutype+".");
-int spk = form.create_button("Select sound &pack. Currently set to " + soundpack+".");
-int sdm = form.create_button("Select sound &device. Currently set to " + soundcard+".");
-int skipm = form.create_button("Set up and down skip amoun&t in all menus. Currently set to " + mskipnum + " items per press"+".");
+int slt, slk, slm, spk;
+if (chartype == "")
+slt = form.create_button("Select c&haracter type for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slt = form.create_button("Select c&haracter type for the " + soundpack + " sound pack. Currently set to " + chartype);
+if (keyboardtheme == "")
+slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to " + keyboardtheme);
+if (menutype == "")
+slm = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slm = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to " + menutype);
+if (soundpack == "")
+spk = form.create_button("Select sound &pack. Currently set to nothing");
+else
+spk = form.create_button("Select sound &pack. Currently set to " + soundpack);
+int sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
+int skipm = form.create_button("Set up and down skip amoun&t in menus. Currently set to " + mskipnum + " items per press");
 int hideme = form.create_button("Show or h&ide main menu items");
-int sjn = form.create_checkbox("Enable auto jumping in maps.", int_to_bool(autojump));
-int sgn = form.create_checkbox("Enable game auto saving.", int_to_bool(autosave));
-int fdv = form.create_checkbox("Enable global volume fading.", int_to_bool(fademode));
-int hms = form.create_checkbox("Enable heart monitor for all game modes.", int_to_bool(heartsound));
-int psm = form.create_checkbox("Enable pause menu for all game modes.", int_to_bool(pausem));
-int shd = form.create_checkbox("Enable holding of space in all menus.", int_to_bool(spacehold));
-int glh = form.create_checkbox("Enable global HRTF support.", hrtf);
-int mt = form.create_checkbox("Enable menus resetting in all menus.", int_to_bool(mreset));
-int pd = form.create_checkbox("Enable up and down in all menus.", int_to_bool(up_down));
-int lr = form.create_checkbox("Enable left and right in all menus.", int_to_bool(left_right));
-int hd = form.create_checkbox("Enable home and end in all menus.", int_to_bool(home_end));
-int rg = form.create_checkbox("Enable wrapping in all menus.", int_to_bool(wrap));
-int rms = form.create_checkbox("Enable repeating items in all menus.", int_to_bool(repeat_items));
-int nbs = form.create_checkbox("Enable number scrolling in all menus.", int_to_bool(numbers));
-int fls = form.create_checkbox("Enable first letter scrolling in all menus.", int_to_bool(first_letter));
-int psn = form.create_checkbox("Enable position information in all menus.", int_to_bool(position_info));
-int psl = form.create_checkbox("Enable side scrolling in all menus.", int_to_bool(side_scroll));
-int esc=form.create_checkbox("Ask to exit when pressing escape.",int_to_bool(gamxit));
+int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
+int sgn = form.create_checkbox("Enable game auto saving", int_to_bool(autosave));
+int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
+int hms = form.create_checkbox("Enable heart monitor for all game modes", int_to_bool(heartsound));
+int psm = form.create_checkbox("Enable pause menu for all game modes", int_to_bool(pausem));
+int shd = form.create_checkbox("Enable holding space in menus", int_to_bool(spacehold));
+int glh = form.create_checkbox("Enable global HRTF support", hrtf);
+int mt = form.create_checkbox("Enable menus resetting", int_to_bool(mreset));
+int pd = form.create_checkbox("Enable up and down in menus", int_to_bool(up_down));
+int lr = form.create_checkbox("Enable left and right in menus", int_to_bool(left_right));
+int hd = form.create_checkbox("Enable home and end in menus", int_to_bool(home_end));
+int rg = form.create_checkbox("Enable wrapping in menus", int_to_bool(wrap));
+int rms = form.create_checkbox("Enable repeating items in menus", int_to_bool(repeat_items));
+int nbs = form.create_checkbox("Enable number scrolling in menus", int_to_bool(numbers));
+int fls = form.create_checkbox("Enable first letter scrolling in menus", int_to_bool(first_letter));
+int psn = form.create_checkbox("Enable position information in menus", int_to_bool(position_info));
+int psl = form.create_checkbox("Enable side scrolling in menus", int_to_bool(side_scroll));
+int esc=form.create_checkbox("Ask to exit when pressing escape",int_to_bool(gamxit));
 int rest = form.create_button("&reset settings");
-int preffs = form.create_button("&save settings");
-int cans = form.create_button("&cancel");
+int preffsok = form.create_button("&save settings");
+int preffscn = form.create_button("&cancel");
 form.focus(slt);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 while (true)
 {
 form.monitor();
@@ -3358,14 +3372,14 @@ form.reset();
 settingsmenu();
 }
 }
-if(form.is_pressed(preffs))
+if(form.is_pressed(preffscn))
 {
-dlg("Settings saved. Press enter to continue.");
-writepreffs();
 mainmenu();
 }
-if(form.is_pressed(cans))
+if(form.is_pressed(preffsok))
 {
+writepreffs();
+dlg("Settings saved. Press enter to continue.");
 mainmenu();
 }
 }
@@ -5945,20 +5959,21 @@ if(buildem=="rev")
 {
 form.reset();
 form.create_window("reverb", false);
-int mx=form.create_input_box("Enter the minimum x of this reverb.");
-int mx2=form.create_input_box("Enter the maximum x of this reverb.");
-int my=form.create_input_box("Enter the minimum y of this reverb.");
-int my2=form.create_input_box("Enter the maximum y of this reverb.");
-int rd=form.create_input_box("Enter the id of this reverb. Press okay to use a random reverb id, or clear the input to type your own reverb id.", generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"));
+int mx=form.create_input_box("Enter the minimum x of this reverb required");
+int mx2=form.create_input_box("Enter the maximum x of this reverb required");
+int my=form.create_input_box("Enter the minimum y of this reverb required");
+int my2=form.create_input_box("Enter the maximum y of this reverb required");
+int rd=form.create_input_box("Enter the id of this reverb required", generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"));
 int dr=form.create_slider("&dry_mix: ", 50, 0, 100, "percent");
 int wm=form.create_slider("&wet_mix: ", 50, 0, 100, "percent");
 int rm=form.create_slider("&room_size: ", 50, 0, 100, "percent");
 int dp=form.create_slider("dam&ping: ", 50, 0, 100, "percent");
 int wt=form.create_slider("w&idth: ", 50, 0, 100, "percent");
 int revtest = form.create_checkbox("&test reverb");
-int revok = form.create_button("&okay");
+int revok = form.create_button("&okay",true);
 int revcn = form.create_button("&cancel");
 form.focus(mx);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 while (true)
 {
 key_echocheck(form);
@@ -6011,26 +6026,31 @@ if(form.get_text(mx)=="")
 {
 speak("Minimum x is required.");
 form.focus(mx);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 }
 else if(form.get_text(mx2)=="")
 {
 speak("Maximum x is required.");
 form.focus(mx2);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 }
 else if(form.get_text(my)=="")
 {
 speak("Minimum y is required.");
 form.focus(my);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 }
 else if(form.get_text(my2)=="")
 {
 speak("Maximum y is required.");
 form.focus(my2);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 }
 else if(form.get_text(rd)=="")
 {
 speak("Reverb id is required.");
 form.focus(rd);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 }
 else
 {
