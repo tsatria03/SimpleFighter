@@ -57,6 +57,10 @@ if (cmd == "rawmap")
 {
 return " Usage: /rawmap";
 }
+if (cmd == "rawdata")
+{
+return " Usage: /rawdata";
+}
 if (cmd == "delmap")
 {
 return " Usage: /delmap";
@@ -1206,6 +1210,59 @@ mapdata=mapper.read();
 clipboard_copy_text(mapdata);
 speak("The data of "+mapname+" has been copied to your clipboard");
 mapper.close();
+}
+else
+{
+speak("Invalid command syntax."+comhelp("rawmap"));
+game(true);
+}
+}
+else if (base_command == "rawdata")
+{
+if (parsed.length() == 1)
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to overwrite all existing map data with what's on your clipboard?",true);
+if(mres==0)
+{
+speak("canceled");
+game(true);
+}
+if(mres==1)
+{
+mapper.open("data/maps/" + mapname + ".map", "wb");
+mapdata=mapper.read();
+mapdata=clipboard_read_text();
+if(mapdata=="")
+{
+dlg_snd("Error. The map data you've pasted is invalid.");
+game(true);
+}
+else if(mapdata!="name "+mapname+"\r\n"+"maxx "+maxx+"\r\n"+"maxy "+maxy+"\r\n"+"platform 0 "+maxx+" 0 "+tiletype+" 0 100")
+{
+dlg_snd("Error. The map data you've pasted is invalid.");
+game(true);
+}
+else
+{
+mapper.write(mapdata);
+mapper.close();
+load_map(mapname);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+}
+if(mres==2)
+{
+speak("canceled");
+game(true);
+}
 }
 else
 {
