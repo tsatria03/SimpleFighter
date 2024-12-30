@@ -27,6 +27,38 @@ tilepitch=platforms[i].pitch;
 return ct;
 }
 
+string command_help(string cmd)
+{
+if (cmd == "go")
+{
+return " Usage: /go x y";
+}
+if (cmd == "help")
+{
+return " Usage: /help";
+}
+if (cmd == "changemap")
+{
+return " Usage: /changemap mapname x y";
+}
+if (cmd == "reloadmap")
+{
+return " Usage: /reloadmap";
+}
+if (cmd == "rawmap")
+{
+return " Usage: /rawmap";
+}
+if (cmd == "delmap")
+{
+return " Usage: /delmap";
+}
+else
+{
+return "Unknown command: /" + cmd;
+}
+}
+
 void clearmap()
 {
 destroy_all_blockages();
@@ -938,6 +970,161 @@ if(loadbeeps == 1 && last_beep_percent<100)
 if(speak_percentage==true) speak("100 "+"percent");
 beep_percentage(100);
 speak("map loded.");
+}
+}
+void parse_commands()
+{
+string cmd=virtual_input_box("command","Enter the command you'd like to use.");
+if(cmd=="")
+return;
+string[] sd=string_split(cmd, "/", true);
+if(sd.length()<2)
+{
+speak("Invalid command syntax. Make sure to include '/' followed by a command.");
+game(true);
+}
+string command = sd[1];
+string[] parsed = string_split(command, " ", true);
+if (parsed.length() < 1)
+{
+speak("No command entered after '/'.");
+game(true);
+}
+string base_command = parsed[0];
+if (base_command == "go")
+{
+if (parsed.length() == 3)
+{
+int x = stn(parsed[1]);
+int y = stn(parsed[2]);
+gop(x, y);
+}
+else
+{
+speak("Invalid command syntax."+command_help("go"));
+game(true);
+}
+}
+else if (base_command == "help")
+{
+if (parsed.length() == 1)
+{
+virtual_info_box("command help", "commands", " These are the available builder commands you can use in the game."+"\r\n"+"/go x y, move to a spesified coordinates on the map"+"\r\n"+"/changemap mapname x y, change your map with a spesified coordinates"+"\r\n"+"/delmap, delete the map you're currently playing"+"\r\n"+"/reloadmap, reload the current map"+"\r\n"+"/rawmap, copy the intire data of your map to the clipboard");
+}
+else
+{
+speak("Invalid command syntax."+command_help("help"));
+game(true);
+}
+}
+else if (base_command == "changemap")
+{
+if (parsed.length() == 4)
+{
+string name=parsed[1];
+int x = stn(parsed[2]);
+int y = stn(parsed[3]);
+if (file_exists("data/maps/" + name + ".map"))
+{
+if (x >= 0 && x <= maxx && y >= 0 && y <= maxy) load_map(name);
+}
+else
+{
+speak("Map '" + name + "' not found. Please check the name and try again.");
+game(true);
+}
+if (x >= 0 && x <= maxx && y >= 0 && y <= maxy)
+{
+gop(x, y);
+}
+else
+{
+speak("Invalid coordinates. Please make sure x and y are within the map boundaries.");
+game(true);
+}
+}
+else
+{
+speak("Invalid command syntax."+command_help("changemap"));
+game(true);
+}
+}
+else if (base_command == "reloadmap")
+{
+if (parsed.length() == 1)
+{
+load_map(mapname);
+}
+else
+{
+speak("Invalid command syntax."+command_help("reloadmap"));
+game(true);
+}
+}
+else if (base_command == "rawmap")
+{
+if (parsed.length() == 1)
+{
+mapper.open("data/maps/" + mapname + ".map", "rb");
+mapdata=mapper.read();
+clipboard_copy_text(mapdata);
+speak("The data of "+mapname+" has been copied to your clipboard");
+mapper.close();
+}
+else
+{
+speak("Invalid command syntax."+command_help("rawmap"));
+game(true);
+}
+}
+else if (base_command == "delmap")
+{
+if (parsed.length() == 1)
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to delete the current map? This action can't be undone.",true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(mres==1)
+{
+if(file_exists("data/maps/"+mapname+".map")) file_delete("data/maps/"+mapname+".map");
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+speak("map deleted");
+dlgplay("mapdelete.ogg",false);
+me.x=0;
+me.y=0;
+clearmap();
+destroymap();
+mainmenu();
+}
+if(mres==2)
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+}
+else
+{
+speak("Invalid command syntax."+command_help("delmap"));
+game(true);
+}
+}
+else
+{
+speak(command_help(base_command));
+game(true);
 }
 }
 void create_map(string name, double mx, double my, string tiletype)
