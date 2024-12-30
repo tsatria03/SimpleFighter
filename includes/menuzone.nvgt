@@ -32,10 +32,10 @@ return;
 }
 if(mapem=="addline")
 {
+resume_pools();
 mapper.open("data/maps/"+mapname+".map", "ab");
 mapdata=mapper.read();
 string newline=virtual_input_box("","Enter the line you'd like to add.");
-resume_pools();
 mapper.write("\r\n"+newline);
 mapper.close();
 load_map(mapname);
@@ -150,7 +150,7 @@ me.x=0;
 me.y=0;
 clearmap();
 destroymap();
-mainmenu();
+mapmenu();
 }
 if(mres==2)
 {
@@ -234,12 +234,14 @@ mapdata=clipboard_read_text();
 if(mapdata=="")
 {
 dlg_snd("Error. The map data you've pasted is invalid.");
-menzmenu();
+resume_pools();
+return;
 }
 else if(mapdata!="name "+mapname+"\r\n"+"maxx "+maxx+"\r\n"+"maxy "+maxy+"\r\n"+"platform 0 "+maxx+" 0 "+tiletype+" 0 100")
 {
 dlg_snd("Error. The map data you've pasted is invalid.");
-menzmenu();
+resume_pools();
+return;
 }
 else
 {
@@ -260,12 +262,12 @@ return;
 }
 if(mapem=="lm")
 {
-resume_pools();
 string[] maps=find_files("data/maps/*.map");
 if(maps.length()==0)
 {
 dlg_snd("Error. There are no maps available to view. Press enter to continue.");
-mapmenu();
+resume_pools();
+return;
 }
 else
 {
@@ -277,16 +279,19 @@ m.add_item_tts(string_replace(maps[i],".map","",true)+", size: "+measure_file_si
 int mres=m.run("Maps menu", true);
 if(mres==0)
 {
+resume_pools();
 speak("canceled");
 return;
 }
 if (mres==0 and mres>=maps.length())
 {
+resume_pools();
 speak("canceled");
 return;
 }
 if (mres>0 and mres<=maps.length())
 {
+resume_pools();
 mapname=maps[mres-1];
 mapname=string_replace(mapname, ".map", "", true);
 me.x=0;
@@ -297,6 +302,7 @@ load_map(mapname);
 }
 if(mapem=="nm")
 {
+resume_pools();
 string name=virtual_input_box("","Enter the name of this map.");
 string mx=virtual_input_box("","Enter the maximum length of this map.");
 string my=virtual_input_box("","Enter the maximum height of this map.");
@@ -322,7 +328,7 @@ tiletype=res;
 if(file_exists("data/maps/"+mapname+".map"))
 {
 dlg_snd("Error. A map with this name already exists. Press enter to continue.");
-menzmenu();
+return;
 }
 else
 {

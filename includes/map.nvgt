@@ -41,6 +41,14 @@ if (cmd == "help")
 {
 return " Usage: /help";
 }
+if (cmd == "menu")
+{
+return " Usage: /menu";
+}
+if (cmd == "maps")
+{
+return " Usage: /maps";
+}
 if (cmd == "changemap")
 {
 return " Usage: /changemap mapname x y";
@@ -1039,6 +1047,19 @@ speak("Invalid command syntax."+comhelp("help"));
 game(true);
 }
 }
+else if (base_command == "menu")
+{
+if (parsed.length() == 1)
+{
+pause_pools();
+mapmenu2();
+}
+else
+{
+speak("Invalid command syntax."+comhelp("menu"));
+game(true);
+}
+}
 else if (base_command == "changemap")
 {
 if (parsed.length() == 4)
@@ -1201,6 +1222,56 @@ speak("Invalid command syntax."+comhelp("gozone"));
 game(true);
 }
 }
+else if (base_command == "maps")
+{
+if (parsed.length() == 1)
+{
+string[] maps=find_files("data/maps/*.map");
+if(maps.length()==0)
+{
+pause_pools();
+dlg_snd("Error. There are no maps available to view. Press enter to continue.");
+resume_pools();
+game(true);
+}
+else
+{
+pause_pools();
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+m.add_item_tts(string_replace(maps[i],".map","",true)+", size: "+measure_file_size(file_get_size("data/maps/"+maps[i])));
+}
+int mres=m.run("Maps menu", true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if (mres==0 and mres>=maps.length())
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if (mres>0 and mres<=maps.length())
+{
+resume_pools();
+mapname=maps[mres-1];
+mapname=string_replace(mapname, ".map", "", true);
+me.x=0;
+me.y=0;
+load_map(mapname);
+}
+}
+}
+else
+{
+speak("Invalid command syntax."+comhelp("go"));
+game(true);
+}
+}
 else if (base_command == "rawmap")
 {
 if (parsed.length() == 1)
@@ -1298,7 +1369,7 @@ me.x=0;
 me.y=0;
 clearmap();
 destroymap();
-mainmenu();
+mapmenu();
 }
 if(mres==2)
 {
