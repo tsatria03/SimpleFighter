@@ -85,7 +85,7 @@ setupmenu(true);
 m.add_item_tts("changelog", "changelog");
 m.add_item_tts("credits", "credits");
 m.add_item_tts("readme", "readme");
-m.add_item_tts("todo_list", "todo_list");
+if(!SCRIPT_COMPILED) m.add_item_tts("todo_list", "todo_list");
 m.add_item_tts("back", "back");
 int mres=m.run("Documentation menu",true);
 string dnm=m.get_item_name(mres);
@@ -3738,6 +3738,121 @@ if(form.is_pressed(preffsok))
 writepreffs();
 dlg("Settings saved. Press enter to continue.");
 mainmenu();
+}
+}
+}
+
+void settingsmenu2()
+{
+form.reset();
+form.create_window("preferences", false);
+int sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
+int skipm = form.create_button("Set up and down skip amoun&t in menus. Currently set to " + mskipnum + " items per press");
+int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
+int sgn = form.create_checkbox("Enable game auto saving", int_to_bool(autosave));
+int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
+int hms = form.create_checkbox("Enable heart monitor for all game modes", int_to_bool(heartsound));
+int psm = form.create_checkbox("Enable pause menu for all game modes", int_to_bool(pausem));
+int shd = form.create_checkbox("Enable holding space in menus", int_to_bool(spacehold));
+int glh = form.create_checkbox("Enable global HRTF support", hrtf);
+int mt = form.create_checkbox("Enable menus resetting", int_to_bool(mreset));
+int pd = form.create_checkbox("Enable up and down in menus", int_to_bool(up_down));
+int lr = form.create_checkbox("Enable left and right in menus", int_to_bool(left_right));
+int hd = form.create_checkbox("Enable home and end in menus", int_to_bool(home_end));
+int rg = form.create_checkbox("Enable wrapping in menus", int_to_bool(wrap));
+int rms = form.create_checkbox("Enable repeating items in menus", int_to_bool(repeat_items));
+int nbs = form.create_checkbox("Enable number scrolling in menus", int_to_bool(numbers));
+int fls = form.create_checkbox("Enable first letter scrolling in menus", int_to_bool(first_letter));
+int psn = form.create_checkbox("Enable position information in menus", int_to_bool(position_info));
+int psl = form.create_checkbox("Enable side scrolling in menus", int_to_bool(side_scroll));
+int esc=form.create_checkbox("Ask to exit when pressing escape",int_to_bool(gamxit));
+int preffsok = form.create_button("&save settings", true);
+int preffscn = form.create_button("&cancel");
+form.focus(sdm);
+spool.play_stationary(find_sound("data/sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+form.monitor();
+wait(5);
+autojump = bool_to_int(form.is_checked(sjn));
+autosave = bool_to_int(form.is_checked(sgn));
+fademode = bool_to_int(form.is_checked(fdv));
+heartsound = bool_to_int(form.is_checked(hms));
+pausem = bool_to_int(form.is_checked(psm));
+spacehold = bool_to_int(form.is_checked(shd));
+hrtf = form.is_checked(glh);
+sound_global_hrtf = form.is_checked(glh);
+mreset = bool_to_int(form.is_checked(mt));
+m.reset(form.is_checked(mt));
+up_down = bool_to_int(form.is_checked(pd));
+m.enable_up_and_down = form.is_checked(pd);
+left_right = bool_to_int(form.is_checked(lr));
+m.enable_left_and_right = form.is_checked(lr);
+home_end = bool_to_int(form.is_checked(hd));
+m.enable_home_and_end = form.is_checked(hd);
+wrap = bool_to_int(form.is_checked(rg));
+m.wrap = form.is_checked(rg);
+repeat_items = bool_to_int(form.is_checked(rms));
+m.repeat_items_at_edges = form.is_checked(rms);
+numbers = bool_to_int(form.is_checked(nbs));
+m.enable_numbers = form.is_checked(nbs);
+first_letter = bool_to_int(form.is_checked(fls));
+m.enable_first_letter_navigation = form.is_checked(fls);
+position_info = bool_to_int(form.is_checked(psn));
+m.speak_position_information = form.is_checked(psn);
+side_scroll = bool_to_int(form.is_checked(psl));
+m.enable_side_scrolling = form.is_checked(psl);
+gamxit = bool_to_int(form.is_checked(esc));
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+return;
+}
+if(form.is_pressed(skipm))
+{
+string skmount=virtual_input_box("","Enter the maximum up and down skip amount you'd like to set.");
+if(mskipnum=="")
+return;
+mskipnum=string_to_number(skmount);
+dlg("Up and down skip amount set. Press enter to continue.");
+form.reset();
+settingsmenu2();
+}
+if(form.is_pressed(sdm))
+{
+string[]@ devices=get_sound_output_devices();
+devices.remove_at(0);
+setupmenu();
+for(uint i=0; i<devices.length(); i++)
+{
+m.add_item_tts(devices[i],devices[i],"",true);
+}
+int mres=m.run("Choose a sound device you would like to use in the game.",true);
+if(mres==0)
+{
+form.reset();
+settingsmenu2();
+}
+if(mres>0 and mres<=devices.length())
+{
+soundcard=devices[mres-1];
+sound_output_device = mres;
+dlg("Sound device set to "+soundcard+". Press enter to continue.");
+form.reset();
+settingsmenu2();
+}
+}
+if(form.is_pressed(preffscn))
+{
+resume_pools();
+return;
+}
+if(form.is_pressed(preffsok))
+{
+writepreffs();
+dlg("Settings saved. Press enter to continue.");
+resume_pools();
+return;
 }
 }
 }
@@ -7931,13 +8046,11 @@ for(uint i=0; i<zombies.length(); i++)
 m.add_item_tts(zombies[i].zombietype+";"+"at;"+zombies[i].zombx+";"+zombies[i].zomby+";"+"HP"+round(zombies[i].zombiehealth/zombies[i].zombiemaxhealth*100,2)+"percent"+";"+"level"+zombies[i].zomblevel);
 }
 int mres=m.run("Object info", true);
-if(mres==0)
+if(mres>=0)
 {
 resume_pools();
-speak("canceled");
 return;
 }
-resume_pools();
 }
 void pointsmenu()
 {
@@ -7956,10 +8069,9 @@ m.add_item_tts("upgrade maximum vertical weapon range,"+"currently set to;"+wepr
 m.add_item_tts("back", "back");
 int mres=m.run("Points menu. ",true);
 string ptmem=m.get_item_name(mres);
-if(mres==0)
+if(mres==0 or mres<=2)
 {
 resume_pools();
-speak("canceled");
 return;
 }
 if(ptmem=="umat")
@@ -8413,12 +8525,35 @@ m.add_item_tts("You've been playing for a total of;"+timeelapsed.m()+"minutes,"+
 m.add_item_tts("back","back");
 int mres=m.run("Statistics menu",true);
 string stmem=m.get_item_name(mres);
-if(mres==0)
+if(mres<=9)
 {
 pausemenu();
 }
 if(stmem=="back")
 {
 pausemenu();
+}
+}
+void statsmenu2()
+{
+setupmenu();
+if(me.y>=1  and gmt(me.x,me.y)=="") m.add_item_tts("current location,"+me.x+",;"+me.y+","+"you're currently in the air,"+"facing;"+facing);
+else if(me.y>=0 ) m.add_item_tts("current location,"+me.x+",;"+me.y+","+"you're walking on;"+gmt(me.x,me.y)+","+"facing;"+facing);
+if(lifecard>=2) m.add_item_tts("health, "+round(health/maxhealth*100,2)+"percent, "+health+"of "+maxhealth+"hitpoints remaining, with "+lifecard+"lives left");
+else if(lifecard<=1) m.add_item_tts("health, "+round(health/maxhealth*100,2)+"percent, "+health+"of "+maxhealth+"hitpoints remaining, with "+lifecard+"life left");
+if(shieldon==1) m.add_item_tts("shield strength, "+round(shieldstrength/maxshieldstrength*100,2)+"percent, "+shieldstrength+"of "+maxshieldstrength+"hitpoints remaining");
+m.add_item_tts("Your maximum jump height is"+jumpheight+"squares");
+m.add_item_tts("Your maximum x position is"+maxx+"tiles");
+m.add_item_tts("Your maximum y position is"+maxy+"tiles");
+m.add_item_tts("You're currently on level"+level+"with"+xp+"experience. Your next level requires"+(xprequiered-xp)+"experience");
+m.add_item_tts("You have"+points+"points available to spend");
+if(melee==false) m.add_item_tts("you have "+loadedammo+" out of "+maxammo+" ammo loaded, and "+ammo+" ammo in reserve");
+m.add_item_tts("You have killed a total of"+kills+"entidies");
+m.add_item_tts("You've been playing for a total of;"+timeelapsed.m()+"minutes,"+timeelapsed.s()+"seconds");
+int mres=m.run("Statistics menu",true);
+if(mres>=0)
+{
+resume_pools();
+return;
 }
 }
