@@ -103,93 +103,86 @@ Creating sound packs.
 This game allows you to create customizeable sound packs that you can use in various situations.
 
 Character sound listing
-
-buy.ogg
-cameraair.ogg
-camerahazard.ogg
-cameraplayer.ogg
-death.ogg
-fall.ogg
-healing.ogg
-healstart.ogg
-healstop.ogg
-hurt.ogg
-inv.ogg
-jump.ogg
-kill.ogg
-land.ogg
-lev.ogg
-life.ogg
-plummet.ogg
-rock.ogg
-rise.ogg
-sit.ogg
-stand.ogg
-swing.ogg
-telxy.ogg
-turn.ogg
-xtel.ogg
-ytel.ogg
+buy.ogg: This sound is played when your character purchases upgrades.
+cameraair.ogg: This sound is played when air is detected while your character uses the camera.
+camerahazard.ogg: This sound is played when a hazard is detected while your character uses the camera.
+cameraplayer.ogg: This sound is played when a player is detected while your character uses the camera.
+death.ogg: This sound is played when your character dies.
+fall.ogg: This sound is played when your character starts falling.
+healing.ogg: This sound is played When your character is healing.
+healstart.ogg: This sound is played when your character starts healing.
+healstop.ogg: This sound is played when your character stops healing.
+hurt.ogg: This sound is played when your character gets hurt.
+inv.ogg: This sound is played when your character cycles through there inventory.
+jump.ogg: This sound is played when your character jumps.
+kill.ogg: This sound is played when your character kills an entity.
+land.ogg: This sound is played when your character lands.
+lev.ogg: This sound is played when your character levels up.
+life.ogg: This sound is played when your character loses a life.
+plummet.ogg: This sound is played when your character is falling.
+rock.ogg: This sound is played when your character rocks back and forth while sitting.
+rise.ogg: This sound is played when your character rises.
+sit.ogg: This sound is played when your character sits on the ground.
+stand.ogg: This sound is played when your character stands up.
+swing.ogg: This sound is played when your character swings a melee weapon.
+telxy.ogg: This sound is played when your character teleports on the x and y axes of the map.
+turn.ogg: This sound is played when your character turns.
+xtel.ogg: This sound is played when your character teleports on the x axes of the map.
+ytel.ogg: This sound is played when your character teleports on the y axes of the map.
 
 Item sound listing.
-
-break.ogg
-draw.ogg
-drop.ogg
-fire.ogg
-get.ogg
-hit.ogg
-loop.ogg
+break.ogg: This sound is played when an item is broken.
+draw.ogg: This sound is played when an item is drawn.
+drop.ogg: This sound is played when an item is dropped.
+fire.ogg: This sound is played when an item is being used.
+get.ogg: This sound is played when an item is grabbed.
+hit.ogg: This sound is played when an item is used.
+loop.ogg: This sound is played when an item is looped.
 
 Shield sound listing.
-
-break.ogg
-draw.ogg
-hit.ogg
-loop.ogg
-remove.ogg
-wear.ogg
+break.ogg: This sound is played when a shield is broken.
+draw.ogg: This sound is played when a shield is drawn.
+hit.ogg: This sound is played when a shield is hit with something.
+loop.ogg: This sound is played when a shield is looped while wearing it.
+remove.ogg: This sound is played when a shield is removed.
+wear.ogg: This sound is played when a shield is worn.
 
 Weapon sound listing.
-
-draw.ogg
-empty.ogg
-fire.ogg
-hit.ogg
-loop.ogg
-reload.ogg
-rico.ogg
-shell.ogg
+draw.ogg: This sound is played when a weapon is drawn.
+empty.ogg: This sound is played when a non melee weapon is empty.
+fire.ogg: This sound is played when a weapon is being used.
+hit.ogg: This sound is played when a weapon is used.
+loop.ogg: This sound is played when a weapon is looped while using it.
+reload.ogg: This sound is played when a non melee weapon is reloading with ammo.
+rico.ogg: This sound is played when a weapon is being ricocheted.
+shell.ogg: This sound is played when a non melee weapon dropps ammo shells.
 
 Menu sound listing.
-
-click.ogg
-close.ogg
-edge.ogg
-enter.ogg
-music.ogg
-open.ogg
-speaker.ogg
+click.ogg: This sound is played when you go through menu items.
+close.ogg: This sound is played when a menu is being closed.
+edge.ogg: This sound is played when a menu has reached a boundary.
+enter.ogg: This sound is played when a menu item has been selected.
+music.ogg: This sound is played when a menu has music.
+open.ogg: This sound is played when a menu is being opened.
+speaker.ogg: This sound is played when a menu has a speaker test option.
 
 Keyboard sound listing
-
-cap.ogg
-delete.ogg
-return.ogg
-space.ogg
-type.ogg
+cap.ogg: This sound is played when a capital letter is being typed on the keyboard.
+delete.ogg: This sound is played when a character is being deleted on the keyboard.
+return.ogg: This sound is played when a new line character is being typed on the keyboard.
+space.ogg: This sound is played when a space character is being typed on the keyboard.
+type.ogg: This sound is played when characters excluding spaces and new lines are being typed on the keyboard.
 
 Npc sound listing.
-
-death.ogg
-heal.ogg
-hit.ogg
-hurt.ogg
-launch.ogg
-life.ogg
-loop.ogg
-spawn.ogg
-step.ogg
-taunt.ogg
-tel.ogg
+death.ogg: This sound is played when an entity dies.
+heal.ogg: This sound is played when a boss enemy heals.
+hit.ogg: This sound is played when an entity hits your character.
+hurt.ogg: This sound is played when an entity gets hurt.
+launch.ogg: This sound is played when an entity launches another entity or object.
+life.ogg: This sound is played when an entity loses a life.
+loop.ogg: This sound is played when a projectile is looped.
+spawn.ogg: This sound is played when an entity is being spawned.
+step.ogg: This sound is played when an entity is moving.
+taunt.ogg: This sound is played when an entity is taunting your character.
+tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of a map.
 
