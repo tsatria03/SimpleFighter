@@ -1,3 +1,105 @@
+obj@[]objs(0);
+class obj
+{
+bool automatic;
+;int getsound, hurtsound, objsound;
+int itx;
+int ity;
+int objtime;
+string objtype;
+string objtype2;
+timer objtimer;
+obj(int ix,int iy,int sp,string ty,string ty2,bool itc)
+{
+itx=ix;
+ity=iy;
+objtime=sp;
+objtype=ty;
+objtype2=ty2;
+automatic=itc;
+}
+}
+void objloop()
+{
+for(uint i=0; i<objs.length(); i++)
+{
+if(objs[i].objtimer.elapsed>=objs[i].objtime)
+{
+objs[i].objsound=itempool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i].objtype+"/"+objs[i].objtype2+"/*loop*"),me.x,me.y,objs[i].itx,objs[i].ity,0,0,0,0,false,0,0,itemvolume,itempitch,false);
+objs[i].objtimer.restart();
+}
+if(me.x==objs[i].itx and me.y==objs[i].ity and objs[i].automatic==true)
+{
+objs[i].getsound=itempool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,itemvolume,itempitch,false);
+give(objs[i].objtype2,1);
+speak(objs[i].objtype2);
+objs.remove_at(i);
+return;
+}
+if(me.x==objs[i].itx and me.y==objs[i].ity and objs[i].automatic==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+objs[i].getsound=itempool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,itemvolume,itempitch,false);
+give(objs[i].objtype2,1);
+speak(objs[i].objtype2);
+objs.remove_at(i);
+return;
+}
+}
+}
+void spawn_obj(int x,int y,int objtime,string objtype,string objtype2,bool automatic)
+{
+obj o1(x,y,objtime,objtype,objtype2,automatic);
+objs.insert_last(o1);
+}
+void destroy_all_objs()
+{
+for(uint i=0; i<objs.length(); i++)
+{
+itempool.destroy_sound(objs[i].objsound);
+}
+objs.resize(0);
+}
+
+objzone@[]objzones(0);
+class objzone
+{
+double minx, maxx, miny, maxy;
+int spawntime;
+string objtype;
+string objtype2;
+timer spawntimer;
+objzone(double mx,double mx2,double my,double my2,int sp,string it,string it2)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+spawntime=sp;
+objtype=it;
+objtype2=it2;
+}
+}
+void objzoneloop()
+{
+for(uint i=0; i<objzones.length(); i++)
+{
+if(objzones[i].minx<=me.x and objzones[i].maxx>=me.x and objzones[i].miny<=me.y and objzones[i].maxy>=me.y and objzones[i].spawntimer.elapsed>=objzones[i].spawntime)
+{
+spawn_obj(random(objzones[i].minx, objzones[i].maxx), random(objzones[i].miny, objzones[i].maxy), objzones[i].spawntime, objzones[i].objtype, objzones[i].objtype2, true);
+objzones[i].spawntimer.restart();
+}
+}
+}
+void spawn_objzone(double x1,double x2,double y1,double y2,int sp,string objtype,string objtype2)
+{
+objzone oz1(x1,x2,y1,y2,sp,objtype,objtype2);
+objzones.insert_last(oz1);
+}
+void destroy_all_objzones()
+{
+objzones.resize(0);
+}
+
 void give(string item, int amount)
 {
 int a;
@@ -202,106 +304,3 @@ if(direction=="right")
 spawn_obj(me.x+1, me.y, 500, objtype, objtype2, true);
 }
 }
-
-obj@[]objs(0);
-class obj
-{
-bool automatic;
-;int getsound, hurtsound, objsound;
-int itx;
-int ity;
-int objtime;
-string objtype;
-string objtype2;
-timer objtimer;
-obj(int ix,int iy,int sp,string ty,string ty2,bool itc)
-{
-itx=ix;
-ity=iy;
-objtime=sp;
-objtype=ty;
-objtype2=ty2;
-automatic=itc;
-}
-}
-void objloop()
-{
-for(uint i=0; i<objs.length(); i++)
-{
-if(objs[i].objtimer.elapsed>=objs[i].objtime)
-{
-objs[i].objsound=itempool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i].objtype+"/"+objs[i].objtype2+"/*loop*"),me.x,me.y,objs[i].itx,objs[i].ity,0,0,0,0,false,0,0,itemvolume,itempitch,false);
-objs[i].objtimer.restart();
-}
-if(me.x==objs[i].itx and me.y==objs[i].ity and objs[i].automatic==true)
-{
-objs[i].getsound=itempool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,itemvolume,itempitch,false);
-give(objs[i].objtype2,1);
-speak(objs[i].objtype2);
-objs.remove_at(i);
-return;
-}
-if(me.x==objs[i].itx and me.y==objs[i].ity and objs[i].automatic==false and key_repeating(KEY_RETURN))
-{
-objs[i].getsound=itempool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,itemvolume,itempitch,false);
-give(objs[i].objtype2,1);
-speak(objs[i].objtype2);
-objs.remove_at(i);
-return;
-}
-}
-}
-void spawn_obj(int x,int y,int objtime,string objtype,string objtype2,bool automatic)
-{
-obj o1(x,y,objtime,objtype,objtype2,automatic);
-objs.insert_last(o1);
-}
-void destroy_all_objs()
-{
-for(uint i=0; i<objs.length(); i++)
-{
-itempool.destroy_sound(objs[i].objsound);
-}
-objs.resize(0);
-}
-
-objzone@[]objzones(0);
-class objzone
-{
-double minx, maxx, miny, maxy;
-int spawntime;
-string objtype;
-string objtype2;
-timer spawntimer;
-objzone(double mx,double mx2,double my,double my2,int sp,string it,string it2)
-{
-minx=mx;
-maxx=mx2;
-miny=my;
-maxy=my2;
-spawntime=sp;
-objtype=it;
-objtype2=it2;
-}
-}
-void objzoneloop()
-{
-for(uint i=0; i<objzones.length(); i++)
-{
-if(objzones[i].minx<=me.x and objzones[i].maxx>=me.x and objzones[i].miny<=me.y and objzones[i].maxy>=me.y and objzones[i].spawntimer.elapsed>=objzones[i].spawntime)
-{
-spawn_obj(random(objzones[i].minx, objzones[i].maxx), random(objzones[i].miny, objzones[i].maxy), objzones[i].spawntime, objzones[i].objtype, objzones[i].objtype2, true);
-objzones[i].spawntimer.restart();
-}
-}
-}
-void spawn_objzone(double x1,double x2,double y1,double y2,int sp,string objtype,string objtype2)
-{
-objzone oz1(x1,x2,y1,y2,sp,objtype,objtype2);
-objzones.insert_last(oz1);
-}
-void destroy_all_objzones()
-{
-objzones.resize(0);
-}
-

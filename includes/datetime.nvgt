@@ -1,3 +1,121 @@
+class time_elapsed
+{
+timer@handle;
+int milliseconds;
+int seconds;
+int minutes;
+int rest;
+void set_timer(timer@counter) {
+@handle=counter;
+}
+void refresh() {
+milliseconds=handle.elapsed;
+minutes=milliseconds/60000;
+rest=milliseconds%60000;
+seconds=rest/1000;
+}
+int m() {
+refresh();
+return minutes;
+}
+int s() {
+refresh();
+return seconds;
+}
+int ms() {
+refresh();
+return milliseconds;
+}
+}
+
+calander@[]calanders(0);
+class calander
+{
+bool destroyable;
+int calandersound, hurtsound, pressound;
+int calanderx;
+int calandery;
+string cdtext;
+string calandertype;
+calander(int cnx,int cny,string cntext,string cntype,bool dbl)
+{
+calanderx=cnx;
+calandery=cny;
+cdtext=cntext;
+calandertype=cntype;
+destroyable=dbl;
+calandersound=calpool.play_2d(find_sound("data/sounds/"+soundpack+"/objects/calanders/"+calandertype+"/*loop*"),me.x,me.y,calanderx,calandery,true);
+}
+}
+void calandercheck()
+{
+for(uint i=0; i<calanders.length(); i++)
+{
+if(me.x==calanders[i].calanderx and me.y==calanders[i].calandery and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+calanders[i].pressound=calpool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/calanders/"+calanders[i].calandertype+"/*pres*"),false);
+speak(calanders[i].cdtext+get_date(false, false));
+}
+}
+}
+void spawn_calander(int x,int y,string text,string calandertype,bool destroyable)
+{
+calander cn1(x,y,text,calandertype,destroyable);
+calanders.insert_last(cn1);
+}
+void destroy_all_calanders()
+{
+for(uint i=0; i<calanders.length(); i++)
+{
+calpool.destroy_sound(calanders[i].calandersound);
+}
+calanders.resize(0);
+}
+
+clock@[]clocks(0);
+class clock
+{
+bool destroyable;
+int hurtsound, clocksound, pressound;
+int clockx;
+int clocky;
+string cktext;
+string clocktype;
+clock(int clx,int cly,string cltext,string cltype,bool dbl)
+{
+clockx=clx;
+clocky=cly;
+cktext=cltext;
+clocktype=cltype;
+destroyable=dbl;
+clocksound=clockpool.play_2d(find_sound("data/sounds/"+soundpack+"/objects/clocks/"+clocktype+"/*loop*"),me.x,me.y,clockx,clocky,true);
+}
+}
+void clockcheck()
+{
+for(uint i=0; i<clocks.length(); i++)
+{
+if(me.x==clocks[i].clockx and me.y==clocks[i].clocky and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+clocks[i].pressound=clockpool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/clocks/"+clocks[i].clocktype+"/*pres*"),false);
+speak(clocks[i].cktext+get_time(true, false));
+}
+}
+}
+void spawn_clock(int x,int y,string text,string clocktype,bool destroyable)
+{
+clock ck1(x,y,text,clocktype,destroyable);
+clocks.insert_last(ck1);
+}
+void destroy_all_clocks()
+{
+for(uint i=0; i<clocks.length(); i++)
+{
+clockpool.destroy_sound(clocks[i].clocksound);
+}
+clocks.resize(0);
+}
+
 string seconds;
 string included;
 string included2;
@@ -92,122 +210,4 @@ time=TIME_HOUR+":"+included+TIME_MINUTE;
 }
 }
 return time;
-}
-
-class time_elapsed
-{
-timer@handle;
-int milliseconds;
-int seconds;
-int minutes;
-int rest;
-void set_timer(timer@counter) {
-@handle=counter;
-}
-void refresh() {
-milliseconds=handle.elapsed;
-minutes=milliseconds/60000;
-rest=milliseconds%60000;
-seconds=rest/1000;
-}
-int m() {
-refresh();
-return minutes;
-}
-int s() {
-refresh();
-return seconds;
-}
-int ms() {
-refresh();
-return milliseconds;
-}
-}
-
-calander@[]calanders(0);
-class calander
-{
-bool destroyable;
-int calandersound, hurtsound, pressound;
-int calanderx;
-int calandery;
-string cdtext;
-string calandertype;
-calander(int cnx,int cny,string cntext,string cntype,bool dbl)
-{
-calanderx=cnx;
-calandery=cny;
-cdtext=cntext;
-calandertype=cntype;
-destroyable=dbl;
-calandersound=calpool.play_2d(find_sound("data/sounds/"+soundpack+"/objects/calanders/"+calandertype+"/*loop*"),me.x,me.y,calanderx,calandery,true);
-}
-}
-void calandercheck()
-{
-for(uint i=0; i<calanders.length(); i++)
-{
-if(me.x==calanders[i].calanderx and me.y==calanders[i].calandery and key_repeating(KEY_RETURN))
-{
-calanders[i].pressound=calpool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/calanders/"+calanders[i].calandertype+"/*pres*"),false);
-speak(calanders[i].cdtext+get_date(false, false));
-}
-}
-}
-void spawn_calander(int x,int y,string text,string calandertype,bool destroyable)
-{
-calander cn1(x,y,text,calandertype,destroyable);
-calanders.insert_last(cn1);
-}
-void destroy_all_calanders()
-{
-for(uint i=0; i<calanders.length(); i++)
-{
-calpool.destroy_sound(calanders[i].calandersound);
-}
-calanders.resize(0);
-}
-
-clock@[]clocks(0);
-class clock
-{
-bool destroyable;
-int hurtsound, clocksound, pressound;
-int clockx;
-int clocky;
-string cktext;
-string clocktype;
-clock(int clx,int cly,string cltext,string cltype,bool dbl)
-{
-clockx=clx;
-clocky=cly;
-cktext=cltext;
-clocktype=cltype;
-destroyable=dbl;
-clocksound=clockpool.play_2d(find_sound("data/sounds/"+soundpack+"/objects/clocks/"+clocktype+"/*loop*"),me.x,me.y,clockx,clocky,true);
-}
-}
-void clockcheck()
-{
-for(uint i=0; i<clocks.length(); i++)
-{
-if(me.x==clocks[i].clockx and me.y==clocks[i].clocky and key_repeating(KEY_RETURN))
-{
-clocks[i].pressound=clockpool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/clocks/"+clocks[i].clocktype+"/*pres*"),false);
-speak(clocks[i].cktext+get_time(true, false));
-}
-}
-}
-void spawn_clock(int x,int y,string text,string clocktype,bool destroyable)
-{
-clock ck1(x,y,text,clocktype,destroyable);
-clocks.insert_last(ck1);
-}
-void destroy_all_clocks()
-{
-for(uint i=0; i<clocks.length(); i++)
-{
-clockpool.destroy_sound(clocks[i].clocksound);
-}
-clocks.resize(0);
 }
