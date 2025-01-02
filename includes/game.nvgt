@@ -902,354 +902,357 @@ add_shield(name, shielddefence, shieldmode, shieldweight, shieldstrength, maxshi
 }
 }
 
-void game(bool is_building)
-{
-building=is_building;
-gametimer.force(gametime);
-if(building==false and musmode==1) spawn_musicsource(0, maxx*10, 0, maxy*10, mustyp, volume, pitch);
-while(true)
-{
-wait(5);
-update_ambsources(me.x,me.y);
-update_musicambs(me.x,me.y);
-update_sound_pools();
-checkdeath();
-checkloc();
-checkpassages();
-checkpspassages();
-checkwepslots();
-calandercheck();
-clockcheck();
-doorcheck();
-fallcheck();
-hazardcheck();
-mhazardcheck();
-mplatcheck();
-psdoorcheck();
-signcheck();
-spawncheck();
-stairscheck();
-textcheck();
-travelcheck();
-wallcheck();
-animalloop();
-animalzoneloop();
-beltloop();
-bossloop();
-bfloop();
-bulletloop();
-bombloop();
-bombzoneloop();
-cploop();
-dlgloop();
-doorloop();
-eneloop();
-enemiezoneloop();
-forceloop();
-healzoneloop();
-liftloop();
-mineloop();
-menuzoneloop();
-objloop();
-objzoneloop();
-psdoorloop();
-projloop();
-projzoneloop();
-revfxloop();
-robloop();
-robotzoneloop();
-spikeloop();
-telloop();
-timebombloop();
-timedmrcloop();
-timedsrcloop();
-timedtxtloop();
-turretloop();
-vplatloop();
-vehloop();
-zombloop();
-zombiezoneloop();
-if(amsptimer.elapsed>=amsptime and animals.length()<aninum and gamemode==1 and building==false and spawnable==true)
-{
-string[] animaltype=find_directories("data/sounds/"+soundpack+"/npc/normal/animals/*");
-spawn_animal(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, animaltype[random(0,animaltype.length()-1)], true, true, random_bool(), random_bool());
-amsptimer.restart();
+void update_char_attack(const string& filename, double new_attack) {
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();        
+        int attack_pos = string_contains(content, "attack=", 1);
+        if (attack_pos != -1) {
+            int value_start = attack_pos + 7;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_attack = string_trim_sides(content.substr(value_start, value_end));            
+            string old_value = "attack=" + current_attack;
+            string new_value = "attack=" + string(new_attack);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Attack stat updated successfully.");
+                } else {
+                    speak("Failed to write updated attack stat to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Attack stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
 }
-if(emsptimer.elapsed>=emsptime and enemies.length()<eninum and gamemode==2 and building==false and spawnable==true)
-{
-string[] enemietype=find_directories("data/sounds/"+soundpack+"/npc/normal/enemies/*");
-spawn_enemie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, enemietype[random(0,enemietype.length()-1)], true, true, random_bool(), random_bool());
-emsptimer.restart();
+void update_char_defence(const string& filename, double new_defence) {
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();
+        int defence_pos = string_contains(content, "defence=", 1);
+        if (defence_pos != -1) {
+            int value_start = defence_pos + 8;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_defence = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "defence=" + current_defence;
+            string new_value = "defence=" + string(new_defence);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Defence stat updated successfully.");
+                } else {
+                    speak("Failed to write updated defence stat to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Defence stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
 }
-if(prosptimer.elapsed>=prosptime and projectiles.length()<projnum and gamemode==3 and building==false and spawnable==true)
-{
-string[] projtype=find_directories("data/sounds/"+soundpack+"/npc/normal/projectiles/*");
-spawn_projectile(random(0, maxx), 0, random(0, 1), 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), 1, 1*level, projtype[random(0,projtype.length()-1)], true, true);
-prosptimer.restart();
+void update_char_maxhealth(const string& filename, double new_maxhealth) {
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();
+        int maxhealth_pos = string_contains(content, "max health=", 1);
+        if (maxhealth_pos != -1) {
+            int value_start = maxhealth_pos + 11;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_maxhealth = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "max health=" + current_maxhealth;
+            string new_value = "max health=" + string(new_maxhealth);
+            content = string_replace(content, old_value, new_value, true);
+            int health_pos = string_contains(content, "health=", 1);
+            if (health_pos != -1) {
+                value_start = health_pos + 7;
+                value_end = string_contains(content.substr(value_start), "\r\n", 1);
+                if (value_end == -1) value_end = content.length() - value_start;
+                string current_health = string_trim_sides(content.substr(value_start, value_end));
+                old_value = "health=" + current_health;
+                new_value = "health=" + string(new_maxhealth);
+                content = string_replace(content, old_value, new_value, true);
+            }
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Max health and health stats updated successfully.");
+                } else {
+                    speak("Failed to write updated health stats to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Max health stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
 }
-if(robsptimer.elapsed>=robsptime and robots.length()<robnum and gamemode==4 and building==false and spawnable==true)
-{
-string[] robottype=find_directories("data/sounds/"+soundpack+"/npc/normal/robots/*");
-spawn_robot(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, robottype[random(0,robottype.length()-1)], true, true, random_bool(), random_bool());
-robsptimer.restart();
+void update_char_lives(const string& filename, double new_lives) {
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();        
+        int lives_pos = string_contains(content, "lives=", 1);
+        if (lives_pos != -1) {
+            int value_start = lives_pos + 6;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_lives = string_trim_sides(content.substr(value_start, value_end));            
+            string old_value = "lives=" + current_lives;
+            string new_value = "lives=" + string(new_lives);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("lives stat updated successfully.");
+                } else {
+                    speak("Failed to write updated lives stat to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("lives stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
 }
-if(zombsptimer.elapsed>=zombsptime and zombies.length()<zombnum and gamemode==5 and building==false and spawnable==true)
-{
-string[] zombietype=find_directories("data/sounds/"+soundpack+"/npc/normal/zombies/*");
-spawn_zombie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, zombietype[random(0,zombietype.length()-1)], true, true, random_bool(), random_bool());
-zombsptimer.restart();
+void update_wep_ammo(const string& weapontype, const string& weapontype2, double new_ammo) {
+    string filename = "data/layouts/equipments/weapons/" + weapontype + "/" + weapontype2 + "/" + weapontype2 + ".sif";
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();
+        int ammo_pos = string_contains(content, "ammo=", 1);
+        if (ammo_pos != -1) {
+            int value_start = ammo_pos + 5;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_ammo = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "ammo=" + current_ammo;
+            string new_value = "ammo=" + string(new_ammo);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Ammo stat updated successfully.");
+                } else {
+                    speak("Failed to write updated ammo stat to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Ammo stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading: " + filename);
+    }
 }
-if(amsptimer.elapsed>=amsptime and animals.length()<aninum and gamemode==6 and building==false and spawnable==true and  amtype!="")
+void update_wep_hl_range(const string& weapontype, const string& weapontype2, int new_hl_range) {
+    string filename = "data/layouts/equipments/weapons/" + weapontype + "/" + weapontype2 + "/" + weapontype2 + ".sif";
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();
+        int range_pos = string_contains(content, "horizontal range=", 1);
+        if (range_pos != -1) {
+            int value_start = range_pos + 17;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_hl_range = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "horizontal range=" + current_hl_range;
+            string new_value = "horizontal range=" + string(new_hl_range);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Horizontal range stat updated successfully.");
+                } else {
+                    speak("Failed to write updated horizontal range stat to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Horizontal range stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading: " + filename);
+    }
+}
+void update_wep_vl_range(const string& weapontype, const string& weapontype2, int new_vl_range) {
+    string filename = "data/layouts/equipments/weapons/" + weapontype + "/" + weapontype2 + "/" + weapontype2 + ".sif";
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();
+        int range_pos = string_contains(content, "vertical range=", 1);
+        if (range_pos != -1) {
+            int value_start = range_pos + 15;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_vl_range = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "vertical range=" + current_vl_range;
+            string new_value = "vertical range=" + string(new_vl_range);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Vertical range stat updated successfully.");
+                } else {
+                    speak("Failed to write updated vertical range stat to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Vertical range stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading: " + filename);
+    }
+}
+void update_shield_max_strength(const string& filename, double new_max_strength) {
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();
+        int max_strength_pos = string_contains(content, "max shield strength=", 1);
+        if (max_strength_pos != -1) {
+            int value_start = max_strength_pos + 20;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_max_strength = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "max shield strength=" + current_max_strength;
+            string new_value = "max shield strength=" + string(new_max_strength);
+            content = string_replace(content, old_value, new_value, true);
+            int strength_pos = string_contains(content, "shield strength=", 1);
+            if (strength_pos != -1) {
+                value_start = strength_pos + 16;
+                value_end = string_contains(content.substr(value_start), "\r\n", 1);
+                if (value_end == -1) value_end = content.length() - value_start;
+                string current_strength = string_trim_sides(content.substr(value_start, value_end));
+                old_value = "shield strength=" + current_strength;
+                new_value = "shield strength=" + string(new_max_strength);
+                content = string_replace(content, old_value, new_value, true);
+            }
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Max shield strength and shield strength stats updated successfully.");
+                } else {
+                    speak("Failed to write updated shield strength stats to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Max shield strength stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
+}
+void update_shield_defence(const string& filename, double new_shield_defence) {
+    if (info.open(filename, "r")) {
+        string content = info.read();
+        info.close();
+        int shield_defence_pos = string_contains(content, "defence=", 1);
+        if (shield_defence_pos != -1) {
+            int value_start = shield_defence_pos + 8;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_shield_defence = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "defence=" + current_shield_defence;
+            string new_value = "defence=" + string(new_shield_defence);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open(filename, "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Shield defence updated successfully.");
+                } else {
+                    speak("Failed to write updated shield defence to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Shield defence not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
+}
+
+character@ get_default_char()
 {
-string[] animaltype=find_directories("data/sounds/"+soundpack+"/npc/normal/animals/*");
-if(amtype!="" and animaltype.find(amtype)>-1)
+if(charas.is_empty())
 {
-spawn_animal(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, amtype, true, true, random_bool(), random_bool());
-amsptimer.restart();
+return null;
+}
+for(uint i=0; i<charas.length(); i++)
+{
+if(charas[i].name == chartype)
+{
+return charas[i];
 }
 }
-if(emsptimer.elapsed>=emsptime and enemies.length()<eninum and gamemode==7 and building==false and spawnable==true and  emtype!="")
+return null;
+}
+shield@ get_default_shield()
 {
-string[] enemietype=find_directories("data/sounds/"+soundpack+"/npc/normal/enemies/*");
-if(emtype!="" and enemietype.find(emtype)>-1)
+if(shields.is_empty())
 {
-spawn_enemie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, emtype, true, true, random_bool(), random_bool());
-emsptimer.restart();
+return null;
+}
+for(uint i=0; i<shields.length(); i++)
+{
+if(shields[i].name=="large shield")
+{
+return shields[i];
 }
 }
-if(prosptimer.elapsed>=prosptime and projectiles.length()<projnum and gamemode==8 and building==false and spawnable==true and  potype!="")
+return null;
+}
+weapon@ get_default_weapon()
 {
-string[] projtype=find_directories("data/sounds/"+soundpack+"/npc/normal/projectiles/*");
-if(potype!="" and projtype.find(potype)>-1)
+if(weapons.is_empty())
 {
-spawn_projectile(random(0, maxx), 0, random(0, 1), 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), 1, 1*level, potype, true, true);
-prosptimer.restart();
+return null;
+}
+for(uint i=0; i<weapons.length(); i++)
+{
+if(weapons[i].name=="fist")
+{
+return weapons[i];
 }
 }
-if(robsptimer.elapsed>=robsptime and robots.length()<robnum and gamemode==9 and building==false and spawnable==true and  rotype!="")
-{
-string[] robottype=find_directories("data/sounds/"+soundpack+"/npc/normal/robots/*");
-if(rotype!="" and robottype.find(rotype)>-1)
-{
-spawn_robot(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, rotype, true, true, random_bool(), random_bool());
-robsptimer.restart();
+return null;
 }
-}
-if(zombsptimer.elapsed>=zombsptime and zombies.length()<zombnum and gamemode==10 and building==false and spawnable==true and  zotype!="")
+
+void game_input()
 {
-string[] zombietype=find_directories("data/sounds/"+soundpack+"/npc/normal/zombies/*");
-if(zotype!="" and zombietype.find(zotype)>-1)
-{
-spawn_zombie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, zotype, true, true, random_bool(), random_bool());
-zombsptimer.restart();
-}
-}
-if(heartsound==1 and hearttimer.elapsed>=hearttime)
-{
-if(hearttype==1)
-{
-if(heartsound==1) heartslot=p.play_stationary("heartbeat1.wav", false);
-hearttimer.restart();
-}
-}
-if(heartsound==1 and hearttimer.elapsed>=hearttime)
-{
-if(hearttype==2)
-{
-if(heartsound==1) heartslot=p.play_stationary("heartbeat2.wav",false);
-hearttimer.restart();
-}
-}
-if(heartsound==1 and hearttimer.elapsed>=hearttime)
-{
-if(hearttype==3)
-{
-if(heartsound==1) heartslot=p.play_stationary("heartbeat3.wav",false);
-hearttimer.restart();
-}
-}
-if(heartsound==1 and hearttimer.elapsed>=hearttime)
-{
-if(hearttype==4)
-{
-if(heartsound==1) heartslot=p.play_stationary("hartmon4.ogg",false);
-hearttimer.restart();
-}
-}
-if(heartsound==1 and hearttimer.elapsed>=hearttime)
-{
-if(hearttype==5)
-{
-if(heartsound==1) heartslot=p.play_stationary("hartmon5.ogg",false);
-hearttimer.restart();
-}
-}
-if (jumping==1)
-{
-movetime=airtime;
-}
-else if(alt_is_down())
-{
-movetime=runtime;
-}
-else
-{
-movetime=walktime;
-}
-if(modspeed>=1)
-{
-airtime=250/modspeed+shieldweight+wepweight;
-camtime=250/modspeed+shieldweight+wepweight;
-falltime=250/modspeed-shieldweight-wepweight;
-runtime=500/modspeed+shieldweight+wepweight;
-walktime=1000/modspeed+shieldweight+wepweight;
-}
-if(xp>=xprequiered)
-{
-xprequiered=(levmod*(level*(level*4)));
-if(charlevsound==1) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*lev*"),false);
-if(gamemode==1 and building==false) aninum+=1;
-if(gamemode==2 and building==false) eninum+=1;
-if(gamemode==3 and building==false) projnum+=1;
-if(gamemode==4 and building==false) robnum+=1;
-if(gamemode==5 and building==false) zombnum+=1;
-if(gamemode==6 and building==false) aninum+=1;
-if(gamemode==7 and building==false) eninum+=1;
-if(gamemode==8 and building==false) projnum+=1;
-if(gamemode==9 and building==false) robnum+=1;
-if(gamemode==10 and building==false) zombnum+=1;
-level+=1;
-points+=100*level*levmod-100;
-}
-if(health<=health and hprestoretimer.elapsed>=hprestoretime and healable==true)
-{
-if(hprestoration==1)
-{
-health+=maxhealth/4;
-hearttime+=maxhealth/4;
-if(charhealsound3==1 and health>=maxhealth) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*healstop*"),false);
-hprestoretimer.restart();
-}
-}
-if(shieldstrength<=shieldstrength and sprestoretimer.elapsed>=sprestoretime and healable==true)
-{
-if(sprestoration==1)
-{
-shieldstrength+=maxshieldstrength/4;
-if(charhealsound3==1 and shieldstrength>=maxshieldstrength) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*healstop*"),false);
-sprestoretimer.restart();
-}
-}
-if(shieldstrength<=0)
-{
-p.destroy_sound(shieldloop);
-p.destroy_sound(shieldslot);
-shieldslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*break*"),false,0,0,shieldvolume,shieldpitch,false);
-shieldstrength=maxshieldstrength;
-fireable=true;
-jumpable=true;
-moveable=true;
-shieldon=0;
-shieldweight=1;
-shieldtype="none";
-}
-if(health<=0)
-{
-if(lifecard>=2)
-{
-if(charlifesound==1) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*life*"),false);
-lifecard-=1;
-health=maxhealth;
-hearttime=maxhealth;
-}
-}
-if(animals.length()>=50 or enemies.length()>=50 or projectiles.length()>=50 or robots.length()>=50 or zombies.length()>=50)
-{
-aninum=50;
-eninum=50;
-projnum=50;
-robnum=50;
-zombnum=50;
-}
-if(me.x<=0)
-{
-me.x=0;
-}
-if(me.x>=maxx)
-{
-me.x=maxx;
-}
-if(me.y<=0)
-{
-me.y=0;
-}
-if(me.y>=maxy)
-{
-me.y=maxy;
-}
-if(health<=0)
-{
-health=0;
-hearttime=0;
-}
-if(health>=maxhealth)
-{
-health=maxhealth;
-hearttime=maxhealth;
-}
-if(hearttime<=100)
-{
-hearttime=100;
-}
-if(shieldstrength<=0)
-{
-shieldstrength=0;
-}
-if(shieldstrength>=maxshieldstrength)
-{
-shieldstrength=maxshieldstrength;
-}
-if(attack<=0)
-{
-attack=0;
-}
-if(defence<=0)
-{
-defence=0;
-}
-if(lifecard<=1)
-{
-lifecard=1;
-}
-if(points<=0)
-{
-points=0;
-}
-if(shielddefence<=0)
-{
-shielddefence=0;
-}
-if(weprange<=0)
-{
-weprange=0;
-}
-if(weprange2<=0)
-{
-weprange2=0;
-}
-if(health>=maxhealth and hprestoration==1)
-{
-hprestoration=0;
-p.destroy_sound(autoslot);
-health=maxhealth;
-hearttime=maxhealth;
-}
-if(shieldstrength>=maxshieldstrength and sprestoration==1)
-{
-sprestoration=0;
-p.destroy_sound(autoslot);
-shieldstrength=maxshieldstrength;
-}
 if(key_pressed(KEY_SLASH) and building==true)
 {
 comparse();
@@ -2106,6 +2109,365 @@ shieldon = 0;
 }
 }
 }
+}
+
+void game(bool is_building)
+{
+building=is_building;
+gametimer.force(gametime);
+if(building==false and musmode==1) spawn_musicsource(0, maxx*10, 0, maxy*10, mustyp, volume, pitch);
+form.reset();
+form.create_window("", false, false);
+int controlgame=form.create_keyboard_area("game");
+form.focus(controlgame);
+while(true)
+{
+form.monitor();
+wait(5);
+update_ambsources(me.x,me.y);
+update_musicambs(me.x,me.y);
+update_sound_pools();
+checkdeath();
+checkloc();
+checkpassages();
+checkpspassages();
+calandercheck();
+clockcheck();
+doorcheck();
+fallcheck();
+hazardcheck();
+mhazardcheck();
+mplatcheck();
+psdoorcheck();
+signcheck();
+spawncheck();
+stairscheck();
+textcheck();
+travelcheck();
+wallcheck();
+animalloop();
+animalzoneloop();
+beltloop();
+bossloop();
+bfloop();
+bulletloop();
+bombloop();
+bombzoneloop();
+cploop();
+dlgloop();
+doorloop();
+eneloop();
+enemiezoneloop();
+forceloop();
+healzoneloop();
+liftloop();
+mineloop();
+menuzoneloop();
+objloop();
+objzoneloop();
+psdoorloop();
+projloop();
+projzoneloop();
+revfxloop();
+robloop();
+robotzoneloop();
+spikeloop();
+telloop();
+timebombloop();
+timedmrcloop();
+timedsrcloop();
+timedtxtloop();
+turretloop();
+vplatloop();
+vehloop();
+zombloop();
+zombiezoneloop();
+if(amsptimer.elapsed>=amsptime and animals.length()<aninum and gamemode==1 and building==false and spawnable==true)
+{
+string[] animaltype=find_directories("data/sounds/"+soundpack+"/npc/normal/animals/*");
+spawn_animal(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, animaltype[random(0,animaltype.length()-1)], true, true, random_bool(), random_bool());
+amsptimer.restart();
+}
+if(emsptimer.elapsed>=emsptime and enemies.length()<eninum and gamemode==2 and building==false and spawnable==true)
+{
+string[] enemietype=find_directories("data/sounds/"+soundpack+"/npc/normal/enemies/*");
+spawn_enemie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, enemietype[random(0,enemietype.length()-1)], true, true, random_bool(), random_bool());
+emsptimer.restart();
+}
+if(prosptimer.elapsed>=prosptime and projectiles.length()<projnum and gamemode==3 and building==false and spawnable==true)
+{
+string[] projtype=find_directories("data/sounds/"+soundpack+"/npc/normal/projectiles/*");
+spawn_projectile(random(0, maxx), 0, random(0, 1), 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), 1, 1*level, projtype[random(0,projtype.length()-1)], true, true);
+prosptimer.restart();
+}
+if(robsptimer.elapsed>=robsptime and robots.length()<robnum and gamemode==4 and building==false and spawnable==true)
+{
+string[] robottype=find_directories("data/sounds/"+soundpack+"/npc/normal/robots/*");
+spawn_robot(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, robottype[random(0,robottype.length()-1)], true, true, random_bool(), random_bool());
+robsptimer.restart();
+}
+if(zombsptimer.elapsed>=zombsptime and zombies.length()<zombnum and gamemode==5 and building==false and spawnable==true)
+{
+string[] zombietype=find_directories("data/sounds/"+soundpack+"/npc/normal/zombies/*");
+spawn_zombie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, zombietype[random(0,zombietype.length()-1)], true, true, random_bool(), random_bool());
+zombsptimer.restart();
+}
+if(amsptimer.elapsed>=amsptime and animals.length()<aninum and gamemode==6 and building==false and spawnable==true and  amtype!="")
+{
+string[] animaltype=find_directories("data/sounds/"+soundpack+"/npc/normal/animals/*");
+if(amtype!="" and animaltype.find(amtype)>-1)
+{
+spawn_animal(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, amtype, true, true, random_bool(), random_bool());
+amsptimer.restart();
+}
+}
+if(emsptimer.elapsed>=emsptime and enemies.length()<eninum and gamemode==7 and building==false and spawnable==true and  emtype!="")
+{
+string[] enemietype=find_directories("data/sounds/"+soundpack+"/npc/normal/enemies/*");
+if(emtype!="" and enemietype.find(emtype)>-1)
+{
+spawn_enemie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, emtype, true, true, random_bool(), random_bool());
+emsptimer.restart();
+}
+}
+if(prosptimer.elapsed>=prosptime and projectiles.length()<projnum and gamemode==8 and building==false and spawnable==true and  potype!="")
+{
+string[] projtype=find_directories("data/sounds/"+soundpack+"/npc/normal/projectiles/*");
+if(potype!="" and projtype.find(potype)>-1)
+{
+spawn_projectile(random(0, maxx), 0, random(0, 1), 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), 1, 1*level, potype, true, true);
+prosptimer.restart();
+}
+}
+if(robsptimer.elapsed>=robsptime and robots.length()<robnum and gamemode==9 and building==false and spawnable==true and  rotype!="")
+{
+string[] robottype=find_directories("data/sounds/"+soundpack+"/npc/normal/robots/*");
+if(rotype!="" and robottype.find(rotype)>-1)
+{
+spawn_robot(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, rotype, true, true, random_bool(), random_bool());
+robsptimer.restart();
+}
+}
+if(zombsptimer.elapsed>=zombsptime and zombies.length()<zombnum and gamemode==10 and building==false and spawnable==true and  zotype!="")
+{
+string[] zombietype=find_directories("data/sounds/"+soundpack+"/npc/normal/zombies/*");
+if(zotype!="" and zombietype.find(zotype)>-1)
+{
+spawn_zombie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, zotype, true, true, random_bool(), random_bool());
+zombsptimer.restart();
+}
+}
+if(heartsound==1 and hearttimer.elapsed>=hearttime)
+{
+if(hearttype==1)
+{
+if(heartsound==1) heartslot=p.play_stationary("heartbeat1.wav", false);
+hearttimer.restart();
+}
+}
+if(heartsound==1 and hearttimer.elapsed>=hearttime)
+{
+if(hearttype==2)
+{
+if(heartsound==1) heartslot=p.play_stationary("heartbeat2.wav",false);
+hearttimer.restart();
+}
+}
+if(heartsound==1 and hearttimer.elapsed>=hearttime)
+{
+if(hearttype==3)
+{
+if(heartsound==1) heartslot=p.play_stationary("heartbeat3.wav",false);
+hearttimer.restart();
+}
+}
+if(heartsound==1 and hearttimer.elapsed>=hearttime)
+{
+if(hearttype==4)
+{
+if(heartsound==1) heartslot=p.play_stationary("hartmon4.ogg",false);
+hearttimer.restart();
+}
+}
+if(heartsound==1 and hearttimer.elapsed>=hearttime)
+{
+if(hearttype==5)
+{
+if(heartsound==1) heartslot=p.play_stationary("hartmon5.ogg",false);
+hearttimer.restart();
+}
+}
+if (jumping==1)
+{
+movetime=airtime;
+}
+else if(alt_is_down())
+{
+movetime=runtime;
+}
+else
+{
+movetime=walktime;
+}
+if(modspeed>=1)
+{
+airtime=250/modspeed+shieldweight+wepweight;
+camtime=250/modspeed+shieldweight+wepweight;
+falltime=250/modspeed-shieldweight-wepweight;
+runtime=500/modspeed+shieldweight+wepweight;
+walktime=1000/modspeed+shieldweight+wepweight;
+}
+if(xp>=xprequiered)
+{
+xprequiered=(levmod*(level*(level*4)));
+if(charlevsound==1) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*lev*"),false);
+if(gamemode==1 and building==false) aninum+=1;
+if(gamemode==2 and building==false) eninum+=1;
+if(gamemode==3 and building==false) projnum+=1;
+if(gamemode==4 and building==false) robnum+=1;
+if(gamemode==5 and building==false) zombnum+=1;
+if(gamemode==6 and building==false) aninum+=1;
+if(gamemode==7 and building==false) eninum+=1;
+if(gamemode==8 and building==false) projnum+=1;
+if(gamemode==9 and building==false) robnum+=1;
+if(gamemode==10 and building==false) zombnum+=1;
+level+=1;
+points+=100*level*levmod-100;
+}
+if(health<=health and hprestoretimer.elapsed>=hprestoretime and healable==true)
+{
+if(hprestoration==1)
+{
+health+=maxhealth/4;
+hearttime+=maxhealth/4;
+if(charhealsound3==1 and health>=maxhealth) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*healstop*"),false);
+hprestoretimer.restart();
+}
+}
+if(shieldstrength<=shieldstrength and sprestoretimer.elapsed>=sprestoretime and healable==true)
+{
+if(sprestoration==1)
+{
+shieldstrength+=maxshieldstrength/4;
+if(charhealsound3==1 and shieldstrength>=maxshieldstrength) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*healstop*"),false);
+sprestoretimer.restart();
+}
+}
+if(shieldstrength<=0)
+{
+p.destroy_sound(shieldloop);
+p.destroy_sound(shieldslot);
+shieldslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*break*"),false,0,0,shieldvolume,shieldpitch,false);
+shieldstrength=maxshieldstrength;
+fireable=true;
+jumpable=true;
+moveable=true;
+shieldon=0;
+shieldweight=1;
+shieldtype="none";
+}
+if(health<=0)
+{
+if(lifecard>=2)
+{
+if(charlifesound==1) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*life*"),false);
+lifecard-=1;
+health=maxhealth;
+hearttime=maxhealth;
+}
+}
+if(animals.length()>=50 or enemies.length()>=50 or projectiles.length()>=50 or robots.length()>=50 or zombies.length()>=50)
+{
+aninum=50;
+eninum=50;
+projnum=50;
+robnum=50;
+zombnum=50;
+}
+if(me.x<=0)
+{
+me.x=0;
+}
+if(me.x>=maxx)
+{
+me.x=maxx;
+}
+if(me.y<=0)
+{
+me.y=0;
+}
+if(me.y>=maxy)
+{
+me.y=maxy;
+}
+if(health<=0)
+{
+health=0;
+hearttime=0;
+}
+if(health>=maxhealth)
+{
+health=maxhealth;
+hearttime=maxhealth;
+}
+if(hearttime<=100)
+{
+hearttime=100;
+}
+if(shieldstrength<=0)
+{
+shieldstrength=0;
+}
+if(shieldstrength>=maxshieldstrength)
+{
+shieldstrength=maxshieldstrength;
+}
+if(attack<=0)
+{
+attack=0;
+}
+if(defence<=0)
+{
+defence=0;
+}
+if(lifecard<=1)
+{
+lifecard=1;
+}
+if(points<=0)
+{
+points=0;
+}
+if(shielddefence<=0)
+{
+shielddefence=0;
+}
+if(weprange<=0)
+{
+weprange=0;
+}
+if(weprange2<=0)
+{
+weprange2=0;
+}
+if(health>=maxhealth and hprestoration==1)
+{
+hprestoration=0;
+p.destroy_sound(autoslot);
+health=maxhealth;
+hearttime=maxhealth;
+}
+if(shieldstrength>=maxshieldstrength and sprestoration==1)
+{
+sprestoration=0;
+p.destroy_sound(autoslot);
+shieldstrength=maxshieldstrength;
+}
+if(form.get_current_focus()==controlgame)
+{
+checkwepslots();
+game_input();
+}
 if(key_repeating(KEY_ESCAPE) and quittable==true)
 {
 if(gamxit==0)
@@ -2153,353 +2515,4 @@ speak("canceled");
 }
 }
 }
-}
-
-void update_char_attack(const string& filename, double new_attack) {
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();        
-        int attack_pos = string_contains(content, "attack=", 1);
-        if (attack_pos != -1) {
-            int value_start = attack_pos + 7;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_attack = string_trim_sides(content.substr(value_start, value_end));            
-            string old_value = "attack=" + current_attack;
-            string new_value = "attack=" + string(new_attack);
-            content = string_replace(content, old_value, new_value, true);
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Attack stat updated successfully.");
-                } else {
-                    speak("Failed to write updated attack stat to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Attack stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading.");
-    }
-}
-void update_char_defence(const string& filename, double new_defence) {
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();
-        int defence_pos = string_contains(content, "defence=", 1);
-        if (defence_pos != -1) {
-            int value_start = defence_pos + 8;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_defence = string_trim_sides(content.substr(value_start, value_end));
-            string old_value = "defence=" + current_defence;
-            string new_value = "defence=" + string(new_defence);
-            content = string_replace(content, old_value, new_value, true);
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Defence stat updated successfully.");
-                } else {
-                    speak("Failed to write updated defence stat to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Defence stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading.");
-    }
-}
-void update_char_maxhealth(const string& filename, double new_maxhealth) {
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();
-        int maxhealth_pos = string_contains(content, "max health=", 1);
-        if (maxhealth_pos != -1) {
-            int value_start = maxhealth_pos + 11;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_maxhealth = string_trim_sides(content.substr(value_start, value_end));
-            string old_value = "max health=" + current_maxhealth;
-            string new_value = "max health=" + string(new_maxhealth);
-            content = string_replace(content, old_value, new_value, true);
-            int health_pos = string_contains(content, "health=", 1);
-            if (health_pos != -1) {
-                value_start = health_pos + 7;
-                value_end = string_contains(content.substr(value_start), "\r\n", 1);
-                if (value_end == -1) value_end = content.length() - value_start;
-                string current_health = string_trim_sides(content.substr(value_start, value_end));
-                old_value = "health=" + current_health;
-                new_value = "health=" + string(new_maxhealth);
-                content = string_replace(content, old_value, new_value, true);
-            }
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Max health and health stats updated successfully.");
-                } else {
-                    speak("Failed to write updated health stats to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Max health stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading.");
-    }
-}
-void update_char_lives(const string& filename, double new_lives) {
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();        
-        int lives_pos = string_contains(content, "lives=", 1);
-        if (lives_pos != -1) {
-            int value_start = lives_pos + 6;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_lives = string_trim_sides(content.substr(value_start, value_end));            
-            string old_value = "lives=" + current_lives;
-            string new_value = "lives=" + string(new_lives);
-            content = string_replace(content, old_value, new_value, true);
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("lives stat updated successfully.");
-                } else {
-                    speak("Failed to write updated lives stat to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("lives stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading.");
-    }
-}
-void update_wep_ammo(const string& weapontype, const string& weapontype2, double new_ammo) {
-    string filename = "data/layouts/equipments/weapons/" + weapontype + "/" + weapontype2 + "/" + weapontype2 + ".sif";
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();
-        int ammo_pos = string_contains(content, "ammo=", 1);
-        if (ammo_pos != -1) {
-            int value_start = ammo_pos + 5;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_ammo = string_trim_sides(content.substr(value_start, value_end));
-            string old_value = "ammo=" + current_ammo;
-            string new_value = "ammo=" + string(new_ammo);
-            content = string_replace(content, old_value, new_value, true);
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Ammo stat updated successfully.");
-                } else {
-                    speak("Failed to write updated ammo stat to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Ammo stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading: " + filename);
-    }
-}
-void update_wep_hl_range(const string& weapontype, const string& weapontype2, int new_hl_range) {
-    string filename = "data/layouts/equipments/weapons/" + weapontype + "/" + weapontype2 + "/" + weapontype2 + ".sif";
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();
-        int range_pos = string_contains(content, "horizontal range=", 1);
-        if (range_pos != -1) {
-            int value_start = range_pos + 17;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_hl_range = string_trim_sides(content.substr(value_start, value_end));
-            string old_value = "horizontal range=" + current_hl_range;
-            string new_value = "horizontal range=" + string(new_hl_range);
-            content = string_replace(content, old_value, new_value, true);
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Horizontal range stat updated successfully.");
-                } else {
-                    speak("Failed to write updated horizontal range stat to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Horizontal range stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading: " + filename);
-    }
-}
-void update_wep_vl_range(const string& weapontype, const string& weapontype2, int new_vl_range) {
-    string filename = "data/layouts/equipments/weapons/" + weapontype + "/" + weapontype2 + "/" + weapontype2 + ".sif";
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();
-        int range_pos = string_contains(content, "vertical range=", 1);
-        if (range_pos != -1) {
-            int value_start = range_pos + 15;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_vl_range = string_trim_sides(content.substr(value_start, value_end));
-            string old_value = "vertical range=" + current_vl_range;
-            string new_value = "vertical range=" + string(new_vl_range);
-            content = string_replace(content, old_value, new_value, true);
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Vertical range stat updated successfully.");
-                } else {
-                    speak("Failed to write updated vertical range stat to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Vertical range stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading: " + filename);
-    }
-}
-void update_shield_max_strength(const string& filename, double new_max_strength) {
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();
-        int max_strength_pos = string_contains(content, "max shield strength=", 1);
-        if (max_strength_pos != -1) {
-            int value_start = max_strength_pos + 20;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_max_strength = string_trim_sides(content.substr(value_start, value_end));
-            string old_value = "max shield strength=" + current_max_strength;
-            string new_value = "max shield strength=" + string(new_max_strength);
-            content = string_replace(content, old_value, new_value, true);
-            int strength_pos = string_contains(content, "shield strength=", 1);
-            if (strength_pos != -1) {
-                value_start = strength_pos + 16;
-                value_end = string_contains(content.substr(value_start), "\r\n", 1);
-                if (value_end == -1) value_end = content.length() - value_start;
-                string current_strength = string_trim_sides(content.substr(value_start, value_end));
-                old_value = "shield strength=" + current_strength;
-                new_value = "shield strength=" + string(new_max_strength);
-                content = string_replace(content, old_value, new_value, true);
-            }
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Max shield strength and shield strength stats updated successfully.");
-                } else {
-                    speak("Failed to write updated shield strength stats to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Max shield strength stat not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading.");
-    }
-}
-void update_shield_defence(const string& filename, double new_shield_defence) {
-    if (info.open(filename, "r")) {
-        string content = info.read();
-        info.close();
-        int shield_defence_pos = string_contains(content, "defence=", 1);
-        if (shield_defence_pos != -1) {
-            int value_start = shield_defence_pos + 8;
-            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-            if (value_end == -1) value_end = content.length() - value_start;
-            string current_shield_defence = string_trim_sides(content.substr(value_start, value_end));
-            string old_value = "defence=" + current_shield_defence;
-            string new_value = "defence=" + string(new_shield_defence);
-            content = string_replace(content, old_value, new_value, true);
-            if (info.open(filename, "w")) {
-                uint bytes_written = info.write(content);
-                info.close();
-                if (bytes_written == content.length()) {
-                    speak("Shield defence updated successfully.");
-                } else {
-                    speak("Failed to write updated shield defence to file.");
-                }
-            } else {
-                speak("Failed to open file for writing.");
-            }
-        } else {
-            speak("Shield defence not found in file.");
-        }
-    } else {
-        speak("Failed to open file for reading.");
-    }
-}
-
-character@ get_default_char()
-{
-if(charas.is_empty())
-{
-return null;
-}
-for(uint i=0; i<charas.length(); i++)
-{
-if(charas[i].name == chartype)
-{
-return charas[i];
-}
-}
-return null;
-}
-shield@ get_default_shield()
-{
-if(shields.is_empty())
-{
-return null;
-}
-for(uint i=0; i<shields.length(); i++)
-{
-if(shields[i].name=="large shield")
-{
-return shields[i];
-}
-}
-return null;
-}
-weapon@ get_default_weapon()
-{
-if(weapons.is_empty())
-{
-return null;
-}
-for(uint i=0; i<weapons.length(); i++)
-{
-if(weapons[i].name=="fist")
-{
-return weapons[i];
-}
-}
-return null;
 }

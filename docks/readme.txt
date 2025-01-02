@@ -185,11 +185,3 @@ spawn.ogg: This sound is played when an entity is being spawned.
 step.ogg: This sound is played when an entity is moving.
 taunt.ogg: This sound is played when an entity is taunting your character.
 tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of a map.
-
-object sound listing
-break.ogg: This sound is played when an object is being broken.
-loop.ogg: This sound is played when an object is being looped.
-fall.ogg: This sound is played when a regular bomb is falling.
-land.ogg: This sound is played when a regular bomb lands on your character.
-pressed.ogg: This sound is played when a calander, clock, and sign is being triggered.
-get.ogg: This sound is played when a checkpoint is being grabbed.
