@@ -102,7 +102,7 @@ Letter, V: Opens the points menu, if pressed.
 Creating sound packs.
 This game allows you to create customizeable sound packs that you can use in various situations.
 
-Character sound listing
+Character sound listing: 26 total.
 buy.ogg: This sound is played when your character purchases upgrades.
 cameraair.ogg: This sound is played when air is detected while your character uses the camera.
 camerahazard.ogg: This sound is played when a hazard is detected while your character uses the camera.
@@ -130,7 +130,7 @@ turn.ogg: This sound is played when your character turns on the spot.
 xtel.ogg: This sound is played when your character teleports on the x axes of a map.
 ytel.ogg: This sound is played when your character teleports on the y axes of a map.
 
-Item sound listing.
+Item sound listing: 7 total.
 break.ogg: This sound is played when an item is being broken.
 draw.ogg: This sound is played when an item is being drawn.
 drop.ogg: This sound is played when an item is being dropped.
@@ -139,7 +139,7 @@ get.ogg: This sound is played when an item is being grabbed.
 hit.ogg: This sound is played when an item is used.
 loop.ogg: This sound is played when an item is being looped.
 
-Shield sound listing.
+Shield sound listing: 6 total.
 break.ogg: This sound is played when a shield is being broken.
 draw.ogg: This sound is played when a shield is being drawn.
 hit.ogg: This sound is played when a shield is being hit.
@@ -147,7 +147,7 @@ loop.ogg: This sound is played when a shield is being looped while wearing it.
 remove.ogg: This sound is played when a shield is being removed.
 wear.ogg: This sound is played when a shield is being worn.
 
-Weapon sound listing.
+Weapon sound listing: 8 total.
 draw.ogg: This sound is played when a weapon is being drawn.
 empty.ogg: This sound is played when a non melee weapon is being emptyed.
 fire.ogg: This sound is played when a weapon is being used.
@@ -157,7 +157,7 @@ reload.ogg: This sound is played when a non melee weapon is being reloaded with 
 rico.ogg: This sound is played when a weapon is being ricocheted.
 shell.ogg: This sound is played when a non melee weapon dropps ammo shells.
 
-Menu sound listing.
+Menu sound listing: 7 total.
 click.ogg: This sound is played when you go through menu items.
 close.ogg: This sound is played when a menu is being closed.
 edge.ogg: This sound is played when a menu has reached a boundary.
@@ -166,14 +166,14 @@ music.ogg: This sound is played when a menu has music.
 open.ogg: This sound is played when a menu is being opened.
 speaker.ogg: This sound is played when a menu has a speaker test option.
 
-Keyboard sound listing
+Keyboard sound listing: 5 total.
 cap.ogg: This sound is played when a capital letter is being typed on the keyboard.
 delete.ogg: This sound is played when a character is being deleted on the keyboard.
 return.ogg: This sound is played when a new line character is being typed on the keyboard.
 space.ogg: This sound is played when a space character is being typed on the keyboard.
 type.ogg: This sound is played when characters excluding spaces and new lines are being typed on the keyboard.
 
-Npc sound listing.
+Npc sound listing: 11 total.
 death.ogg: This sound is played when an entity dies.
 heal.ogg: This sound is played when a boss enemy is healing.
 hit.ogg: This sound is played when an entity hits your character.
