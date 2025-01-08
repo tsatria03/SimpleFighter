@@ -1,0 +1,90 @@
+crush_clamp@[]crush_clamps(0);
+class crush_clamp
+{
+int crux; // x position
+int cruy; // y position
+int cruange; // the moving range for the clamps
+timer crumove; // timer for movement
+int crutime; // the duration for the timer
+string crusound1, crusound2, crusound3, crusound4, crusound5, crusound6;
+int lcru; // the left crush clamp position
+int rcru; // the right crush clamp position
+int lcrudir;
+
+crush_clamp(int x, int y, int range, int direction, int time, string sound1, string sound2)
+{
+crux = x;
+cruy = y;
+cruange = range;
+crutime = time; // Set the timer duration
+crusound1 = sound1;
+crusound2 = sound2;
+lcru = crux - cruange;
+rcru = crux + cruange;
+}
+};
+void crushloop()
+{
+for (uint i = 0; i < crush_clamps.length(); i++)
+{
+// Moving left clamp if lcrudir is 0 (towards the right)
+if (crush_clamps[i].lcru < crush_clamps[i].rcru && 
+crush_clamps[i].crumove.elapsed >= crush_clamps[i].crutime && 
+crush_clamps[i].lcrudir == 0)
+{
+// Play sound for left clamp moving
+// playSound(crush_clamps[i].crusound1);
+
+crush_clamps[i].lcru += 1;  // Move left clamp towards right
+crush_clamps[i].crumove.restart();  // Restart timer
+}
+
+// Moving right clamp if rcrudir is 0 (towards the left)
+if (crush_clamps[i].rcru > crush_clamps[i].lcru && 
+crush_clamps[i].crumove.elapsed >= crush_clamps[i].crutime && 
+crush_clamps[i].rcrudir == 0)
+{
+// Play sound for right clamp moving
+// playSound(crush_clamps[i].crusound2);
+
+crush_clamps[i].rcru -= 1;  // Move right clamp towards left
+crush_clamps[i].crumove.restart();  // Restart timer
+}
+
+// When both clamps reach each other (collision)
+if (crush_clamps[i].lcru == crush_clamps[i].rcru)
+{
+// Play the crash sound
+
+// Switch directions: left goes left, right goes right
+crush_clamps[i].lcrudir = 1;  // Left clamp should move left
+crush_clamps[i].rcrudir = 1;  // Right clamp should move right
+}
+// Moving left clamp back to the left if lcrudir is 1 (expand outwards)
+if (crush_clamps[i].lcru > (crush_clamps[i].crux - crush_clamps[i].cruange) && 
+crush_clamps[i].crumove.elapsed >= crush_clamps[i].crutime && 
+crush_clamps[i].lcrudir == 1)
+{
+crush_clamps[i].lcru -= 1;  // Move left clamp outwards
+crush_clamps[i].crumove.restart();  // Restart timer
+}
+
+// Moving right clamp back to the right if rcrudir is 1 (expand outwards)
+if (crush_clamps[i].rcru < (crush_clamps[i].crux + crush_clamps[i].cruange) && 
+crush_clamps[i].crumove.elapsed >= crush_clamps[i].crutime && 
+crush_clamps[i].rcrudir == 1)
+{
+crush_clamps[i].rcru += 1;  // Move right clamp outwards
+crush_clamps[i].crumove.restart();  // Restart timer
+}
+// When clamps reach maximum expand limit, switch direction back to 0
+if (crush_clamps[i].lcru == (crush_clamps[i].crux - crush_clamps[i].cruange) && 
+crush_clamps[i].rcru == (crush_clamps[i].crux + crush_clamps[i].cruange))
+{
+// Play expand limit sound(clamp_click.ogg)
+// Switch directions: left goes right, right goes left
+crush_clamps[i].lcrudir = 0;  // Left clamp should move right
+crush_clamps[i].rcrudir = 0;  // Right clamp should move left
+}
+}
+}
