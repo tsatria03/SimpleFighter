@@ -3,11 +3,11 @@ door@[]doors(0);
 class door
 {
 bool automatic, destroyable, is_moving=false;
+int closesound, defsound, destsound, doorsound, hurtsound, movesound, opensound;
 int startx, starty;
 int endx, endy;
 double doorhealth;
 double doormaxhealth;
-int closesound, defsound, destsound, doorsound, hurtsound, movesound, opensound;
 int speed;
 string closetype;
 string desttype;
@@ -171,16 +171,19 @@ psdoors[i].movesound=doorpool.play_stationary_extended(find_sound("data/sounds/"
 }
 if(psdoors[i].startx==me.x and psdoors[i].starty==me.y and psdoors[i].automatic==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
+doorpool.pause_sound(psdoors[i].psdoorsound);
 string pass = virtual_input_box("","Enter the password to open this locked door.");
 if(psdoors[i].check_password(pass))
 {
 psdoormove=true;
 psdoors[i].is_moving=true;
+doorpool.resume_sound(psdoors[i].psdoorsound);
 psdoors[i].opensound=doorpool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/doors/open/"+psdoors[i].opentype+"/*open*"),false,0,0,doorvolume,doorpitch,false);
 psdoors[i].movesound=doorpool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/doors/move/"+psdoors[i].movetype+"/*move*"),true,0,0,doorvolume,doorpitch,false);
 }
 else
 {
+doorpool.resume_sound(psdoors[i].psdoorsound);
 speak("Invalid password. Please try again.");
 }
 }
@@ -512,11 +515,13 @@ else
 {
     if(check_password(pspassword))
     {
-        open_pspassage();
+passagepool.resume_sound(pspassagesound);
+open_pspassage();
     }
     else
     {
-        speak("Invalid password. Please try again.");
+passagepool.resume_sound(pspassagesound);
+speak("Invalid password. Please try again.");
     }
 }
 }
@@ -578,8 +583,9 @@ if(is_at_endpoint(me.x,me.y) && key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and ke
     {
         if(!is_open)
         {
+passagepool.pause_sound(pspassagesound);
 string pass = virtual_input_box("","Enter the password to open this locked passage.");
-            toggle_pspassage(pass);
+toggle_pspassage(pass);
         }
         else
         {
