@@ -3874,6 +3874,7 @@ m.add_item_tts("calander", "cn");
 m.add_item_tts("checkpoint", "cp");
 m.add_item_tts("clock", "cl");
 m.add_item_tts("conveyor belt", "cb");
+m.add_item_tts("destroyable wall", "dlw");
 m.add_item_tts("dialog", "dlg");
 m.add_item_tts("door", "ds");
 m.add_item_tts("enemie", "em");
@@ -5984,7 +5985,7 @@ if(buildem=="cp")
 {
 string mx=virtual_input_box("","Enter the x of this checkpoint.");
 string my=virtual_input_box("","Enter the y of this checkpoint.");
-string sp=virtual_input_box("","Enter the speed of this checkpoint. Press enter to use the default speed, or control backspace to clear the input to type your own speed.", "350");
+string sp=virtual_input_box("","Enter the speed of this checkpoint. Press enter to use the default speed.", "350");
 if(x=="" and y=="" and speedtime=="")
 return;
 x=string_to_number(mx);
@@ -6019,7 +6020,7 @@ if(buildem=="obj")
 {
 string mx=virtual_input_box("","Enter the x of this item.");
 string my=virtual_input_box("","Enter the y of this item.");
-string sp=virtual_input_box("","Enter the speed of this item. Press enter to use the default speed, or control backspace to clear the input to type your own speed.", "500");
+string sp=virtual_input_box("","Enter the speed of this item. Press enter to use the default speed.", "500");
 if(x=="" and y=="" and speedtime=="")
 return;
 x=string_to_number(mx);
@@ -7758,13 +7759,13 @@ load_map(mapname);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
 }
-if(buildem=="wl")
+if(buildem=="dlw")
 {
-string mx=virtual_input_box("","Enter the minimum x of this wall.");
-string mx2=virtual_input_box("","Enter the maximum x of this wall.");
-string my=virtual_input_box("","Enter the minimum y of this wall.");
-string my2=virtual_input_box("","Enter the maximum y of this wall.");
-string hp=virtual_input_box("","Enter the health of this wall.");
+string mx=virtual_input_box("","Enter the minimum x of this destroyable wall.");
+string mx2=virtual_input_box("","Enter the maximum x of this destroyable wall.");
+string my=virtual_input_box("","Enter the minimum y of this destroyable wall.");
+string my2=virtual_input_box("","Enter the maximum y of this destroyable wall.");
+string hp=virtual_input_box("","Enter the health of this destroyable wall. Press enter to use the default health.", "1");
 if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
 return;
 x=string_to_number(mx);
@@ -7772,6 +7773,55 @@ paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
 minhp=string_to_number(hp);
+string[] border=find_directories("data/sounds/"+soundpack+"/objects/walls/*");
+if(border.length()==0)
+{
+dlg_snd("Error. There are no destroyable walls available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=destwallsmenu();
+if(res!="")
+{
+destwalltype=res;
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+}
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"dest_wall "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+destwalltype+" "+volume+" "+pitch);
+mapper.close();
+spawn_dest_wall(x, paxx, y, paxy, minhp, minhp, destwalltype, volume, pitch);
+load_map(mapname);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="wl")
+{
+string mx=virtual_input_box("","Enter the minimum x of this wall.");
+string mx2=virtual_input_box("","Enter the maximum x of this wall.");
+string my=virtual_input_box("","Enter the minimum y of this wall.");
+string my2=virtual_input_box("","Enter the maximum y of this wall.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
 string[] border=find_directories("data/sounds/"+soundpack+"/objects/walls/*");
 if(border.length()==0)
 {
@@ -7799,34 +7849,12 @@ return;
 resume_pools();
 volume=s.get_item_value(0);
 pitch=s.get_item_value(1);
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound="menu1.ogg";
-m.enter_sound="menu2.ogg";
-m.open_sound="menu3.ogg";
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Do you want this wall to be destroyable?",true);
-if(mres==0)
-{
-speak("canceled");
-return;
 }
-if(mres==1)
-{
-dmd=true;
-}
-if(mres==2)
-{
-dmd=false;
-}
-}
-resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"wall "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+walltype+" "+volume+" "+pitch+" "+dmd);
+mapper.write("\r\n"+"wall "+x+" "+paxx+" "+y+" "+paxy+" "+walltype+" "+volume+" "+pitch);
 mapper.close();
-spawn_wall(x, paxx, y, paxy, minhp, minhp, walltype, volume, pitch, dmd);
+spawn_wall(x, paxx, y, paxy, walltype, volume, pitch);
 load_map(mapname);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
@@ -8036,6 +8064,7 @@ void infomenu()
 {
 string[] animaltype=find_directories("data/sounds/"+soundpack+"/npc/normal/animals/*");
 string[] bosstype=find_directories("data/sounds/"+soundpack+"/npc/boss/*");
+string[] destwalltype=find_directories("data/sounds/"+soundpack+"/objects/walls/*");
 string[] enemietype=find_directories("data/sounds/"+soundpack+"/npc/normal/enemies/*");
 string[] helpertype=find_directories("data/sounds/"+soundpack+"/objects/helpers/*");
 string[] projtype=find_directories("data/sounds/"+soundpack+"/npc/normal/projectiles/*");
@@ -8045,7 +8074,7 @@ string[] turtype=find_directories("data/sounds/"+soundpack+"/npc/normal/turrets/
 string[] vehtype=find_directories("data/sounds/"+soundpack+"/objects/vehicles/*");
 string[] zombietype=find_directories("data/sounds/"+soundpack+"/npc/normal/zombies/*");
 setupmenu();
-m.add_item_tts("total objects "+(animals.length()+bosses.length()+bullets.length()+doors.length()+psdoors.length()+enemies.length()+helpers.length()+projectiles.length()+robots.length()+spikes.length()+turrets.length()+vehicles.length()+walls.length()+zombies.length()));
+m.add_item_tts("total objects "+(animals.length()+bosses.length()+dest_walls.length()+doors.length()+psdoors.length()+enemies.length()+helpers.length()+projectiles.length()+robots.length()+spikes.length()+turrets.length()+vehicles.length()+zombies.length()));
 for(uint i=0; i<animals.length(); i++)
 {
 m.add_item_tts(animals[i].animaltype+";"+"at;"+animals[i].amx+";"+animals[i].amy+";"+"HP"+round(animals[i].animalhealth/animals[i].animalmaxhealth*100,2)+"percent"+";"+"level"+animals[i].amlevel);
@@ -8054,10 +8083,6 @@ for(uint i=0; i<bosses.length(); i++)
 {
 m.add_item_tts(bosses[i].bosstype+";"+"at;"+bosses[i].bossx+";"+bosses[i].bossy+";"+"HP"+round(bosses[i].bosshealth/bosses[i].bossmaxhealth*100,2)+"percent"+";"+"level"+bosses[i].bosslevel);
 }
-for(uint i=0; i<bullets.length(); i++)
-{
-m.add_item_tts("bullet at;"+bullets[i].bullx+";"+bullets[i].bully);
-}
 for(uint i=0; i<doors.length(); i++)
 {
 m.add_item_tts("door at;"+doors[i].startx+";"+doors[i].starty+";"+"HP"+round(doors[i].doorhealth/doors[i].doormaxhealth*100,2)+"percent");
@@ -8065,6 +8090,10 @@ m.add_item_tts("door at;"+doors[i].startx+";"+doors[i].starty+";"+"HP"+round(doo
 for(uint i=0; i<psdoors.length(); i++)
 {
 m.add_item_tts("locked door at;"+psdoors[i].startx+";"+psdoors[i].starty+";"+"HP"+round(psdoors[i].psdoorhealth/psdoors[i].psdoormaxhealth*100,2)+"percent");
+}
+for(uint i=0; i<dest_walls.length(); i++)
+{
+m.add_item_tts("destroyable "+dest_walls[i].dest_wall+";"+"at;"+dest_walls[i].minx+";"+dest_walls[i].miny+";"+"HP"+round(dest_walls[i].dest_wallhealth/dest_walls[i].dest_wallmaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<enemies.length(); i++)
 {
@@ -8096,7 +8125,7 @@ m.add_item_tts(vehicles[i].vehtype+";"+"at;"+vehicles[i].vehx+";"+vehicles[i].ve
 }
 for(uint i=0; i<walls.length(); i++)
 {
-m.add_item_tts(walls[i].wall+";"+"at;"+walls[i].minx+";"+walls[i].miny+";"+"HP"+round(walls[i].wallhealth/walls[i].wallmaxhealth*100,2)+"percent");
+m.add_item_tts("destroyable "+dest_walls[i].dest_wall+";"+"at;"+dest_walls[i].minx+";"+dest_walls[i].miny+";"+"HP"+round(dest_walls[i].dest_wallhealth/dest_walls[i].dest_wallmaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<zombies.length(); i++)
 {

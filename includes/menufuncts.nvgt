@@ -249,6 +249,44 @@ if(tilers.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/obj
 }
 return 0;
 }
+string destwallsmenu()
+{
+string[] borders=find_directories("data/sounds/"+soundpack+"/objects/walls/*");
+setupmenu2();
+m.set_callback(@destwalls_callback,"");
+for (uint i=0; i<borders.length(); i++)
+{
+string letter=string_replace(borders[i],"wall","",true)[0];
+string[] dest_wallers=find_files("data/sounds/"+soundpack+"/objects/walls/"+borders[i]+"/*wall*");
+if(dest_wallers.length()!=0) m.add_item("data/sounds/"+soundpack+"/objects/walls/"+borders[i]+"/"+dest_wallers[random(0,dest_wallers.length()-1)],borders[i],letter,true);
+}
+int mres=m.run("Select a dest_wall.", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=borders.length())
+{
+destwalltype=borders[mres-1];
+}
+return m.get_item_name(mres);
+}
+int destwalls_callback(dynamic_menu_pro@ m, string data)
+{
+string destwalltype;
+if(m.menu_position>0)
+destwalltype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+speak(destwalltype);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+speak(destwalltype);
+}
+return 0;
+}
 string wallsmenu()
 {
 string[] borders=find_directories("data/sounds/"+soundpack+"/objects/walls/*");
@@ -273,6 +311,7 @@ return walltype;
 }
 if(mres>0 and mres<=borders.length())
 {
+walltype=borders[mres-1];
 }
 return m.get_item_name(mres);
 }

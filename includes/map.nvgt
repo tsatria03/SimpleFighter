@@ -9,6 +9,7 @@ destroy_all_soundsources();
 destroy_all_reverb_effects();
 destroy_all_spawnpoints();
 destroy_all_staircases();
+destroy_all_dest_walls();
 destroy_all_walls();
 destroy_all_zones();
 }
@@ -76,6 +77,7 @@ me.y=y;
 fallcounter=0;
 jumping=0;
 falling=false;
+if(fallcounter>=0) p.destroy_sound(fallslot);
 speak("Moved to "+me.x+", "+me.y+".");
 }
 }
@@ -211,18 +213,28 @@ double vplatpitch=stn(sd[9]);
 int sp=stn(sd[10]);
 spawn_vanishing_platform(mx, mx2, my, my, tiletype, tilevol, tilepitch, vplattype, vplatvol, vplatpitch, sp);
 }
-else if(sd[0]=="wall" && sd.length()==10)
+else if(sd[0]=="dest_wall" && sd.length()==9)
 {
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
 double hp=stn(sd[5]);
-string walltype=sd[6];
+string dest_walltype=sd[6];
 double wallvol=stn(sd[7]);
 double wallpitch=stn(sd[8]);
-bool dbl=string_to_bool(sd[9]);
-spawn_wall(mx, mx2, my, my2, hp, hp, walltype, wallvol, wallpitch, dbl);
+spawn_dest_wall(mx, mx2, my, my2, hp, hp, dest_walltype, wallvol, wallpitch);
+}
+else if(sd[0]=="wall" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string walltype=sd[5];
+double wallvol=stn(sd[6]);
+double wallpitch=stn(sd[7]);
+spawn_wall(mx, mx2, my, my2, walltype, wallvol, wallpitch);
 }
 else if(sd[0]=="blockage" && sd.length()>=6)
 {
@@ -1635,15 +1647,22 @@ if(charcamsound2==1 and mfc==true) camslot=campool.play_stationary_extended(find
 if(charcamsound2==1 and mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*camerahazard*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,100,false);
 }
 }
-for(uint i=0; i<walls.length(); i++)
+for(uint i=0; i<dest_walls.length(); i++)
 {
-if(walls[i].minx<=cam.x and walls[i].maxx>=cam.x and walls[i].miny<=cam.y and walls[i].maxy>=cam.y)
+if(dest_walls[i].minx<=cam.x and dest_walls[i].maxx>=cam.x and dest_walls[i].miny<=cam.y and dest_walls[i].maxy>=cam.y)
 {
-if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/walls/"+walls[i].wall+"/*wall*"),false,0,0,cameravolume,camerapitch);
-if(mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+walls[i].wall+"/*wall*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
+if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),false,0,0,cameravolume,camerapitch);
+if(mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
 cbounce();
 return;
 }
+}
+if (string_contains(gct(cam.x,cam.y),"wall",1)>-1)
+{
+if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gct(cam.x,cam.y)+"/*wall*"),false,0,0,cameravolume,camerapitch);
+if(mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gct(cam.x,cam.y)+"/*wall*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
+cbounce();
+return;
 }
 if(me.x==cam.x and me.y==cam.y)
 {
@@ -1720,46 +1739,64 @@ pbounce(5);
 return;
 }
 }
-for(uint i=0; i<walls.length(); i++)
+for(uint i=0; i<dest_walls.length(); i++)
 {
-if(walls[i].minx<=me.x and walls[i].maxx>=me.x and walls[i].miny<=me.y and walls[i].maxy>=me.y)
+if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
 {
-wallvolume=walls[i].volume;
-wallpitch=walls[i].pitch;
-wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+walls[i].wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+wallvolume=dest_walls[i].volume;
+wallpitch=dest_walls[i].pitch;
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
 pbounce();
 return;
 }
+}
+if (string_contains(gmt(me.x,me.y),"wall",1)>-1)
+{
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+pbounce();
+return;
 }
 if(jumping==0) tileslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*step*"),false,0,0,tilevolume,tilepitch);
 }
 void playfall()
 {
-for(uint i=0; i<walls.length(); i++)
+for(uint i=0; i<dest_walls.length(); i++)
 {
-if(walls[i].minx<=me.x and walls[i].maxx>=me.x and walls[i].miny<=me.y and walls[i].maxy>=me.y)
+if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
 {
-wallvolume=walls[i].volume;
-wallpitch=walls[i].pitch;
-wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+walls[i].wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+wallvolume=dest_walls[i].volume;
+wallpitch=dest_walls[i].pitch;
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
 pbounce();
 return;
 }
+}
+if(string_contains(gmt(me.x,me.y),"wall",1)>-1)
+{
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+pbounce();
+return;
 }
 tileslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*fall*"),false,0,0,tilevolume,tilepitch);
 }
 void playland()
 {
-for(uint i=0; i<walls.length(); i++)
+for(uint i=0; i<dest_walls.length(); i++)
 {
-if(walls[i].minx<=me.x and walls[i].maxx>=me.x and walls[i].miny<=me.y and walls[i].maxy>=me.y)
+if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
 {
-wallvolume=walls[i].volume;
-wallpitch=walls[i].pitch;
-wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+walls[i].wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+wallvolume=dest_walls[i].volume;
+wallpitch=dest_walls[i].pitch;
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
 pbounce();
 return;
 }
+}
+if (string_contains(gmt(me.x,me.y),"wall",1)>-1)
+{
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+pbounce();
+return;
 }
 if(charlandsound==1) p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*land*"),false);
 tileslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*land*"),false,0,0,tilevolume,tilepitch);
@@ -1798,30 +1835,37 @@ falling=false;
 }
 void checkforwalls()
 {
-for(uint i=0; i<walls.length(); i++)
+for(uint i=0; i<dest_walls.length(); i++)
 {
-if(walls[i].minx<=me.x and walls[i].maxx>=me.x and walls[i].miny<=me.y and walls[i].maxy>=me.y)
+if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
 {
-wallvolume=walls[i].volume;
-wallpitch=walls[i].pitch;
-wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+walls[i].wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+wallvolume=dest_walls[i].volume;
+wallpitch=dest_walls[i].pitch;
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
 ascending=false;
 jumptimer.restart();
 atapex=true;
 }
 }
+if(gmt(me.x,me.y)!="" and string_contains(gmt(me.x,me.y),"wall",1)>-1)
+{
+wallslot=p.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+ascending=false;
+jumptimer.restart();
+atapex=true;
+}
 }
 void fallcheck()
 {
-if(jumping==0 && falling==false && (gmt(me.x,me.y)==""||gmt(me.x,me.y)=="air") && doormove==false && psdoormove==false)
+if(jumping==0 && falling==false && (gmt(me.x,me.y)==""||gmt(me.x,me.y)=="air") && doormove==false && psdoormove==false and me.y>miny)
 {
 falling=true;
-if(charfallsound==1) fallslot=p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*fall*"),false);
-if(charfallsound2==1) fallslot=p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*plummet*"),false);
+if(charfallsound==1 and me.y>7 or me.y<=0) fallslot=p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*fall*"),false);
+if(charfallsound2==1 and me.y>7 or me.y<=0) fallslot=p.play_stationary(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*plummet*"),false);
 }
 if(falling)
 {
-if(falltimer.elapsed>=falltime)
+if(falltimer.elapsed>=falltime and me.y>miny)
 {
 falltimer.restart();
 me.y--;
@@ -1829,7 +1873,7 @@ fallcounter++;
 }
 if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
 {
-if(fallcounter>=1 and p.sound_is_playing(fallslot)) p.destroy_sound(fallslot);
+if(fallcounter>=0) p.destroy_sound(fallslot);
 if(shieldhitsound==1 and fallcounter>=8 and shieldon==1) shieldslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch);
 if(charhurtsound==1 and fallcounter>=8 and shieldon==0) painslot=p.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
 if(fallcounter>=8) jumpable=false;
