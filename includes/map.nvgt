@@ -11,6 +11,7 @@ destroy_all_spawnpoints();
 destroy_all_staircases();
 destroy_all_dest_walls();
 destroy_all_walls();
+destroy_all_safezones();
 destroy_all_zones();
 }
 void destroymap()
@@ -316,6 +317,15 @@ double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
 create_menuzone(mx, mx2, my, my2);
+}
+else if(sd[0]=="safe_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string safetype=sd[5];
+spawn_safezone(mx, mx2, my, my2, safetype);
 }
 else if(sd[0]=="zone" && sd.length()>=6)
 {
@@ -1644,14 +1654,30 @@ for (uint i = 0; i < hazards.length(); i++)
 if(cam.x>=hazards[i].minx && cam.x<=hazards[i].maxx && cam.y>=hazards[i].miny && cam.y<=hazards[i].maxy)
 {
 if(charcamsound2==1 and mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*camerahazard*"),false,0,0,cameravolume,100,false);
-if(charcamsound2==1 and mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*camerahazard*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,100,false);
+if(charcamsound2==1 and mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*camerahazard*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
+}
+}
+for (uint i = 0; i < safezones.length(); i++)
+{
+bool camera_in_zone =safezones[i].minx <= cam.x && safezones[i].maxx >= cam.x && safezones[i].miny <= cam.y && safezones[i].maxy >= cam.y;
+if (camera_in_zone && !safezones[i].cam_in_zone)
+{
+if(mfc==true) safezones[i].safesound=safepool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safezones[i].safetype+"/*in*"),false,0,0,cameravolume,100,false);
+if(mfc==false) safezones[i].safesound=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safezones[i].safetype+"/*in*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
+safezones[i].cam_in_zone=true;
+}
+else if (!camera_in_zone && safezones[i].cam_in_zone)
+{
+if(mfc==true) safezones[i].safesound=safepool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safezones[i].safetype+"/*out*"),false,0,0,cameravolume,100,false);
+if(mfc==false) safezones[i].safesound=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safezones[i].safetype+"/*out*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
+safezones[i].cam_in_zone=false;
 }
 }
 for(uint i=0; i<dest_walls.length(); i++)
 {
 if(dest_walls[i].minx<=cam.x and dest_walls[i].maxx>=cam.x and dest_walls[i].miny<=cam.y and dest_walls[i].maxy>=cam.y)
 {
-if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),false,0,0,cameravolume,camerapitch);
+if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),false,0,0,cameravolume,100);
 if(mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
 cbounce();
 return;
@@ -1659,7 +1685,7 @@ return;
 }
 if (string_contains(gct(cam.x,cam.y),"wall",1)>-1)
 {
-if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gct(cam.x,cam.y)+"/*wall*"),false,0,0,cameravolume,camerapitch);
+if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gct(cam.x,cam.y)+"/*wall*"),false,0,0,cameravolume,100);
 if(mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/walls/"+gct(cam.x,cam.y)+"/*wall*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
 cbounce();
 return;
@@ -1667,16 +1693,16 @@ return;
 if(me.x==cam.x and me.y==cam.y)
 {
 if(charcamsound3==1 and mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*cameraplayer*"),false,0,0,cameravolume,100,false);
-if(charcamsound3==1 and mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*cameraplayer*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,100,false);
+if(charcamsound3==1 and mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*cameraplayer*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
 }
 if(gct(cam.x, cam.y)=="" || gct(cam.x, cam.y)=="air")
 {
 if(charcamsound==1 and mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*cameraair*"),false,0,0,cameravolume,100,false);
-if(charcamsound==1 and mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*cameraair*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,100,false);
+if(charcamsound==1 and mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/characters/"+chartype+"/*cameraair*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
 }
 else
 {
-if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gct(cam.x,cam.y)+"/*step*"),false,0,0,cameravolume,camerapitch);
+if(mfc==true) camslot=campool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gct(cam.x,cam.y)+"/*step*"),false,0,0,cameravolume,100);
 if(mfc==false) camslot=campool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/platforms/"+gct(cam.x,cam.y)+"/*step*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
 }
 }
@@ -1696,12 +1722,23 @@ if (currently_in_zone && !healzones[i].in_zone)
 {
 if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
 if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
-healzones[i].in_zone = true;
 }
 else if (!currently_in_zone && healzones[i].in_zone)
 {
-healpool.destroy_all();
-healzones[i].in_zone = false;
+}
+}
+for(uint i=0; i<safezones.length(); i++)
+{
+bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
+if (currently_in_zone && !safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safezones[i].safetype+"/*in*"),false);
+safezones[i].player_in_zone = true;
+}
+else if (!currently_in_zone && safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safezones[i].safetype+"/*out*"),false);
+safezones[i].player_in_zone = false;
 }
 }
 for(uint i=0; i<signs.length(); i++)

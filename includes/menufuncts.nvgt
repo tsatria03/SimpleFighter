@@ -2370,7 +2370,7 @@ keytimer.restart();
 if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
 {
 t.destroy_sound(prevslot);
-string[] healsfx=find_files("data/sounds/"+soundpack+"/objects/heal zones/"+healthtype+"/*pres*");
+string[] healsfx=find_files("data/sounds/"+soundpack+"/objects/heal zones/"+healthtype+"/*heal*");
 if(healsfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/objects/heal zones/"+healthtype+"/"+healsfx[random(0,healsfx.length()-1)],false);
 }
 if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
@@ -2378,6 +2378,52 @@ if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_
 t.destroy_sound(prevslot);
 string[] takesfx=find_files("data/sounds/"+soundpack+"/objects/heal zones/"+healthtype+"/*take*");
 if(takesfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/objects/heal zones/"+healthtype+"/"+takesfx[random(0,takesfx.length()-1)],false);
+}
+return 0;
+}
+string safsmenu()
+{
+string[] saftype=find_directories("data/sounds/"+soundpack+"/objects/safe zones/*");
+setupmenu();
+m.set_callback(@safes_callback,"");
+for (uint i=0; i<saftype.length(); i++)
+{
+m.add_item_tts(saftype[i],saftype[i],"",true);
+}
+int mres=m.run("safe zones menu", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=saftype.length())
+{
+saftyp=saftype[mres-1];
+}
+return m.get_item_name(mres);
+}
+int safes_callback(dynamic_menu_pro@ m, string data)
+{
+string saftype;
+if(m.menu_position>0)
+saftype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+string[] insfx=find_files("data/sounds/"+soundpack+"/objects/safe zones/"+saftype+"/*in*");
+if(insfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/objects/safe zones/"+saftype+"/"+insfx[random(0,insfx.length()-1)],false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+string[] insfx=find_files("data/sounds/"+soundpack+"/objects/safe zones/"+saftype+"/*in*");
+if(insfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/objects/safe zones/"+saftype+"/"+insfx[random(0,insfx.length()-1)],false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+string[] outsfx=find_files("data/sounds/"+soundpack+"/objects/safe zones/"+saftype+"/*out*");
+if(outsfx.length()!=0) prevslot=t.play_stationary("data/sounds/"+soundpack+"/objects/safe zones/"+saftype+"/"+outsfx[random(0,outsfx.length()-1)],false);
 }
 return 0;
 }

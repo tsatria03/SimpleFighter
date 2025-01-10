@@ -1,22 +1,48 @@
 safezone@[]safezones(0);
 class safezone
 {
+bool cam_in_zone;
+bool player_in_zone;
+int safesound;
 double minx, maxx, miny, maxy;
-safezone(double mx,double mx2,double my,double my2)
+string safetype;
+safezone(double mx,double mx2,double my,double my2,string sft)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
-}
-}
-void spawn_safezone(double x1,double x2,double y1,double y2)
+safetype=sft;
+player_in_zone = (minx <= me.x && maxx >= me.x && miny <= me.y && maxy >= me.y);
+cam_in_zone=true;
+if (player_in_zone)
 {
-safezone sz1(x1,x2,y1,y2);
+safesound=safepool.play_stationary(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safetype+"/*in*"),false);
+}
+}
+}
+bool is_in_safe(double x,double y)
+{
+for(uint i=0; i<safezones.length(); i++)
+{
+if(safezones[i].minx<=x && safezones[i].maxx>=x && safezones[i].miny<=y && safezones[i].maxy>=y)
+{
+return true;
+}
+}
+return false;
+}
+void spawn_safezone(double x1,double x2,double y1,double y2,string safetype)
+{
+safezone sz1(x1,x2,y1,y2,safetype);
 safezones.insert_last(sz1);
 }
 void destroy_all_safezones()
 {
+for(uint i=0; i<safezones.length(); i++)
+{
+if(safezones[i].player_in_zone==true) safezones[i].safesound=safepool.play_2d(find_sound("data/sounds/"+soundpack+"/objects/safe zones/"+safezones[i].safetype+"/*out*"),me.x,me.y,safezones[i].minx,safezones[i].miny,false);
+}
 safezones.resize(0);
 }
 

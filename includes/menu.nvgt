@@ -3902,6 +3902,7 @@ m.add_item_tts("projectile zone", "pz");
 m.add_item_tts("reverb", "rev");
 m.add_item_tts("robot", "rt");
 m.add_item_tts("robot zone", "rz");
+m.add_item_tts("safe zone", "sz");
 m.add_item_tts("sign", "sn");
 m.add_item_tts("sound ambience", "srcamb");
 m.add_item_tts("sound source", "src");
@@ -6781,6 +6782,43 @@ mapdata=mapper.read();
 mapper.write("\r\n"+"robot_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+rotype);
 mapper.close();
 spawn_robotzone(x, paxx, y, speedtime, rotype);
+load_map(mapname);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="sz")
+{
+string mx=virtual_input_box("","Enter the minimum x of this safe zone.");
+string mx2=virtual_input_box("","Enter the maximum x of this safe zone.");
+string my=virtual_input_box("","Enter the minimum y of this safe zone.");
+string my2=virtual_input_box("","Enter the maximum y of this safe zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] safes=find_directories("data/sounds/"+soundpack+"/objects/safe zones/*");
+if(safes.length()==0)
+{
+dlg_snd("Error. There are no safe zones available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=safsmenu();
+if(res!="")
+{
+saftyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"safe_zone "+x+" "+paxx+" "+y+" "+paxy+" "+saftyp);
+mapper.close();
+spawn_safezone(x, paxx, y, paxy, saftyp);
 load_map(mapname);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
