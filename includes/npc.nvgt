@@ -717,7 +717,6 @@ int destsound, defsound, helpersound, hurtsound, spawnsound, stepsound, tilesoun
 int helpercard;
 int helphealth;
 double helplevel;
-double helperxp;
 double helperhealth;
 double helpermaxhealth;
 int helpx;
@@ -727,7 +726,7 @@ int helpertime;
 int firetime;
 string helpertype;
 timer helpertimer, firetimer;
-helper(int hx,int hy,double hp,double maxhp,int hc,int dm,int ft,int sp,double helplv,double hxp,string ht)
+helper(int hx,int hy,double hp,double maxhp,int hc,int dm,int ft,int sp,double helplv,string ht)
 {
 this.helphealth=hp;
 helpx=hx;
@@ -739,7 +738,6 @@ damage=dm;
 firetime=ft;
 helpertime=sp;
 helplevel=helplv;
-helperxp=hxp;
 helpertype=ht;
 spawnsound=helperpool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/helpers/"+helpertype+"/*spawn*"),me.x,me.y,helpx,helpy,0,0,0,0,false,0,0,painvolume,painpitch,false);
 helpersound=helperpool.play_extended_2d(find_sound("data/sounds/"+soundpack+"/objects/helpers/"+helpertype+"/*loop*"),me.x,me.y,helpx,helpy,0,0,0,0,true,0,0,painvolume,painpitch,false);
@@ -869,6 +867,29 @@ helpers[i].helpy--;
 helpers[i].stepsound=1;
 }
 }
+for(uint i6=0; i6<objs.length(); i6++)
+{
+if(helpers[i].helpx<objs[i6].itx and paused==0)
+{
+helpers[i].helpx++;
+helpers[i].stepsound=1;
+}
+if(helpers[i].helpx>objs[i6].itx and paused==0)
+{
+helpers[i].helpx--;
+helpers[i].stepsound=1;
+}
+if(helpers[i].helpy<objs[i6].ity and paused==0)
+{
+helpers[i].helpy++;
+helpers[i].stepsound=1;
+}
+if(helpers[i].helpy>objs[i6].ity and paused==0)
+{
+helpers[i].helpy--;
+helpers[i].stepsound=1;
+}
+}
 }
 for(uint i1=0; i1<animals.length(); i1++)
 {
@@ -920,6 +941,17 @@ bosses[i5].bosshealth-=helpers[i].damage*helpers[i].helplevel;
 helpers[i].firetimer.restart();
 }
 }
+for(uint i6=0; i6<objs.length(); i6++)
+{
+if(objs[i6].itx==helpers[i].helpx and objs[i6].ity==helpers[i].helpy and helpers[i].firetimer.elapsed>=helpers[i].firetime)
+{
+objs[i6].getsound=itempool.play_stationary_extended(find_sound("data/sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i6].objtype+"/"+objs[i6].objtype2+"/*get*"),false,0,0,itemvolume,itempitch,false);
+give(objs[i6].objtype2,1);
+speak(objs[i6].objtype2);
+objs.remove_at(i);
+return;
+}
+}
 if(helpers[i].helperhealth<=0)
 {
 if(helpers[i].helpercard>=2 and paused==0)
@@ -940,9 +972,9 @@ return;
 }
 }
 }
-void spawn_helper(int x,int y,double hp,double maxhp,int hc,int dm,int firetime,int helpertime,double helplevel,double xp,string helpertype)
+void spawn_helper(int x,int y,double hp,double maxhp,int hc,int dm,int firetime,int helpertime,double helplevel,string helpertype)
 {
-helper hp1(x,y,hp,maxhp,hc,dm,firetime,helpertime,helplevel,xp,helpertype);
+helper hp1(x,y,hp,maxhp,hc,dm,firetime,helpertime,helplevel,helpertype);
 helpers.insert_last(hp1);
 }
 void destroy_all_helpers()
