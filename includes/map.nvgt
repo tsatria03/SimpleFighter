@@ -65,13 +65,14 @@ destroy_all_zombies();
 destroy_all_zombiezones();
 }
 
-void gop(double x, double y)
+void gop(string entity,string id,double x,double y)
 {
 if(x<minx or x>maxx or y<miny or y>maxy)
 {
-dlg_snd("Error! You can't move out of map boundries! Please try again! Press enter to continue.");
+dlg_snd("Error! You can't move yourself or an entity out of map boundries! Please try again! Press enter to continue.");
+return;
 }
-else
+if (entity == "me")
 {
 me.x=x;
 me.y=y;
@@ -80,9 +81,240 @@ jumping=0;
 falling=false;
 if(fallcounter>=0) p.destroy_sound(fallslot);
 if(charmovesound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*move*"),false);
-speak("Moved to "+me.x+", "+me.y+".");
+speak("Player moved to "+me.x+", "+me.y+".");
+}
+else if(entity=="animal")
+{
+for(uint i=0; i<animals.length(); i++)
+{
+if(animals[i].animaltype==id)
+{
+animals[i].amx=int(x);
+animals[i].amy=int(y);
+animalpool.update_sound_2d(animals[i].amsound, animals[i].amx, animals[i].amy);
+animals[i].animaltimer.restart();
+speak("animal moved to "+animals[i].amx+", "+animals[i].amy+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
 }
 }
+}
+else if(entity=="enemie")
+{
+for(uint i=0; i<enemies.length(); i++)
+{
+if(enemies[i].enemietype==id)
+{
+enemies[i].emx=int(x);
+enemies[i].emy=int(y);
+enemiepool.update_sound_2d(enemies[i].emsound, enemies[i].emx, enemies[i].emy);
+enemies[i].enemietimer.restart();
+speak("enemie moved to "+enemies[i].emx+", "+enemies[i].emy+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="boss")
+{
+for(uint i=0; i<bosses.length(); i++)
+{
+if(bosses[i].bosstype==id)
+{
+bosses[i].bossx=int(x);
+bosses[i].bossy=int(y);
+bosspool.update_sound_2d(bosses[i].bossesound, bosses[i].bossx, bosses[i].bossy);
+bosses[i].bosstimer.restart();
+speak("boss moved to "+bosses[i].bossx+", "+bosses[i].bossy+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="projectile")
+{
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(projectiles[i].projtype==id)
+{
+projectiles[i].prox=int(x);
+projectiles[i].proy=int(y);
+projpool.update_sound_2d(projectiles[i].projsound, projectiles[i].prox, projectiles[i].proy);
+projectiles[i].projtimer.restart();
+speak("projectile moved to "+projectiles[i].prox+", "+projectiles[i].proy+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="robot")
+{
+for(uint i=0; i<robots.length(); i++)
+{
+if(robots[i].robottype==id)
+{
+robots[i].robx=int(x);
+robots[i].roby=int(y);
+robpool.update_sound_2d(robots[i].robsound, robots[i].robx, robots[i].roby);
+robots[i].robottimer.restart();
+speak("robot moved to "+robots[i].robx+", "+robots[i].roby+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="turret")
+{
+for(uint i=0; i<turrets.length(); i++)
+{
+if(turrets[i].turtype==id)
+{
+turrets[i].turx=int(x);
+turrets[i].tury=int(y);
+turpool.update_sound_2d(turrets[i].tursound, turrets[i].turx, turrets[i].tury);
+turrets[i].turtimer.restart();
+speak("turret moved to "+turrets[i].turx+", "+turrets[i].tury+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="zombie")
+{
+for(uint i=0; i<zombies.length(); i++)
+{
+if(zombies[i].zombietype==id)
+{
+zombies[i].zombx=int(x);
+zombies[i].zomby=int(y);
+zombpool.update_sound_2d(zombies[i].zombsound, zombies[i].zombx, zombies[i].zomby);
+zombies[i].zombietimer.restart();
+speak("zombie moved to "+zombies[i].zombx+", "+zombies[i].zomby+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="helper")
+{
+for(uint i=0; i<helpers.length(); i++)
+{
+if(helpers[i].helpertype==id)
+{
+helpers[i].helpx=int(x);
+helpers[i].helpy=int(y);
+helperpool.update_sound_2d(helpers[i].helpersound, helpers[i].helpx, helpers[i].helpy);
+helpers[i].helpertimer.restart();
+speak("helper moved to "+helpers[i].helpx+", "+helpers[i].helpy+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="item")
+{
+for(uint i=0; i<objs.length(); i++)
+{
+if(objs[i].objtype2==id)
+{
+objs[i].itx=int(x);
+objs[i].ity=int(y);
+itempool.update_sound_2d(objs[i].objsound, objs[i].itx, objs[i].ity);
+objs[i].objtimer.restart();
+speak("item moved to "+objs[i].itx+", "+objs[i].ity+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="mine")
+{
+for(uint i=0; i<mines.length(); i++)
+{
+if(mines[i].minetype==id)
+{
+mines[i].minex=int(x);
+mines[i].miney=int(y);
+minepool.update_sound_2d(mines[i].minesound, mines[i].minex, mines[i].miney);
+speak("mine moved to "+mines[i].minex+", "+mines[i].miney+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="sign")
+{
+for(uint i=0; i<signs.length(); i++)
+{
+if(signs[i].signtype==id)
+{
+signs[i].signx=int(x);
+signs[i].signy=int(y);
+signpool.update_sound_2d(signs[i].signsound, signs[i].signx, signs[i].signy);
+speak("sign moved to "+signs[i].signx+", "+signs[i].signy+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else if(entity=="vehicle")
+{
+for(uint i=0; i<vehicles.length(); i++)
+{
+if(vehicles[i].vehtype==id)
+{
+vehicles[i].vehx=int(x);
+vehicles[i].vehy=int(y);
+vehpool.update_sound_2d(vehicles[i].vehsound, vehicles[i].vehx, vehicles[i].vehy);
+speak("vehicle moved to "+vehicles[i].vehx+", "+vehicles[i].vehy+".");
+}
+else
+{
+dlg_snd("Error! Unable to find this entity  for moving! Press enter to continue.");
+return;
+}
+}
+}
+else
+{
+dlg_snd("Error! Unknown entity type "+id+".");
+return;
+}
+}
+
 void speakcoordinates()
 {
 if(locspeech==1 and gmt(me.x,me.y)=="")
@@ -982,13 +1214,21 @@ if (base_command == "go")
 {
 if (parsed.length() == 3)
 {
-int x = stn(parsed[1]);
-int y = stn(parsed[2]);
-gop(x, y);
+double x = stn(parsed[1]);
+double y = stn(parsed[2]);
+gop("me", "", x, y);
+}
+else if (parsed.length() == 5)
+{
+string entity = parsed[1];
+string id = parsed[2];
+double x = stn(parsed[3]);
+double y = stn(parsed[4]);
+gop(entity, id, x, y);
 }
 else
 {
-speak("Invalid command syntax. Usage: /go x y.");
+speak("Invalid command syntax. Usage: /go x y, or /go entity id x y.");
 game(true);
 }
 }
@@ -1012,6 +1252,48 @@ else
 {
 speak("Invalid command syntax. Usage: /help.");
 game(true);
+}
+}
+else if (base_command == "collectall")
+{
+if (parsed.length() == 1)
+{
+if(objs.length() == 0)
+{
+speak("There are no items on this map.");
+game(true);
+}
+else
+{
+collect_all_objs();
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /collectal.");
+game(true);
+}
+}
+else if(base_command=="give")
+{
+if(parsed.length()==3)
+{
+string item=parsed[1];
+int amount=stn(parsed[2]);
+if(amount>0)
+{
+give(item,amount);
+speak("Gave " + amount + " " + (amount == 1 ? item : item + "s") + ".");
+}
+else
+{
+give(item,stn(amount));
+speak("Gave " + amount + " " + (amount == 1 ? item : item + "s") + ".");
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /give item amount.");
 }
 }
 else if (base_command == "menu")
@@ -1074,7 +1356,7 @@ game(true);
 }
 if(x >= minx && x <= maxx && y >= miny && y <= maxy)
 {
-gop(x, y);
+gop("me", "", x, y);
 }
 else
 {
@@ -1201,7 +1483,7 @@ zone@ selected_zone = zones[selected_zone_index];
 double target_x = selected_zone.minx;
 double target_y = selected_zone.miny;
 resume_pools();
-gop(int(target_x), int(target_y));
+gop("me", "", target_x, target_y);
 }
 if (mres>0 and mres<=zones.length())
 {
@@ -1210,7 +1492,7 @@ zone@ selected_zone = zones[selected_zone_index];
 double target_x = selected_zone.minx;
 double target_y = selected_zone.miny;
 resume_pools();
-gop(int(target_x), int(target_y));
+gop("me", "", target_x, target_y);
 }
 }
 else
