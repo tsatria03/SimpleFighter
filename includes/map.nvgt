@@ -27,8 +27,8 @@ destroy_all_checkpoints();
 destroy_all_clocks();
 destroy_all_dialogs();
 destroy_all_doors();
-destroy_all_enemies();
-destroy_all_enemiezones();
+destroy_all_humans();
+destroy_all_humanzones();
 destroy_all_floorbreakers();
 destroy_all_forcefields();
 destroy_all_hazards();
@@ -97,17 +97,17 @@ speak("animal moved to "+animals[i].amx+", "+animals[i].amy+".");
 }
 }
 }
-else if(entity=="enemie")
+else if(entity=="human")
 {
-for(uint i=0; i<enemies.length(); i++)
+for(uint i=0; i<humans.length(); i++)
 {
-if(enemies[i].enemietype==id)
+if(humans[i].humantype==id)
 {
-enemies[i].emx=int(x);
-enemies[i].emy=int(y);
-enemiepool.update_sound_2d(enemies[i].emsound, enemies[i].emx, enemies[i].emy);
-enemies[i].enemietimer.restart();
-speak("enemie moved to "+enemies[i].emx+", "+enemies[i].emy+".");
+humans[i].humx=int(x);
+humans[i].humy=int(y);
+humanpool.update_sound_2d(humans[i].humsound, humans[i].humx, humans[i].humy);
+humans[i].humantimer.restart();
+speak("human moved to "+humans[i].humx+", "+humans[i].humy+".");
 }
 }
 }
@@ -819,14 +819,14 @@ bool mb2=string_to_bool(sd[17]);
 bool dpm=string_to_bool(sd[18]);
 spawn_animal(x, y, anirange, anirange2, anirange3, anirange4, hp, hp, card, dmg, ft, sp, lv, xp, amtype, fb, mb, mb2, dpm);
 }
-else if(sd[0]=="enemie" && sd.length()==19)
+else if(sd[0]=="human" && sd.length()==19)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-int enerange=stn(sd[3]);
-int enerange2=stn(sd[4]);
-int enerange3=stn(sd[5]);
-int enerange4=stn(sd[6]);
+int humrange=stn(sd[3]);
+int humrange2=stn(sd[4]);
+int humrange3=stn(sd[5]);
+int humrange4=stn(sd[6]);
 double hp=stn(sd[7]);
 int card=stn(sd[8]);
 int dmg=stn(sd[9]);
@@ -834,12 +834,12 @@ int ft=stn(sd[10]);
 int sp=stn(sd[11]);
 double lv=stn(sd[12]);
 double xp=stn(sd[13]);
-string emtype=sd[14];
+string humtype=sd[14];
 bool fb=string_to_bool(sd[15]);
 bool mb=string_to_bool(sd[16]);
 bool mb2=string_to_bool(sd[17]);
 bool dpm=string_to_bool(sd[18]);
-spawn_enemie(x, y, enerange, enerange2, enerange3, enerange4, hp, hp, card, dmg, ft, sp, lv, xp, emtype, fb, mb, mb2, dpm);
+spawn_human(x, y, humrange, humrange2, humrange3, humrange4, hp, hp, card, dmg, ft, sp, lv, xp, humtype, fb, mb, mb2, dpm);
 }
 else if(sd[0]=="floor_breaker" && sd.length()==4)
 {
@@ -1021,14 +1021,14 @@ string tiletype=sd[7];
 string belttyp=sd[8];
 spawn_belt(mx, mx2, my, my2, dir, sp, tiletype, belttyp);
 }
-else if(sd[0]=="enemie_zone" && sd.length()==6)
+else if(sd[0]=="human_zone" && sd.length()==6)
 {
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 int y=stn(sd[3]);
 int sp=stn(sd[4]);
 string emtype=sd[5];
-spawn_enemiezone(mx, mx2, y, sp, emtype);
+spawn_humanzone(mx, mx2, y, sp, emtype);
 }
 else if(sd[0]=="projectile_zone" && sd.length()==6)
 {
@@ -1222,23 +1222,23 @@ return;
 }
 }
 }
-else if(entity=="enemie")
+else if(entity=="human")
 {
-for(uint i=0; i<enemies.length(); i++)
+for(uint i=0; i<humans.length(); i++)
 {
-if(enemies[i].enemietype==id && enemies[i].emx==x && enemies[i].emy==y)
+if(humans[i].humantype==id && humans[i].humx==x && humans[i].humy==y)
 {
-enemiepool.destroy_sound(enemies[i].emsound);
-enemies[i].defsound=enemiepool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/normal/enemies/"+enemies[i].enemietype+"/*death*"),me.x,me.y,enemies[i].emx,enemies[i].emy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-if(xpmod>=1) xp+=enemies[i].emxp*enemies[i].emlevel*xpmod;
+humanpool.destroy_sound(humans[i].humsound);
+humans[i].defsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/normal/humans/"+humans[i].humantype+"/*death*"),me.x,me.y,humans[i].humx,humans[i].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=humans[i].humxp*humans[i].humlevel*xpmod;
 kills+=1;
-spawn_bodyfall(enemies[i].emx, enemies[i].emy, random(500,1000));
+spawn_bodyfall(humans[i].humx, humans[i].humy, random(500,1000));
 string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
-if(healtype.length()!=0 and enemies[i].dropitem==true) spawn_obj(enemies[i].emx, enemies[i].emy, 500, "health", healtype[random(0,healtype.length()-1)], true);
+if(healtype.length()!=0 and humans[i].dropitem==true) spawn_obj(humans[i].humx, humans[i].humy, 500, "health", healtype[random(0,healtype.length()-1)], true);
 if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
-p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,enemies[i].emx,enemies[i].emy,false);
-speak("Killed the enemie " + id + " at position " + x + ", " + y + ".");
-enemies.remove_at(i);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,humans[i].humx,humans[i].humy,false);
+speak("Killed the human " + id + " at position " + x + ", " + y + ".");
+humans.remove_at(i);
 return;
 }
 }
@@ -1415,23 +1415,23 @@ p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,bosses[i].bossx,bosses[i].bossy,f
 total_kills++;
 }
 bosses.resize(0);
-for(uint i=0; i<enemies.length(); i++)
+for(uint i=0; i<humans.length(); i++)
 {
-if(enemies[i].enemiehealth>0)
+if(humans[i].humanhealth>0)
 {
-enemiepool.destroy_sound(enemies[i].emsound);
-enemies[i].defsound=enemiepool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/normal/enemies/"+enemies[i].enemietype+"/*death*"),me.x,me.y,enemies[i].emx,enemies[i].emy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-if(xpmod>=1) xp+=enemies[i].emxp*enemies[i].emlevel*xpmod;
+humanpool.destroy_sound(humans[i].humsound);
+humans[i].defsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/normal/humans/"+humans[i].humantype+"/*death*"),me.x,me.y,humans[i].humx,humans[i].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=humans[i].humxp*humans[i].humlevel*xpmod;
 kills+=1;
-spawn_bodyfall(enemies[i].emx, enemies[i].emy, random(500,1000));
+spawn_bodyfall(humans[i].humx, humans[i].humy, random(500,1000));
 string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
-if(healtype.length()!=0 and enemies[i].dropitem==true) spawn_obj(enemies[i].emx, enemies[i].emy, 500, "health", healtype[random(0,healtype.length()-1)], true);
+if(healtype.length()!=0 and humans[i].dropitem==true) spawn_obj(humans[i].humx, humans[i].humy, 500, "health", healtype[random(0,healtype.length()-1)], true);
 if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
-p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,enemies[i].emx,enemies[i].emy,false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,humans[i].humx,humans[i].humy,false);
 }
 total_kills++;
 }
-enemies.resize(0);
+humans.resize(0);
 for(uint i=0; i<helpers.length(); i++)
 {
 if(helpers[i].helperhealth>0)
@@ -1541,7 +1541,7 @@ else if (base_command == "help")
 {
 if (parsed.length() == 1)
 {
-if(coms.open("docks/help.txt", "rb"))
+if(coms.open("docks/commands.txt", "rb"))
 {
 comsplit=coms.read();
 coms.close();
@@ -1550,7 +1550,7 @@ virtual_info_box("command help", "commands", com);
 }
 else
 {
-speak("Failed to open docks/help.txt.");
+speak("Failed to open docks/commands.txt.");
 }
 }
 else
