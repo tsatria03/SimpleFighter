@@ -318,7 +318,7 @@ tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of 
 ###### Change log
 This is the game's change log.
 
-####### new in 6.0
+###### new in 6.0
 * Made it so turning sounds play in 2d for all characters.
 * Made it so your inventory gets cleared upon player death. You can also clear your inventory by typing the command slash invclear.
 * Revamped the main enemie class and renamed it to humans. They can now equip and use the weapons you have in the game to hit you instead of using their standered attack system. The name change will also apply to the builder menu, the object info menu, and the spire.
@@ -327,7 +327,7 @@ This is the game's change log.
 * Addressed an issue of time bombs damaging entities before the timer has elapsed on them.
 * Fixed a bug where the death sounds of entities didn't always play when the slash kill or slash killall commands were being executed.
 * Addressed an issue where you weren't able to jump what so ever upon reaching the maximum hight of a map you were building.
-new in 5.9
+###### new in 5.9
 * Moved the extra map related options into it's own keyboard command. You can now press the letter U key to access this menu instead of looking for it in the builder menu. The letter Q key will now tell you what map you are on, along with reading out the zone that's currently present.
 * Added the option to toggle turning on the spot for all characters in the settings menu. When turning on the spot is disabled, you'll have to hold down alt and shift and press the arrow keys to turn in the direction you want to face for aming at various entities.
 * Made it so you can instently reload a map using the slash relmap command without being prompted to do so. It will still ask you if you want to reload the map you're currently playing if you invoke the command from the several map menus loacated in various parts of the game.
@@ -338,7 +338,7 @@ new in 5.9
 * Added the ability to give yourself items with the slash give command.
 * Added the ability to collect all of the items found on the map with the slash getall command.
 * Added the ability to move entities and other objects on the map with the slash go command, not just yourself.
-new in 5.8
+###### new in 5.8
 * Helpers can now walk around collecting items for you. They also can no longer give you experience after being killed.
 * Added the ability to save the keyboard echo settings found in the audio forms class.
 * You can now define a custom moving sound when using the slash go command for all characters.
@@ -349,7 +349,7 @@ new in 5.8
 * Helpers can now damage bosses.
 * Fixed lots of bugs related to the movement lojic for animals, bosses, enemies, robots, and zombies.
 * Implemented wall detection for projectiles.
-new in 5.7
+###### new in 5.7
 Introduced wall detection for entities such as animals and enemies. This means that if there's a wall anywhere on the map, the entitie won't be allowed to go past it what so ever. From now on, the only way they'll be able to pass through it is if the wall is removed from the map, or if a passage that contains 2 walls on both endpoints is opened. Destroyable walls will remain unaffected.
 Revamped the movement lojic for animals, bosses, enemies, robots, and zombies. Instead of continuously chasing you upon being spotted, they will now stop folowing you if they find that you've moved far enough away from them.
 Made it so the loop sounds for built lockable doors and passages will now pause and resume playing upon pressing the enter key to check password valadation.
