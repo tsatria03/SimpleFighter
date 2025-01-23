@@ -588,393 +588,394 @@ This is the game's change log.
 * Addressed a bug where platforms weren't able to cut through walls when building them. They also weren't able to cut through them when a passage was open. This has finally been patched once and for all.
 
 ###### new in 3.9
-Fixed timers not working propperly in the passages class. The loop sound for built passages will also pause and resume playing upon pressing the Enter key to open and close them.
-You can now build passages in the builder menu. They will also be written to the map you're currently working on.
-Optimized moving hazards to not have sound playback be handled directly within the class. It's now taken care of in the actual hazards class.
-You can now build moving hazards and moving platforms in the builder menu. They will also be written to the map you're currently working on. Please be aware that these objects may or may not have bugs present in them. I still need to iron out a few more kinks with them. Keep that in mind while utilizing it in the builder menu.
-Optimized the reverb handler class to support multiple sound pools at once.
-Fixed character stats not saving properly upon choosing them from the settings menu and saving the settings to restart the game.
-Fixed sounds not pausing or resuming correctly upon defining sound pools for different type of sounds.
-Improved the settings menu. The options where you either select or set things will now tell you what they are currently set to prior to going into the option to select or set it. For example, when hovering over the select character type option, it will tell you what it's currently set to before you decide to go in there to choose your character you want to use in the game.
-Improved fading pitch in all sound_pools. Instead of immediately dropping the pitch to 100 to start fading it, it will start to fade the pitch if it finds a sound higher than the value specified. This is useful for sounds that have a higher pitch set, especially when building sound related objects in the builder menu.
-Added the ability to configure the skip amount when pressing or holding the Up and Down arrow keys in menus. You can find this option in the settings menu. This is mainly useful for large menu lists that take a long time to scroll through. For example, platform/wall selections, music/sound source selections, and other menus that have lots of items in them. Setting a higher number will help you get through those menus quicker. The default skip amount is set to 1 upon resetting all of your settings.
+* Fixed timers not working propperly in the passages class. The loop sound for built passages will also pause and resume playing upon pressing the Enter key to open and close them.
+* You can now build passages in the builder menu. They will also be written to the map you're currently working on.
+* Optimized moving hazards to not have sound playback be handled directly within the class. It's now taken care of in the actual hazards class.
+* You can now build moving hazards and moving platforms in the builder menu. They will also be written to the map you're currently working on. Please be aware that these objects may or may not have bugs present in them. I still need to iron out a few more kinks with them. Keep that in mind while utilizing it in the builder menu.
+* Optimized the reverb handler class to support multiple sound pools at once.
+* Fixed character stats not saving properly upon choosing them from the settings menu and saving the settings to restart the game.
+* Fixed sounds not pausing or resuming correctly upon defining sound pools for different type of sounds.
+* Improved the settings menu. The options where you either select or set things will now tell you what they are currently set to prior to going into the option to select or set it. For example, when hovering over the select character type option, it will tell you what it's currently set to before you decide to go in there to choose your character you want to use in the game.
+* Improved fading pitch in all sound_pools. Instead of immediately dropping the pitch to 100 to start fading it, it will start to fade the pitch if it finds a sound higher than the value specified. This is useful for sounds that have a higher pitch set, especially when building sound related objects in the builder menu.
+* Added the ability to configure the skip amount when pressing or holding the Up and Down arrow keys in menus. You can find this option in the settings menu. This is mainly useful for large menu lists that take a long time to scroll through. For example, platform/wall selections, music/sound source selections, and other menus that have lots of items in them. Setting a higher number will help you get through those menus quicker. The default skip amount is set to 1 upon resetting all of your settings.
 
 ###### new in 3.8
-Changed the key from D to R to speak the camera's X and Y position.
-Added the ability to play the camera's current tile by holding the letter G and pressing T.
-Improved the fade_pool script to handle fading of multiple sound_pools for volume and pitch simultaneously.
-Addressed a longstanding bug where sounds would abruptly cut out if the user landed on platforms or did anything else that would cause all sounds to stop unexpectedly.
-You can now detect reverb spaces with the camera. The camera sounds are also separated from all other sounds in the pool, so none of the other ones get affected unless you're walking in a place where there's a reverb zone.
-You can now detect nearby hazards on a tile by pressing the D key while holding down the G key to speak the camera's coordinates.
-Added the ability to detect hazards with the camera. If the camera finds one nearby, it will play a sound to denote its presence.
-The stats for shield strength and shield defense will now be written back to their respective files upon purchasing it from the points menu.
-The stats for ammo, horizontal weapon range, and vertical weapon range will now be written back to their respective files upon purchasing it from the points menu.
-The stats for attack, defense, and max health will now be written back to their respective files upon purchasing it from the points menu.
+* Changed the key from D to R to speak the camera's X and Y position.
+* Added the ability to play the camera's current tile by holding the letter G and pressing T.
+* Improved the fade_pool script to handle fading of multiple sound_pools for volume and pitch simultaneously.
+* Addressed a longstanding bug where sounds would abruptly cut out if the user landed on platforms or did anything else that would cause all sounds to stop unexpectedly.
+* You can now detect reverb spaces with the camera. The camera sounds are also separated from all other sounds in the pool, so none of the other ones get affected unless you're walking in a place where there's a reverb zone.
+* You can now detect nearby hazards on a tile by pressing the D key while holding down the G key to speak the camera's coordinates.
+* Added the ability to detect hazards with the camera. If the camera finds one nearby, it will play a sound to denote its presence.
+* The stats for shield strength and shield defense will now be written back to their respective files upon purchasing it from the points menu.
+* The stats for ammo, horizontal weapon range, and vertical weapon range will now be written back to their respective files upon purchasing it from the points menu.
+* The stats for attack, defense, and max health will now be written back to their respective files upon purchasing it from the points menu.
 
 ###### new in 3.7
-Added the ability to set the skip amount used when pressing or holding the Up and Down arrow keys to the m_pro class. This will only work if you have up_and_down navigation enabled in the settings menu. If you have a large menu list containing more than 10 items, particularly the platforms menu, you can press or hold the Up or Down arrow keys to go through it faster than just pressing the Left or Right arrow keys.
-The random option will no longer show up in menu lists for npcs that don't rely on timers to spawn them.
-You can now spawn random npcs when building one of the zones in the listings menu for that particular npc.
-Hazards will now get written to the map file you're currently building in.
-Removed the ability to spawn ledges in the builder prompt while building hazards on the map.
-Added the ability to play close sounds when you exit a menu to the m_pro class.
-Added sounds for pressing buttons with the Space and Enter key and interacting with other types of controls using the Tab key to the audio forms class.
-You can no longer type unwanted characters into input prompts that only take numbers to process building the object.
-Updated the text_input class with new functions for filtering out unwanted characters from being entered into all input prompts in the game.
-Made the instruments look like an interactable object by making it so you can bump into it after building the instrument.
+* Added the ability to set the skip amount used when pressing or holding the Up and Down arrow keys to the m_pro class. This will only work if you have up_and_down navigation enabled in the settings menu. If you have a large menu list containing more than 10 items, particularly the platforms menu, you can press or hold the Up or Down arrow keys to go through it faster than just pressing the Left or Right arrow keys.
+* The random option will no longer show up in menu lists for npcs that don't rely on timers to spawn them.
+* You can now spawn random npcs when building one of the zones in the listings menu for that particular npc.
+* Hazards will now get written to the map file you're currently building in.
+* Removed the ability to spawn ledges in the builder prompt while building hazards on the map.
+* Added the ability to play close sounds when you exit a menu to the m_pro class.
+* Added sounds for pressing buttons with the Space and Enter key and interacting with other types of controls using the Tab key to the audio forms class.
+* You can no longer type unwanted characters into input prompts that only take numbers to process building the object.
+* Updated the text_input class with new functions for filtering out unwanted characters from being entered into all input prompts in the game.
+* Made the instruments look like an interactable object by making it so you can bump into it after building the instrument.
 
 ###### new in 3.6
-The vanishing platform sound will now destroy itself after the platform disappears and reappears again.
-Fixed a bug where platforms from a vanishing platform wouldn't disappear and reappear upon playing the vanishing sound.
-You can now build and play instruments on the keyboard within the builder menu. They will also be written to the map file as well. This was origenally part of another project I was working on, but decided to refactor it a bit and port it over to my game just for the hell of it because why not?
-You can now build vanishing platforms in the builder menu. They will also be written to the map file as well.
-Added the ability to move focus with the camera. You can hold the letter G and press M to toggle it on or off. In this mode, the camera sounds won't get further away from you as you move it on the map. It will always remain stationary no matter how far you move it around unless you turn it off, or you let go of the G key.
-Changed the slash key to activate the go prompt. You now have to hold alt and press slash to invoke it.
-Added the ability to speak the camera's X and Y position. You can hold the letter G and press D to do this.
-The go function will now speak the coordinates where it has moved the user on the map after typing it in the go prompt.
-You can now hide the settings menu from being viewed in the main menu of the game. Be careful when using this option. You won't be able to change any other settings in the main settings menu, let alone unhiding the menu from appearing in the main menu after relaunching the game upon saving all of your settings. Only use this option if you don't want others changing sertain settings in the game.
-Reordered the position of the show or hide menu items option in the settings menu.
+* The vanishing platform sound will now destroy itself after the platform disappears and reappears again.
+* Fixed a bug where platforms from a vanishing platform wouldn't disappear and reappear upon playing the vanishing sound.
+* You can now build and play instruments on the keyboard within the builder menu. They will also be written to the map file as well. This was origenally part of another project I was working on, but decided to refactor it a bit and port it over to my game just for the hell of it because why not?
+* You can now build vanishing platforms in the builder menu. They will also be written to the map file as well.
+* Added the ability to move focus with the camera. You can hold the letter G and press M to toggle it on or off. In this mode, the camera sounds won't get further away from you as you move it on the map. It will always remain stationary no matter how far you move it around unless you turn it off, or you let go of the G key.
+* Changed the slash key to activate the go prompt. You now have to hold alt and press slash to invoke it.
+* Added the ability to speak the camera's X and Y position. You can hold the letter G and press D to do this.
+* The go function will now speak the coordinates where it has moved the user on the map after typing it in the go prompt.
+* You can now hide the settings menu from being viewed in the main menu of the game. Be careful when using this option. You won't be able to change any other settings in the main settings menu, let alone unhiding the menu from appearing in the main menu after relaunching the game upon saving all of your settings. Only use this option if you don't want others changing sertain settings in the game.
+* Reordered the position of the show or hide menu items option in the settings menu.
 
 ###### new in 3.5
-You can now hide menus found in the main menu of the game in the settings menu. For example, if you just want to play with the builder, you can hide the game menu. These menus will save the next time you open the game again.
-Completely ilimenated the cheats menu. The slash key is now replaced with an input box that will ask the user what coordinates they'd like to go to. Please make sure to separate the x and y you've entered with a space in order for it to move you propperly.
-You can now copy and paste raw map data to and from the clipboard within the builder menu.
-You no longer need to enter the minimum and maximum health of objects that take them. The builder prompt will only ask you for the actual health of the object, such as 1, 2, 3 etc. The minimum and maximum health will automaticly be filled out upon building the object.
-Made it so pressing a key on the number row multiple times doesn't overlap the drawing sound for the weapon that you've equipped.
-Weapons will now reset their stats upon selecting one with the number row. This is especially true with those that take ammo.
-You can no longer equip weapons with the number row if you are using an item in the items menu.
-The number row can now be used to quickly equip weapons. You can also use shift plus the number row to equip extra weapons. These are based on the category you've selected in the weapons menu.
-Walls will now play hit and destruction sounds no matter how tall they are.
-Fixed character, shield, and weapon menus from giving unhandeled exception errors near the end of the menu list upon pressing enter on them.
+* You can now hide menus found in the main menu of the game in the settings menu. For example, if you just want to play with the builder, you can hide the game menu. These menus will save the next time you open the game again.
+* Completely ilimenated the cheats menu. The slash key is now replaced with an input box that will ask the user what coordinates they'd like to go to. Please make sure to separate the x and y you've entered with a space in order for it to move you propperly.
+* You can now copy and paste raw map data to and from the clipboard within the builder menu.
+* You no longer need to enter the minimum and maximum health of objects that take them. The builder prompt will only ask you for the actual health of the object, such as 1, 2, 3 etc. The minimum and maximum health will automaticly be filled out upon building the object.
+* Made it so pressing a key on the number row multiple times doesn't overlap the drawing sound for the weapon that you've equipped.
+* Weapons will now reset their stats upon selecting one with the number row. This is especially true with those that take ammo.
+* You can no longer equip weapons with the number row if you are using an item in the items menu.
+* The number row can now be used to quickly equip weapons. You can also use shift plus the number row to equip extra weapons. These are based on the category you've selected in the weapons menu.
+* Walls will now play hit and destruction sounds no matter how tall they are.
+* Fixed character, shield, and weapon menus from giving unhandeled exception errors near the end of the menu list upon pressing enter on them.
 
 ###### new in 3.4
-Conveyor belts can now be written to the map you're currently working on.
-Refactored the conveyor belt class to include the use of platforms by default. The builder prompt will no longer ask you weather you'd like to include a platform with it or not. Instead, you're automaticly put into the platform selection menu upon entering the desired coordinates of the belt.
-Changed the way map objects are being loaded upon building or selecting a map within the load maps menu. Maps will now play sounds based on how many objects it needs to load. The more objects you put into the map, the longer it will take to load the next time you finish building, adding, editing, and removing lines within the builder menu.
-Addressed an issue with the map parser not handeling spaces propperly upon inserting multiple words in a given object. This is especially seen in blockages, calanders, clocks, signs, text squares, timed texts, travelpoints, and zones.
-Renamed animal zones, enemy zones, projectile zones, robot zones, sound sources, text squares, timed texts, timed musics, timed sources, and zombie zones to use underscores in the builder menu for better readability in the game.
-Made it so your character's movement propperties are reset upon reloading the map. This includes sitting, turrning, jumpping, and many more.
-You can no longer jump while you're in a vehicle.
-Projectiles, teleporters, and vehicles can now be written to the map you're currently working on.
-Checkpoints and conveyor belts can now be seen with the spire.
-Added a default speed value to checkpoints and items to the vertual input boxe.
-newe in 4.3
-Added the option to toggle using the pause menu for all of the game modes in the settings menu.
-The U key is now used to display the current map name.
-Reordered the positions of the delete and reload map options found in the builder menu.
-Fixed spawnpoints not working propperly after reloading the map.
-Added spawnpoints to the builder menu. They will also be written to the map file as well.
-Added default values for volume and pitch to the vertual input boxes for objects that take them.
-Made it so checkpoints are only effective if you have one life.
-Recoded checking for player deaths.
-Fixed lots of bugs related to checkpoints. This includes checkpoints not destroying propperly if you've removed them from the remove lines menu.
-Finally added checkpoints to the builder menu. They will also be written to the map file as well.
+* Conveyor belts can now be written to the map you're currently working on.
+* Refactored the conveyor belt class to include the use of platforms by default. The builder prompt will no longer ask you weather you'd like to include a platform with it or not. Instead, you're automaticly put into the platform selection menu upon entering the desired coordinates of the belt.
+* Changed the way map objects are being loaded upon building or selecting a map within the load maps menu. Maps will now play sounds based on how many objects it needs to load. The more objects you put into the map, the longer it will take to load the next time you finish building, adding, editing, and removing lines within the builder menu.
+* Addressed an issue with the map parser not handeling spaces propperly upon inserting multiple words in a given object. This is especially seen in blockages, calanders, clocks, signs, text squares, timed texts, travelpoints, and zones.
+* Renamed animal zones, enemy zones, projectile zones, robot zones, sound sources, text squares, timed texts, timed musics, timed sources, and zombie zones to use underscores in the builder menu for better readability in the game.
+* Made it so your character's movement propperties are reset upon reloading the map. This includes sitting, turrning, jumpping, and many more.
+* You can no longer jump while you're in a vehicle.
+* Projectiles, teleporters, and vehicles can now be written to the map you're currently working on.
+* Checkpoints and conveyor belts can now be seen with the spire.
+* Added a default speed value to checkpoints and items to the vertual input boxe.
+newe in 3.3
+* Added the option to toggle using the pause menu for all of the game modes in the settings menu.
+* The U key is now used to display the current map name.
+* Reordered the positions of the delete and reload map options found in the builder menu.
+* Fixed spawnpoints not working propperly after reloading the map.
+* Added spawnpoints to the builder menu. They will also be written to the map file as well.
+* Added default values for volume and pitch to the vertual input boxes for objects that take them.
+* Made it so checkpoints are only effective if you have one life.
+* Recoded checking for player deaths.
+* Fixed lots of bugs related to checkpoints. This includes checkpoints not destroying propperly if you've removed them from the remove lines menu.
+* Finally added checkpoints to the builder menu. They will also be written to the map file as well.
 
 ###### new in 3.2
-You can now delete and reload the map that you're currently working on right from within the builder menu. You no longer need to exit the map builder in order to do it.
-Renamed animals, unsorted items, projectiles, and spikes to use underscores for better readability in the game.
-Started working on making checkpoints useable.
-Turrets can now be written to the map you're currently working on.
-Projectile zones can now be written to the map you're currently working on.
-Item zones can now be written to the map you're currently working on.
-Bombs and bomb zones can now be written to the map you're currently working on.
-Animal zones, enemie zones, robot zones, and zombie zones can now be written to the map you're currently working on.
-Animals, enemies, robots, and zombies can now be written to the map you're currently working on.
-Added destruction sounds to walls.
+* You can now delete and reload the map that you're currently working on right from within the builder menu. You no longer need to exit the map builder in order to do it.
+* Renamed animals, unsorted items, projectiles, and spikes to use underscores for better readability in the game.
+* Started working on making checkpoints useable.
+* Turrets can now be written to the map you're currently working on.
+* Projectile zones can now be written to the map you're currently working on.
+* Item zones can now be written to the map you're currently working on.
+* Bombs and bomb zones can now be written to the map you're currently working on.
+* Animal zones, enemie zones, robot zones, and zombie zones can now be written to the map you're currently working on.
+* Animals, enemies, robots, and zombies can now be written to the map you're currently working on.
+* Added destruction sounds to walls.
 
 ###### new in 3.1
-You can no longer remove map name, maximum x, and maximum y from the remove lines menu.
-You can now use the spire in the other game modes as well, not just the map builder.
-You can now face up and down in all of the game modes and the map builder.
-Added volume and pitch support to walls.
-Reduced air speed sencitivity while moving in the air after jumpping.
-Bombs can now damage anything in it's range, not just you.
-Bullets can now damage walls regardless of how tall they are.
-Fixed an issue of the camera reporting air tiles when their wasn't one.
-Made hazards and spikes speak the actual name of the object when spying them.
-Made walls more acuret in turms of how tall they are when spying them.
+* You can no longer remove map name, maximum x, and maximum y from the remove lines menu.
+* You can now use the spire in the other game modes as well, not just the map builder.
+* You can now face up and down in all of the game modes and the map builder.
+* Added volume and pitch support to walls.
+* Reduced air speed sencitivity while moving in the air after jumpping.
+* Bombs can now damage anything in it's range, not just you.
+* Bullets can now damage walls regardless of how tall they are.
+* Fixed an issue of the camera reporting air tiles when their wasn't one.
+* Made hazards and spikes speak the actual name of the object when spying them.
+* Made walls more acuret in turms of how tall they are when spying them.
 
 ###### new in 3.0
-Made it so increasing the maximum x and y positions in the other game modes would also expand the platform, music, and sound source of the intire map as well. This also applies to the camera.
-Limeted the maximum x and y positions of all of the game related maps to 1000. The map builder will remain uneffected.
-Limeted the maximum jump height to all of the characters to 20.
-You can now reset your jump height by pressing F3 in the map builder, and F7 in all of the other game modes.
-Added toggling of holding space in the settings menu.
-Added toggling auto jumpping in the settings menu.
-Bullets and walls are now trackable in the objects menu.
-Added a prompt to the wall builder that asks weather you'd like the wall to be destroyable or not.
-Walls are now breakable. Bullets will only bounce off of them if they are non breakable.
-Added volume and pitch support to platforms.
-Changed map parsing separators to use spaces instead of colons. If you create sounds for any objects outside of the game, make sure to put underscores as a separator if it contains more than 1 word.
-Music, sound sources, timed music, and timed sound sources can now be paused and resumed within the pause menu.
-Added the ability to set sound devices in the settings menu.
-Removed cluddered up functions found in the music and source class.
-Improved the falling code to continue falling through air platforms if it detects one, instead of restarting the falling process if it finds it mid fall.
-Added the ability to choose platforms to use when playing one of the game modes.
-Added the ability to choose music to play when playing one of the game modes.
-Added the ability to choose a sound source to play when playing one of the game modes.
-Added the redownload sounds option into the main menu. Caution! Only use this option if you find that certain sounds are missing. Doing this will replace everything found in the sounds folder, especially if you've added your own sounds. Please use this with care.
-Fixed doors getting stuck at y 0 when trying to take the user up.
+* Made it so increasing the maximum x and y positions in the other game modes would also expand the platform, music, and sound source of the intire map as well. This also applies to the camera.
+* Limeted the maximum x and y positions of all of the game related maps to 1000. The map builder will remain uneffected.
+* Limeted the maximum jump height to all of the characters to 20.
+* You can now reset your jump height by pressing F3 in the map builder, and F7 in all of the other game modes.
+* Added toggling of holding space in the settings menu.
+* Added toggling auto jumpping in the settings menu.
+* Bullets and walls are now trackable in the objects menu.
+* Added a prompt to the wall builder that asks weather you'd like the wall to be destroyable or not.
+* Walls are now breakable. Bullets will only bounce off of them if they are non breakable.
+* Added volume and pitch support to platforms.
+* Changed map parsing separators to use spaces instead of colons. If you create sounds for any objects outside of the game, make sure to put underscores as a separator if it contains more than 1 word.
+* Music, sound sources, timed music, and timed sound sources can now be paused and resumed within the pause menu.
+* Added the ability to set sound devices in the settings menu.
+* Removed cluddered up functions found in the music and source class.
+* Improved the falling code to continue falling through air platforms if it detects one, instead of restarting the falling process if it finds it mid fall.
+* Added the ability to choose platforms to use when playing one of the game modes.
+* Added the ability to choose music to play when playing one of the game modes.
+* Added the ability to choose a sound source to play when playing one of the game modes.
+* Added the redownload sounds option into the main menu. Caution! Only use this option if you find that certain sounds are missing. Doing this will replace everything found in the sounds folder, especially if you've added your own sounds. Please use this with care.
+* Fixed doors getting stuck at y 0 when trying to take the user up.
 
 ###### new in 2.9
-Made it so building objects in the builder menu Immediately updates the map to reflect newest changes. This will only work with objects that have been written to the map you're currently working on.
-You can now fall off of the custom air tile that can be chosen in the platforms menu. The camera can also track this tile as well, along with the spire.
-Added the air tile and wall border to the platform and wall menus.
-Maps will now ignore any lines that are empty when going through the edit and remove line menus. The game will no longer throw an error if you try to go into one of those menus when there are blank lines in the file.
-You can no longer move while you're in a door.
-Addressed an issue where editing a single line in the edit lines menu would cause all of the other lines underneeth the one you were focused on to be deleted.
-Made it so adding, editting, and removing lines in the map Immediately updates it to reflect newest changes.
-Fixed the edit and remove line menus throwing an unhandled exception error after reloading the map.
-Finally fixed map dooplecation issues! It's about dam time too, as even I was quite frustrated that every time I would make extra objects in my maps, it would create these anoying files that had double extencions added to them. You can rest asured knowing that this issue has finally been patched once and for all.
-Added error checking to the map loader. If it sees that a map with a double extencion is found, it will alert the user that the map file is invalid.
+* Made it so building objects in the builder menu Immediately updates the map to reflect newest changes. This will only work with objects that have been written to the map you're currently working on.
+* You can now fall off of the custom air tile that can be chosen in the platforms menu. The camera can also track this tile as well, along with the spire.
+* Added the air tile and wall border to the platform and wall menus.
+* Maps will now ignore any lines that are empty when going through the edit and remove line menus. The game will no longer throw an error if you try to go into one of those menus when there are blank lines in the file.
+* You can no longer move while you're in a door.
+* Addressed an issue where editing a single line in the edit lines menu would cause all of the other lines underneeth the one you were focused on to be deleted.
+* Made it so adding, editting, and removing lines in the map Immediately updates it to reflect newest changes.
+* Fixed the edit and remove line menus throwing an unhandled exception error after reloading the map.
+* Finally fixed map dooplecation issues! It's about dam time too, as even I was quite frustrated that every time I would make extra objects in my maps, it would create these anoying files that had double extencions added to them. You can rest asured knowing that this issue has finally been patched once and for all.
+* Added error checking to the map loader. If it sees that a map with a double extencion is found, it will alert the user that the map file is invalid.
 
 ###### new in 2.8
-Removed more unused functions and variables found in the code.
-Removed level sound, fire sound, and hit sound from the cheats menu. The x position cheat can also be unlocked at a lower level then before.
-doors can now be written to the map you're currently working on.
-Added a prompt to the sign builder that asks weather you'd like the sign to be destroyable or not.
-Added a prompt to the calander builder that asks weather you'd like the calander to be destroyable or not.
-Added a prompt to the clock builder that asks weather you'd like the clock to be destroyable or not.
-Removed the delay effect from the builder menu, as the sound pool doesn't support having multiple mixers in it. It also will no longer be written to the map file either.
-Added death, fall, healing, heal start, heal stop, hurt, inv, jump, level, life, plummet, rock, sit, stand, and turn sound toggles to all of the character files. If you have a character that doesn't have one of these sounds, make sure to change the value to 0 so other sounds don't cut off wile using the character.
-Added break, draw, hit, loop, wear, and remove sound toggles to all of the shield files. If you have a shield that doesn't have one of these sounds, make sure to change the value to 0 so other sounds don't cut off wile using the shield.
-Added draw, empty, fire, hit, loop, rico, reload, and shell sound toggles to all of the weapon files. If you have a weapon that doesn't have one of these sounds, make sure to change the value to 0 so other sounds don't cut off wile using the weapon.
+* Removed more unused functions and variables found in the code.
+* Removed level sound, fire sound, and hit sound from the cheats menu. The x position cheat can also be unlocked at a lower level then before.
+* doors can now be written to the map you're currently working on.
+* Added a prompt to the sign builder that asks weather you'd like the sign to be destroyable or not.
+* Added a prompt to the calander builder that asks weather you'd like the calander to be destroyable or not.
+* Added a prompt to the clock builder that asks weather you'd like the clock to be destroyable or not.
+* Removed the delay effect from the builder menu, as the sound pool doesn't support having multiple mixers in it. It also will no longer be written to the map file either.
+* Added death, fall, healing, heal start, heal stop, hurt, inv, jump, level, life, plummet, rock, sit, stand, and turn sound toggles to all of the character files. If you have a character that doesn't have one of these sounds, make sure to change the value to 0 so other sounds don't cut off wile using the character.
+* Added break, draw, hit, loop, wear, and remove sound toggles to all of the shield files. If you have a shield that doesn't have one of these sounds, make sure to change the value to 0 so other sounds don't cut off wile using the shield.
+* Added draw, empty, fire, hit, loop, rico, reload, and shell sound toggles to all of the weapon files. If you have a weapon that doesn't have one of these sounds, make sure to change the value to 0 so other sounds don't cut off wile using the weapon.
 
 ###### new in 2.7
-Added form based documentation into the settings menu. This setting toggles weather the game's documentation is presented in a read only form or not. If this setting is disabled, the game's documentation will be presented in a menu stile interface.
-Added global volume fading into the settings menu. This setting toggles weather the volume of the intire sound pool is faded out or not when pressing escape in the map builder or the main game modes. If this setting is disabled, the pitch of the intire sound pool will lower upon pressing escape in the map builder and in the main game modes.
-Added the ability to fade the pitch of the intire sound pool, not just volume.
-Removed experience and level modifiers from the cheats menu. I had forgotten to do that a long time ago.
-Made it so animals and enemies no longer drop corpses of themselves after being killed.
-Fixed spire inconsistencies when spying from the left side of the map with multi tile objects being built.
-Travelpoints will no longer announce the map it will take you to when spying it.
-Fixed hazards throwing an unhandeled exception error after landing on one.
-Fixed one of the melee weapons not working do to renaming issues.
-The close sound for doors will now play in stationary instead of playing in 2d.
+* Added form based documentation into the settings menu. This setting toggles weather the game's documentation is presented in a read only form or not. If this setting is disabled, the game's documentation will be presented in a menu stile interface.
+* Added global volume fading into the settings menu. This setting toggles weather the volume of the intire sound pool is faded out or not when pressing escape in the map builder or the main game modes. If this setting is disabled, the pitch of the intire sound pool will lower upon pressing escape in the map builder and in the main game modes.
+* Added the ability to fade the pitch of the intire sound pool, not just volume.
+* Removed experience and level modifiers from the cheats menu. I had forgotten to do that a long time ago.
+* Made it so animals and enemies no longer drop corpses of themselves after being killed.
+* Fixed spire inconsistencies when spying from the left side of the map with multi tile objects being built.
+* Travelpoints will no longer announce the map it will take you to when spying it.
+* Fixed hazards throwing an unhandeled exception error after landing on one.
+* Fixed one of the melee weapons not working do to renaming issues.
+* The close sound for doors will now play in stationary instead of playing in 2d.
 
 ###### new in 2.6
-Added a prompt to the travelpoint builder that asks weather you'd like to build the opposite side of the travelpoint or not.
-Made the spire more acuret with multi tile objects.
-Added a prompt to the door builder that asks weather you'd like the door to be destroyable or not.
-Fixed maps not destroying propperly after being killed by a hazard.
-Added travelpoints to the spire.
-Added signs and spikes to the spire.
-Added doors and hazards to the spire.
-Added blockages to the spire.
-Fixed blockages not speaking the propper text after reloading the map.
-Added doors and vehicles to the object info menu.
+* Added a prompt to the travelpoint builder that asks weather you'd like to build the opposite side of the travelpoint or not.
+* Made the spire more acuret with multi tile objects.
+* Added a prompt to the door builder that asks weather you'd like the door to be destroyable or not.
+* Fixed maps not destroying propperly after being killed by a hazard.
+* Added travelpoints to the spire.
+* Added signs and spikes to the spire.
+* Added doors and hazards to the spire.
+* Added blockages to the spire.
+* Fixed blockages not speaking the propper text after reloading the map.
+* Added doors and vehicles to the object info menu.
 
 ###### new in 2.5
-Fixed doors not destroying themselves after reaching 0 health.
-Calenders, clocks, doors, and signs are now breakable.
-Added timed text to the builder menu. They will also be written to the map you're currently working on.
-Added blockages to the builder menu. They will also be written to the map you're currently working on.
-A progress tone will now play upon extracting the sounds.zip file.
-Addressed an issue of the game giving you an error after extracting the sounds, even if the sounds folder was fully extracted. It will only error out if there's an actual problem with the unzipper.
-The zip file for the sounds will now delete itself upon aboarting the download process when pressing escape. It will also delete itself upon completing the extraction process after downloading.
-Addressed an issue of progress beeps playing a long wining noise at the start of a download. You can be free of getting a splitting headake from that, as it's now finally fixed.
-Improved the sounds downloader. The sounds can now be extracted within the game itself. The downloader also supports the playing of progress beeps to let you know the status of the download. You can press M to toggle these sounds on or off.
-Fixed the restart function of the game. It should now restart the game propperly upon pressing the restart option in the main menu.
+* Fixed doors not destroying themselves after reaching 0 health.
+* Calenders, clocks, doors, and signs are now breakable.
+* Added timed text to the builder menu. They will also be written to the map you're currently working on.
+* Added blockages to the builder menu. They will also be written to the map you're currently working on.
+* A progress tone will now play upon extracting the sounds.zip file.
+* Addressed an issue of the game giving you an error after extracting the sounds, even if the sounds folder was fully extracted. It will only error out if there's an actual problem with the unzipper.
+* The zip file for the sounds will now delete itself upon aboarting the download process when pressing escape. It will also delete itself upon completing the extraction process after downloading.
+* Addressed an issue of progress beeps playing a long wining noise at the start of a download. You can be free of getting a splitting headake from that, as it's now finally fixed.
+* Improved the sounds downloader. The sounds can now be extracted within the game itself. The downloader also supports the playing of progress beeps to let you know the status of the download. You can press M to toggle these sounds on or off.
+* Fixed the restart function of the game. It should now restart the game propperly upon pressing the restart option in the main menu.
 
 ###### new in 2.4
-You can now build delay effects in the builder menu. They will also be written to the map you're currently working on.
-Animals, enemies, projectiles, robots, turrets, and zombies can now have there own sounds for loozing a life in the game.
-Finally fixed the issue of reverb effects not working correctly after spawning multiple of them in different parts of the map.
-You can now build travelpoints to other maps that are in the game. They will also be written to the map you're currently working on.
-The character menu now shows attributes such as attack, defence, and lives of all characters when you hover over them.
-Made pressing the letter Z to check weapon status less verbose.
-You can now set a default shield for use in all of the character files.
-Added the level modifier to all of the character files. The level modifier refers to how hard it is to actually get experience. The higher this value, the harder it is to get experience, but easier to get more points overall.
-Added the experience modifier to all of the character files. the experience modifier refers to how much experience you gain per level. The higher this value, the more experience you'll reseave, regardless of what your level modifier is set to.
-Jump height is no longer parsed, and therefore will not be used in the game for all characters.
+* You can now build delay effects in the builder menu. They will also be written to the map you're currently working on.
+* Animals, enemies, projectiles, robots, turrets, and zombies can now have there own sounds for loozing a life in the game.
+* Finally fixed the issue of reverb effects not working correctly after spawning multiple of them in different parts of the map.
+* You can now build travelpoints to other maps that are in the game. They will also be written to the map you're currently working on.
+* The character menu now shows attributes such as attack, defence, and lives of all characters when you hover over them.
+* Made pressing the letter Z to check weapon status less verbose.
+* You can now set a default shield for use in all of the character files.
+* Added the level modifier to all of the character files. The level modifier refers to how hard it is to actually get experience. The higher this value, the harder it is to get experience, but easier to get more points overall.
+* Added the experience modifier to all of the character files. the experience modifier refers to how much experience you gain per level. The higher this value, the more experience you'll reseave, regardless of what your level modifier is set to.
+* Jump height is no longer parsed, and therefore will not be used in the game for all characters.
 
 ###### new in 2.3
-Made it so falling respects your character's defence and shield defence.
-Fixed sertain sounds not playing propperly in some of the character folders.
-Removed some of the character related sounds from the Miscellaneous folder. The sounds healer loop, healer start, healer stop, life, fall, plummet, inv, lev, rock, sit, and stand can now be customized along side the character folders you can create and use.
-You can now choose the keyboard theme you want to use for all input boxes in the settings menu. This can be saved for use the next time you open the game again.
-Falling from high distences will now also effect your shield that you're currently wearing.
-You can no longer press escape while typing something in a vertual input box.
-Made it so pressing the enter key on a vertual input box doesn't allow you to skip to the next prompt prematurely. If you don't type anything at all and press the enter key, it will tell you that input is required, therefore you can't go anywhere else in the game without typing something first.
-Added typing sounds to the text input class. These will be used later on.
-Replaced the vertualizer class with a much better text input class.
-Cleared lots of unneeded sounds that were found in the encripted misc sounds file. The game should now load much faster when compiled as an executable script.
+* Made it so falling respects your character's defence and shield defence.
+* Fixed sertain sounds not playing propperly in some of the character folders.
+* Removed some of the character related sounds from the Miscellaneous folder. The sounds healer loop, healer start, healer stop, life, fall, plummet, inv, lev, rock, sit, and stand can now be customized along side the character folders you can create and use.
+* You can now choose the keyboard theme you want to use for all input boxes in the settings menu. This can be saved for use the next time you open the game again.
+* Falling from high distences will now also effect your shield that you're currently wearing.
+* You can no longer press escape while typing something in a vertual input box.
+* Made it so pressing the enter key on a vertual input box doesn't allow you to skip to the next prompt prematurely. If you don't type anything at all and press the enter key, it will tell you that input is required, therefore you can't go anywhere else in the game without typing something first.
+* Added typing sounds to the text input class. These will be used later on.
+* Replaced the vertualizer class with a much better text input class.
+* Cleared lots of unneeded sounds that were found in the encripted misc sounds file. The game should now load much faster when compiled as an executable script.
 
 ###### new in 2.2
-Modified the audio forms class to have keyboard sounds while typing. These will be used later on.
-The files in the documentation  menu are no longer menu based. It will now use the audio form to read them. You can use all of the text navigation keys here, not just your up and down arrows.
-Added error checking for map names in the maps folder. If the game finds a map that has the same name that already exists, it will alert the user and take them back to the maps menu.
-Fixed maps not updating propperly after adding, editing, or removing a line in the builder menu.
-You can now edit lines in the builder menu! Thanks again to Nikita K for the big contribution.
-Finally fixed the documentation menu. You can now open and read the readme file propperly.
-Speed is no longer parsed, and therefore will not be used in the game for all characters.
-Fixed shield loops destroying themselves when firing weapons.
-Fixed an issue where music would still be playing in sertain menus. I thought I had already resolved this a long time ago, but I guess not.
-Added loop sounds to all shields. This sound will play every time you wear your shield, and stop playing if you take it off, or if it breaks.
+* Modified the audio forms class to have keyboard sounds while typing. These will be used later on.
+* The files in the documentation  menu are no longer menu based. It will now use the audio form to read them. You can use all of the text navigation keys here, not just your up and down arrows.
+* Added error checking for map names in the maps folder. If the game finds a map that has the same name that already exists, it will alert the user and take them back to the maps menu.
+* Fixed maps not updating propperly after adding, editing, or removing a line in the builder menu.
+* You can now edit lines in the builder menu! Thanks again to Nikita K for the big contribution.
+* Finally fixed the documentation menu. You can now open and read the readme file propperly.
+* Speed is no longer parsed, and therefore will not be used in the game for all characters.
+* Fixed shield loops destroying themselves when firing weapons.
+* Fixed an issue where music would still be playing in sertain menus. I thought I had already resolved this a long time ago, but I guess not.
+* Added loop sounds to all shields. This sound will play every time you wear your shield, and stop playing if you take it off, or if it breaks.
 
 ###### new in 2.1
-Removed lots of dooplicated code related to menus. The lettor O key will also no longer be used in all of the normal game modes. This key may have other uses in the future.
-You can now add and remove lines in the builder menu! Thanks goes to Nikita K for the huge help in fixing it for me.
-Fixed lots of issues with map objects not being written to files correctly.
-Addressed an issue in one of the normal game modes that caused you to get stuck in the air while jumping or falling. You can now jump and fall like normal.
-The misc folder that was located under the sounds folder has been encrypted and moved to the data/saves folder to be later compiled into the game's executable for release.
-Typing themes are no longer seperated into different folders. They are now part of the Miscellaneous folder under the main sounds folder.
-Fixed shield attributes not updating correctly in the shields menu upon changing it in one of the shield files.
-Dialogs are no longer parsed for now. It will also not be written to the map file you're currently working on.
-Fixed multi line dialogs playing the error sound that the normal dialogs had.
-Removed the npc folder from the layouts folder, as that probebbly won't get parsed anytime soon.
+* Removed lots of dooplicated code related to menus. The lettor O key will also no longer be used in all of the normal game modes. This key may have other uses in the future.
+* You can now add and remove lines in the builder menu! Thanks goes to Nikita K for the huge help in fixing it for me.
+* Fixed lots of issues with map objects not being written to files correctly.
+* Addressed an issue in one of the normal game modes that caused you to get stuck in the air while jumping or falling. You can now jump and fall like normal.
+* The misc folder that was located under the sounds folder has been encrypted and moved to the data/saves folder to be later compiled into the game's executable for release.
+* Typing themes are no longer seperated into different folders. They are now part of the Miscellaneous folder under the main sounds folder.
+* Fixed shield attributes not updating correctly in the shields menu upon changing it in one of the shield files.
+* Dialogs are no longer parsed for now. It will also not be written to the map file you're currently working on.
+* Fixed multi line dialogs playing the error sound that the normal dialogs had.
+* Removed the npc folder from the layouts folder, as that probebbly won't get parsed anytime soon.
 
 ###### new in 2.0
-Added back the documentation menu into the main menu.
-Shields are now completely parsed and ready to use. All of the shield folders have been added to data/layouts/equipments/shields.
-Spikes can now be written to the map you're currently working on.
-Items can now be written to the map you're currently working on.
-Health zones can now be written to the map you're currently working on.
-Dialogs can now be written to the map you're currently working on.
-Timed music and timed sources can now be written to the map you're currently working on.
-Music and sources can now be written to the map you're currently working on.
-Clocks and calendars can now be written to the map you're currently working on.
-Updated the readme file with modified and removed keyboard shortcuts.
-Menu music volumes can now be saved upon exiting the game.
-Resolved an issue of maximum x and y resetting back to 100 upon reloading the map after creation.
-You can now view your overall shield strength in the statistics menu.
-You can now move in the air while jumping. When you jump, your movement speed will be doubled based on your walking and running speed.
-Added the weight attribute to all weapons. This determines how heavy or lite a sertain weapon is. The higher the value, the more it's gonna slow your character down. This in turn effects your overall movement speed.
-Text squares can now be written to the map you're currently working on.
-Reverb effects can now be written to the map you're currently working on.
-Zones can now be written to the map you're currently working on.
-The game will now ask you to download sounds regardless of whether the sounds folder exists or not, and if it's completely empty.
-Fixed directory functions to handel empty folders for storing sounds. If you have the sounds folder created in the main game directory, the game will ask you to download sounds for that folder if it sees that it's currently empty.
+* Added back the documentation menu into the main menu.
+* Shields are now completely parsed and ready to use. All of the shield folders have been added to data/layouts/equipments/shields.
+* Spikes can now be written to the map you're currently working on.
+* Items can now be written to the map you're currently working on.
+* Health zones can now be written to the map you're currently working on.
+* Dialogs can now be written to the map you're currently working on.
+* Timed music and timed sources can now be written to the map you're currently working on.
+* Music and sources can now be written to the map you're currently working on.
+* Clocks and calendars can now be written to the map you're currently working on.
+* Updated the readme file with modified and removed keyboard shortcuts.
+* Menu music volumes can now be saved upon exiting the game.
+* Resolved an issue of maximum x and y resetting back to 100 upon reloading the map after creation.
+* You can now view your overall shield strength in the statistics menu.
+* You can now move in the air while jumping. When you jump, your movement speed will be doubled based on your walking and running speed.
+* Added the weight attribute to all weapons. This determines how heavy or lite a sertain weapon is. The higher the value, the more it's gonna slow your character down. This in turn effects your overall movement speed.
+* Text squares can now be written to the map you're currently working on.
+* Reverb effects can now be written to the map you're currently working on.
+* Zones can now be written to the map you're currently working on.
+* The game will now ask you to download sounds regardless of whether the sounds folder exists or not, and if it's completely empty.
+* Fixed directory functions to handel empty folders for storing sounds. If you have the sounds folder created in the main game directory, the game will ask you to download sounds for that folder if it sees that it's currently empty.
 
 ###### new in 1.9
-Started working on parsing shields. They are not ready to be used as of right now. You can still equip and unequip them in the shields menu. This will be changed later on.
-Fixed writing map objects to a file not working propperly.
-Documentation versions can now be read by a file without having to modify the code directly. This file can be found under the docks folder of the game. The version.txt file will be altered any time I update the change log file.
-Platforms, staircases, and walls will now get written to the map file you're currently building in.
-Adjusted fall damage. If you fall from 8 tiles or more, your health will be deducted based on how high you fell. This will be multiplied by 21. For example, if you had 1000 health, and you fell 8 tiles, your health would be subtracted by 8, which would normaly be 992, but if you times that by 21, you'll actually have 832 health, or 83.2 percent of your maximum health.
-You can now jump up the staircase by pressing the spacebar. This is useful if you want to get up their faster without having to climb up one step at a time.
-Fixed staircases still playing the tile sounds while jumping on them.
-Made it so pressing left, right, up, or down arrow keys turn your character on the spot without having to press alt to do it.
-Recoded turrning logic.
-Reverted the keyboard layout back to what the normal game modes had. This time, space will be used to jump, control will be used to fire weapons, and alt will be used to run.
+* Started working on parsing shields. They are not ready to be used as of right now. You can still equip and unequip them in the shields menu. This will be changed later on.
+* Fixed writing map objects to a file not working propperly.
+* Documentation versions can now be read by a file without having to modify the code directly. This file can be found under the docks folder of the game. The version.txt file will be altered any time I update the change log file.
+* Platforms, staircases, and walls will now get written to the map file you're currently building in.
+* Adjusted fall damage. If you fall from 8 tiles or more, your health will be deducted based on how high you fell. This will be multiplied by 21. For example, if you had 1000 health, and you fell 8 tiles, your health would be subtracted by 8, which would normaly be 992, but if you times that by 21, you'll actually have 832 health, or 83.2 percent of your maximum health.
+* You can now jump up the staircase by pressing the spacebar. This is useful if you want to get up their faster without having to climb up one step at a time.
+* Fixed staircases still playing the tile sounds while jumping on them.
+* Made it so pressing left, right, up, or down arrow keys turn your character on the spot without having to press alt to do it.
+* Recoded turrning logic.
+* Reverted the keyboard layout back to what the normal game modes had. This time, space will be used to jump, control will be used to fire weapons, and alt will be used to run.
 
 ###### new in 1.8
-Jump time is no longer parsed, and therefore will not be used in the game for all characters.
-Removed the keys grave, 1, 2, and 3 for spying. These keys are now replaced by the shift and arrow keys to spy left, right, up, and down.
-Addressed an issue pertaining to one of the other game modes playing a random continuous fall sound unless the user exited it and whent back to the game's menu. I didn't realize this sound belonged to some code I previously implemented that would drop the user after 60 seconds if they were in the air for too long. In any case, this code has been removed.
-You can no longer jump or climb staircases while sitting. Idk how that was even possible to begin with.
-Addressed an issue where the death dialog would continuesly pop up after you have died in the builder mode.
-Fixed an issue where you were able to jump while being on top of a staircase. From now on, if you are on the stairs, you won't be able to jump. Instead, you'll have to climb it like a normal flight of stairs.
-You can now jump onto platforms and staircases! Thanks once again to Parker Watson for the huge help in fixing that. I had a feeling this had to be one of my pryoridies to deal with, amung other things.
-Changed the jumping, running, and firing keys to match with the keys set in the other game modes. In the builder mode, Space will now fire weapons, holding control plus left or right arrows will run, and pressing up arrow will make you jump.
-Recoded jumping and falling to work better with platforms, staircases, and walls.
-Recoded the intire map system.
+* Jump time is no longer parsed, and therefore will not be used in the game for all characters.
+* Removed the keys grave, 1, 2, and 3 for spying. These keys are now replaced by the shift and arrow keys to spy left, right, up, and down.
+* Addressed an issue pertaining to one of the other game modes playing a random continuous fall sound unless the user exited it and whent back to the game's menu. I didn't realize this sound belonged to some code I previously implemented that would drop the user after 60 seconds if they were in the air for too long. In any case, this code has been removed.
+* You can no longer jump or climb staircases while sitting. Idk how that was even possible to begin with.
+* Addressed an issue where the death dialog would continuesly pop up after you have died in the builder mode.
+* Fixed an issue where you were able to jump while being on top of a staircase. From now on, if you are on the stairs, you won't be able to jump. Instead, you'll have to climb it like a normal flight of stairs.
+* You can now jump onto platforms and staircases! Thanks once again to Parker Watson for the huge help in fixing that. I had a feeling this had to be one of my pryoridies to deal with, amung other things.
+* Changed the jumping, running, and firing keys to match with the keys set in the other game modes. In the builder mode, Space will now fire weapons, holding control plus left or right arrows will run, and pressing up arrow will make you jump.
+* Recoded jumping and falling to work better with platforms, staircases, and walls.
+* Recoded the intire map system.
 
 ###### new in 1.7
-You can now download all of the sounds right from within the game! When you open it for the first time, it will ask you if you want to download them or not. I recommend pressing yes on that, otherwise the game will run without them, which wouldn't be good. You may also have to extract the sounds yourself, as I don't have a way to automaticly extract it and put them where they belong.
-Addressed an issue pertaining to question based menus playing music when they weren't supposed to.
-Cleaned up the menu code, again. Apparently I loved to cludder up things in their lol.
-Added a prompt to all buildable npcs that asks if you want any of them to folow you up on platforms or not. This is useful for making higher floors on the map, and you want them to stay down at the bottom.
-Added back the select character type option into the main settings menu.
-Character selections and their attributes can finally be saved! Sorry if it took me an extremely long time to debug the issue. All of them can now be modified and ran like normal.
-You can now view how much ammo you have left for weapons that take it in the statistics menu.
-You can now view how many enemies have spawned on the map while playing one of the other game modes in the statistics menu. These stats will only apply to playing the other two game modes, not the actual builder mode.
-You can now view how long you've been playing the game in the statistics menu.
-The maps menu now only speaks the base name of the map file, rather than apending an extencion to the end of it.
+* You can now download all of the sounds right from within the game! When you open it for the first time, it will ask you if you want to download them or not. I recommend pressing yes on that, otherwise the game will run without them, which wouldn't be good. You may also have to extract the sounds yourself, as I don't have a way to automaticly extract it and put them where they belong.
+* Addressed an issue pertaining to question based menus playing music when they weren't supposed to.
+* Cleaned up the menu code, again. Apparently I loved to cludder up things in their lol.
+* Added a prompt to all buildable npcs that asks if you want any of them to folow you up on platforms or not. This is useful for making higher floors on the map, and you want them to stay down at the bottom.
+* Added back the select character type option into the main settings menu.
+* Character selections and their attributes can finally be saved! Sorry if it took me an extremely long time to debug the issue. All of them can now be modified and ran like normal.
+* You can now view how much ammo you have left for weapons that take it in the statistics menu.
+* You can now view how many enemies have spawned on the map while playing one of the other game modes in the statistics menu. These stats will only apply to playing the other two game modes, not the actual builder mode.
+* You can now view how long you've been playing the game in the statistics menu.
+* The maps menu now only speaks the base name of the map file, rather than apending an extencion to the end of it.
 
 ###### new in 1.6
-Fixed maps not being able to load propperly after they have been built within the main map menu of the game. If you've built a map with a name such as main, with the maximum length and height set to 50, and with the tile set to anything you want, you'll now be able to load it back from within the load maps menu for easy retreivel.
-Made it so when you press R while a weapon with ammo is loaded, it doesn't reload it when there's already a set amount of ammo in it. From now on, you can only reload the weapon if the loaded ammo reaches 0 for that particular weapon.
-Cleaned up lots of code related to playing sounds if an error occured anywear in the game. Dialogs will now play those sounds instead of the normal sound_pool.
-The statistics menu intro will now tell you how many entries there are Available to view upon launching it.
-You can now view the folowing statistics. Current location, current overall health, maximum jumpheight, maximum X position, maximum Y position, current level/experience, current amount of points, and total kills for all enemies. More may be added soon.
-Added a pause menu to all of the game modes. This let's you view statistics right from within the menu, and resume the game when needed.
-Updated the credits file with more of the people who contributed to this project. Please check them out if you can.
-Pressing tab now speaks the menu intro in Mason's m_pro class.
-Fixed some incorrectly placed variables in all of the reset functions.
-Fixed weapon ranges being stuck at 1 after upgrading them in the points menu.
+* Fixed maps not being able to load propperly after they have been built within the main map menu of the game. If you've built a map with a name such as main, with the maximum length and height set to 50, and with the tile set to anything you want, you'll now be able to load it back from within the load maps menu for easy retreivel.
+* Made it so when you press R while a weapon with ammo is loaded, it doesn't reload it when there's already a set amount of ammo in it. From now on, you can only reload the weapon if the loaded ammo reaches 0 for that particular weapon.
+* Cleaned up lots of code related to playing sounds if an error occured anywear in the game. Dialogs will now play those sounds instead of the normal sound_pool.
+* The statistics menu intro will now tell you how many entries there are Available to view upon launching it.
+* You can now view the folowing statistics. Current location, current overall health, maximum jumpheight, maximum X position, maximum Y position, current level/experience, current amount of points, and total kills for all enemies. More may be added soon.
+* Added a pause menu to all of the game modes. This let's you view statistics right from within the menu, and resume the game when needed.
+* Updated the credits file with more of the people who contributed to this project. Please check them out if you can.
+* Pressing tab now speaks the menu intro in Mason's m_pro class.
+* Fixed some incorrectly placed variables in all of the reset functions.
+* Fixed weapon ranges being stuck at 1 after upgrading them in the points menu.
 
 ###### new in 1.5
-Pressing right braket and backslash will now heal you 25 percent of your maximum health and shield strength.
-Removed unused variables and cheats from the game do to them already being present in some of the character and weapon files.
-Made it so using an item from the items menu in the game heals you 25 percent of your maximum health.
-Added the ability to auto save all games. This can be toggled in the main settings menu.
-Made it so upgrading maximum ammo is only possible if you've equipped a weapon that takes it.
-Added checks for things such as attack, defence, health, and other character related things so none of them go over or under those asined values.
-The level up sound will now play by default. I forgot why it was disabled to begin with.
-You can now upgrade your shield's defence in the points menu.
-Maps automaticly get written to a file when creating new maps for easy access when you want to load them back.
-Fixed maps not loading propperly. I accidentally put .map in place of the file open function when trying to load it. Instead of saying test.map, it said test.map.map.
+* Pressing right braket and backslash will now heal you 25 percent of your maximum health and shield strength.
+* Removed unused variables and cheats from the game do to them already being present in some of the character and weapon files.
+* Made it so using an item from the items menu in the game heals you 25 percent of your maximum health.
+* Added the ability to auto save all games. This can be toggled in the main settings menu.
+* Made it so upgrading maximum ammo is only possible if you've equipped a weapon that takes it.
+* Added checks for things such as attack, defence, health, and other character related things so none of them go over or under those asined values.
+* The level up sound will now play by default. I forgot why it was disabled to begin with.
+* You can now upgrade your shield's defence in the points menu.
+* Maps automaticly get written to a file when creating new maps for easy access when you want to load them back.
+* Fixed maps not loading propperly. I accidentally put .map in place of the file open function when trying to load it. Instead of saying test.map, it said test.map.map.
 
 ###### new in 1.4
-Completely ilimenated the old clunky map parser that was used in the save data class. I forgot to get rid of the settings and reset functions for it. Woops.
-You can now finally create your own maps with a file and load it into the game for use. As of right now, you can only spawn platforms, starecases, and walls, but more will be added later as time goes on. There's also a test map found in data/maps. Check it out!
-Made the toggle anouncements less verbose in the settings menu. Instead of saying something like, up and down in all menus enabled, or up and down in all menus disabled, it will now say something like, up and down enabled, or up and down disabled.
-Fixed lots of issues related to the settings menu of the game. You can now enable and disable all of the items in their like normal, and it will instently take effect the next time you save your settings and reopen the game.
-You can now spawn walls independent of platforms in the builder menu. I know you could already do that, but I decided to seperate walls from platforms in the code for better organization.
-Ripped out the dummy map parser that was used by the save data class. I'm going to start working on a real map parser that hopefully works to load and save maps of all lengths. The old map system was just a glorified save file that was loaded every time I called the read_map function when loading a map from the map.dat file.
-Added the ability to load and save boolion variables to Mason's save data class.
-Addressed an issue where hrtf refused to be saved after it's been toggeled on or off in the settings menu.
-Fixed menu callbacks with explosive weapons. You can now preview the sounds for them like normal.
-Fixed menu callbacks with artillery weapons. You can now preview the sounds for them like normal.
+* Completely ilimenated the old clunky map parser that was used in the save data class. I forgot to get rid of the settings and reset functions for it. Woops.
+* You can now finally create your own maps with a file and load it into the game for use. As of right now, you can only spawn platforms, starecases, and walls, but more will be added later as time goes on. There's also a test map found in data/maps. Check it out!
+* Made the toggle anouncements less verbose in the settings menu. Instead of saying something like, up and down in all menus enabled, or up and down in all menus disabled, it will now say something like, up and down enabled, or up and down disabled.
+* Fixed lots of issues related to the settings menu of the game. You can now enable and disable all of the items in their like normal, and it will instently take effect the next time you save your settings and reopen the game.
+* You can now spawn walls independent of platforms in the builder menu. I know you could already do that, but I decided to seperate walls from platforms in the code for better organization.
+* Ripped out the dummy map parser that was used by the save data class. I'm going to start working on a real map parser that hopefully works to load and save maps of all lengths. The old map system was just a glorified save file that was loaded every time I called the read_map function when loading a map from the map.dat file.
+* Added the ability to load and save boolion variables to Mason's save data class.
+* Addressed an issue where hrtf refused to be saved after it's been toggeled on or off in the settings menu.
+* Fixed menu callbacks with explosive weapons. You can now preview the sounds for them like normal.
+* Fixed menu callbacks with artillery weapons. You can now preview the sounds for them like normal.
 
 ###### new in 1.3
-Removed the letter U key from the readme file, as it was no longer being used in the game. This key may have other uses in the future.
-Removed the dockumentation menu. I thought this would be useful to read dockuments in the docks folder, but it had a line limmit put in place of files that were 10000 characters or longer.
-Asined a default weapon category and type to all of the game modes.
-Asined a default character to all of the game modes.
-Did some more cleanup in all of the menus.
-Finished parsing melee weapons. They can now be viewable in the weapons menu with their stats.
-Finished parsing explosive weapons. They can now be viewable in the weapons menu with their stats.
-Finished parsing artillery weapons. They can now be viewable in the weapons menu with their stats.
-Finished parsing archery weapons. They can now be viewable in the weapons menu with their stats.
-Fixed the errors given when you tried starting one of the normal game modes.
+* Removed the letter U key from the readme file, as it was no longer being used in the game. This key may have other uses in the future.
+* Removed the dockumentation menu. I thought this would be useful to read dockuments in the docks folder, but it had a line limmit put in place of files that were 10000 characters or longer.
+* Asined a default weapon category and type to all of the game modes.
+* Asined a default character to all of the game modes.
+* Did some more cleanup in all of the menus.
+* Finished parsing melee weapons. They can now be viewable in the weapons menu with their stats.
+* Finished parsing explosive weapons. They can now be viewable in the weapons menu with their stats.
+* Finished parsing artillery weapons. They can now be viewable in the weapons menu with their stats.
+* Finished parsing archery weapons. They can now be viewable in the weapons menu with their stats.
+* Fixed the errors given when you tried starting one of the normal game modes.
 
 ###### new in 1.2
-Added the ability to speak weapon atributes such as attack, range, level etc.
-You can now asine atributes to weapons! You can find their info at data/layouts/equipments/weapons/weapontype/your weapon.
-Moved the characters menu to the main settings menu of the game. The letter U key is no longer used to select your character.
-Addressed an issue where if you opened the game and tried playing one of the modes, nothing in the character files would be parsed unless you directly whent into the characters menu and chose something in their that would trigger it to be reparsed.
-Fixed some typos in the readme. D was supposed to be used to increase your moving speed, not S.
-Added the ability to speak atribute info of a character file when you hover over it in the characters menu. Thanks again to Parker Watson for the help in extensively testing the thing. There were so many issues with the menu callback function that I decided to take matters into my own hands and whent threw all of the menu functions that were being used in other menus I implemented to figure out what was wrong with it.
-Recoded character parsing. Thanks goes to Parker Watson for the huge help. I initially didn't ask for it, but I'm grateful nonetheless. I admit it was probably a bit messy to go through looking back at it lol.
-Added the maps folder. This will be used in the future to make and save maps to a file.
-Added error checking to menu sounds.
-Added lives and points into all of the character's files. Lives is used in the game to tell you how many lives you have before the game officially ends. Points is used in the game for upgrading purposes. The higher the value, the more you'll have to put into your stats.
+* Added the ability to speak weapon atributes such as attack, range, level etc.
+* You can now asine atributes to weapons! You can find their info at data/layouts/equipments/weapons/weapontype/your weapon.
+* Moved the characters menu to the main settings menu of the game. The letter U key is no longer used to select your character.
+* Addressed an issue where if you opened the game and tried playing one of the modes, nothing in the character files would be parsed unless you directly whent into the characters menu and chose something in their that would trigger it to be reparsed.
+* Fixed some typos in the readme. D was supposed to be used to increase your moving speed, not S.
+* Added the ability to speak atribute info of a character file when you hover over it in the characters menu. Thanks again to Parker Watson for the help in extensively testing the thing. There were so many issues with the menu callback function that I decided to take matters into my own hands and whent threw all of the menu functions that were being used in other menus I implemented to figure out what was wrong with it.
+* Recoded character parsing. Thanks goes to Parker Watson for the huge help. I initially didn't ask for it, but I'm grateful nonetheless. I admit it was probably a bit messy to go through looking back at it lol.
+* Added the maps folder. This will be used in the future to make and save maps to a file.
+* Added error checking to menu sounds.
+* Added lives and points into all of the character's files. Lives is used in the game to tell you how many lives you have before the game officially ends. Points is used in the game for upgrading purposes. The higher the value, the more you'll have to put into your stats.
 
 ###### new in 1.1
-Added the ability to asine atributes to characters with a file. You can find this under data/layouts/characters/your character. More will be coming soon!
-Reorganized the data folder a bit, and added the folowing folders. The saves folder will now contain everything to do with saving data related to the actuall game and it's prefferences. The layouts folder will now contain everything to do with making files related to actions performed in all of the game modes. You'll soon be able to asine atributes to different types of characters, weapons, NPCS, and shields with there respected files.
-Cleaned up some menu code in the settings porssion of the game.
-Sounds no longer destroy themselves after spawnning a vehicle on the map.
-You can now enable and disable global hrtf support in the settings menu.
-Made it so items in your inventory heal you a sertain percentage of your health, rather than healing you by 1 every time.
-Added more error checking to sounds, especially in the normal game modes.
-Removed saving of maps for now, as I still need to test it's capabilities, possibley replacing it altogether.
-Finally added keyboard documentation in the readme! This took me super duper long to do, but was worth every bit of my tired aking brain so early in the morning. If I've missed anything, please let me know asap!
-Fixed a critical runtime error caused by the bullets class. I had to go in their and change all of the continue statements to return ones. My bad on that one lol.
+* Added the ability to asine atributes to characters with a file. You can find this under data/layouts/characters/your character. More will be coming soon!
+* Reorganized the data folder a bit, and added the folowing folders. The saves folder will now contain everything to do with saving data related to the actuall game and it's prefferences. The layouts folder will now contain everything to do with making files related to actions performed in all of the game modes. You'll soon be able to asine atributes to different types of characters, weapons, NPCS, and shields with there respected files.
+* Cleaned up some menu code in the settings porssion of the game.
+* Sounds no longer destroy themselves after spawnning a vehicle on the map.
+* You can now enable and disable global hrtf support in the settings menu.
+* Made it so items in your inventory heal you a sertain percentage of your health, rather than healing you by 1 every time.
+* Added more error checking to sounds, especially in the normal game modes.
+* Removed saving of maps for now, as I still need to test it's capabilities, possibley replacing it altogether.
+* Finally added keyboard documentation in the readme! This took me super duper long to do, but was worth every bit of my tired aking brain so early in the morning. If I've missed anything, please let me know asap!
+* Fixed a critical runtime error caused by the bullets class. I had to go in their and change all of the continue statements to return ones. My bad on that one lol.
 
 ###### new in 1.0
-Finally fixed the game severely lagging when too many objects spawned on the map. From now on, you can't have more than 50 animals, enemies, projectiles, robots, and zombies at once on any of the game modes being played. This also applies to the builder mode as well.
-Addressed an ishue regarding bullit loop sounds still playing if the bullet's range has exceeded it's maximum value. The bullet loop sounds for archery, artillery, and explosive weapons should destroy propperly upon firing bullets with very little range to them.
-Maps can no longer be built without platforms. If you tried building a map, it will alert the user that there aren't any platforms available to view, therefore bringing them back to the map menu in the process.
-Recoded error checking for all sounds! If the game can't find what it's looking for in any of the folders given, it will raze an error, rather than letting the user continue dooing the task that has been requested, such as building an object, using weapons and shields, choosing characters etc.
-You can now upgrade your horizontal and vertical weapon ranges in the points menu.
-Finally fixed weapon ranges! Bullets will no longer travel untill the end of a boundry unless you're close to it. Your horizontal and vertical weapon ranges will determine where the bullets will end up on the map.
-Redesigned the points menu. Instead of bringing up a menu to perchis the amount of points you want to buy for that particular upgrade, it will now bring up an input box that let's you type the number of points you want to invest in that upgrade, such as attack and defence. You no longer need to worry about the game crashing if you have too many points.
-Added loop sounds to all of the explosive weapons.
-Added ricochet sounds to all of the melee weapons.
-Added ricochet, reload, and shell  sounds to all of the artillery weapons.
-Fixed other sounds destroying itself in the bullet class, especially when they bounce off walls.
-Fixed an issue where bullets kept bouncing endlessly when they had knoware else to go, especially if you jumpped while it was moving to the right or left. Bullets now destroy themselves after reaching the end of a boundary. As long as there's a wall on either side of you, they will still bounce off of it.
-Redesigned the way bullets function. Not only they bounce off of walls, they can actualy come back the other way and hit you if you're in the way of them while they're traveling. Dodging is possible, depending on where they come from.
-Made it so bullets destroy themselves after hitting a wall or a boundry.
-You can now asine ids to reverb effects.
-Addressed an ishue pertaining to weapon ammo clearing itself after a melee weapon has been selected. You can now reload all weapons with ammo normaly.
-Added hrtf and reverb support to all game elements. The folowing parameters can be adjusted for building a reverb effect. Dry, from 0.1 to 1.0, wet, from 0.1 to 1.0, room_size, from 0.1 to 1.0, dampping, from 0.1 to 1.0, and width, from 0.1 to 1.0. As of right now, you can only spawn one of them at a time. Untill I find a way to fix this, you may have to destroy the map and rebuild the effect from scratch, if you want it someware else on the map.
-Finally added vehicles. This took an extremely long time to make. To get inside of one, make sure you are neare it, and press enter to start it up. It will go at speed 5 by default. To stop the vehicle from moving, press enter again. To increase/decrease the speed, press up or down arrows. To turn the vehicle, press left or right arrows. To honk your horn, press space.
-Added the upgrade points menu to all game modes. You can increase the folowing stats while playing the normal/custom mode. attack, defence, health, ammo, and shield strength. The more points you have after leveling up, the more you can invest in your upgrades. Your attack will increase the overall damage of all weapons. Your defence will increase the overall resistance of your character, making it so enemies can't easyly hurt you.
-Added the object info menu to all game modes. The folowing objects can be viewed. Animals, enemies, projectiles, robots, and zombies. These will tell you where they are in relationship to you, and there overall health in percentages when viewed in the menu.
+* Finally fixed the game severely lagging when too many objects spawned on the map. From now on, you can't have more than 50 animals, enemies, projectiles, robots, and zombies at once on any of the game modes being played. This also applies to the builder mode as well.
+* Addressed an ishue regarding bullit loop sounds still playing if the bullet's range has exceeded it's maximum value. The bullet loop sounds for archery, artillery, and explosive weapons should destroy propperly upon firing bullets with very little range to them.
+* Maps can no longer be built without platforms. If you tried building a map, it will alert the user that there aren't any platforms available to view, therefore bringing them back to the map menu in the process.
+* Recoded error checking for all sounds! If the game can't find what it's looking for in any of the folders given, it will raze an error, rather than letting the user continue dooing the task that has been requested, such as building an object, using weapons and shields, choosing characters etc.
+* You can now upgrade your horizontal and vertical weapon ranges in the points menu.
+* Finally fixed weapon ranges! Bullets will no longer travel untill the end of a boundry unless you're close to it. Your horizontal and vertical weapon ranges will determine where the bullets will end up on the map.
+* Redesigned the points menu. Instead of bringing up a menu to perchis the amount of points you want to buy for that particular upgrade, it will now bring up an input box that let's you type the number of points you want to invest in that upgrade, such as attack and defence. You no longer need to worry about the game crashing if you have too many points.
+* Added loop sounds to all of the explosive weapons.
+* Added ricochet sounds to all of the melee weapons.
+* Added ricochet, reload, and shell  sounds to all of the artillery weapons.
+* Fixed other sounds destroying itself in the bullet class, especially when they bounce off walls.
+* Fixed an issue where bullets kept bouncing endlessly when they had knoware else to go, especially if you jumpped while it was moving to the right or left. Bullets now destroy themselves after reaching the end of a boundary. As long as there's a wall on either side of you, they will still bounce off of it.
+* Redesigned the way bullets function. Not only they bounce off of walls, they can actualy come back the other way and hit you if you're in the way of them while they're traveling. Dodging is possible, depending on where they come from.
+* Made it so bullets destroy themselves after hitting a wall or a boundry.
+* You can now asine ids to reverb effects.
+* Addressed an ishue pertaining to weapon ammo clearing itself after a melee weapon has been selected. You can now reload all weapons with ammo normaly.
+* Added hrtf and reverb support to all game elements. The folowing parameters can be adjusted for building a reverb effect. Dry, from 0.1 to 1.0, wet, from 0.1 to 1.0, room_size, from 0.1 to 1.0, dampping, from 0.1 to 1.0, and width, from 0.1 to 1.0. As of right now, you can only spawn one of them at a time. Untill I find a way to fix this, you may have to destroy the map and rebuild the effect from scratch, if you want it someware else on the map.
+* Finally added vehicles. This took an extremely long time to make. To get inside of one, make sure you are neare it, and press enter to start it up. It will go at speed 5 by default. To stop the vehicle from moving, press enter again. To increase/decrease the speed, press up or down arrows. To turn the vehicle, press left or right arrows. To honk your horn, press space.
+* Added the upgrade points menu to all game modes. You can increase the folowing stats while playing the normal/custom mode. attack, defence, health, ammo, and shield strength. The more points you have after leveling up, the more you can invest in your upgrades. Your attack will increase the overall damage of all weapons. Your defence will increase the overall resistance of your character, making it so enemies can't easyly hurt you.
+* Added the object info menu to all game modes. The folowing objects can be viewed. Animals, enemies, projectiles, robots, and zombies. These will tell you where they are in relationship to you, and there overall health in percentages when viewed in the menu.
+
 Total changes, 678.
 
 ###### Credits
