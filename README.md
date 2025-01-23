@@ -4,7 +4,7 @@ A classic spinoff to other popular offline shooters.
 ## Contributing
 You are free to add any features and or fix any bugs I haven't covered. All I ask of you guys is to please give credit where Necessary, and let me know ahead of time when things are modified. That way I can review it and see if it's worth pushing to my branch. Thanks in advanced for your Patients and understanding. Happy coding!
 
-### About
+### Readme
 Welcome to simple fighter, my own spinnoff to games such as scrolling battels and other offline shooters.
 
 ### Intruduction.
@@ -12,12 +12,12 @@ Simple fighter is just your usual hack and slash shooter, but with a plesent twi
 
 ### Game features.
 This game has the folowing features.
-The ability to play different game modes.
-The ability to level up and gain experience.
-The ability to upgrade your stats with level up points.
-The ability to make maps of varying difficulty.
-The ability to add environmental effects such as HRTF and reverb to your map to further unleash your creativity and design.
-Last but not least, the ability to make your own sounds to add to the game. These include, but are not limited to, characters, equipments such as items, shields, weapons etc, footsteps including walls, NPC such as animals, enemies, projectiles etc, objects such as doors, hazards, spikes, teleporters, vehicles etc, and UI sounds such as menus, typing themes, miscellaneous SFX etc.
+* The ability to play different game modes.
+* The ability to level up and gain experience.
+* The ability to upgrade your stats with level up points.
+* The ability to make maps of varying difficulty.
+* The ability to add environmental effects such as HRTF and reverb to your map to further unleash your creativity and design.
+* The ability to make your own sounds to add to the game. These include, but are not limited to, characters, equipments such as items, shields, weapons etc, footsteps including walls, NPC such as animals, enemies, projectiles etc, objects such as doors, hazards, spikes, teleporters, vehicles etc, and UI sounds such as menus, typing themes, miscellaneous SFX etc.
 
 ### The folder structure.
 This game comes with a high level folder structure that makes it easier to find and organize things when needed.
@@ -36,75 +36,133 @@ These are all of the keys found in any of the modes that are being played. I'll 
 
 #### Movement keys.
 Left arrow: Moves left on the X axis, if pressed/held down.
+
 Right arrow: Moves right on the X axis, if pressed/held down.
+
 Down arrow: Moves down on the Y axis, if pressed/ held down.
+
 Up arrow: Moves up on the y axis, if pressed/held down.
+
 Alt plus left arrow: Moves left at double speed on the X axis, if pressed/held down.
+
 Alt plus right arrow: Moves right at double speed on the X axis, if pressed/held down.
+
 Alt plus down arrow: Moves down at double speed on the Y axis, if pressed/held down.
+
 Alt plus up arrow: Moves up at double speed on the Y axis, if pressed/held down.
+
 Spacebar: Causes your character to jump higher on the Y axes, if pressed/held down.
+
 Letter, J: Moves to a random coordinate on the X axis, if pressed.
+
 Letter, K: Moves to a random coordinate on the Y axis, if pressed.
+
 Letter, L: Moves to a random coordinate on both the X and Y axis, if pressed.
 
 #### Camera keys.
 Letter, G plus Left arrow: Moves the camera left on the X axis, if pressed/ held down.
+
 Letter, G plus Right arrow: Moves the camera right on the X axis, if pressed/ held down.
+
 Letter, G plus Up arrow: Moves the camera up on the Y axis, if pressed/ held down.
+
 Letter, G plus down arrow: Moves the camera down on the Y axis, if pressed/ held down.
+
 Letter, G plus letter M: Toggles the mfwc mode on or off for the camera, if pressed/ held down.
+
 Letter, G plus letter R: Anounces the camera's current Coordinates relative to your position on the map, if pressed/ held down.
+
 Letter, G plus letter T: Plays the current map tile at the camera's position, if pressed/ held down.
 
 #### Spire keys.
 Shift plus left arrow: Moves the spire left to find objects on the left side of the map, if pressed.
+
 Shift plus right arrow: Moves the spire right to find objects on the right side of the map, if pressed.
+
 Shift plus down arrow: Moves the spire down to find objects on the botum side of the map, if pressed.
+
 Shift plus up arrow: Moves the spire up to find objects on the top side of the map, if pressed.
 
 #### Miscellaneous keys.
 Letter, C: Check your current location and the tile being walked on, if pressed.
+
 Letter, X: toggles auto walking on or off, if pressed.
+
 Letter, T: Sit or stand at your current location, if pressed.
+
 Letter, A: Decreases your overall movement speed, if pressed.
+
 Letter, D: Increases your overall movement speed, if pressed.
+
 Letter, F: Resets your overall movement speed back to default, if pressed.
+
 Letter, Q: Anounces the zone you're on in the builder mode, if pressed.
+
 Letter, P: Pauses or resumes the currently active game, if pressed.
+
 Letter, R: Reloads ammo into a particular weapon category, if pressed.
+
 Letter, Z: Anounces ammo of a particular weapon category, if pressed.
+
 Letter, Y: Anounces how long you've been playing the game, if pressed.
+
 Letter, U: Anounces the current map you're playing on in the builder mode, if pressed.
+
 Letter, H: Anounces your current health in percentages and how many lives you have, if pressed.
+
 Letter, B: Equips a shield if one is available, if pressed.
+
 Letter, N: Anounces the total kills of all npcs in one of the game modes, if pressed.
+
 Letter, M: Anounces your current shield strength in percentages, if pressed.
+
 Semicolon: Anounces the current maximum jump height, if pressed.
+
 Apostrophe: Anounces the current overall movement speed, if pressed.
+
 Comma: Anounces the current maximum X position, if pressed.
+
 PERIOD: Anounces the current maximum Y position, if pressed.
+
 F1: Decreases your maximum jump height, if pressed.
+
 F2: Increases your maximum jump height, if pressed.
+
 F3: Resets your jump height back to default, if pressed.
+
 F4: Decreases your maximum X position in one of the game modes, if pressed.
+
 F5: Increases your maximum X position in one of the game modes, if pressed.
+
 F6: Decreases your maximum Y position in one of the game modes, if pressed.
+
 F7: Increases your maximum Y position in one of the game modes, if pressed.
+
 Control: Fires the currently selected weapon, if pressed/held down.
+
 Tab: Cycles forward through the available inventory items, if pressed.
+
 Shift plus tab: Cycles backward through the available inventory items, if pressed.
+
 Shift plus enter: Uses an inventory item when it's currently focused, if pressed/held down.
+
 Shift plus left braket: Drops an inventory item depending on where you're facing, if pressed.
+
 Alt plus slash: Opens a prompt that lets you type the x and y Coordinates you'd like to move to on the map in the builder mode, if pressed.
+
 Enter: Interacts with various objects, such as doors, signs, passages, dialogs, and various other menu items, if pressed.
+
 Escape: Exits the current game or map and returns you to the last focused menu, if pressed.
 
 #### Menu keys.
 Letter, W: Opens the weapons menu, if pressed.
+
 Letter, S: Opens the shields menu, if pressed.
+
 Letter, E: Opens the object viewer menu, if pressed.
+
 Letter, O: Opens the Builder menu in the builder mode, if pressed.
+
 Letter, V: Opens the points menu, if pressed.
 
 ##### Creating sound packs.
@@ -112,120 +170,183 @@ This game allows you to create customizeable sound packs that you can use in var
 
 ##### Character sound listing: 26 total.
 buy.ogg: This sound is played when your character purchases upgrades.
+
 cameraair.ogg: This sound is played when air is detected while your character uses the camera.
+
 camerahazard.ogg: This sound is played when a hazard is detected while your character uses the camera.
+
 cameraplayer.ogg: This sound is played when a player is detected while your character uses the camera.
+
 death.ogg: This sound is played when your character dies.
+
 fall.ogg: This sound is played when your character starts falling.
+
 healing.ogg: This sound is played When your character is healing.
+
 healstart.ogg: This sound is played when your character starts healing.
+
 healstop.ogg: This sound is played when your character stops healing.
+
 hurt.ogg: This sound is played when your character gets hurt.
+
 inv.ogg: This sound is played when your character cycles through there inventory.
+
 jump.ogg: This sound is played when your character starts jumping.
+
 kill.ogg: This sound is played when your character kills an entity.
+
 land.ogg: This sound is played when your character lands on a platform.
+
 lev.ogg: This sound is played when your character levels up.
+
 life.ogg: This sound is played when your character loses a life.
+
 plummet.ogg: This sound is played when your character is falling.
+
 rock.ogg: This sound is played when your character rocks back and forth while sitting.
+
 rise.ogg: This sound is played when your character is jumping.
+
 sit.ogg: This sound is played when your character sits on the ground.
+
 stand.ogg: This sound is played when your character stands up.
+
 swing.ogg: This sound is played when your character swings a melee weapon.
+
 telxy.ogg: This sound is played when your character teleports on the x and y axes of a map.
+
 turn.ogg: This sound is played when your character turns on the spot.
+
 xtel.ogg: This sound is played when your character teleports on the x axes of a map.
+
 ytel.ogg: This sound is played when your character teleports on the y axes of a map.
 
 ##### Item sound listing: 7 total.
 break.ogg: This sound is played when an item is being broken.
+
 draw.ogg: This sound is played when an item is being drawn.
+
 drop.ogg: This sound is played when an item is being dropped.
+
 fire.ogg: This sound is played when an item is being used.
+
 get.ogg: This sound is played when an item is being grabbed.
+
 hit.ogg: This sound is played when an item is used.
+
 loop.ogg: This sound is played when an item is being looped.
 
 ##### Shield sound listing: 6 total.
 break.ogg: This sound is played when a shield is being broken.
+
 draw.ogg: This sound is played when a shield is being drawn.
+
 hit.ogg: This sound is played when a shield is being hit.
+
 loop.ogg: This sound is played when a shield is being looped while wearing it.
+
 remove.ogg: This sound is played when a shield is being removed.
+
 wear.ogg: This sound is played when a shield is being worn.
 
 ##### Weapon sound listing: 8 total.
 draw.ogg: This sound is played when a weapon is being drawn.
+
 empty.ogg: This sound is played when a non melee weapon is being emptyed.
+
 fire.ogg: This sound is played when a weapon is being used.
+
 hit.ogg: This sound is played when a weapon is used.
+
 loop.ogg: This sound is played when a weapon is being looped while using it.
+
 reload.ogg: This sound is played when a non melee weapon is being reloaded with ammo.
+
 rico.ogg: This sound is played when a weapon is being ricocheted.
+
 shell.ogg: This sound is played when a non melee weapon dropps ammo shells.
 
 ##### Menu sound listing: 7 total.
 click.ogg: This sound is played when you go through menu items.
+
 close.ogg: This sound is played when a menu is being closed.
+
 edge.ogg: This sound is played when a menu has reached a boundary.
+
 enter.ogg: This sound is played when a menu item has been selected.
+
 music.ogg: This sound is played when a menu has music.
+
 open.ogg: This sound is played when a menu is being opened.
+
 speaker.ogg: This sound is played when a menu has a speaker test option.
 
 ##### Keyboard sound listing: 5 total.
 cap.ogg: This sound is played when a capital letter is being typed on the keyboard.
+
 delete.ogg: This sound is played when a character is being deleted on the keyboard.
+
 return.ogg: This sound is played when a new line character is being typed on the keyboard.
+
 space.ogg: This sound is played when a space character is being typed on the keyboard.
+
 type.ogg: This sound is played when characters excluding spaces and new lines are being typed on the keyboard.
 
 ##### Npc sound listing: 11 total.
 death.ogg: This sound is played when an entity dies.
+
 heal.ogg: This sound is played when a boss enemy is healing.
+
 hit.ogg: This sound is played when an entity hits your character.
+
 hurt.ogg: This sound is played when an entity gets hurt.
+
 launch.ogg: This sound is played when an entity launches another entity or object.
+
 life.ogg: This sound is played when an entity loses a life.
+
 loop.ogg: This sound is played when a projectile is being looped.
+
 spawn.ogg: This sound is played when an entity is being spawned.
+
 step.ogg: This sound is played when an entity is moving.
+
 taunt.ogg: This sound is played when an entity is taunting your character.
+
 tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of a map.
 
 ###### Change log
 new in 6.0
-Made it so turning sounds play in 2d for all characters.
-Made it so your inventory gets cleared upon player death. You can also clear your inventory by typing the command slash invclear.
-Revamped the main enemie class and renamed it to humans. They can now equip and use the weapons you have in the game to hit you instead of using their standered attack system. The name change will also apply to the builder menu, the object info menu, and the spire.
-Added fall modifier to all of the character files. This controls the fall damage received when hard landing on platforms with your shield on or off. The default is set to 21, but can be changed per character.
-vehicles can now damage bosses.
-Addressed an issue of time bombs damaging entities before the timer has elapsed on them.
-Fixed a bug where the death sounds of entities didn't always play when the slash kill or slash killall commands were being executed.
-Addressed an issue where you weren't able to jump what so ever upon reaching the maximum hight of a map you were building.
+* Made it so turning sounds play in 2d for all characters.
+* Made it so your inventory gets cleared upon player death. You can also clear your inventory by typing the command slash invclear.
+* Revamped the main enemie class and renamed it to humans. They can now equip and use the weapons you have in the game to hit you instead of using their standered attack system. The name change will also apply to the builder menu, the object info menu, and the spire.
+* Added fall modifier to all of the character files. This controls the fall damage received when hard landing on platforms with your shield on or off. The default is set to 21, but can be changed per character.
+* vehicles can now damage bosses.
+* Addressed an issue of time bombs damaging entities before the timer has elapsed on them.
+* Fixed a bug where the death sounds of entities didn't always play when the slash kill or slash killall commands were being executed.
+* Addressed an issue where you weren't able to jump what so ever upon reaching the maximum hight of a map you were building.
 new in 5.9
-Moved the extra map related options into it's own keyboard command. You can now press the letter U key to access this menu instead of looking for it in the builder menu. The letter Q key will now tell you what map you are on, along with reading out the zone that's currently present.
-Added the option to toggle turning on the spot for all characters in the settings menu. When turning on the spot is disabled, you'll have to hold down alt and shift and press the arrow keys to turn in the direction you want to face for aming at various entities.
-Made it so you can instently reload a map using the slash relmap command without being prompted to do so. It will still ask you if you want to reload the map you're currently playing if you invoke the command from the several map menus loacated in various parts of the game.
-Added the ability to kill an entity at a spessified coordinate with the slash kill command. You can also use the slash killall command to clear all of the entities from the map at once.
-Added back some of the options found in the map menu as a Separate menu item located at the botum of the builder menu.
-Changed the wording of some of the menu based prompts found in certain entities when building them in the builder menu.
-Addressed an issue where heal zones kept playing their sound every time you took a step while you were in one.
-Added the ability to give yourself items with the slash give command.
-Added the ability to collect all of the items found on the map with the slash getall command.
-Added the ability to move entities and other objects on the map with the slash go command, not just yourself.
+* Moved the extra map related options into it's own keyboard command. You can now press the letter U key to access this menu instead of looking for it in the builder menu. The letter Q key will now tell you what map you are on, along with reading out the zone that's currently present.
+* Added the option to toggle turning on the spot for all characters in the settings menu. When turning on the spot is disabled, you'll have to hold down alt and shift and press the arrow keys to turn in the direction you want to face for aming at various entities.
+* Made it so you can instently reload a map using the slash relmap command without being prompted to do so. It will still ask you if you want to reload the map you're currently playing if you invoke the command from the several map menus loacated in various parts of the game.
+* Added the ability to kill an entity at a spessified coordinate with the slash kill command. You can also use the slash killall command to clear all of the entities from the map at once.
+* Added back some of the options found in the map menu as a Separate menu item located at the botum of the builder menu.
+* Changed the wording of some of the menu based prompts found in certain entities when building them in the builder menu.
+* Addressed an issue where heal zones kept playing their sound every time you took a step while you were in one.
+* Added the ability to give yourself items with the slash give command.
+* Added the ability to collect all of the items found on the map with the slash getall command.
+* Added the ability to move entities and other objects on the map with the slash go command, not just yourself.
 new in 5.8
-Helpers can now walk around collecting items for you. They also can no longer give you experience after being killed.
-Added the ability to save the keyboard echo settings found in the audio forms class.
-You can now define a custom moving sound when using the slash go command for all characters.
-Safe zones can now be seen with the spire.
-Fixed a bug where safe zones would act as if they weren't being triggered when moving in and out of them with the camera. This meant that entities could move and attack you as if there wasn't one to begin with.
-You can now build safe zones in the builder menu. They will also be written to the map you're currently working on.
-Improved wall detection for animals, bosses, enemies, robots, and zombies. Instead of them simply halting movement altogether when a wall is detected, they will now walk bak and forth as if they are confused on where to go. They will still chase after you if a wall isn't present, or if you get in their spessified ranges.
-Helpers can now damage bosses.
-Fixed lots of bugs related to the movement lojic for animals, bosses, enemies, robots, and zombies.
-Implemented wall detection for projectiles.
+* Helpers can now walk around collecting items for you. They also can no longer give you experience after being killed.
+* Added the ability to save the keyboard echo settings found in the audio forms class.
+* You can now define a custom moving sound when using the slash go command for all characters.
+* Safe zones can now be seen with the spire.
+* Fixed a bug where safe zones would act as if they weren't being triggered when moving in and out of them with the camera. This meant that entities could move and attack you as if there wasn't one to begin with.
+* You can now build safe zones in the builder menu. They will also be written to the map you're currently working on.
+* Improved wall detection for animals, bosses, enemies, robots, and zombies. Instead of them simply halting movement altogether when a wall is detected, they will now walk bak and forth as if they are confused on where to go. They will still chase after you if a wall isn't present, or if you get in their spessified ranges.
+* Helpers can now damage bosses.
+* Fixed lots of bugs related to the movement lojic for animals, bosses, enemies, robots, and zombies.
+* Implemented wall detection for projectiles.
 new in 5.7
 Introduced wall detection for entities such as animals and enemies. This means that if there's a wall anywhere on the map, the entitie won't be allowed to go past it what so ever. From now on, the only way they'll be able to pass through it is if the wall is removed from the map, or if a passage that contains 2 walls on both endpoints is opened. Destroyable walls will remain unaffected.
 Revamped the movement lojic for animals, bosses, enemies, robots, and zombies. Instead of continuously chasing you upon being spotted, they will now stop folowing you if they find that you've moved far enough away from them.
