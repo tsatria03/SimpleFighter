@@ -316,7 +316,9 @@ taunt.ogg: This sound is played when an entity is taunting your character.
 tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of a map.
 
 ###### Change log
-new in 6.0
+This is the game's change log.
+
+####### new in 6.0
 * Made it so turning sounds play in 2d for all characters.
 * Made it so your inventory gets cleared upon player death. You can also clear your inventory by typing the command slash invclear.
 * Revamped the main enemie class and renamed it to humans. They can now equip and use the weapons you have in the game to hit you instead of using their standered attack system. The name change will also apply to the builder menu, the object info menu, and the spire.
