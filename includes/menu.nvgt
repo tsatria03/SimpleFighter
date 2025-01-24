@@ -548,30 +548,27 @@ return;
 }
 if(mres==1)
 {
+string clipboard_data = clipboard_read_text();
+if (clipboard_data == "")
+{
+dlg_snd("Error. The clipboard is empty. No data to paste.");
+resume_pools();
+return;
+}
+string[] lines = string_split(clipboard_data, "\r\n", true);
+bool is_valid = validate_map_data(lines);
+if (!is_valid)
+{
+dlg_snd("Error. The clipboard data is invalid.");
+resume_pools();
+return;
+}
 mapper.open("data/maps/" + mapname + ".map", "wb");
-mapdata=mapper.read();
-mapdata=clipboard_read_text();
-if(mapdata=="")
-{
-dlg_snd("Error. The map data you've pasted is invalid.");
-resume_pools();
-return;
-}
-else if(mapdata!="name "+mapname+"\r\n"+"maxx "+maxx+"\r\n"+"maxy "+maxy+"\r\n"+"platform 0 "+maxx+" 0 "+tiletype+" 0 100")
-{
-dlg_snd("Error. The map data you've pasted is invalid.");
-resume_pools();
-return;
-}
-else
-{
-resume_pools();
-mapper.write(mapdata);
+mapper.write(clipboard_data);
 mapper.close();
 load_map(mapname);
-mpool.play_stationary("mapupdate.ogg",false);
+mpool.play_stationary("mapupdate.ogg", false);
 speak("Map updated.");
-}
 }
 if(mres==2)
 {

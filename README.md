@@ -319,6 +319,7 @@ tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of 
 This is the game's change log.
 
 ###### new in 6.0
+* Addressed an issue where pasting data from the clipboard into your map could result in the entire map being cleared if the clipboard was empty or if it contained non-map-related lines. The system will now validate the clipboard data to ensure it includes all of the required map fields before overwriting the entire map.
 * Animals, bosses, humans, projectiles, robots, turrets, and zombies can now destroy items.
 * Made it so turning sounds play in 2d for all characters.
 * Made it so your inventory gets cleared upon player death. You can also clear your inventory by typing the command slash invclear.

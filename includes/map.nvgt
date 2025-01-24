@@ -1894,35 +1894,37 @@ m.add_item_tts("no");
 int mres=m.run("Are you sure you want to overwrite all existing map data with what's on your clipboard?",true);
 if(mres==0)
 {
+resume_pools();
 speak("canceled");
 game(true);
 }
 if(mres==1)
 {
+string clipboard_data = clipboard_read_text();
+if (clipboard_data == "")
+{
+dlg_snd("Error. The clipboard is empty. No data to paste.");
+resume_pools();
+game(true);
+}
+string[] lines = string_split(clipboard_data, "\r\n", true);
+bool is_valid = validate_map_data(lines);
+if (!is_valid)
+{
+dlg_snd("Error. The clipboard data is invalid.");
+resume_pools();
+game(true);
+}
 mapper.open("data/maps/" + mapname + ".map", "wb");
-mapdata=mapper.read();
-mapdata=clipboard_read_text();
-if(mapdata=="")
-{
-dlg_snd("Error. The map data you've pasted is invalid.");
-game(true);
-}
-else if(mapdata!="name "+mapname+"\r\n"+"maxx "+maxx+"\r\n"+"maxy "+maxy+"\r\n"+"platform 0 "+maxx+" 0 "+tiletype+" 0 100")
-{
-dlg_snd("Error. The map data you've pasted is invalid.");
-game(true);
-}
-else
-{
-mapper.write(mapdata);
+mapper.write(clipboard_data);
 mapper.close();
 load_map(mapname);
-mpool.play_stationary("mapupdate.ogg",false);
+mpool.play_stationary("mapupdate.ogg", false);
 speak("Map updated.");
-}
 }
 if(mres==2)
 {
+resume_pools();
 speak("canceled");
 game(true);
 }
