@@ -38,7 +38,7 @@ mapdata=mapper.read();
 string newline=virtual_input_box("","Enter the line you'd like to add.");
 mapper.write("\r\n"+newline);
 mapper.close();
-load_map(mapname);
+load_map(mapname, mapowner);(mapname);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
 }
@@ -62,7 +62,7 @@ resume_pools();
 speak("canceled");
 return;
 }
-if(mres>5 and mres<=filtered_lines.length())
+if(mres>6 and mres<=filtered_lines.length())
 {
 uint original_index=original_lines[mres-1];
 lines.remove_at(original_index);
@@ -77,7 +77,7 @@ mapper.open("data/maps/"+mapname+".map", "wb");
 mapdata=mapper.read();
 mapper.write(final);
 mapper.close();
-load_map(mapname);
+load_map(mapname, mapowner);(mapname);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
 }
@@ -118,7 +118,7 @@ resume_pools();
 mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(mapline);
 mapper.close();
-load_map(mapname);
+load_map(mapname, mapowner);(mapname);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
 }
@@ -246,7 +246,7 @@ return;
 mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(clipboard_data);
 mapper.close();
-load_map(mapname);
+load_map(mapname, mapowner);(mapname);
 mpool.play_stationary("mapupdate.ogg", false);
 speak("Map updated.");
 }
@@ -271,7 +271,22 @@ else
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
-m.add_item_tts(string_replace(maps[i],".map","",true)+", size: "+measure_file_size(file_get_size("data/maps/"+maps[i])));
+string temp_map_name = string_replace(maps[i], ".map", "", true);
+mapper.open("data/maps/"+temp_map_name+".map", "rb");
+string temp_map_data = mapper.read();
+mapper.close();            
+string temp_owner;
+string[] lines = delinear(temp_map_data);
+for (uint j = 0; j < lines.length(); j++)
+{
+string[] sd = string_split(lines[j], " ", true);
+if (sd[0] == "contributor" && sd.length() == 2)
+{
+temp_owner = sd[1];
+break;
+}
+}            
+m.add_item_tts(temp_map_name + ", created by " + temp_owner + ", Size: " + measure_file_size(file_get_size("data/maps/" + maps[i])));
 }
 int mres=m.run("Maps menu", true);
 if(mres==0)
@@ -293,7 +308,7 @@ mapname=maps[mres-1];
 mapname=string_replace(mapname, ".map", "", true);
 me.x=0;
 me.y=0;
-load_map(mapname);
+load_map(mapname, mapowner);(mapname);
 }
 }
 }
@@ -301,13 +316,15 @@ if(mapem=="nm")
 {
 resume_pools();
 string name=virtual_input_box("","Enter the name of this map.");
+string name2=virtual_input_box("","Enter the author of this map.");
 string mx=virtual_input_box("","Enter the minimum length of this map.");
 string mx2=virtual_input_box("","Enter the maximum length of this map.");
 string my=virtual_input_box("","Enter the minimum height of this map.");
 string my2=virtual_input_box("","Enter the maximum height of this map.");
-if(mapname=="" and minx=="" and maxx=="" and miny=="" and maxy=="")
+if(mapname=="" and mapowner=="" and minx=="" and maxx=="" and miny=="" and maxy=="")
 return;
 string mapname=name;
+string mapowner=name2;
 double minx=string_to_number(mx);
 double maxx=string_to_number(mx2);
 double miny=string_to_number(my);
@@ -333,8 +350,8 @@ return;
 }
 else
 {
-create_map(mapname, minx, maxx, miny, maxy, tiletype);
-load_map(mapname);
+create_map(mapname, mapowner, minx, maxx, miny, maxy, tiletype);
+load_map(mapname, mapowner);
 }
 }
 if(mapem=="rcm")
@@ -356,7 +373,7 @@ return;
 if(mres==1)
 {
 resume_pools();
-load_map(mapname);
+load_map(mapname, mapowner);(mapname);
 speak("map reloaded");
 }
 if(mres==2)

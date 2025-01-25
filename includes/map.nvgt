@@ -287,9 +287,10 @@ speak("current location,"+me.x+",;"+me.y+","+"you're walking on;"+gmt(me.x,me.y)
 }
 }
 
-void load_map(string name, bool instent_update=true, bool speak_percentage=false, int loadtime=50, int loadbeeps=1, int loadsounds=1)
+void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, int loadtime=50, int loadbeeps=1, int loadsounds=1)
 {
 mapname=name;
+mapowner=owner;
 clearmap();
 destroymap();
 if(string_ends_with(mapname,".map"))
@@ -335,6 +336,10 @@ string[] sd=string_split(lines[i], " ", true);
 if(sd[0]=="name" && sd.length()==2)
 {
 mapname=sd[1];
+}
+else if(sd[0]=="contributor" && sd.length()==2)
+{
+mapowner=sd[1];
 }
 else if(sd[0]=="minx" && sd.length()==2)
 {
@@ -1680,7 +1685,7 @@ if (file_exists("data/maps/" + name + ".map"))
 {
 if (x >= minx && x <= maxx && y >= miny && y <= maxy)
 {
-load_map(name);
+load_map(name,mapowner);
 }
 }
 else
@@ -1709,13 +1714,15 @@ else if (base_command == "newmap")
 if (parsed.length() == 1)
 {
 string name=virtual_input_box("","Enter the name of this map.");
+string name2=virtual_input_box("","Enter the author of this map.");
 string mx=virtual_input_box("","Enter the minimum length of this map.");
 string mx2=virtual_input_box("","Enter the maximum length of this map.");
 string my=virtual_input_box("","Enter the minimum height of this map.");
 string my2=virtual_input_box("","Enter the maximum height of this map.");
-if(mapname=="" and minx=="" and maxx=="" and miny=="" and maxy=="")
+if(mapname=="" and mapowner=="" and minx=="" and maxx=="" and miny=="" and maxy=="")
 return;
 string mapname=name;
+string mapowner=name2;
 double minx=string_to_number(mx);
 double maxx=string_to_number(mx2);
 double miny=string_to_number(my);
@@ -1741,8 +1748,8 @@ game(true);
 }
 else
 {
-create_map(mapname, minx, maxx, miny, maxy, tiletype);
-load_map(mapname);
+create_map(mapname, mapowner, minx, maxx, miny, maxy, tiletype);
+load_map(mapname, mapowner);
 }
 }
 else
@@ -1755,7 +1762,7 @@ else if (base_command == "relmap")
 {
 if (parsed.length() == 1)
 {
-load_map(mapname);
+load_map(mapname, mapowner);
 speak("map reloaded");
 }
 else
@@ -1832,7 +1839,22 @@ pause_pools();
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
-m.add_item_tts(string_replace(maps[i],".map","",true)+", size: "+measure_file_size(file_get_size("data/maps/"+maps[i])));
+string temp_map_name = string_replace(maps[i], ".map", "", true);
+mapper.open("data/maps/"+temp_map_name+".map", "rb");
+string temp_map_data = mapper.read();
+mapper.close();            
+string temp_owner;
+string[] lines = delinear(temp_map_data);
+for (uint j = 0; j < lines.length(); j++)
+{
+string[] sd = string_split(lines[j], " ", true);
+if (sd[0] == "contributor" && sd.length() == 2)
+{
+temp_owner = sd[1];
+break;
+}
+}            
+m.add_item_tts(temp_map_name + ", created by " + temp_owner + ", Size: " + measure_file_size(file_get_size("data/maps/" + maps[i])));
 }
 int mres=m.run("Maps menu", true);
 if(mres==0)
@@ -1854,7 +1876,7 @@ mapname=maps[mres-1];
 mapname=string_replace(mapname, ".map", "", true);
 me.x=0;
 me.y=0;
-load_map(mapname);
+load_map(mapname, mapowner);
 }
 }
 }
@@ -1918,7 +1940,7 @@ game(true);
 mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(clipboard_data);
 mapper.close();
-load_map(mapname);
+load_map(mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg", false);
 speak("Map updated.");
 }
@@ -1984,16 +2006,17 @@ game(true);
 }
 }
 
-void create_map(string name, double mx, double mx2, double my, double my2, string tiletype)
+void create_map(string name, string owner, double mx, double mx2, double my, double my2, string tiletype)
 {
 mapname=name;
+mapowner=owner;
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
 mapper.open("data/maps/"+name+".map","wb");
 mapdata=mapper.read();
-mapper.write("name "+mapname+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2+"\r\n"+"platform 0 "+mx2+" 0 "+tiletype+" 0 100");
+mapper.write("name "+name+"\r\n"+"contributor "+owner+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2+"\r\n"+"platform 0 "+mx2+" 0 "+tiletype+" 0 100");
 mapper.close();
 me.x=0;
 me.y=0;
@@ -2441,6 +2464,20 @@ if(jumping==0) tileslot=p.play_stationary_extended(find_sound("sounds/"+soundpac
 }
 void playfall()
 {
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone =healzones[i].minx <= me.x && healzones[i].maxx >= me.x && healzones[i].miny <= me.y && healzones[i].maxy >= me.y;
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(find_sound("sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(find_sound("sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
 for(uint i=0; i<safezones.length(); i++)
 {
 bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
@@ -2476,6 +2513,20 @@ tileslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/pla
 }
 void playland()
 {
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone =healzones[i].minx <= me.x && healzones[i].maxx >= me.x && healzones[i].miny <= me.y && healzones[i].maxy >= me.y;
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(find_sound("sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(find_sound("sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
 for(uint i=0; i<safezones.length(); i++)
 {
 bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
@@ -2574,6 +2625,20 @@ if(charfallsound2==1 and me.y>7 or me.y<=0) fallslot=p.play_stationary(find_soun
 }
 if(falling)
 {
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone =healzones[i].minx <= me.x && healzones[i].maxx >= me.x && healzones[i].miny <= me.y && healzones[i].maxy >= me.y;
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(find_sound("sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(find_sound("sounds/"+soundpack+"/objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
 for(uint i=0; i<safezones.length(); i++)
 {
 bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
