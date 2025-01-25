@@ -319,10 +319,11 @@ tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of 
 This is the game's change log.
 
 ###### new in 6.0
+* You can now asine a contributor to your map. You'll also be asked to provide this information when creating a new map.
 * Addressed an issue where pasting data from the clipboard into your map could result in the entire map being cleared if the clipboard was empty or if it contained non-map-related lines. The system will now validate the clipboard data to ensure it includes all of the required map fields before overwriting the entire map.
 * Animals, bosses, humans, projectiles, robots, turrets, and zombies can now destroy items.
 * Made it so turning sounds play in 2d for all characters.
-* Made it so your inventory gets cleared upon player death. You can also clear your inventory by typing the command slash invclear.
+* Made it so your inventory gets cleared upon player death. You can also clear your inventory manuely by typing the slash invclear command.
 * Revamped the main enemie class and renamed it to humans. They can now equip and use the weapons you have in the game to hit you instead of using their standered attack system. The name change will also apply to the builder menu, the object info menu, and the spire.
 * Added fall modifier to all of the character files. This controls the fall damage received when hard landing on platforms with your shield on or off. The default is set to 21, but can be changed per character.
 * vehicles can now damage bosses.
@@ -978,7 +979,7 @@ newe in 3.3
 * Added the upgrade points menu to all game modes. You can increase the folowing stats while playing the normal/custom mode. attack, defence, health, ammo, and shield strength. The more points you have after leveling up, the more you can invest in your upgrades. Your attack will increase the overall damage of all weapons. Your defence will increase the overall resistance of your character, making it so enemies can't easyly hurt you.
 * Added the object info menu to all game modes. The folowing objects can be viewed. Animals, enemies, projectiles, robots, and zombies. These will tell you where they are in relationship to you, and there overall health in percentages when viewed in the menu.
 
-Total changes, 678.
+Total changes, 670.
 
 ###### Credits
 I'd like to thank the folowing people for helping me bring my game into existence.
