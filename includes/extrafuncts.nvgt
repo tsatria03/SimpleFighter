@@ -384,12 +384,13 @@ original_lines.insert_last(i);
 }
 }
 
-void stun_target(int st, bool announce_stunned=false)
+void stun_target(string entity, string id, int st)
 {
 stundir=st;
+if(entity=="me")
+{
 stuntimer.restart();
 stunned=true;
-if(announce_stunned==true) speak("you're stunned!");
 cammable=false;
 fireable=false;
 jumpable=false;
@@ -400,12 +401,112 @@ sittable=false;
 turnable=false;
 telable=false;
 }
-void stuncheck(bool announce_stunned=false)
+else if(entity=="animal")
+{
+for(uint i=0; i<animals.length(); i++)
+{
+if(animals[i].animaltype==id)
+{
+stuntimer.restart();
+stunned=true;
+animals[i].fireable=false;
+animals[i].moveable=false;
+animals[i].moveable2=false;
+}
+}
+}
+else if(entity=="human")
+{
+for(uint i=0; i<humans.length(); i++)
+{
+if(humans[i].humantype==id)
+{
+stuntimer.restart();
+stunned=true;
+humans[i].fireable=false;
+humans[i].moveable=false;
+humans[i].moveable2=false;
+}
+}
+}
+else if(entity=="boss")
+{
+for(uint i=0; i<bosses.length(); i++)
+{
+if(bosses[i].bosstype==id)
+{
+stuntimer.restart();
+stunned=true;
+bosses[i].fireable=false;
+bosses[i].moveable=false;
+bosses[i].moveable2=false;
+bosses[i].regenhp=false;
+bosses[i].telleble=false;
+bosses[i].telleble2=false;
+}
+}
+}
+else if(entity=="projectile")
+{
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(projectiles[i].projtype==id)
+{
+stuntimer.restart();
+stunned=true;
+projectiles[i].fireable=false;
+projectiles[i].moveable=false;
+}
+}
+}
+else if(entity=="robot")
+{
+for(uint i=0; i<robots.length(); i++)
+{
+if(robots[i].robottype==id)
+{
+stuntimer.restart();
+stunned=true;
+robots[i].fireable=false;
+robots[i].moveable=false;
+robots[i].moveable2=false;
+}
+}
+}
+else if(entity=="turret")
+{
+for(uint i=0; i<turrets.length(); i++)
+{
+if(turrets[i].turtype==id)
+{
+stuntimer.restart();
+stunned=true;
+turrets[i].fireable=false;
+turrets[i].moveable=false;
+turrets[i].moveable2=false;
+}
+}
+}
+else if(entity=="zombie")
+{
+for(uint i=0; i<zombies.length(); i++)
+{
+if(zombies[i].zombietype==id)
+{
+stuntimer.restart();
+stunned=true;
+zombies[i].fireable=false;
+zombies[i].moveable=false;
+zombies[i].moveable2=false;
+}
+}
+}
+}
+void stuncheck()
 {
 if(stunned==true && stuntimer.elapsed>=stundir)
 {
 stunned = false;
-if(announce_stunned==true) speak("you're unstunned!");
 cammable = true;
 fireable = true;
 jumpable = true;
@@ -416,8 +517,79 @@ sittable = true;
 turnable = true;
 telable = true;
 }
+for(uint i=0; i<animals.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+animals[i].fireable=true;
+animals[i].moveable=true;
+animals[i].moveable2=true;
 }
-
+}
+for(uint i=0; i<humans.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+humans[i].fireable=true;
+humans[i].moveable=true;
+humans[i].moveable2=true;
+}
+}
+for(uint i=0; i<bosses.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+bosses[i].fireable=true;
+bosses[i].moveable=true;
+bosses[i].moveable2=true;
+bosses[i].regenhp=true;
+bosses[i].telleble=true;
+bosses[i].telleble2=true;
+}
+}
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+projectiles[i].fireable=true;
+projectiles[i].moveable=true;
+}
+}
+for(uint i=0; i<robots.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+robots[i].fireable=true;
+robots[i].moveable=true;
+robots[i].moveable2=true;
+}
+}
+for(uint i=0; i<turrets.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+turrets[i].fireable=true;
+turrets[i].moveable=true;
+turrets[i].moveable2=true;
+}
+}
+for(uint i=0; i<zombies.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+zombies[i].fireable=true;
+zombies[i].moveable=true;
+zombies[i].moveable2=true;
+}
+}
+}
 bool string_file_encrypt(string input_file, string output_file, string key)
 {
 bool success;
