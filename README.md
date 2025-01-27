@@ -319,6 +319,8 @@ tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of 
 This is the game's change log.
 
 ###### new in 6.0
+* Made it so when you jump, you'll automaticly face up. This is useful for fireing weapons up.
+* Moved the helpers out of the objects folder into the npc/normal folder.
 * Changed the falling logic. Instead of making your character sit after hard landing on a platform, it will now stun them for a spesified duration calculated by your fall height before making them be able to move again.
 * You can now asine a contributor to your map. You'll also be asked to provide this information when creating a new map.
 * Addressed an issue where pasting data from the clipboard into your map could result in the entire map being cleared if the clipboard was empty or if it contained non-map-related lines. The system will now validate the clipboard data to ensure it includes all of the required map fields before overwriting the entire map.
