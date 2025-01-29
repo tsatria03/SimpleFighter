@@ -319,6 +319,7 @@ tel.ogg: This sound is played when a boss enemy teleports on the x or y axes of 
 This is the game's change log.
 
 ###### new in 6.0
+* Melee weapons now have a reflection mode. You can press the letter T to toggle it on or off. While you're in reflection mode, any attacks caried out by an entity has a 50percent chanse of getting reflected. From now on, the shortcut alt and R will be used to make your character sit and stand.
 * Made it so when you jump, you'll automaticly face up. This is useful for fireing weapons up.
 * Moved the helpers out of the objects folder into the npc/normal folder.
 * Changed the falling logic. Instead of making your character sit after hard landing on a platform, it will now stun them for a spesified duration calculated by your fall height before making them be able to move again.
