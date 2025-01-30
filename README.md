@@ -249,7 +249,7 @@ remove.ogg: This sound is played when a shield is being removed.
 
 wear.ogg: This sound is played when a shield is being worn.
 
-##### Weapon sound listing: 8 total.
+##### Weapon sound listing: 11 total.
 draw.ogg: This sound is played when a weapon is being drawn.
 
 empty.ogg: This sound is played when a non melee weapon is being emptyed.
@@ -265,6 +265,12 @@ reload.ogg: This sound is played when a non melee weapon is being reloaded with 
 rico.ogg: This sound is played when a weapon is being ricocheted.
 
 shell.ogg: This sound is played when a non melee weapon dropps ammo shells.
+
+on.ogg: This sound is played when a melee weapon has reflection mode turned on.
+
+off.ogg: This sound is played when a melee weapon has reflection mode turned off.
+
+reflect.ogg: This sound is played when a melee weapon reflects an attack from an entity.
 
 ##### Menu sound listing: 7 total.
 click.ogg: This sound is played when you go through menu items.
