@@ -156,9 +156,9 @@ loop.ogg: This sound is played when a weapon is being looped while using it.
 reload.ogg: This sound is played when a non melee weapon is being reloaded with ammo.
 rico.ogg: This sound is played when a weapon is being ricocheted.
 shell.ogg: This sound is played when a non melee weapon dropps ammo shells.
+block.ogg: This sound is played when a melee weapon reflects an attack from an entity.
 on.ogg: This sound is played when a melee weapon has reflection mode turned on.
 off.ogg: This sound is played when a melee weapon has reflection mode turned off.
-reflect.ogg: This sound is played when a melee weapon reflects an attack from an entity.
 
 Menu sound listing: 7 total.
 click.ogg: This sound is played when you go through menu items.
