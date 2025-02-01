@@ -287,10 +287,12 @@ speak("current location,"+me.x+",;"+me.y+","+"you're walking on;"+gmt(me.x,me.y)
 }
 }
 
-void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, int loadtime=50, int loadbeeps=1, int loadsounds=1)
+void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=false, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds)
 {
 mapname=name;
 mapowner=owner;
+maploadbeeps=loadbeeps;
+maploadsounds=loadsounds;
 clearmap();
 destroymap();
 if(string_ends_with(mapname,".map"))
@@ -307,7 +309,7 @@ mapdata=mapper.read();
 mapper.close();
 sound mapload;
 timer maploadtimer;
-speak("loading map");
+if(anounce_mapload==true) speak("loading map");
 if(loadsounds==1) mpool.play_stationary("maploadstart.ogg",false);
 if(loadsounds==1) mapload.load("maploading.ogg");
 if(loadsounds==1) mapload.play_looped();
@@ -1132,8 +1134,8 @@ if(loadsounds==1) mpool.play_stationary("maploadstop.ogg",false);
 if(loadbeeps == 1 && last_beep_percent<100)
 {
 if(speak_percentage==true) speak("100 "+"percent");
-beep_percentage(100);
-speak("map loded.");
+if(loadbeeps == 1) beep_percentage(100);
+if(anounce_mapload==true) speak("map loded.");
 }
 }
 void comparse()
