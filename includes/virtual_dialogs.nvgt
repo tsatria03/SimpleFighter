@@ -15,6 +15,9 @@ class virtual_dialogs {
 private audio_form form;
 private bool was_window_active = false, was_window_created = false, was_window_hidden = false;
 private string last_title = "";
+    string disallowed_chars = "";  // Store disallowed characters globally for input boxes
+    bool use_only_disallowed_chars = false;
+    string char_disallowed_description = "";
 
 private void create_dialog(const string title, bool say_dialog=true) {
 this.form.create_window(title, this.create_window(title), say_dialog, false);
@@ -91,6 +94,18 @@ return;
 
 this.was_window_active = window_status;
 }
+void set_disallowed_chars(string chars, bool use_only = false, string description = "") {
+    this.disallowed_chars = chars;
+    this.use_only_disallowed_chars = use_only;
+    this.char_disallowed_description = description;
+}
+bool is_disallowed_char(string char) {
+    if (use_only_disallowed_chars) {
+        return string_contains(disallowed_chars, char) == -1;  // Not in allowed list
+    } else {
+        return string_contains(disallowed_chars, char) != -1;  // Found in disallowed list
+    }
+}
 
 bool info_box(const string title, const string label, const string text) {
 int text_box, close_button, cancel_button;
@@ -103,7 +118,6 @@ close_button = this.form.create_button("&Close", true);
 cancel_button = this.form.create_button("Cancel", false, true);
 this.form.set_state(cancel_button, true, false);
 this.form.focus(text_box);
-spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 while (true) {
 this.monitor();
 if (this.form.is_pressed(close_button)) {
@@ -111,13 +125,11 @@ result = true;
 break;
 } else if (this.form.is_pressed(cancel_button))
 break;
-
 }
-
 this.destroy_window();
 return result;
 }
-string input_box(const string title, const string text, const string default_text = "", const int flags = 0)
+string input_box(const string title, const string text, const string default_text = "", string disallowed_chars="", string char_disallowed_description="This character is not allowed.", const int flags = 0)
 {
 string result;
 int text_box, ok_button, cancel_button;
@@ -127,9 +139,12 @@ text_box = this.form.create_input_box(text, default_text);
 ok_button = this.form.create_button("&OK", true);
 cancel_button = this.form.create_button("&Cancel", cancel = true);
 this.form.focus(text_box);
+    if (this.disallowed_chars.length() > 0)
+{
+        this.form.set_disallowed_chars(text_box, this.disallowed_chars, this.use_only_disallowed_chars, this.char_disallowed_description);   
+}
 while (true)
 {
-key_echocheck(form);
 this.monitor();
 if (this.form.is_pressed(ok_button))
 {
@@ -222,9 +237,10 @@ virtual_dialogs vd;
 return vd.info_box(title, label, text);
 }
 
-string virtual_input_box(const string title, const string text, const string default_text = "", const int flags = 0) {
+string virtual_input_box(const string title, const string text, const string default_text = "", string disallowed_chars="", string char_disallowed_description="This character is not allowed.", const int flags = 0)
+{
 virtual_dialogs vd;
-return vd.input_box(title, text, default_text, flags);
+return vd.input_box(title, text, default_text, disallowed_chars, char_disallowed_description, flags);
 }
 
 int virtual_message_box(const string title, const string caption, string[]@ buttons, const int flags = 0) {
