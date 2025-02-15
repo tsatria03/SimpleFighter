@@ -110,6 +110,19 @@ value=value>max? max:value;
 return value;
 }
 
+double min(double a, double b)
+{
+return (a < b) ? a : b;
+}
+double max(double a, double b)
+{
+return (a > b) ? a : b;
+}
+double buy_item(double item, double base_cost, double cost_multiplier)
+{
+return 1+(item*0.1)*base_cost*cost_multiplier;
+}
+
 double convert_to_pan(double length, double index, double range1, double range2)
 {
 try
@@ -152,6 +165,7 @@ catch
 return 100;
 }
 }
+
 uint8 active_sr()
 {
 uint8 ret=0;
@@ -181,6 +195,17 @@ result += file_get_size(dir + "/" + files[i]);
 }
 return result;
 }
+
+string convert_to_currency(double number, string currency_symbol)
+{
+if (number < 0) return "";
+uint dollars = number / 100;
+uint cents = number % 100;
+string cents_str = "" + cents;
+if (string_len (cents_str) == 1) cents_str = "0" + cents_str;
+return currency_symbol + dollars + "." + cents_str;
+}
+
 string measure_file_size(int64 bytes)
 {
 if(bytes<1024)
@@ -229,6 +254,7 @@ int ms = int(milliseconds % 1000);
 return hours + " hours, " + minutes + " minutes, " + remaining_seconds + " seconds, " + ms + " ms";
 }
 }
+
 string string_trim_sides(const string& in str)
 {
 string result=str;
@@ -259,6 +285,7 @@ return (str.substr(str.length()-ending.length())==ending);
 }
 return false;
 }
+
 bool string_to_bool(string str)
 {
 return str.trim_whitespace().lower()=="true"? true:false;
@@ -337,6 +364,7 @@ final+=(a[i]+"\r\n");
 }
 return final;
 }
+
 string join_string_array(string[] arr, uint start, uint end)
 {
 string result = "";
@@ -347,6 +375,7 @@ result+=arr[i];
 }
 return result;
 }
+
 string get_key_echo_description(int mode)
 {
 if (mode==textflag_none)
@@ -359,6 +388,7 @@ else if (mode==textflag_characters_words)
 return "echo both characters and words";
 return "";
 }
+
 void key_echocheck(audio_form@ form)
 {
 if (key_pressed(KEY_F2))
@@ -590,6 +620,7 @@ zombies[i].moveable2=true;
 }
 }
 }
+
 bool string_file_encrypt(string input_file, string output_file, string key)
 {
 bool success;
@@ -620,76 +651,10 @@ output.write(decrypted_content);
 output.close();
 return true;
 }
+
 string file_decrypt(const string& encrypted_content, const string& encryption_key)
 {
 return string_decrypt(encrypted_content, encryption_key);
-}
-
-class kh
-{
-bool already_installed;
-void install()
-{
-if (screen_reader_is_running(1) and !already_installed)
-{
-install_keyhook();
-already_installed=true;
-}
-}
-void uninstall()
-{
-if (screen_reader_is_running(1) and !already_installed)
-{
-uninstall_keyhook();
-already_installed=false;
-}
-}
-}
-
-class key_hold
-{
-bool status;
-uint key_flag=0;
-int key_code;
-int repeat_time;
-int setting_1;
-int setting_2;
-timer key_timer;
-key_hold(int _key_code, int _setting_1, int _setting_2)
-{
-key_code=_key_code;
-setting_1=_setting_1;
-setting_2=_setting_2;
-repeat_time=setting_1;
-}
-bool pressing()
-{
-status=key_down(key_code);
-if(status==false)
-{
-repeat_time=0;
-key_timer.restart();
-key_flag=0;
-return false;
-}
-if(key_timer.elapsed>=repeat_time)
-{
-switch(key_flag)
-{
-case 0:
-key_flag=1;
-repeat_time=setting_1;
-key_timer.restart();
-break;
-case 1:
-repeat_time=setting_2;
-key_timer.restart();
-break;
-}
-return true;
-}
-return false;
-}
 }
 
 int get_distance(int a, int b)
@@ -828,23 +793,71 @@ if(i<spl.length()-1) folder+="\\";
 return folder;
 }
 
-double min(double a, double b)
+class kh
 {
-return (a < b) ? a : b;
+bool already_installed;
+void install()
+{
+if (screen_reader_is_running(1) and !already_installed)
+{
+install_keyhook();
+already_installed=true;
 }
-double max(double a, double b)
+}
+void uninstall()
 {
-return (a > b) ? a : b;
+if (screen_reader_is_running(1) and !already_installed)
+{
+uninstall_keyhook();
+already_installed=false;
+}
+}
 }
 
-string convert_to_currency(double number, string currency_symbol)
+class key_hold
 {
-if (number < 0) return "";
-uint dollars = number / 100;
-uint cents = number % 100;
-string cents_str = "" + cents;
-if (string_len (cents_str) == 1) cents_str = "0" + cents_str;
-return currency_symbol + dollars + "." + cents_str;
+bool status;
+uint key_flag=0;
+int key_code;
+int repeat_time;
+int setting_1;
+int setting_2;
+timer key_timer;
+key_hold(int _key_code, int _setting_1, int _setting_2)
+{
+key_code=_key_code;
+setting_1=_setting_1;
+setting_2=_setting_2;
+repeat_time=setting_1;
+}
+bool pressing()
+{
+status=key_down(key_code);
+if(status==false)
+{
+repeat_time=0;
+key_timer.restart();
+key_flag=0;
+return false;
+}
+if(key_timer.elapsed>=repeat_time)
+{
+switch(key_flag)
+{
+case 0:
+key_flag=1;
+repeat_time=setting_1;
+key_timer.restart();
+break;
+case 1:
+repeat_time=setting_2;
+key_timer.restart();
+break;
+}
+return true;
+}
+return false;
+}
 }
 
 buggreport@[] reports(0); // Initialize an empty array for bug reports
