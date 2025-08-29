@@ -45,7 +45,7 @@ void destroy_all_dialogs()
 dialogs.resize(0);
 }
 
-void dlg(string message, bool dlgcoppy=true, int timeout=-1)
+bool dlg(string message, bool dlgcoppy=true, int timeout=-1)
 {
 timer timeouter;
 speak(message);
@@ -53,17 +53,22 @@ while(true)
 {
 wait(5);
 if (timeout>-1 and timeouter.elapsed>=timeout)
-return;
+return false;
 if (key_repeating(KEY_C) and dlgcoppy==true)
 {
 temp.destroy_all();
 temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*copy*"),false);
-speak("Copied");
+speak("Text copied");
 clipboard_copy_text(message);
 }
 if (key_repeating(KEY_LEFT) or key_repeating(KEY_RIGHT) or key_repeating(KEY_UP) or key_repeating(KEY_DOWN))
 {
 speak(message);
+}
+if (key_repeating(KEY_ESCAPE))
+{
+temp.destroy_all();
+return true;
 }
 if(key_repeating(KEY_RETURN) or key_down(KEY_A))
 {
@@ -71,6 +76,29 @@ temp.destroy_all();
 break;
 }
 }
+return false;
+}
+void dlgmessage(string messages)
+{
+temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*open*"),false);
+string[] d = string_split(messages, "--", true);
+bool escaped = dlg(d[0]);
+if (escaped)
+{
+temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*close*"),false);
+return;
+}
+for (uint i = 1; i < d.length(); i++)
+{
+temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*scroll*"),false);
+escaped = dlg(d[i]);
+if (escaped)
+{
+temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*close*"),false);
+return;
+}
+}
+temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*close*"),false);
 }
 void dlg_snd(string message, string dlgsound="error.ogg", bool dlgcoppy=true, int timeout=-1)
 {
@@ -99,21 +127,6 @@ temp.destroy_all();
 break;
 }
 }
-}
-void dlgmessage(string messages)
-{
-temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*open*"),false);
-string[] d=string_split(messages,"--",true);
-dlg(d[0]);
-if (d.length()>1)
-{
-for (uint i=1; i<d.length(); i++)
-{
-temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*scroll*"),false);
-dlg(d[i]);
-}
-}
-temp.play_stationary(find_sound("sounds/"+soundpack+"/dialogs/"+dlgtyp+"/*close*"),false);
 }
 void dlgplay(string dlgsound, bool skippable=true, bool fadeable=true, int fadetime=30)
 {
