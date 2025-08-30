@@ -2681,14 +2681,30 @@ if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
 if(fallcounter>=0) p.destroy_sound(fallslot);
 if(shieldhitsound==1 and fallcounter>=8 and shieldon==1) shieldslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch);
 if(charhurtsound==1 and fallcounter>=8 and shieldon==0) painslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
-if(fallcounter>=8) stun_target("me", "", 10*fallcounter);
 if(fallcounter<=7) playland();
 else if(fallcounter>7)
 {
 playfall();
-if(fallcounter>=8 and shieldon==1) shieldstrength-=fallcounter*fallmod-shielddefence;
-if(fallcounter>=8 and shieldon==0) health-=fallcounter*fallmod-defence;
-if(fallcounter>=8 and shieldon==0) hearttime-=fallcounter*fallmod-defence;
+int shield_damage = fallcounter * fallmod - shielddefence;
+if(fallcounter>=8 and shieldon==1)
+{
+shieldstrength-=shield_damage;
+stun_target("me", "", 10 * fallcounter);
+if(shieldstrength<=0)
+{
+health -= shield_damage;
+hearttime -= shield_damage;
+break_charbone("", 100, shield_damage, 10 * fallcounter);
+}
+}
+int health_damage= fallcounter * fallmod - defence;
+if(fallcounter>=8 and shieldon==0)
+{
+health -= health_damage;
+hearttime-=health_damage;
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+break_charbone("", ct, health_damage, 10 * fallcounter);
+}
 }
 falling=false;
 fallcounter=0;
