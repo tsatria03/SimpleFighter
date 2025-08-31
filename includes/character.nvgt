@@ -207,30 +207,91 @@ void break_charbone(string bt, int ct, int dmg, int st)
 {
 if (random(0, 100) >= ct)
 return;
-stundir=st;
+stundir = st;
 attacktype = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/attacks.sif");
 bodypart = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/bodyparts.sif");
 randomattacktype = random_string(attacktype);
 randombodypart = bt == "" ? random_string(bodypart) : bt;
-stun_target("me", "", st);
-bonebreak=true;
-bonetimer.restart();
-if(charbreaksound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*break*"),false);
 string spoken_bodypart = randombodypart.replace("_", " ");
-speak("Ouch! You just " + randomattacktype + " your " + spoken_bodypart + ", causing " + dmg + "dammage.");
+if (!broken_bones.exists(randombodypart))
+{
+broken_bones.set(randombodypart, randomattacktype);
+bonebreak = true;
+stun_target("me", "", st);
+bonetimer.restart();
+if (charbreaksound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*break*"), false);
+speak("Ouch! You just " + randomattacktype + " your " + spoken_bodypart + ", causing " + dmg + " damage.");
 }
-void bonecheck(int bt=random(2000, 4000), bool repeat=true)
+}
+void break_charbones(int chance, int dmg, int st, int count = 1)
 {
-if (bonetimer.elapsed >= bt && bonebreak==true)
+int breaks = 0;
+array<string> messages;
+for (int i = 0; i < count; i++)
 {
+int oldsize = broken_bones.get_size();
+array<string>@ keys = broken_bones.get_keys();
+string oldkeys = string_join(keys, ",");
+stundir = st;
+attacktype = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/attacks.sif");
+bodypart = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/bodyparts.sif");
+randomattacktype = random_string(attacktype);
+randombodypart = random_string(bodypart);
+string spoken_bodypart = randombodypart.replace("_", " ");
+if (random(0, 100) < chance && !broken_bones.exists(randombodypart))
+{
+broken_bones.set(randombodypart, randomattacktype);
+bonebreak = true;
+stun_target("me", "", st);
+bonetimer.restart();
+if (charbreaksound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*break*"), false);
+messages.insert_last(randomattacktype + " your " + spoken_bodypart);
+breaks++;
+}
+}
+if (breaks == 0)
+{
+return;
+}
+else
+{
+string message = "Ouch! You just ";
+if (messages.length() == 1)
+{
+message += messages[0] + ".";
+}
+else
+{
+for (uint i = 0; i < messages.length(); i++)
+{
+message += messages[i];
+if (i == messages.length() - 2)
+message += ", and ";
+else if (i < messages.length() - 2)
+message += ", ";
+else
+message += ".";
+}
+}
+speak(message);
+}
+}
+void bonecheck(int bt = random(2000, 4000))
+{
+if (bonetimer.elapsed >= bt && broken_bones.get_size() > 0)
+{
+array<string> keys = broken_bones.get_keys();
+if (keys.length() == 0)
+return;
+string hurting_bone = keys[random(0, keys.length() - 1)];
+string spoken_bodypart = hurting_bone.replace("_", " ");
 stun_target("me", "", random(1000, 2000));
 if (charhurtsound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*pain*"), false);
-string spoken_bodypart = randombodypart.replace("_", " ");
 speak("Ouch! Your " + spoken_bodypart + " hurts!");
 bonetimer.restart();
-if (!repeat) bonebreak = false;
 }
 }
+
 void charparse()
 {
 if(file_exists("sounds/"+soundpack+"/characters/"+chartype+"/info.sif"))

@@ -100,135 +100,6 @@ void destroy_all_objzones()
 objzones.resize(0);
 }
 
-void give(string item, int amount)
-{
-int a;
-if (!inv.exists(item))
-{
-inv.set(item,amount);
-}
-else
-{
-inv.get(item,a);
-if (a+amount<=0)
-inv.delete(item);
-else
-inv.set(item,a+amount);
-}
-}
-void clear_inv()
-{
-inv.delete_all();
-}
-void cycle_inv(int dir)
-{
-if (dir==1)
-invpos+=1;
-if(charinvsound==1) invslot=p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*inv*"),false);
-else
-invpos-=1;
-if (invpos>=inv.get_size())
-{
-invpos=0;
-}
-else if (invpos<0)
-{
-invpos=inv.get_size()-1;
-}
-if (inv.get_size()==0)
-{
-p.destroy_sound(invslot);
-speak("empty");
-}
-else
-{
-int a;
-inv.get(inv.get_keys()[invpos],a);
-if(a==1)
-speak(string_replace(inv.get_keys()[invpos],"_"," ",true)+". Item "+(invpos+1)+" of "+inv.get_keys().length());
-else
-speak(string_replace(inv.get_keys()[invpos], "_", " ", true)+"s, "+a+". Item "+(invpos+1)+" of "+inv.get_keys().length());
-}
-}
-void useitem(string current)
-{
-string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
-string[] misktype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/other/*");
-for(uint i1=0; i1<healtype.length(); i1++)
-{
-for (uint i2=0; i2<misktype.length(); i2++)
-{
-if (inv.get_size()<=0)
-{
-speak("No items");
-}
-else
-{
-current=inv.get_keys()[invpos];
-if(current==healtype[i1] and health!=maxhealth)
-{
-if(firesound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/health/"+healtype[i1]+"/*fire*"),false,0,0,itemvolume,itempitch,false);
-if(hitsound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/health/"+healtype[i1]+"/*hit*"),false,0,0,itemvolume,itempitch,false);
-give(healtype[i1],-1);
-health+=maxhealth/4;
-hearttime+=maxhealth/4;
-speak("healed to"+round(health/maxhealth*100,2)+"percent health");
-return;
-}
-if(current==healtype[i1] and health>=maxhealth)
-{
-speak("You don't need to use this!");
-return;
-}
-if(current==misktype[i2])
-{
-if(firesound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/other/"+misktype[i2]+"/*fire*"),false,0,0,itemvolume,itempitch,false);
-if(hitsound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/other/"+misktype[i2]+"/*hit*"),false,0,0,itemvolume,itempitch,false);
-give(misktype[i2],-1);
-speak(misktype[i2]+";"+"recycled");
-return;
-}
-}
-}
-}
-}
-int count_total_items()
-{
-int amount=0;
-for (uint i=0; i<inv.get_keys().length(); i++)
-{
-int a;
-inv.get(inv.get_keys()[i],a);
-amount+=a;
-}
-return amount;
-}
-string getitem()
-{
-if (inv.get_size()<=0)
-{
-return "";
-}
-else
-{
-string current=inv.get_keys()[invpos];
-return current;
-}
-}
-int item_exists(string item)
-{
-string[] current=inv.get_keys();
-int index=current.find(item);
-if (index>-1)
-{
-int ab;
-inv.get(current[index],ab);
-return ab;
-}
-else
-return -1;
-}
-
 void auto_use_item()
 {
 if(itemhold==0 and itemtimer1.elapsed>=itemtime1 and itemtimer2.elapsed>=itemtime2 and itemtimer3.elapsed>=itemtime3)
@@ -316,3 +187,180 @@ if(direction=="down")
 spawn_obj(me.x, me.y-1, 500, objtype, objtype2, true);
 }
 }
+
+void give(string item, int amount)
+{
+int a;
+if (!inv.exists(item))
+{
+inv.set(item,amount);
+}
+else
+{
+inv.get(item,a);
+if (a+amount<=0)
+inv.delete(item);
+else
+inv.set(item,a+amount);
+}
+}
+void clear_inv()
+{
+inv.delete_all();
+}
+void cycle_inv(int dir)
+{
+if (dir==1)
+invpos+=1;
+if(charinvsound==1) invslot=p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*inv*"),false);
+else
+invpos-=1;
+if (invpos>=inv.get_size())
+{
+invpos=0;
+}
+else if (invpos<0)
+{
+invpos=inv.get_size()-1;
+}
+if (inv.get_size()==0)
+{
+p.destroy_sound(invslot);
+speak("empty");
+}
+else
+{
+int a;
+inv.get(inv.get_keys()[invpos],a);
+if(a==1)
+speak(string_replace(inv.get_keys()[invpos],"_"," ",true)+". Item "+(invpos+1)+" of "+inv.get_keys().length());
+else
+speak(string_replace(inv.get_keys()[invpos], "_", " ", true)+"s, "+a+". Item "+(invpos+1)+" of "+inv.get_keys().length());
+}
+}
+void useitem(string current)
+{
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+string[] misktype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/other/*");
+for(uint i1=0; i1<healtype.length(); i1++)
+{
+for (uint i2=0; i2<misktype.length(); i2++)
+{
+if (inv.get_size()<=0)
+{
+speak("No items");
+}
+else
+{
+current=inv.get_keys()[invpos];
+if(current==healtype[i1])
+{
+if(health>=maxhealth)
+{
+speak("You don't need to use this!");
+return;
+}
+if(firesound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/health/"+healtype[i1]+"/*fire*"),false,0,0,itemvolume,itempitch,false);
+if(hitsound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/health/"+healtype[i1]+"/*hit*"),false,0,0,itemvolume,itempitch,false);
+give(healtype[i1],-1);
+double heal_percent = random(5, 10);
+double heal_amount = maxhealth * (heal_percent / 100.0);
+health = min(health + heal_amount, maxhealth);
+hearttime = min(health + heal_amount, maxhealth);
+speak("healed to"+round(health/maxhealth*100,2)+"percent health");
+return;
+}
+if(current==misktype[i2])
+{
+if(current == "health_scanner")
+{
+itemslot = p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/other/health_scanner/*scanstart*"), false, 0, 0, itemvolume, itempitch, false);
+itemslot = p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/other/health_scanner/*scanning*"), false, 0, 0, itemvolume, itempitch, false);
+speak("scanning");
+wait(random(500, 1000));
+itemslot = p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/other/health_scanner/*scanstop*"), false, 0, 0, itemvolume, itempitch, false);
+array<string> keys = broken_bones.get_keys();
+if (keys.length() == 0)
+{
+speak("The scan results show that you have no broken bones.");
+}
+else
+{
+string message = "The scan results show that you ";
+if (keys.length() == 1)
+{
+string part = keys[0];
+string status;
+broken_bones.get(part, status);
+string spoken_part = part.replace("_", " ");
+message += status + " your " + spoken_part + ".";
+}
+else
+{
+for (uint i = 0; i < keys.length(); i++)
+{
+string part = keys[i];
+string status;
+broken_bones.get(part, status);
+string spoken_part = part.replace("_", " ");
+message += status + " your " + spoken_part;
+
+if (i == keys.length() - 2)
+message += ", and ";
+else if (i < keys.length() - 2)
+message += ", ";
+else
+message += ".";
+}
+}
+speak(message);
+}
+return;
+}
+if(firesound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/other/"+misktype[i2]+"/*fire*"),false,0,0,itemvolume,itempitch,false);
+if(hitsound==1) itemslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/other/"+misktype[i2]+"/*hit*"),false,0,0,itemvolume,itempitch,false);
+give(misktype[i2],-1);
+speak(misktype[i2]+";"+"recycled");
+return;
+}
+}
+}
+}
+}
+int count_total_items()
+{
+int amount=0;
+for (uint i=0; i<inv.get_keys().length(); i++)
+{
+int a;
+inv.get(inv.get_keys()[i],a);
+amount+=a;
+}
+return amount;
+}
+string getitem()
+{
+if (inv.get_size()<=0)
+{
+return "";
+}
+else
+{
+string current=inv.get_keys()[invpos];
+return current;
+}
+}
+int item_exists(string item)
+{
+string[] current=inv.get_keys();
+int index=current.find(item);
+if (index>-1)
+{
+int ab;
+inv.get(current[index],ab);
+return ab;
+}
+else
+return -1;
+}
+
