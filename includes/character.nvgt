@@ -203,26 +203,6 @@ void destroy_all_weapons()
 weapons.resize(0);
 }
 
-void break_charbone(string bt, int ct, int dmg, int st)
-{
-if (random(0, 100) >= ct)
-return;
-stundir = st;
-attacktype = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/attacks.sif");
-bodypart = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/bodyparts.sif");
-randomattacktype = random_string(attacktype);
-randombodypart = bt == "" ? random_string(bodypart) : bt;
-string spoken_bodypart = randombodypart.replace("_", " ");
-if (!broken_bones.exists(randombodypart))
-{
-broken_bones.set(randombodypart, randomattacktype);
-bonebreak = true;
-stun_target("me", "", st);
-bonetimer.restart();
-if (charbreaksound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*break*"), false);
-speak("Ouch! You just " + randomattacktype + " your " + spoken_bodypart + ", causing " + dmg + " damage.");
-}
-}
 void break_charbones(int chance, int dmg, int st, int count = 1)
 {
 int breaks = 0;
@@ -241,10 +221,11 @@ string spoken_bodypart = randombodypart.replace("_", " ");
 if (random(0, 100) < chance && !broken_bones.exists(randombodypart))
 {
 broken_bones.set(randombodypart, randomattacktype);
+bonehealth+=random(5,10);
 bonebreak = true;
+if (charbreaksound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*break*"), false);
 stun_target("me", "", st);
 bonetimer.restart();
-if (charbreaksound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*break*"), false);
 messages.insert_last(randomattacktype + " your " + spoken_bodypart);
 breaks++;
 }
@@ -258,7 +239,7 @@ else
 string message = "Ouch! You just ";
 if (messages.length() == 1)
 {
-message += messages[0] + ".";
+message += messages[0] + ". Causing "+dmg+"damage.";
 }
 else
 {
@@ -270,7 +251,7 @@ message += ", and ";
 else if (i < messages.length() - 2)
 message += ", ";
 else
-message += ".";
+message += ". Causing "+dmg+"damage.";
 }
 }
 speak(message);
@@ -288,7 +269,103 @@ string spoken_bodypart = hurting_bone.replace("_", " ");
 stun_target("me", "", random(1000, 2000));
 if (charhurtsound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*pain*"), false);
 speak("Ouch! Your " + spoken_bodypart + " hurts!");
+bonehealth+=random(5,10);
 bonetimer.restart();
+if(bonehealth>=maxbonehealth)
+{
+if(lifecard>=2)
+{
+if(charbreaksound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*fail*"),false);
+if(charlifesound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*life*"),false);
+lifecard-=1;
+health=maxhealth;
+hearttime=maxhealth;
+bonehealth=0;
+broken_bones.delete_all();
+}
+else if(lifecard<=1)
+{
+if(building==true) destroymap();
+if(building==false) destroygame();
+p.destroy_sound(painslot);
+if(charbreaksound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*fail*"),false);
+if(chardeathsound==1) dlgplay(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*death*"), true, true, 30);
+dlgplay(find_sound("sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*fall*"));
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("You have died. Would you like to try again?",true);
+if(mres==0)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+bonehealth=0;
+broken_bones.delete_all();
+clear_inv();
+destroy_all_charas();
+charparse();
+}
+if(mres==1)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+broken_bones.delete_all();
+clear_inv();
+destroy_all_charas();
+charparse();
+}
+if(mres==2)
+{
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+broken_bones.delete_all();
+clear_inv();
+destroy_all_charas();
+charparse();
+me.x=0;
+me.y=0;
+if(building==true) clearmap();
+if(building==true) destroymap();
+if(building==true) mainmenu();
+if(building==false) destroygame();
+if(building==false) mainmenu();
+}
+}
+}
+}
+}
+void heal_bones(int amount, double remove_threshold = 0)
+{
+if (broken_bones.get_size() == 0) return;
+array<string> keys = broken_bones.get_keys();
+string target = keys[random(0, keys.length() - 1)];
+string spoken_bodypart = target.replace("_", " ");
+int before_health = bonehealth;
+bonehealth -= amount;
+int after_health = bonehealth;
+if (after_health <= remove_threshold)
+{
+broken_bones.delete(target);
+speak("Your " + spoken_bodypart + " is fully healed.");
+}
+else
+{
+speak("The healing cast reduced your " + spoken_bodypart + " damage from " + before_health + " to " + after_health + ".");
 }
 }
 
