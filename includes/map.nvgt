@@ -1774,6 +1774,18 @@ speak("Invalid command syntax. Usage: /newmap.");
 game(true);
 }
 }
+else if (base_command == "komlog")
+{
+if (parsed.length() == 1)
+{
+komlogmenu();
+}
+else
+{
+speak("Invalid command syntax. Usage: /komlog.");
+game(true);
+}
+}
 else if (base_command == "relmap")
 {
 if (parsed.length() == 1)
@@ -1794,6 +1806,7 @@ if (parsed.length() == 1)
 bonehealth=0;
 broken_bones.delete_all();
 clear_inv();
+kombatlog.resize(0);
 destroy_all_charas();
 charparse();
 speak("character reloaded");
@@ -1801,6 +1814,34 @@ speak("character reloaded");
 else
 {
 speak("Invalid command syntax. Usage: /relchar.");
+game(true);
+}
+}
+else if (base_command == "relshields")
+{
+if (parsed.length() == 1)
+{
+destroy_all_shields();
+shieldparse();
+speak("shields reloaded");
+}
+else
+{
+speak("Invalid command syntax. Usage: /relshields.");
+game(true);
+}
+}
+else if (base_command == "relweps")
+{
+if (parsed.length() == 1)
+{
+destroy_all_weapons();
+weaponparse();
+speak("weapons reloaded");
+}
+else
+{
+speak("Invalid command syntax. Usage: /relweps.");
 game(true);
 }
 }
@@ -2139,6 +2180,7 @@ void face_left()
 if(facing=="left"==false and turnable==true)
 {
 facing="left";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="left") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x-1,me.y,me.x-1,me.y,false);
 }
@@ -2148,6 +2190,7 @@ void face_right()
 if(facing=="right"==false and turnable==true)
 {
 facing="right";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="right") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x+1,me.y,me.x+1,me.y,false);
 }
@@ -2157,6 +2200,7 @@ void face_down()
 if(facing=="down"==false and turnable==true)
 {
 facing="down";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="down") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x,me.y-1,me.x,me.y-1,false);
 }
@@ -2166,6 +2210,7 @@ void face_up()
 if(facing=="up"==false and turnable==true)
 {
 facing="up";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="up") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x,me.y+1,me.x,me.y+1,false);
 }
@@ -2176,6 +2221,7 @@ void move_left()
 if(facing=="left"==false and turnmode==1)
 {
 facing="left";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="left") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x-1,me.y,me.x-1,me.y,false);
 }
@@ -2183,6 +2229,7 @@ else
 {
 if(turnmode==0) facing="left";
 me.x--;
+bonecheck();
 playstep();
 }
 }
@@ -2191,6 +2238,7 @@ void move_right()
 if(facing=="right"==false and turnmode==1)
 {
 facing="right";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="right") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x+1,me.y,me.x+1,me.y,false);
 }
@@ -2198,6 +2246,7 @@ else
 {
 if(turnmode==0) facing="right";
 me.x++;
+bonecheck();
 playstep();
 }
 }
@@ -2206,6 +2255,7 @@ void move_down()
 if(facing=="down"==false and turnmode==1)
 {
 facing="down";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="down") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x,me.y-1,me.x,me.y-1,false);
 }
@@ -2213,6 +2263,7 @@ else
 {
 if(turnmode==0) facing="down";
 me.y--;
+bonecheck();
 playstep();
 }
 }
@@ -2221,6 +2272,7 @@ void move_up()
 if(facing=="up"==false and turnmode==1)
 {
 facing="up";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="up") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x,me.y+1,me.x,me.y+1,false);
 }
@@ -2228,6 +2280,7 @@ else
 {
 if(turnmode==0) facing="up";
 me.y++;
+bonecheck();
 playstep();
 }
 }
@@ -2236,6 +2289,7 @@ void step_left()
 if(facing=="left"==false and turnmode==1)
 {
 facing="left";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="left") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x-1,me.y,me.x-1,me.y,false);
 }
@@ -2243,6 +2297,7 @@ else
 {
 if(turnmode==0) facing="left";
 me.x--;
+bonecheck();
 playstep();
 }
 }
@@ -2251,6 +2306,7 @@ void step_right()
 if(facing=="right"==false and turnmode==1)
 {
 facing="right";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="right") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x+1,me.y,me.x+1,me.y,false);
 }
@@ -2258,6 +2314,7 @@ else
 {
 if(turnmode==0) facing="right";
 me.x++;
+bonecheck();
 playstep();
 }
 }
@@ -2266,6 +2323,7 @@ void step_down()
 if(facing=="down"==false and turnmode==1)
 {
 facing="down";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="down") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x,me.y-1,me.x,me.y-1,false);
 }
@@ -2273,6 +2331,7 @@ else
 {
 if(turnmode==0) facing="down";
 me.y--;
+bonecheck();
 playstep();
 }
 }
@@ -2281,6 +2340,7 @@ void step_up()
 if(facing=="up"==false and turnmode==1)
 {
 facing="up";
+bonecheck();
 if(spokenturns==1) speak(facing);
 if(charturnsound==1 and facing=="up") p.play_2d(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*turn*"),me.x,me.y+1,me.x,me.y+1,false);
 }
@@ -2288,6 +2348,7 @@ else
 {
 if(turnmode==0) facing="up";
 me.y++;
+bonecheck();
 playstep();
 }
 }
@@ -2458,8 +2519,10 @@ else if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcef
 {
 forcefields[i].wepsound=forcepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/force fields/"+forcefields[i].forcetype+"/*hit*"),false,0,0,painvolume,painpitch,false);
 if(charhurtsound==1) painslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
-health-=forcefields[i].damage-defence;
-hearttime-=forcefields[i].damage-defence;
+int dmg = forcefields[i].damage - defence;
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(forcefields[i].forcetype + "'s attack took you " + dmg + " damage.");
 pbounce(5);
 return;
 }
@@ -2705,11 +2768,13 @@ int shield_damage = fallcounter * fallmod - shielddefence;
 if(fallcounter>=8 and shieldon==1)
 {
 shieldstrength-=shield_damage;
+kombatlog.insert_last(shield_damage+ " damage to "+shieldtype+", falling down.");
 stun_target("me", "", 10 * fallcounter);
 if(shieldstrength<=0)
 {
 health -= shield_damage;
 hearttime -= shield_damage;
+kombatlog.insert_last(shield_damage+ " damage to player, falling down.");
 int ct = clamp((fallcounter - 8) * 10, 0, 100);
 int count = clamp((fallcounter - 8) / 2, 1, 5);
 break_charbones(ct, shield_damage, 10 * fallcounter, count);
@@ -2720,6 +2785,7 @@ if(fallcounter>=8 and shieldon==0)
 {
 health -= health_damage;
 hearttime-=health_damage;
+kombatlog.insert_last(health_damage+ " damage to player, falling down.");
 int ct = clamp((fallcounter - 8) * 10, 0, 100);
 int count = clamp((fallcounter - 8) / 2, 1, 5);
 break_charbones(ct, health_damage, 10 * fallcounter, count);

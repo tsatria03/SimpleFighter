@@ -146,63 +146,6 @@ void destroy_all_shields()
 shields.resize(0);
 }
 
-weapon@[]weapons(0);
-class weapon
-{
-int wepdamage;
-int wephold;
-int weprange;
-int weprange2;
-int wepspeed;
-int weapontime;
-int weapontime2;
-int wepweight;
-double ammo;
-double loadedammo;
-double maxammo;
-double weplevel;
-int wepdrawsound;
-int wepemptysound;
-int wepfiresound;
-int wephitsound;
-int weploopsound;
-int weprecsound;
-int wepreloadsound;;
-int wepshellsound;
-weapon(int wepdamage,int wephold,int weprange,int weprange2,int wepspeed,int weapontime,int weapontime2,int wepweight,double ammo,double loadedammo,double maxammo,double weplevel,int wepdrawsound,int wepemptysound,int wepfiresound,int wephitsound,int weploopsound,int weprecsound,int wepreloadsound,int wepshellsound)
-{
-this.wepdamage=wepdamage;
-this.wephold=wephold;
-this.weprange=weprange;
-this.weprange2=weprange2;
-this.wepspeed=wepspeed;
-this.weapontime=weapontime;
-this.weapontime2=weapontime2;
-this.wepweight=wepweight;
-this.ammo=ammo;
-this.loadedammo=loadedammo;
-this.maxammo=maxammo;
-this.weplevel=weplevel;
-this.wepdrawsound=wepdrawsound;
-this.wepemptysound=wepemptysound;
-this.wepfiresound=wepfiresound;
-this.wephitsound=wephitsound;
-this.weploopsound=weploopsound;
-this.weprecsound=weprecsound;
-this.wepreloadsound=wepreloadsound;
-this.wepshellsound=wepshellsound;
-}
-}
-void add_weapon(int wepdamage,int wephold,int weprange,int weprange2,int wepspeed,int weapontime,int weapontime2,int wepweight,double ammo,double loadedammo,double maxammo,double weplevel,int wepdrawsound,int wepemptysound,int wepfiresound,int wephitsound,int weploopsound,int weprecsound,int wepreloadsound,int wepshellsound)
-{
-weapon wp1(wepdamage,wephold,weprange,weprange2,wepspeed,weapontime,weapontime2,wepweight,ammo,loadedammo,maxammo,weplevel,wepdrawsound,wepemptysound,wepfiresound,wephitsound,weploopsound,weprecsound,wepreloadsound,wepshellsound);
-weapons.insert_last(wp1);
-}
-void destroy_all_weapons()
-{
-weapons.resize(0);
-}
-
 void break_charbones(int chance, int dmg, int st, int count = 1)
 {
 int breaks = 0;
@@ -218,10 +161,31 @@ bodypart = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/bod
 randomattacktype = random_string(attacktype);
 randombodypart = random_string(bodypart);
 string spoken_bodypart = randombodypart.replace("_", " ");
-if (random(0, 100) < chance && !broken_bones.exists(randombodypart))
+if (random(0, 100) < chance)
 {
 broken_bones.set(randombodypart, randomattacktype);
-bonehealth+=random(5,10);
+bool already_exists = false;
+for (uint i = 0; i < broken_bone_order.length(); i++)
+{
+if (broken_bone_order[i] == randombodypart)
+{
+already_exists = true;
+break;
+}
+}
+if (!already_exists)
+{
+broken_bone_order.insert_last(randombodypart);
+}
+int thisbreak = random(5, 10);
+bonehealth += thisbreak;
+int existing = 0;
+if (bone_damage.exists(randombodypart))
+{
+any val = bone_damage[randombodypart];
+val.retrieve(existing);
+}
+bone_damage.set(randombodypart, existing+ thisbreak);
 bonebreak = true;
 if (charbreaksound == 1) p.play_stationary(find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*break*"), false);
 stun_target("me", "", st);
@@ -239,7 +203,7 @@ else
 string message = "Ouch! You just ";
 if (messages.length() == 1)
 {
-message += messages[0] + ". Causing "+dmg+"damage.";
+message += messages[0] + ".";
 }
 else
 {
@@ -251,7 +215,7 @@ message += ", and ";
 else if (i < messages.length() - 2)
 message += ", ";
 else
-message += ". Causing "+dmg+"damage.";
+message += ".";
 }
 }
 speak(message);
@@ -310,6 +274,7 @@ wepdef=0;
 bonehealth=0;
 broken_bones.delete_all();
 clear_inv();
+kombatlog.resize(0);
 destroy_all_charas();
 charparse();
 }
@@ -323,6 +288,7 @@ sitting=true;
 wepdef=0;
 broken_bones.delete_all();
 clear_inv();
+kombatlog.resize(0);
 destroy_all_charas();
 charparse();
 }
@@ -335,6 +301,7 @@ sitting=true;
 wepdef=0;
 broken_bones.delete_all();
 clear_inv();
+kombatlog.resize(0);
 destroy_all_charas();
 charparse();
 me.x=0;
@@ -351,9 +318,9 @@ if(building==false) mainmenu();
 }
 void heal_bones(int amount, double remove_threshold = 0)
 {
-if (broken_bones.get_size() == 0) return;
-array<string> keys = broken_bones.get_keys();
-string target = keys[random(0, keys.length() - 1)];
+if (broken_bones.get_size() == 0 || broken_bone_order.length() == 0)
+return;
+string target = broken_bone_order[broken_bone_order.length() - 1];
 string spoken_bodypart = target.replace("_", " ");
 int before_health = bonehealth;
 bonehealth -= amount;
@@ -361,14 +328,28 @@ int after_health = bonehealth;
 if (after_health <= remove_threshold)
 {
 broken_bones.delete(target);
-speak("Your " + spoken_bodypart + " is fully healed.");
+bone_damage.delete(target);
+broken_bone_order.remove_at(broken_bone_order.length() - 1);
+wait(random(500, 1000));
+itemslot = p.play_stationary_extended(find_sound("sounds/" + soundpack + "/equipments/items/unsorted/other/healing_cast/*healstop*"), false, 0, 0, itemvolume, itempitch, false);
+give("healing_cast", -1);
+speak("Your " + spoken_bodypart + " is fully healed. The healing_cast will now be recycled.");
 }
 else
 {
+wait(random(500, 1000));
 speak("The healing cast reduced your " + spoken_bodypart + " damage from " + before_health + " to " + after_health + ".");
 }
 }
-
+void init_bone_damage()
+{
+array<string> parts = clean_lines("sounds/" + soundpack + "/characters/" + chartype + "/bodyparts.sif");
+for (uint i = 0; i < parts.length(); i++)
+{
+string part = parts[i];
+bone_damage.set(part, 10);
+}
+}
 void charparse()
 {
 if(file_exists("sounds/"+soundpack+"/characters/"+chartype+"/info.sif"))
