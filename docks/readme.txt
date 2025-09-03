@@ -96,6 +96,7 @@ Menu keys.
 Letter, W: Opens the weapons menu, if pressed.
 Letter, S: Opens the shields menu, if pressed.
 Letter, E: Opens the object viewer menu, if pressed.
+Shift plus letter E: Opens the combat log viewer menu, if pressed.
 Letter, O: Opens the Builder menu in the builder mode, if pressed.
 Letter, V: Opens the points menu, if pressed.
 
