@@ -103,12 +103,14 @@ Letter, V: Opens the points menu, if pressed.
 Creating sound packs.
 This game allows you to create customizeable sound packs that you can use in various situations.
 
-Character sound listing: 26 total.
+Character sound listing: 29 total.
 buy.ogg: This sound is played when your character purchases upgrades.
+break.ogg: This sound is played when a character breaks a certain bone in their body.
 cameraair.ogg: This sound is played when air is detected while your character uses the camera.
 camerahazard.ogg: This sound is played when a hazard is detected while your character uses the camera.
 cameraplayer.ogg: This sound is played when a player is detected while your character uses the camera.
 death.ogg: This sound is played when your character dies.
+fail.ogg: This sound is played when a character's broken bone starts  to kill them from too much pain.
 fall.ogg: This sound is played when your character starts falling.
 healing.ogg: This sound is played When your character is healing.
 healstart.ogg: This sound is played when your character starts healing.
@@ -120,6 +122,8 @@ kill.ogg: This sound is played when your character kills an entity.
 land.ogg: This sound is played when your character lands on a platform.
 lev.ogg: This sound is played when your character levels up.
 life.ogg: This sound is played when your character loses a life.
+move.ogg: This sound is played when you use the /go command to move yourself to a different X or Y Coordinate  on a map.
+pain.ogg: This sound is played when a character's broken bone starts to hurt them while moving or performing other tasks.
 plummet.ogg: This sound is played when your character is falling.
 rock.ogg: This sound is played when your character rocks back and forth while sitting.
 rise.ogg: This sound is played when your character is jumping.
