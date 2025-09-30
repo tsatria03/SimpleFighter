@@ -331,16 +331,24 @@ timbomby=by;
 damage=dmg;
 timbombtime=btime;
 timbombtype=bt;
-loopsound=bombpool.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/time bombs/"+timbombtype+"/*tick*"),me.x,me.y,timbombx,timbomby,0,0,0,0,true,0,0,painvolume,painpitch,false);
 }
 }
 void timebombloop()
 {
 for(uint i=0; i<timebombs.length(); i++)
 {
+float progress = 1.0 - float(timebombs[i].timbombtimer.elapsed) / float(timebombs[i].timbombtime);
+int maxBeep = 1000;
+int minBeep = 100;
+int interval = int(minBeep + (maxBeep - minBeep) * progress);
+if(timebombs[i].beeptimer.elapsed >= interval)
+{
+timebombs[i].loopsound=bombpool.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/time bombs/"+timebombs[i].timbombtype+"/*tick*"),me.x, me.y,timebombs[i].timbombx, timebombs[i].timbomby,0,0,0,0,false,0,0,painvolume,painpitch,false);
+bombpool.update_sound_2d(timebombs[i].loopsound, timebombs[i].timbombx, timebombs[i].timbomby);
+timebombs[i].beeptimer.restart();
+}
 if(timebombs[i].timbombtimer.elapsed>=timebombs[i].timbombtime)
 {
-bombpool.update_sound_2d(timebombs[i].loopsound,timebombs[i].timbombx,timebombs[i].timbomby);
 timebombs[i].timbombtimer.restart();
 for(uint i1=0; i1<animals.length(); i1++)
 {
