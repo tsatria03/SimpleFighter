@@ -2100,7 +2100,7 @@ speak("map created");
 
 void cam_left()
 {
-if(keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
+if(cam.x-1>=0 and keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="left";
 cam.x-=1;
@@ -2110,7 +2110,7 @@ camtimer.restart();
 }
 void cam_right()
 {
-if(keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
+if(cam.x+1<=maxx and keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="right";
 cam.x+=1;
@@ -2120,7 +2120,7 @@ camtimer.restart();
 }
 void cam_down()
 {
-if(keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
+if(cam.y-1>=0 and keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="down";
 cam.y-=1;
@@ -2130,7 +2130,7 @@ camtimer.restart();
 }
 void cam_up()
 {
-if(keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
+if(cam.y+1<=maxx and keyrowhold==1 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="up";
 cam.y+=1;
@@ -2140,38 +2140,42 @@ camtimer.restart();
 }
 void camstep_left()
 {
-if(keyrowhold==0 and cammable==true)
+if(cam.x-1>=0 and keyrowhold==0 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="left";
 cam.x-=1;
 playcam();
+camtimer.restart();
 }
 }
 void camstep_right()
 {
-if(keyrowhold==0 and cammable==true)
+if(cam.x+1<=maxx and keyrowhold==0 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="right";
 cam.x+=1;
 playcam();
+camtimer.restart();
 }
 }
 void camstep_down()
 {
-if(keyrowhold==0 and cammable==true)
+if(cam.y-1>=0 and keyrowhold==0 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="down";
 cam.y-=1;
 playcam();
+camtimer.restart();
 }
 }
 void camstep_up()
 {
-if(keyrowhold==0 and cammable==true)
+if(cam.y+1<=maxx and keyrowhold==0 and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="up";
 cam.y+=1;
 playcam();
+camtimer.restart();
 }
 }
 
@@ -2218,6 +2222,8 @@ if(charturnsound==1 and facing=="up") p.play_2d(find_sound("sounds/"+soundpack+"
 
 void move_left()
 {
+if (me.x-1>=0)
+{
 if(facing=="left"==false and turnmode==1)
 {
 facing="left";
@@ -2231,10 +2237,13 @@ if(turnmode==0) facing="left";
 me.x--;
 bonecheck();
 playstep();
+}
 }
 }
 void move_right()
 {
+if (me.x+1<=maxx)
+{
 if(facing=="right"==false and turnmode==1)
 {
 facing="right";
@@ -2250,7 +2259,10 @@ bonecheck();
 playstep();
 }
 }
+}
 void move_down()
+{
+if (!gmt(me.x,me.y-1).is_empty())
 {
 if(facing=="down"==false and turnmode==1)
 {
@@ -2267,7 +2279,10 @@ bonecheck();
 playstep();
 }
 }
+}
 void move_up()
+{
+if (!gmt(me.x,me.y+1).is_empty())
 {
 if(facing=="up"==false and turnmode==1)
 {
@@ -2284,7 +2299,10 @@ bonecheck();
 playstep();
 }
 }
+}
 void step_left()
+{
+if (me.x-1>=0)
 {
 if(facing=="left"==false and turnmode==1)
 {
@@ -2301,7 +2319,10 @@ bonecheck();
 playstep();
 }
 }
+}
 void step_right()
+{
+if (me.x+1<=maxx)
 {
 if(facing=="right"==false and turnmode==1)
 {
@@ -2318,7 +2339,10 @@ bonecheck();
 playstep();
 }
 }
+}
 void step_down()
+{
+if (!gmt(me.x,me.y-1).is_empty())
 {
 if(facing=="down"==false and turnmode==1)
 {
@@ -2335,7 +2359,10 @@ bonecheck();
 playstep();
 }
 }
+}
 void step_up()
+{
+if (!gmt(me.x,me.y+1).is_empty())
 {
 if(facing=="up"==false and turnmode==1)
 {
@@ -2350,6 +2377,7 @@ if(turnmode==0) facing="up";
 me.y++;
 bonecheck();
 playstep();
+}
 }
 }
 
@@ -2792,6 +2820,10 @@ int count = clamp((fallcounter - 8) / 2, 1, 5);
 break_charbones(ct, health_damage, 10 * fallcounter, count);
 }
 }
+jumpable=false;
+onstaircase=false;
+moveable=false;
+sitting=true;
 falling=false;
 fallcounter=0;
 for(uint i=0; i<checkpoints.length(); i++)
