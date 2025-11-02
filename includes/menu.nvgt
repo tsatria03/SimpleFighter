@@ -1012,8 +1012,8 @@ game(false);
 if(normem=="kn")
 {
 m.fade_music();
-string[] enhumy=find_directories("sounds/"+soundpack+"/npc/humans/*");
-if(enhumy.length()==0)
+string[] humantypes=find_directories("sounds/"+soundpack+"/npc/humans/*");
+if(humantypes.length()==0)
 {
 dlg_snd("Error. There are no humans detected in the game! Press enter to continue.");
 normalmenu();
@@ -2069,26 +2069,26 @@ game(false);
 if(cusmem=="kn")
 {
 m.fade_music();
-string[] enhumy=find_directories("sounds/"+soundpack+"/npc/humans/*");
-if(enhumy.length()==0)
+string[] humantypes=find_directories("sounds/"+soundpack+"/npc/humans/*");
+if(humantypes.length()==0)
 {
 dlg_snd("Error. There are no humans available to view. Press enter to continue.");
 custommenu();
 }
 else
 {
-string[] enhumytype=find_directories("sounds/"+soundpack+"/npc/humans/*");
+string[] humtypes=find_directories("sounds/"+soundpack+"/npc/humans/*");
 setupmenu();
-for(uint i=0; i<enhumytype.length(); i++)
+for(uint i=0; i<humtypes.length(); i++)
 {
-m.add_item_tts(enhumytype[i],enhumytype[i]);
+m.add_item_tts(humtypes[i],humtypes[i]);
 }
 int mres=m.run("humans menu", true);
 if(mres==0)
 {
 custommenu();
 }
-if (mres==0 and mres>=enhumytype.length())
+if (mres==0 and mres>=humtypes.length())
 {
 gamemode=7;
 setupmenu();
@@ -2250,9 +2250,9 @@ building=false;
 game(false);
 }
 }
-if (mres>0 and mres<=enhumytype.length())
+if (mres>0 and mres<=humtypes.length())
 {
-humtype=enhumytype[mres-1];
+humtype=humtypes[mres-1];
 gamemode=7;
 setupmenu();
 m.wrap_sound="none.ogg";
@@ -3917,6 +3917,7 @@ m.add_item_tts("reverb", "rev");
 m.add_item_tts("robot", "rt");
 m.add_item_tts("robot zone", "rz");
 m.add_item_tts("safe zone", "sz");
+m.add_item_tts("surveillance camera", "svcam");
 m.add_item_tts("sign", "sn");
 m.add_item_tts("sound ambience", "srcamb");
 m.add_item_tts("sound source", "src");
@@ -6561,7 +6562,6 @@ for (uint i = 0; i < plats.length(); i++)
 form.add_list_item(platile, plats[i], plats[i]);
 if (i == 0) tiletype = plats[i];
 }
-int revtest = form.create_checkbox("&test reverb");
 int revok = form.create_button("&okay",true);
 int revcn = form.create_button("&cancel");
 form.focus(mx);
@@ -6598,22 +6598,36 @@ resume_pools();
 speak("canceled");
 game(true);
 }
-if(form.is_checked(revtest))
+if (form.get_current_focus() == platile)
 {
-revdry=form.get_slider(dr)/100.0;
-revwet=form.get_slider(wm)/100.0;
-revsize=form.get_slider(rm)/100.0;
-revdamp=form.get_slider(dp)/100.0;
-revwidth=form.get_slider(wt)/100.0;
-string fxtype="$test_reverb:freeverb:"+revdry+":"+revwet+":"+revsize+":"+revdamp+":"+revwidth;
-for(uint j=0; j<pools.length(); j++)
+if(key_down(KEY_SPACE) and keyrowhold==1 and movetimer.elapsed >= movetime)
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+for (uint j = 0; j < pools.length(); j++)
 {
 pools[j].mixer.set_fx(fxtype);
 }
-if(movetimer.elapsed>=movetime)
-{
-tileslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/platforms/"+tiletype+"/*step*"),false,0,0,tilevolume,tilepitch);
+tileslot = p.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
 movetimer.restart();
+}
+if(key_pressed(KEY_SPACE) and keyrowhold==0)
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+for (uint j = 0; j < pools.length(); j++)
+{
+pools[j].mixer.set_fx(fxtype);
+}
+tileslot = p.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
 }
 }
 if(form.is_pressed(revok))
@@ -6876,6 +6890,54 @@ mapdata=mapper.read();
 mapper.write("\r\n"+"safe_zone "+x+" "+paxx+" "+y+" "+paxy+" "+saftyp);
 mapper.close();
 spawn_safezone(x, paxx, y, paxy, saftyp);
+load_map(mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="svcam")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this surveillance camera.");
+string my=vd.input_box("","Enter the y of this surveillance camera.");
+string rng=vd.input_box("","Enter the horizontal seeing range of this surveillance camera.");
+string rng2=vd.input_box("","Enter the vertical seeing range of this surveillance camera.");
+string dr=vd.input_box("","Enter the direction of this surveillance camera. 1 for left, and 2 for right.");
+string sp=vd.input_box("","Enter the speed of this surveillance camera.");
+string hp=vd.input_box("","Enter the health of this surveillance camera.");
+string lev=vd.input_box("","Enter the level of this surveillance camera.");
+string exper=vd.input_box("","Enter the xp of this surveillance camera.");
+if(x=="" and y=="" and camrange=="" and camrange2=="" and direction=="" and speedtime=="" and minhp=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+camrange=string_to_number(rng);
+camrange2=string_to_number(rng2);
+direction=string_to_number(dr);
+speedtime=string_to_number(sp);
+minhp=string_to_number(hp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] camera=find_directories("sounds/"+soundpack+"/objects/cameras/*");
+if(camera.length()==0)
+{
+dlg_snd("Error. There are no cameras available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=camsmenu();
+if(res!="")
+{
+camtyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"camera "+x+" "+y+" "+camrange+" "+camrange2+" "+direction+" "+speedtime+" "+minhp+" "+lv+" "+xn+" "+camtyp);
+mapper.close();
+spawn_camera(x, y, camrange, camrange2, direction, speedtime, minhp, minhp, lv, xn, camtyp);
 load_map(mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
@@ -8190,6 +8252,7 @@ void infomenu()
 {
 string[] animaltype=find_directories("sounds/"+soundpack+"/npc/animals/*");
 string[] bosstype=find_directories("sounds/"+soundpack+"/npc/*");
+string[] cameratype=find_directories("sounds/"+soundpack+"/objects/cameras/*");
 string[] destwalltype=find_directories("sounds/"+soundpack+"/objects/walls/*");
 string[] humantype=find_directories("sounds/"+soundpack+"/npc/humans/*");
 string[] helpertype=find_directories("sounds/"+soundpack+"/npc/helpers/*");
@@ -8200,7 +8263,7 @@ string[] turtype=find_directories("sounds/"+soundpack+"/npc/turrets/*");
 string[] vehtype=find_directories("sounds/"+soundpack+"/objects/vehicles/*");
 string[] zombietype=find_directories("sounds/"+soundpack+"/npc/zombies/*");
 setupmenu();
-m.add_item_tts("total objects "+(animals.length()+bosses.length()+dest_walls.length()+doors.length()+psdoors.length()+humans.length()+helpers.length()+projectiles.length()+robots.length()+spikes.length()+turrets.length()+vehicles.length()+zombies.length()));
+m.add_item_tts("total objects "+(animals.length()+bosses.length()+dest_walls.length()+doors.length()+psdoors.length()+humans.length()+helpers.length()+projectiles.length()+robots.length()+spikes.length()+sucams.length()+turrets.length()+vehicles.length()+zombies.length()));
 for(uint i=0; i<animals.length(); i++)
 {
 m.add_item_tts(animals[i].animaltype+";"+"at;"+animals[i].amx+";"+animals[i].amy+";"+"HP"+round(animals[i].animalhealth/animals[i].animalmaxhealth*100,2)+"percent"+";"+"level"+animals[i].amlevel);
@@ -8208,6 +8271,11 @@ m.add_item_tts(animals[i].animaltype+";"+"at;"+animals[i].amx+";"+animals[i].amy
 for(uint i=0; i<bosses.length(); i++)
 {
 m.add_item_tts(bosses[i].bosstype+";"+"at;"+bosses[i].bossx+";"+bosses[i].bossy+";"+"HP"+round(bosses[i].bosshealth/bosses[i].bossmaxhealth*100,2)+"percent"+";"+"level"+bosses[i].bosslevel);
+}
+for(uint i=0; i<sucams.length(); i++)
+{
+m.add_item_tts(sucams[i].cameratype + " at " + sucams[i].sucamx + " " + sucams[i].sucamy + " facing " + (sucams[i].camdir == 1 ? "left" : "right") + " HP " + round(sucams[i].camhealth / sucams[i].cammaxhealth * 100, 2) + " percent" + " level " + sucams[i].camlevel
+);
 }
 for(uint i=0; i<doors.length(); i++)
 {

@@ -1166,6 +1166,58 @@ if(namesfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects
 }
 return 0;
 }
+string camsmenu()
+{
+string[] camtypes=find_directories("sounds/"+soundpack+"/objects/cameras/*");
+setupmenu();
+m.set_callback(@cameras_callback,"");
+for (uint i=0; i<camtypes.length(); i++)
+{
+m.add_item_tts(camtypes[i],camtypes[i],"",true);
+}
+int mres=m.run("cameras menu", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=camtypes.length())
+{
+camtyp=camtypes[mres-1];
+}
+return m.get_item_name(mres);
+}
+int cameras_callback(dynamic_menu_pro@ m, string data)
+{
+string camtype;
+if(m.menu_position>0)
+camtype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+string[] hitsfx=find_files("sounds/"+soundpack+"/objects/cameras/"+camtype+"/*hit*");
+if(hitsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/cameras/"+camtype+"/"+hitsfx[random(0,hitsfx.length()-1)],false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+string[] hitsfx=find_files("sounds/"+soundpack+"/objects/cameras/"+camtype+"/*hit*");
+if(hitsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/cameras/"+camtype+"/"+hitsfx[random(0,hitsfx.length()-1)],false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+string[] turnsfx=find_files("sounds/"+soundpack+"/objects/cameras/"+camtype+"/*turn*");
+if(turnsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/cameras/"+camtype+"/"+turnsfx[random(0,turnsfx.length()-1)],false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+string[] wornsfx=find_files("sounds/"+soundpack+"/objects/cameras/"+camtype+"/*alert*");
+if(wornsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/cameras/"+camtype+"/"+wornsfx[random(0,wornsfx.length()-1)],false);
+}
+return 0;
+}
 string floorsmenu()
 {
 string[] floorbtype=find_directories("sounds/"+soundpack+"/objects/floor breakers/*");

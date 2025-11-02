@@ -1,0 +1,114 @@
+sucam@[] sucams(0);
+class sucam
+{
+bool spotted = false;
+bool alarm_started = false;
+int alarmsound, camsound, defsound, hurtsound, wornsound;
+int sucamx, sucamy;
+int camdir, turntime;
+double camlevel, camxp;
+double camhealth, cammaxhealth;
+int vision_x;
+int vision_y;
+timer turntimer, alarmdelaytimer, spawn_timer;
+string cameratype;
+sucam(int cmx, int cmy, int cmvx, int cmvy, int cmdr, int cmtime, double chp, double cmhp, double cmlv, double cmxp, string cmtype)
+{
+sucamx = cmx;
+sucamy = cmy;
+vision_x=cmvx;
+vision_y=cmvy;
+camdir = cmdr;
+turntime = cmtime;
+camhealth = chp;
+cammaxhealth = cmhp;
+camlevel = cmlv;
+camxp = cmxp;
+cameratype = cmtype;
+alarmdelaytimer.restart();
+spawn_timer.restart();
+}
+}
+void camloop()
+{
+for (uint i = 0; i < sucams.length(); i++)
+{
+sucam@ cam = sucams[i];
+if (cam.camdir == 1 && cam.turntimer.elapsed >= cam.turntime)
+{
+cam.camsound = campool.play_2d(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*turn*"), me.x, me.y, cam.sucamx, cam.sucamy, false);
+cam.camdir = 2;
+cam.turntimer.restart();
+}
+else if (cam.camdir == 2 && cam.turntimer.elapsed >= cam.turntime)
+{
+cam.camdir = 1;
+cam.turntimer.restart();
+}
+bool in_x_range = false;
+bool in_y_range = absolute(me.y - cam.sucamy) <= cam.vision_y;
+if (cam.camdir == 1)
+in_x_range = me.x < cam.sucamx && (cam.sucamx - me.x) <= cam.vision_x;
+ else if (cam.camdir == 2)
+in_x_range = me.x > cam.sucamx && (me.x - cam.sucamx) <= cam.vision_x;
+cam.spotted = in_x_range && in_y_range;
+if (cam.spotted && !cam.alarm_started)
+{
+campool.destroy_sound(cam.camsound);
+cam.wornsound = campool.play_stationary(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*alert*"), false);
+cam.alarmdelaytimer.restart();
+cam.alarm_started = true;
+}
+if (cam.alarm_started && cam.alarmdelaytimer.elapsed >= random(5000, 10000))
+{
+if (cam.alarmsound == 0)
+cam.alarmsound = campool.play_stationary(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*alarm*"), false);
+}
+if (cam.alarm_started && cam.alarmdelaytimer.elapsed >= 5000 && cam.spawn_timer.elapsed >= 100)
+{
+if (humans.length() < 50 && cam.camhealth > 0)
+{
+string[] humantypes = find_directories("sounds/"+soundpack+"/npc/humans/*");
+if (humantypes.length() > 0)
+{
+string humtype = random_string(humantypes);
+int spawn_x = cam.sucamx + random(-1, 1);
+int spawn_y = cam.sucamy + random(-1, 1);
+spawn_human(spawn_x, spawn_y, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, humtype, true, true, random_bool(), random_bool());
+}
+cam.spawn_timer.restart();
+}
+}
+if (cam.camhealth <= 0)
+{
+campool.destroy_sound(cam.alarmsound);
+campool.destroy_sound(cam.camsound);
+campool.destroy_sound(cam.wornsound);
+cam.defsound = campool.play_2d(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*death*"), me.x, me.y, cam.sucamx, cam.sucamy, false);
+if (xpmod >= 1)
+{
+double gained_xp = cam.camxp * cam.camlevel * xpmod;
+xp += gained_xp;
+kombatlog.insert_last(gained_xp + " experience gained. Defeated " + cam.cameratype + " level " + cam.camlevel + ".");
+}
+sucams.remove_at(i);
+i--;
+continue;
+}
+}
+}
+void spawn_camera(int cx, int cy, int cvx, int cvy, int cdir, int turntime, double chp, double cmaxhp, double clv, double cxp, string camtype)
+{
+sucam scam1(cx, cy, cvx, cvy, cdir, turntime, chp, cmaxhp, clv, cxp, camtype);
+sucams.insert_last(scam1);
+}
+void destroy_all_cameras()
+{
+for(uint i = 0; i < sucams.length(); i++)
+{
+campool.destroy_sound(sucams[i].alarmsound);
+campool.destroy_sound(sucams[i].camsound);
+campool.destroy_sound(sucams[i].wornsound);
+}
+sucams.resize(0);
+}
