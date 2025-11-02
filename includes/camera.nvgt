@@ -10,7 +10,7 @@ double camlevel, camxp;
 double camhealth, cammaxhealth;
 int vision_x;
 int vision_y;
-timer turntimer, alarmdelaytimer, spawn_timer;
+timer turntimer, alarmdelaytimer, spawn_timer, spot_check_timer;
 string cameratype;
 sucam(int cmx, int cmy, int cmvx, int cmvy, int cmdr, int cmtime, double chp, double cmhp, double cmlv, double cmxp, string cmtype)
 {
@@ -36,31 +36,43 @@ void camloop()
 for (uint i = 0; i < sucams.length(); i++)
 {
 sucam@ cam = sucams[i];
+if (!cam.spotted && !cam.alarm_started)
+{
 if (cam.camdir == 1 && cam.turntimer.elapsed >= cam.turntime)
 {
-campool.destroy_sound(cam.camsound);
-cam.camsound = campool.play_2d(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*turn*"), me.x, me.y, cam.sucamx, cam.sucamy, false);
 cam.camdir = 2;
 cam.turntimer.restart();
+cam.spot_check_timer.restart();
+campool.destroy_sound(cam.camsound);
+cam.camsound = campool.play_2d(find_sound("sounds/" + soundpack + "/objects/cameras/" + cam.cameratype + "/*turn*"), me.x, me.y, cam.sucamx, cam.sucamy, false);
 }
 else if (cam.camdir == 2 && cam.turntimer.elapsed >= cam.turntime)
 {
 cam.camdir = 1;
 cam.turntimer.restart();
+cam.spot_check_timer.restart();
+campool.destroy_sound(cam.camsound);
+cam.camsound = campool.play_2d(find_sound("sounds/" + soundpack + "/objects/cameras/" + cam.cameratype + "/*turn*"), me.x, me.y, cam.sucamx, cam.sucamy, false);
 }
-bool in_x_range = false;
+}
+if (cam.spot_check_timer.elapsed >= random(1000, 2000))
+{
 bool in_y_range = absolute(me.y - cam.sucamy) <= cam.vision_y;
-if (cam.camdir == 1)
-in_x_range = me.x < cam.sucamx && (cam.sucamx - me.x) <= cam.vision_x;
- else if (cam.camdir == 2)
-in_x_range = me.x > cam.sucamx && (me.x - cam.sucamx) <= cam.vision_x;
-cam.spotted = in_x_range && in_y_range;
+cam.spotted = false;
+if (in_y_range)
+{
+if (cam.camdir == 1 && me.x < cam.sucamx && (cam.sucamx - me.x) <= cam.vision_x)
+cam.spotted = true;
+else if (cam.camdir == 2 && me.x > cam.sucamx && (me.x - cam.sucamx) <= cam.vision_x)
+cam.spotted = true;
+}
 if (cam.spotted && !cam.alarm_started)
 {
 campool.destroy_sound(cam.camsound);
-cam.wornsound = campool.play_stationary(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*alert*"), false);
+cam.wornsound = campool.play_stationary(find_sound("sounds/" + soundpack + "/objects/cameras/" + cam.cameratype + "/*alert*"), false);
 cam.alarmdelaytimer.restart();
 cam.alarm_started = true;
+}
 }
 if (cam.alarm_started && cam.alarmdelaytimer.elapsed >= random(5000, 10000))
 {

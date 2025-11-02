@@ -300,8 +300,9 @@ speak("current location,"+me.x+",;"+me.y+","+"you're walking on;"+gmt(me.x,me.y)
 }
 }
 
-void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=false, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds)
+void load_map(string mode, string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=false, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds)
 {
+mapmode=mode;
 mapname=name;
 mapowner=owner;
 maploadbeeps=loadbeeps;
@@ -348,7 +349,11 @@ if(!instent_update)
 wait(5);
 }
 string[] sd=string_split(lines[i], " ", true);
-if(sd[0]=="name" && sd.length()==2)
+if(sd[0]=="mode" && sd.length()==2)
+{
+mapmode=sd[1];
+}
+else if(sd[0]=="name" && sd.length()==2)
 {
 mapname=sd[1];
 }
@@ -1165,12 +1170,22 @@ if(loadbeeps == 1) beep_percentage(100);
 if(anounce_mapload==true) speak("map loded.");
 }
 }
-void comparse()
+void comparse(string comd="")
+{
+string cmd;
+if (comd != "")
+{
+cmd = comd;
+}
+else
 {
 vd.set_disallowed_chars("", false, "This character is not allowed.");
-string cmd=vd.input_box("","Enter the command you'd like to use.");
+cmd=vd.input_box("","Enter the command you'd like to use.");
 if(cmd=="")
 return;
+if (cmd.substr(0, 1) != "/")
+cmd = "/" + cmd;
+}
 string[] sd=string_split(cmd, "/", true);
 if(sd.length()<2)
 {
@@ -1707,14 +1722,14 @@ else if (base_command == "changemap")
 {
 if (parsed.length() == 4)
 {
-string name=parsed[1];
+string mapname=parsed[1];
 int x = stn(parsed[2]);
 int y = stn(parsed[3]);
 if (file_exists("data/maps/" + name + ".map"))
 {
 if (x >= minx && x <= maxx && y >= miny && y <= maxy)
 {
-load_map(name,mapowner);
+load_map(mapmode, mapname, mapowner);
 }
 }
 else
@@ -1779,8 +1794,8 @@ game(true);
 }
 else
 {
-create_map(mapname, mapowner, minx, maxx, miny, maxy, tiletype);
-load_map(mapname, mapowner);
+create_map(mapmode, mapname, mapowner, minx, maxx, miny, maxy, tiletype);
+load_map(mapmode, mapname, mapowner);
 }
 }
 else
@@ -1805,7 +1820,7 @@ else if (base_command == "relmap")
 {
 if (parsed.length() == 1)
 {
-load_map(mapname, mapowner);
+load_map(mapmode, mapname, mapowner);
 speak("map reloaded");
 }
 else
@@ -1965,7 +1980,7 @@ mapname=maps[mres-1];
 mapname=string_replace(mapname, ".map", "", true);
 me.x=0;
 me.y=0;
-load_map(mapname, mapowner);
+load_map(mapmode, mapname, mapowner);
 }
 }
 }
@@ -2029,7 +2044,7 @@ game(true);
 mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(clipboard_data);
 mapper.close();
-load_map(mapname, mapowner);
+load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg", false);
 speak("Map updated.");
 }
@@ -2094,9 +2109,20 @@ speak("Unknown command: /"+base_command);
 game(true);
 }
 }
-
-void create_map(string name, string owner, double mx, double mx2, double my, double my2, string tiletype)
+void use_command(string cmd, bool announce_commands=false)
 {
+if (cmd == "")
+return;
+if (cmd.substr(0, 1) != "/")
+cmd = "/" + cmd;
+if (announce_commands)
+speak("Command: " + cmd);
+comparse(cmd);
+}
+
+void create_map(string mode, string name, string owner, double mx, double mx2, double my, double my2, string tiletype)
+{
+mapmode=mode;
 mapname=name;
 mapowner=owner;
 minx=mx;
@@ -2105,7 +2131,7 @@ miny=my;
 maxy=my2;
 mapper.open("data/maps/"+name+".map","wb");
 mapdata=mapper.read();
-mapper.write("name "+name+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2+"\r\n"+"contributor "+owner+"\r\n"+"platform 0 "+mx2+" 0 "+tiletype+" 0 100");
+mapper.write("mode 2d"+mode+"\r\n"+"name "+name+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2+"\r\n"+"contributor "+owner+"\r\n"+"platform 0 "+mx2+" 0 "+tiletype+" 0 100");
 mapper.close();
 me.x=0;
 me.y=0;
