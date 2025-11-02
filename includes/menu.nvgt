@@ -6555,13 +6555,18 @@ int wm=form.create_slider("&wet_mix: ", 50, 0, 100, "percent");
 int rm=form.create_slider("&room_size: ", 50, 0, 100, "percent");
 int dp=form.create_slider("dam&ping: ", 50, 0, 100, "percent");
 int wt=form.create_slider("w&idth: ", 50, 0, 100, "percent");
-int platile = form.create_list("te&st surface. Press space to preview the platforms for this effect. Menu");
+int platile = form.create_list("te&st surface");
 string[] plats = find_directories("sounds/" + soundpack + "/objects/platforms/*");
+string current_tile = gmt(me.x, me.y);
+int selected_index = 0;
 for (uint i = 0; i < plats.length(); i++)
 {
 form.add_list_item(platile, plats[i], plats[i]);
-if (i == 0) tiletype = plats[i];
+if (plats[i] == current_tile)
+selected_index = i;
 }
+form.set_list_position(platile, selected_index);
+tiletype = plats[selected_index];
 int revok = form.create_button("&okay",true);
 int revcn = form.create_button("&cancel");
 form.focus(mx);
@@ -6612,6 +6617,7 @@ for (uint j = 0; j < pools.length(); j++)
 {
 pools[j].mixer.set_fx(fxtype);
 }
+p.destroy_sound(tileslot);
 tileslot = p.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
 movetimer.restart();
 }
@@ -6627,7 +6633,38 @@ for (uint j = 0; j < pools.length(); j++)
 {
 pools[j].mixer.set_fx(fxtype);
 }
+p.destroy_sound(tileslot);
 tileslot = p.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
+}
+if(control_is_down() and key_repeating(KEY_L))
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+for (uint j = 0; j < pools.length(); j++)
+{
+pools[j].mixer.set_fx(fxtype);
+}
+p.destroy_sound(tileslot);
+tileslot = p.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*land*"), false, 0, 0, tilevolume, tilepitch);
+}
+if(control_is_down() and key_repeating(KEY_H))
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+for (uint j = 0; j < pools.length(); j++)
+{
+pools[j].mixer.set_fx(fxtype);
+}
+p.destroy_sound(tileslot);
+tileslot = p.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*fall*"), false, 0, 0, tilevolume, tilepitch);
 }
 }
 if(form.is_pressed(revok))

@@ -4,6 +4,7 @@ class sucam
 bool spotted = false;
 bool alarm_started = false;
 int alarmsound, camsound, defsound, hurtsound, wornsound;
+int alarmdelay_ms;
 int sucamx, sucamy;
 int camdir, turntime;
 double camlevel, camxp;
@@ -25,6 +26,7 @@ cammaxhealth = cmhp;
 camlevel = cmlv;
 camxp = cmxp;
 cameratype = cmtype;
+alarmdelay_ms = 5000;
 alarmdelaytimer.restart();
 spawn_timer.restart();
 campool.destroy_sound(camsound);
@@ -74,10 +76,10 @@ cam.alarmdelaytimer.restart();
 cam.alarm_started = true;
 }
 }
-if (cam.alarm_started && cam.alarmdelaytimer.elapsed >= random(5000, 10000))
+if (cam.alarm_started && cam.alarmdelaytimer.elapsed >= cam.alarmdelay_ms)
 {
 if (cam.alarmsound == 0)
-cam.alarmsound = campool.play_stationary(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*alarm*"), false);
+cam.alarmsound = campool.play_stationary(find_sound("sounds/"+soundpack+"/objects/cameras/"+cam.cameratype+"/*alarm*"), true);
 }
 if (cam.alarm_started && cam.alarmdelaytimer.elapsed >= 5000 && cam.spawn_timer.elapsed >= 100)
 {
@@ -86,10 +88,10 @@ if (humans.length() < 50 && cam.camhealth > 0)
 string[] humantypes = find_directories("sounds/"+soundpack+"/npc/humans/*");
 if (humantypes.length() > 0)
 {
-string humtype = random_string(humantypes);
+string humtypes = random_string(humantypes);
 int spawn_x = cam.sucamx + random(-1, 1);
 int spawn_y = cam.sucamy + random(-1, 1);
-spawn_human(spawn_x, spawn_y, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, humtype, true, true, random_bool(), random_bool());
+spawn_human(spawn_x, spawn_y, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, humtypes, true, true, random_bool(), random_bool());
 }
 cam.spawn_timer.restart();
 }
