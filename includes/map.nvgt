@@ -2611,24 +2611,50 @@ pbounce(5);
 return;
 }
 }
-for(uint i=0; i<dest_walls.length(); i++)
+for (uint i = 0; i < dest_walls.length(); i++)
 {
-if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
+if (dest_walls[i].minx <= me.x && dest_walls[i].maxx >= me.x && dest_walls[i].miny <= me.y && dest_walls[i].maxy >= me.y)
 {
-wallvolume=dest_walls[i].volume;
-wallpitch=dest_walls[i].pitch;
-wallslot=p.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+wallvolume = dest_walls[i].volume;
+wallpitch = dest_walls[i].pitch;
+if (wallbump)
+{
+wallslot = p.play_extended_2d(find_sound("sounds/" + soundpack + "/objects/walls/" + dest_walls[i].dest_wall + "/*wall*"),me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+}
+else
+{
+if (!wall_hit_once)
+{
+wallslot = p.play_extended_2d(find_sound("sounds/" + soundpack + "/objects/walls/" + dest_walls[i].dest_wall + "/*wall*"), me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+wall_hit_once = true;
+}
+}
 pbounce();
 return;
 }
 }
-if (string_contains(gmt(me.x,me.y),"wall",1)>-1)
+if (string_contains(gmt(me.x, me.y), "wall", 1) > -1)
 {
-wallslot=p.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+if (wallbump)
+{
+wallslot = p.play_extended_2d(find_sound("sounds/" + soundpack + "/objects/walls/" + gmt(me.x, me.y) + "/*wall*"), me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+}
+else
+{
+if (!wall_hit_once)
+{
+wallslot = p.play_extended_2d(find_sound("sounds/" + soundpack + "/objects/walls/" + gmt(me.x, me.y) + "/*wall*"), me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+wall_hit_once = true;
+}
+}
 pbounce();
 return;
 }
-if(jumping==0) tileslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*step*"),false,0,0,tilevolume,tilepitch);
+if(jumping==0)
+{
+tileslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*step*"),false,0,0,tilevolume,tilepitch);
+wall_hit_once = false;
+}
 }
 void playfall()
 {
@@ -2741,16 +2767,16 @@ cam.y--;
 else if(camdir=="down")
 cam.y++;
 }
-void pbounce(int steps=1)
+void pbounce(int steps = 1)
 {
-if(facing=="right")
-me.x-=steps;
-else if(facing=="left")
-me.x+=steps;
-else if(facing=="up")
-me.y-=steps;
-else if(facing=="down")
-me.y+=steps;
+if (facing == "right")
+me.x -= steps;
+else if (facing == "left")
+me.x += steps;
+else if (facing == "up")
+me.y -= steps;
+else if (facing == "down")
+me.y += steps;
 }
 void checkforplatforms()
 {
