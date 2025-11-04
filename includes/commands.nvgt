@@ -1,0 +1,963 @@
+void comparse(string comd="")
+{
+string cmd;
+if (comd != "")
+{
+cmd = comd;
+}
+else
+{
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+cmd=vd.input_box("","Enter the command you'd like to use.");
+if(cmd=="")
+return;
+}
+string[] sd=string_split(cmd, "/", true);
+if(sd.length()<2)
+{
+speak("Invalid command syntax. Make sure to include '/' followed by a command.");
+game(true);
+}
+string command = sd[1];
+string[] parsed = string_split(command, " ", true);
+if (parsed.length() < 1)
+{
+speak("No command entered after '/'.");
+game(true);
+}
+string base_command = parsed[0];
+if (base_command == "go")
+{
+if (parsed.length() == 3)
+{
+double x = stn(parsed[1]);
+double y = stn(parsed[2]);
+gop("me", "", x, y);
+}
+else if (parsed.length() == 5)
+{
+string entity = parsed[1];
+string id = parsed[2];
+double x = stn(parsed[3]);
+double y = stn(parsed[4]);
+gop(entity, id, x, y);
+}
+else
+{
+speak("Invalid command syntax. Usage: /go x y, or /go entity id x y.");
+game(true);
+}
+}
+else if(base_command=="kill")
+{
+if(parsed.length()==5)
+{
+string entity=parsed[1];
+string id=parsed[2];
+double x=stn(parsed[3]);
+double y=stn(parsed[4]);
+if(entity=="animal")
+{
+for(uint i=0; i<animals.length(); i++)
+{
+if(animals[i].animaltype==id && animals[i].amx==x && animals[i].amy==y)
+{
+animalpool.destroy_sound(animals[i].amsound);
+animals[i].defsound=animalpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/animals/"+animals[i].animaltype+"/*death*"),me.x,me.y,animals[i].amx,animals[i].amy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=animals[i].amxp*animals[i].amlevel*xpmod;
+kills+=1;
+spawn_bodyfall(animals[i].amx, animals[i].amy, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and animals[i].dropitem==true) spawn_obj(animals[i].amx, animals[i].amy, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,animals[i].amx,animals[i].amy,false);
+speak("Killed the animal " + id + " at position " + x + ", " + y + ".");
+animals.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="boss")
+{
+for(uint i=0; i<bosses.length(); i++)
+{
+if(bosses[i].bosstype==id && bosses[i].bossx==x && bosses[i].bossy==y)
+{
+bosspool.destroy_sound(bosses[i].bossesound);
+bosses[i].defsound=bosspool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/bosses/"+bosses[i].bosstype+"/*death*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=bosses[i].bossxp*bosses[i].bosslevel*xpmod;
+kills+=1;
+spawn_bodyfall(bosses[i].bossx, bosses[i].bossy, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and bosses[i].dropitem==true) spawn_obj(bosses[i].bossx, bosses[i].bossy, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,bosses[i].bossx,bosses[i].bossy,false);
+speak("Killed the boss " + id + " at position " + x + ", " + y + ".");
+bosses.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="human")
+{
+for(uint i=0; i<humans.length(); i++)
+{
+if(humans[i].humantype==id && humans[i].humx==x && humans[i].humy==y)
+{
+humanpool.destroy_sound(humans[i].humsound);
+humans[i].defsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humans[i].humantype+"/*death*"),me.x,me.y,humans[i].humx,humans[i].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=humans[i].humxp*humans[i].humlevel*xpmod;
+kills+=1;
+spawn_bodyfall(humans[i].humx, humans[i].humy, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and humans[i].dropitem==true) spawn_obj(humans[i].humx, humans[i].humy, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,humans[i].humx,humans[i].humy,false);
+speak("Killed the human " + id + " at position " + x + ", " + y + ".");
+humans.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="helper")
+{
+for(uint i=0; i<helpers.length(); i++)
+{
+if(helpers[i].helpertype==id && helpers[i].helpx==x && helpers[i].helpy==y)
+{
+helperpool.destroy_sound(helpers[i].helpersound);
+helpers[i].defsound=helperpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/helpers/"+helpers[i].helpertype+"/*death*"),me.x,me.y,helpers[i].helpx,helpers[i].helpy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+spawn_bodyfall(helpers[i].helpx, helpers[i].helpy, random(500,1000));
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,helpers[i].helpx,helpers[i].helpy,false);
+speak("Killed the helper " + id + " at position " + x + ", " + y + ".");
+helpers.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="projectile")
+{
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(projectiles[i].projtype==id && projectiles[i].prox==x && projectiles[i].proy==y)
+{
+projpool.destroy_sound(projectiles[i].projsound);
+projectiles[i].defsound=projpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/projectiles/"+projectiles[i].projtype+"/*death*"),me.x,me.y,projectiles[i].prox,projectiles[i].proy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=projectiles[i].poxp*projectiles[i].projlevel*xpmod;
+kills+=1;
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,projectiles[i].prox,projectiles[i].proy,false);
+speak("Killed the projectile " + id + " at position " + x + ", " + y + ".");
+projectiles.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="robot")
+{
+for(uint i=0; i<robots.length(); i++)
+{
+if(robots[i].robottype==id && robots[i].robx==x && robots[i].roby==y)
+{
+robpool.destroy_sound(robots[i].robsound);
+robots[i].defsound=robpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/robots/"+robots[i].robottype+"/*death*"),me.x,me.y,robots[i].robx,robots[i].roby,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=robots[i].robxp*robots[i].roblevel*xpmod;
+kills+=1;
+spawn_bodyfall(robots[i].robx, robots[i].roby, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and robots[i].dropitem==true) spawn_obj(robots[i].robx, robots[i].roby, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,robots[i].robx,robots[i].roby,false);
+speak("Killed the robot " + id + " at position " + x + ", " + y + ".");
+robots.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="turret")
+{
+for(uint i=0; i<turrets.length(); i++)
+{
+if(turrets[i].turtype==id && turrets[i].turx==x && turrets[i].tury==y)
+{
+turpool.destroy_sound(turrets[i].tursound);
+turrets[i].defsound=turpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/turrets/"+turrets[i].turtype+"/*death*"),me.x,me.y,turrets[i].turx,turrets[i].tury,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=turrets[i].turxp*turrets[i].turlevel*xpmod;
+kills+=1;
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,turrets[i].turx,turrets[i].tury,false);
+speak("Killed the turret " + id + " at position " + x + ", " + y + ".");
+turrets.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="vehicle")
+{
+for(uint i=0; i<vehicles.length(); i++)
+{
+if(vehicles[i].vehtype==id && vehicles[i].vehx==x && vehicles[i].vehy==y)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+vehpool.destroy_sound(vehicles[i].beepsound);
+vehpool.destroy_sound(vehicles[i].vehsound);
+vehicles[i].defsound=vehpool.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/vehicles/"+vehicles[i].vehtype+"/*death*"),me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+vehicles[i].vehspeed=5;
+invehicle=false;
+vehicles[i].moveable=false;
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,false);
+speak("Killed the vehicle " + id + " at position " + x + ", " + y + ".");
+vehicles.remove_at(i);
+return;
+}
+}
+}
+else if(entity=="zombie")
+{
+for(uint i=0; i<zombies.length(); i++)
+{
+if(zombies[i].zombietype==id && zombies[i].zombx==x && zombies[i].zomby==y)
+{
+zombpool.destroy_sound(zombies[i].zombsound);
+zombies[i].defsound=zombpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/zombies/"+zombies[i].zombietype+"/*death*"),me.x,me.y,zombies[i].zombx,zombies[i].zomby,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=zombies[i].zombxp*zombies[i].zomblevel*xpmod;
+kills+=1;
+spawn_bodyfall(zombies[i].zombx, zombies[i].zomby, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and zombies[i].dropitem==true) spawn_obj(zombies[i].zombx, zombies[i].zomby, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,zombies[i].zombx,zombies[i].zomby,false);
+speak("Killed the zombie " + id + " at position " + x + ", " + y + ".");
+zombies.remove_at(i);
+return;
+}
+}
+}
+else 
+{
+speak("Invalid entity type: "+entity+".");
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /kill entity id x y.");
+game(true);
+}
+}
+else if (base_command == "killall")
+{
+if (parsed.length() == 1)
+{
+int total_kills=0;
+for(uint i=0; i<animals.length(); i++)
+{
+if(animals[i].animalhealth>0)
+{
+animalpool.destroy_sound(animals[i].amsound);
+animals[i].defsound=animalpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/animals/"+animals[i].animaltype+"/*death*"),me.x,me.y,animals[i].amx,animals[i].amy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=animals[i].amxp*animals[i].amlevel*xpmod;
+kills+=1;
+spawn_bodyfall(animals[i].amx, animals[i].amy, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and animals[i].dropitem==true) spawn_obj(animals[i].amx, animals[i].amy, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,animals[i].amx,animals[i].amy,false);
+}
+total_kills++;
+}
+animals.resize(0);
+for(uint i=0; i<bosses.length(); i++)
+{
+if(bosses[i].bosshealth>0)
+{
+bosspool.destroy_sound(bosses[i].bossesound);
+bosses[i].defsound=bosspool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/bosses/"+bosses[i].bosstype+"/*death*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=bosses[i].bossxp*bosses[i].bosslevel*xpmod;
+kills+=1;
+spawn_bodyfall(bosses[i].bossx, bosses[i].bossy, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and bosses[i].dropitem==true) spawn_obj(bosses[i].bossx, bosses[i].bossy, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,bosses[i].bossx,bosses[i].bossy,false);
+}
+total_kills++;
+}
+bosses.resize(0);
+for(uint i=0; i<humans.length(); i++)
+{
+if(humans[i].humanhealth>0)
+{
+humanpool.destroy_sound(humans[i].refsound);
+humanpool.destroy_sound(humans[i].refsound2);
+humanpool.destroy_sound(humans[i].hurtsound);
+humanpool.destroy_sound(humans[i].humsound);
+humans[i].defsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humans[i].humantype+"/*death*"),me.x,me.y,humans[i].humx,humans[i].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=humans[i].humxp*humans[i].humlevel*xpmod;
+kills+=1;
+spawn_bodyfall(humans[i].humx, humans[i].humy, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(healtype.length()!=0 and humans[i].dropitem==true) spawn_obj(humans[i].humx, humans[i].humy, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,humans[i].humx,humans[i].humy,false);
+}
+total_kills++;
+}
+humans.resize(0);
+for(uint i=0; i<helpers.length(); i++)
+{
+if(helpers[i].helperhealth>0)
+{
+helperpool.destroy_sound(helpers[i].helpersound);
+helpers[i].defsound=helperpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/helpers/"+helpers[i].helpertype+"/*death*"),me.x,me.y,helpers[i].helpx,helpers[i].helpy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+spawn_bodyfall(helpers[i].helpx, helpers[i].helpy, random(500,1000));
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,helpers[i].helpx,helpers[i].helpy,false);
+}
+total_kills++;
+}
+helpers.resize(0);
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(projectiles[i].projhealth>0)
+{
+projpool.destroy_sound(projectiles[i].projsound);
+projectiles[i].defsound=projpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/projectiles/"+projectiles[i].projtype+"/*death*"),me.x,me.y,projectiles[i].prox,projectiles[i].proy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=projectiles[i].poxp*projectiles[i].projlevel*xpmod;
+kills+=1;
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,projectiles[i].prox,projectiles[i].proy,false);
+}
+total_kills++;
+}
+projectiles.resize(0);
+for(uint i=0; i<robots.length(); i++)
+{
+if(robots[i].robothealth>0)
+{
+robpool.destroy_sound(robots[i].robsound);
+robots[i].defsound=robpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/robots/"+robots[i].robottype+"/*death*"),me.x,me.y,robots[i].robx,robots[i].roby,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=robots[i].robxp*robots[i].roblevel*xpmod;
+kills+=1;
+spawn_bodyfall(robots[i].robx, robots[i].roby, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/itrobs/unsorted/health/*");
+if(healtype.length()!=0 and robots[i].dropitem==true) spawn_obj(robots[i].robx, robots[i].roby, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,robots[i].robx,robots[i].roby,false);
+}
+total_kills++;
+}
+robots.resize(0);
+for(uint i=0; i<turrets.length(); i++)
+{
+if(turrets[i].turhealth>0)
+{
+turpool.destroy_sound(turrets[i].tursound);
+turrets[i].defsound=turpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/turrets/"+turrets[i].turtype+"/*death*"),me.x,me.y,turrets[i].turx,turrets[i].tury,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=turrets[i].turxp*turrets[i].turlevel*xpmod;
+kills+=1;
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,turrets[i].turx,turrets[i].tury,false);
+}
+total_kills++;
+}
+turrets.resize(0);
+for(uint i=0; i<vehicles.length(); i++)
+{
+if(vehicles[i].vehhealth>0)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+vehpool.destroy_sound(vehicles[i].beepsound);
+vehpool.destroy_sound(vehicles[i].vehsound);
+vehicles[i].defsound=vehpool.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/vehicles/"+vehicles[i].vehtype+"/*death*"),me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+vehicles[i].vehspeed=5;
+invehicle=false;
+vehicles[i].moveable=false;
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,false);
+}
+total_kills++;
+}
+vehicles.resize(0);
+for(uint i=0; i<zombies.length(); i++)
+{
+if(zombies[i].zombiehealth>0)
+{
+zombpool.destroy_sound(zombies[i].zombsound);
+zombies[i].defsound=zombpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/zombies/"+zombies[i].zombietype+"/*death*"),me.x,me.y,zombies[i].zombx,zombies[i].zomby,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if(xpmod>=1) xp+=zombies[i].zombxp*zombies[i].zomblevel*xpmod;
+kills+=1;
+spawn_bodyfall(zombies[i].zombx, zombies[i].zomby, random(500,1000));
+string[] healtype=find_directories("sounds/"+soundpack+"/equipments/itzombs/unsorted/health/*");
+if(healtype.length()!=0 and zombies[i].dropitem==true) spawn_obj(zombies[i].zombx, zombies[i].zomby, 500, "health", random_string(healtype), true);
+if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
+p.play_2d("punch"+random(4,6)+".ogg",me.x,me.y,zombies[i].zombx,zombies[i].zomby,false);
+}
+total_kills++;
+}
+zombies.resize(0);
+speak("Killed all entities.");
+}
+else
+{
+speak("Invalid command syntax. Usage: /killal.");
+game(true);
+}
+}
+else if (base_command == "help")
+{
+if (parsed.length() == 1)
+{
+if(coms.open("docks/commands.txt", "rb"))
+{
+comsplit=coms.read();
+coms.close();
+string content = string_replace(comsplit, "\r\n", "\n", true);
+array<string> lines = content.split("\n");
+setupmenu(false);
+m.add_item_tts("Total commands " + lines.length() + ".");
+for(uint i=0; i<lines.length(); i++)
+{
+m.add_item_tts(lines[i], lines[i]);
+}
+int mres=m.run("Help menu. These are the available commands you can use in the builder part of the game.",true);
+string comhp=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+game(true);
+}
+}
+else
+{
+speak("Failed to open docks/commands.txt.");
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /help.");
+game(true);
+}
+}
+else if (base_command == "getall")
+{
+if (parsed.length() == 1)
+{
+if(objs.length() == 0)
+{
+speak("There are no items on this map.");
+game(true);
+}
+else
+{
+for(uint i=0; i<objs.length(); i++)
+{
+objs[i].getsound=itempool.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/items/unsorted/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,itemvolume,itempitch,false);
+give(objs[i].objtype2,1);
+}
+objs.resize(0);
+speak("Collected all items.");
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /getall.");
+game(true);
+}
+}
+else if (base_command == "invclear")
+{
+if (parsed.length() == 1)
+{
+if (inv.get_size()==0)
+{
+speak("There are no items in your inventory.");
+game(true);
+}
+else
+{
+clear_inv();
+speak("Your inventory has been cleared.");
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /invclear.");
+game(true);
+}
+}
+else if(base_command=="give")
+{
+if(parsed.length()==3)
+{
+string item=parsed[1];
+int amount=stn(parsed[2]);
+if(amount>0)
+{
+p.play_stationary("give.ogg",false);
+give(item,stn(amount));
+speak("You received " + amount + " " + (amount == 1 ? item : item + "s") + ".");
+}
+else
+{
+p.play_stationary("take.ogg",false);
+give(item,stn(amount));
+speak("You recycled " + amount + " " + (amount == 1 ? item : item + "s") + ".");
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /give item amount.");
+}
+}
+else if (base_command == "menu")
+{
+if (parsed.length() == 1)
+{
+pause_pools();
+mapmenu2();
+}
+else
+{
+speak("Invalid command syntax. Usage: /menu.");
+game(true);
+}
+}
+else if (base_command == "preffs")
+{
+if (parsed.length() == 1)
+{
+pause_pools();
+settingsmenu2();
+}
+else
+{
+speak("Invalid command syntax. Usage: /preffs.");
+game(true);
+}
+}
+else if (base_command == "stats")
+{
+if (parsed.length() == 1)
+{
+pause_pools();
+statsmenu2();
+}
+else
+{
+speak("Invalid command syntax. Usage: /stats.");
+game(true);
+}
+}
+else if (base_command == "changemap")
+{
+if (parsed.length() == 4)
+{
+string mapname=parsed[1];
+int x = stn(parsed[2]);
+int y = stn(parsed[3]);
+if (file_exists("data/maps/" + name + ".map"))
+{
+if (x >= minx && x <= maxx && y >= miny && y <= maxy)
+{
+load_map(mapmode, mapname, mapowner);
+}
+}
+else
+{
+speak("Map '" + name + "' not found. Please check the name and try again.");
+game(true);
+}
+if(x >= minx && x <= maxx && y >= miny && y <= maxy)
+{
+gop("me", "", x, y);
+}
+else
+{
+speak("Invalid coordinates. Please make sure x and y are within the map boundaries.");
+game(true);
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /changemap mapname x y.");
+game(true);
+}
+}
+else if (base_command == "newmap")
+{
+if (parsed.length() == 1)
+{
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string name=vd.input_box("","Enter the name of this map.");
+string name2=vd.input_box("","Enter the author of this map.");
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum length of this map.");
+string mx2=vd.input_box("","Enter the maximum length of this map.");
+string my=vd.input_box("","Enter the minimum height of this map.");
+string my2=vd.input_box("","Enter the maximum height of this map.");
+if(mapname=="" and mapowner=="" and minx=="" and maxx=="" and miny=="" and maxy=="")
+return;
+string mapname=name;
+string mapowner=name2;
+double minx=string_to_number(mx);
+double maxx=string_to_number(mx2);
+double miny=string_to_number(my);
+double maxy=string_to_number(my2);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+game(true);
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+if(file_exists("data/maps/"+mapname+".map"))
+{
+dlg_snd("Error. A map with this name already exists. Press enter to continue.");
+game(true);
+}
+else
+{
+create_map(mapmode, mapname, mapowner, minx, maxx, miny, maxy, tiletype);
+load_map(mapmode, mapname, mapowner);
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /newmap.");
+game(true);
+}
+}
+else if (base_command == "komlog")
+{
+if (parsed.length() == 1)
+{
+komlogmenu();
+}
+else
+{
+speak("Invalid command syntax. Usage: /komlog.");
+game(true);
+}
+}
+else if (base_command == "relmap")
+{
+if (parsed.length() == 1)
+{
+load_map(mapmode, mapname, mapowner);
+speak("map reloaded");
+}
+else
+{
+speak("Invalid command syntax. Usage: /relmap.");
+game(true);
+}
+}
+else if (base_command == "relchar")
+{
+if (parsed.length() == 1)
+{
+bonehealth=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+speak("character reloaded");
+}
+else
+{
+speak("Invalid command syntax. Usage: /relchar.");
+game(true);
+}
+}
+else if (base_command == "relshields")
+{
+if (parsed.length() == 1)
+{
+destroy_all_shields();
+shieldparse();
+speak("shields reloaded");
+}
+else
+{
+speak("Invalid command syntax. Usage: /relshields.");
+game(true);
+}
+}
+else if (base_command == "relweps")
+{
+if (parsed.length() == 1)
+{
+destroy_all_weapons();
+weaponparse();
+speak("weapons reloaded");
+}
+else
+{
+speak("Invalid command syntax. Usage: /relweps.");
+game(true);
+}
+}
+else if (base_command == "gozone")
+{
+if (parsed.length() == 1)
+{
+if (zones.length() == 0)
+{
+speak("There are no zones available on this map.");
+game(true);
+}
+pause_pools();
+setupmenu();
+for (uint i = 0; i < zones.length(); i++)
+{
+double width = zones[i].maxx - zones[i].minx + 1;
+double height = zones[i].maxy - zones[i].miny + 1;
+string zone_desc = zones[i].text + ", " +int(width) + " x " + int(height) + " zone, at " +int(zones[i].minx) + ", " + int(zones[i].miny);
+m.add_item_tts(zone_desc, zones[i].text);
+}
+int mres=m.run("Choose the zone you'd like to go to. There are "+zones.length()+" zones available on this map.", true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if (mres==0 and mres>=zones.length())
+{
+int selected_zone_index = mres - 1;
+zone@ selected_zone = zones[selected_zone_index];
+double target_x = selected_zone.minx;
+double target_y = selected_zone.miny;
+resume_pools();
+gop("me", "", target_x, target_y);
+}
+if (mres>0 and mres<=zones.length())
+{
+int selected_zone_index = mres - 1;
+zone@ selected_zone = zones[selected_zone_index];
+double target_x = selected_zone.minx;
+double target_y = selected_zone.miny;
+resume_pools();
+gop("me", "", target_x, target_y);
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /gozone.");
+game(true);
+}
+}
+else if (base_command == "maps")
+{
+if (parsed.length() == 1)
+{
+string[] maps=find_files("data/maps/*.map");
+if(maps.length()==0)
+{
+pause_pools();
+dlg_snd("Error. There are no maps available to view. Press enter to continue.");
+resume_pools();
+game(true);
+}
+else
+{
+pause_pools();
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+string temp_map_name = string_replace(maps[i], ".map", "", true);
+mapper.open("data/maps/"+temp_map_name+".map", "rb");
+string temp_map_data = mapper.read();
+mapper.close();            
+string temp_owner;
+string[] lines = delinear(temp_map_data);
+for (uint j = 0; j < lines.length(); j++)
+{
+string[] sd = string_split(lines[j], " ", true);
+if (sd[0] == "contributor" && sd.length() == 2)
+{
+temp_owner = sd[1];
+break;
+}
+}            
+m.add_item_tts(temp_map_name + ", created by " + temp_owner + ", Size: " + measure_file_size(file_get_size("data/maps/" + maps[i])));
+}
+int mres=m.run("Maps menu", true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if (mres==0 and mres>=maps.length())
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if (mres>0 and mres<=maps.length())
+{
+resume_pools();
+mapname=maps[mres-1];
+mapname=string_replace(mapname, ".map", "", true);
+me.x=0;
+me.y=0;
+load_map(mapmode, mapname, mapowner);
+}
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /maps.");
+game(true);
+}
+}
+else if (base_command == "rawmap")
+{
+if (parsed.length() == 1)
+{
+mapper.open("data/maps/" + mapname + ".map", "rb");
+mapdata=mapper.read();
+clipboard_copy_text(mapdata);
+speak("The data of "+mapname+" has been copied to your clipboard");
+mapper.close();
+}
+else
+{
+speak("Invalid command syntax. Usage: /rawmap.");
+game(true);
+}
+}
+else if (base_command == "rawdata")
+{
+if (parsed.length() == 1)
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to overwrite all existing map data with what's on your clipboard?",true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(mres==1)
+{
+string clipboard_data = clipboard_read_text();
+if (clipboard_data == "")
+{
+dlg_snd("Error. The clipboard is empty.");
+resume_pools();
+game(true);
+}
+string[] lines = string_split(clipboard_data, "\r\n", true);
+bool is_valid = validate_map_data(lines);
+if (!is_valid)
+{
+dlg_snd("Error. The clipboard data is invalid.");
+resume_pools();
+game(true);
+}
+mapper.open("data/maps/" + mapname + ".map", "wb");
+mapper.write(clipboard_data);
+mapper.close();
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg", false);
+speak("Map updated.");
+}
+if(mres==2)
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /rawdata.");
+game(true);
+}
+}
+else if (base_command == "delmap")
+{
+if (parsed.length() == 1)
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to delete the current map? This action can't be undone.",true);
+if(mres==0)
+{
+speak("canceled");
+game(true);
+}
+if(mres==1)
+{
+if(file_exists("data/maps/"+mapname+".map")) file_delete("data/maps/"+mapname+".map");
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+speak("map deleted");
+dlgplay("mapdelete.ogg",false);
+me.x=0;
+me.y=0;
+clearmap();
+destroymap();
+mapmenu();
+}
+if(mres==2)
+{
+speak("canceled");
+game(true);
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /delmap.");
+game(true);
+}
+}
+else
+{
+speak("Unknown command: /"+base_command);
+game(true);
+}
+}
+void use_command(string cmd, bool announce_commands=false)
+{
+if (cmd == "")
+return;
+if (cmd.substr(0, 1) != "/")
+cmd = "/" + cmd;
+if (announce_commands)
+speak("Command: " + cmd);
+comparse(cmd);
+}
