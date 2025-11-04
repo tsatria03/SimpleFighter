@@ -1,0 +1,4399 @@
+void buildmenu()
+{
+setupmenu();
+m.add_item_tts("animal", "an");
+m.add_item_tts("animal zone", "az");
+m.add_item_tts("blockage", "bl");
+m.add_item_tts("bomb", "bm");
+m.add_item_tts("bomb zone", "bz");
+m.add_item_tts("boss", "bs");
+m.add_item_tts("calander", "cn");
+m.add_item_tts("checkpoint", "cp");
+m.add_item_tts("clock", "cl");
+m.add_item_tts("conveyor belt", "cb");
+m.add_item_tts("destroyable wall", "dlw");
+m.add_item_tts("dialog", "dlg");
+m.add_item_tts("door", "ds");
+m.add_item_tts("floor breaker", "fbr");
+m.add_item_tts("force field", "fld");
+m.add_item_tts("hazard", "hd");
+m.add_item_tts("heal zone", "hz");
+m.add_item_tts("helper", "hlp");
+m.add_item_tts("human", "hum");
+m.add_item_tts("human zone", "huz");
+m.add_item_tts("item", "obj");
+m.add_item_tts("item zone", "iz");
+m.add_item_tts("lift", "lf");
+m.add_item_tts("lockable door", "ld");
+m.add_item_tts("lockable passage", "lg");
+m.add_item_tts("mine", "mn");
+m.add_item_tts("menu zone", "mz");
+m.add_item_tts("moving hazard", "mhd");
+m.add_item_tts("moving platform", "mpl");
+m.add_item_tts("music ambience", "musamb");
+m.add_item_tts("music source", "mus");
+m.add_item_tts("passage", "psg");
+m.add_item_tts("platform", "pf");
+m.add_item_tts("projectile", "pj");
+m.add_item_tts("projectile zone", "pz");
+m.add_item_tts("reverb space", "rev");
+m.add_item_tts("robot", "rt");
+m.add_item_tts("robot zone", "rz");
+m.add_item_tts("safe zone", "sz");
+m.add_item_tts("security camera", "svcam");
+m.add_item_tts("sign", "sn");
+m.add_item_tts("sound ambience", "srcamb");
+m.add_item_tts("sound source", "src");
+m.add_item_tts("spike", "sp");
+m.add_item_tts("spawnpoint", "st");
+m.add_item_tts("staircase", "sf");
+m.add_item_tts("teleporter", "tp");
+m.add_item_tts("text square", "txt");
+m.add_item_tts("time bomb", "tbm");
+m.add_item_tts("timed music", "tmc");
+m.add_item_tts("timed source", "trc");
+m.add_item_tts("timed text", "tmt");
+m.add_item_tts("travelpoint", "trp");
+m.add_item_tts("turret", "tt");
+m.add_item_tts("vanishing platform", "vp");
+m.add_item_tts("vehicle", "vh");
+m.add_item_tts("wall", "wl");
+m.add_item_tts("zombie", "zb");
+m.add_item_tts("zombie zone", "zz");
+m.add_item_tts("zone", "zn");
+int mres=m.run("Builder menu",true);
+string buildem=m.get_item_name(mres);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(buildem=="srcamb")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this sound ambience.");
+string mx2=vd.input_box("","Enter the maximum x of this sound ambience.");
+string my=vd.input_box("","Enter the minimum y of this sound ambience.");
+string my2=vd.input_box("","Enter the maximum y of this sound ambience.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] soundamb=find_directories("sounds/"+soundpack+"/soundtracks/sources/*");
+if(soundamb.length()==0)
+{
+dlg_snd("Error. There are no sound ambiences available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=sorcesmenu();
+if(res!="")
+{
+sorcetyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"sound_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch);
+mapper.close();
+spawn_ambsource(x, paxx, y, paxy, sorcetyp, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="musamb")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this music ambience.");
+string mx2=vd.input_box("","Enter the maximum x of this music ambience.");
+string my=vd.input_box("","Enter the minimum y of this music ambience.");
+string my2=vd.input_box("","Enter the maximum y of this music ambience.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] musicamb=find_directories("sounds/"+soundpack+"/soundtracks/musics/*");
+if(musicamb.length()==0)
+{
+dlg_snd("Error. There are no music ambiences available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+mustyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"music_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+mustyp+" "+volume+" "+pitch);
+mapper.close();
+spawn_musicamb(x, paxx, y, paxy, mustyp, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="an")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this animal.");
+string my=vd.input_box("","Enter the y of this animal.");
+string rng=vd.input_box("","Enter the horizontal atack range of this animal.");
+string rng2=vd.input_box("","Enter the vertical atack range of this animal.");
+string rng3=vd.input_box("","Enter the horizontal seeing range of this animal.");
+string rng4=vd.input_box("","Enter the vertical seeing range of this animal.");
+string hp=vd.input_box("","Enter the health of this animal.");
+string hc=vd.input_box("","Enter the maximum lives of this animal. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this animal.");
+string ft=vd.input_box("","Enter the fire time of this animal.");
+string sp=vd.input_box("","Enter the speed of this animal.");
+string lev=vd.input_box("","Enter the level of this animal.");
+string exper=vd.input_box("","Enter the xp of this animal.");
+if(x=="" and y=="" and amrange=="" and amrange2=="" and amrange3=="" and amrange4=="" and minhp=="" and card=="" and damage=="" and firetime=="" and speedtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+amrange=string_to_number(rng);
+amrange2=string_to_number(rng2);
+amrange3=string_to_number(rng3);
+amrange4=string_to_number(rng4);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] animal=find_directories("sounds/"+soundpack+"/npc/animals/*");
+if(animal.length()==0)
+{
+dlg_snd("Error. There are no animals available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=animalsmenu();
+if(res!="")
+{
+amtype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres2=m.run("Should the animal attack you?",true);
+if(mres2==0)
+{
+speak("canceled");
+return;
+}
+if(mres2==1)
+{
+fb=true;
+}
+if(mres2==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres3=m.run("Should the animal move on the x axes?",true);
+if(mres3==0)
+{
+speak("canceled");
+return;
+}
+if(mres3==1)
+{
+mb=true;
+}
+if(mres3==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres4=m.run("Should the animal move on the y axes?",true);
+if(mres4==0)
+{
+speak("canceled");
+return;
+}
+if(mres4==1)
+{
+mb2=true;
+}
+if(mres4==2)
+{
+mb2=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres5=m.run("Should the animal drop an item after killing it?",true);
+if(mres5==0)
+{
+speak("canceled");
+return;
+}
+if(mres5==1)
+{
+itms=true;
+}
+if(mres5==2)
+{
+itms=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"animal "+x+" "+y+" "+amrange+" "+amrange2+" "+amrange3+" "+amrange4+" "+minhp+" "+card+" "+damage+" "+firetime+" "+speedtime+" "+lv+" "+xn+" "+amtype+" "+fb+" "+mb+" "+mb2+" "+itms);
+mapper.close();
+spawn_animal(x, y, amrange, amrange2, amrange3, amrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, amtype, fb, mb, mb2, itms);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="az")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this animal zone.");
+string mx2=vd.input_box("","Enter the maximum x of this animal zone.");
+string my=vd.input_box("","Enter the y of this animal zone.");
+string sp=vd.input_box("","Enter the spawn time of this animal zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] animal=find_directories("sounds/"+soundpack+"/npc/animals/*");
+if(animal.length()==0)
+{
+dlg_snd("Error. There are no animals available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=animalsmenu(true);
+if(res!="")
+{
+amtype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"animal_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+amtype);
+mapper.close();
+spawn_animalzone(x, paxx, y, speedtime, amtype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="bl")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this blockage.");
+string mx2=vd.input_box("","Enter the maximum x of this blockage.");
+string my=vd.input_box("","Enter the minimum y of this blockage.");
+string my2=vd.input_box("","Enter the maximum y of this blockage.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this blockage.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and txt=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+txt=text;
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"blockage "+x+" "+paxx+" "+y+" "+paxy+" "+txt);
+mapper.close();
+spawn_blockage(x, paxx, y, paxy, txt);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="bm")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this bomb.");
+string my=vd.input_box("","Enter the y of this bomb.");
+string dm=vd.input_box("","Enter the maximum damage of this bomb.");
+string sp=vd.input_box("","Enter the speed of this bomb.");
+if(x=="" and y=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+string[] bomb=find_directories("sounds/"+soundpack+"/objects/bombs/*");
+if(bomb.length()==0)
+{
+dlg_snd("Error. There are no bombs available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=bombsmenu();
+if(res!="")
+{
+botype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"bomb "+x+" "+y+" "+damage+" "+speedtime+" "+botype);
+mapper.close();
+spawn_bomb(x, y, damage, speedtime, botype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="bz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this bomb zone.");
+string mx2=vd.input_box("","Enter the maximum x of this bomb zone.");
+string my=vd.input_box("","Enter the y of this bomb zone.");
+string sp=vd.input_box("","Enter the spawn time of this bomb zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] bomb=find_directories("sounds/"+soundpack+"/objects/bombs/*");
+if(bomb.length()==0)
+{
+dlg_snd("Error. There are no bombs available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=bombsmenu();
+if(res!="")
+{
+botype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"bomb_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+botype);
+mapper.close();
+spawn_bombzone(x, paxx, y, speedtime, botype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="bs")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this boss.");
+string my=vd.input_box("","Enter the y of this boss.");
+string rng=vd.input_box("","Enter the horizontal atack range of this boss.");
+string rng2=vd.input_box("","Enter the vertical atack range of this boss.");
+string rng3=vd.input_box("","Enter the horizontal seeing range of this boss.");
+string rng4=vd.input_box("","Enter the vertical seeing range of this boss.");
+string hp=vd.input_box("","Enter the health of this boss.");
+string hc=vd.input_box("","Enter the maximum lives of this boss. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this boss.");
+string ft=vd.input_box("","Enter the fire time of this boss.");
+string lt=vd.input_box("","Enter the launch time of this boss.");
+string sp=vd.input_box("","Enter the speed of this boss.");
+string tt=vd.input_box("","Enter the teleport time of this boss.");
+string ht=vd.input_box("","Enter the healing time of this boss.");
+string lev=vd.input_box("","Enter the level of this boss.");
+string exper=vd.input_box("","Enter the xp of this boss.");
+if(x=="" and y=="" and bossrange=="" and bossrange2=="" and bossrange3=="" and bossrange4=="" and minhp=="" and card=="" and damage=="" and firetime=="" and launchtime=="" and speedtime=="" and teltime=="" and healtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+bossrange=string_to_number(rng);
+bossrange2=string_to_number(rng2);
+bossrange3=string_to_number(rng3);
+bossrange4=string_to_number(rng4);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+launchtime=string_to_number(lt);
+speedtime=string_to_number(sp);
+teltime=string_to_number(tt);
+healtime=string_to_number(ht);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] boss=find_directories("sounds/"+soundpack+"/npc/bosses/*");
+if(boss.length()==0)
+{
+dlg_snd("Error. There are no bosses available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=bossesmenu();
+if(res!="")
+{
+bosstyp=res;
+}
+}
+setupmenu();
+m.add_item_tts("animal","an2");
+m.add_item_tts("human", "hum2");
+m.add_item_tts("projectile","pj2");
+m.add_item_tts("robot","rt2");
+m.add_item_tts("zombie","zb2");
+int mres=m.run("What would you like this boss to spawn?",true);
+string buildem2=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(buildem2=="an2")
+{
+string[] animal=find_directories("sounds/"+soundpack+"/npc/animals/*");
+if(animal.length()==0)
+{
+dlg_snd("Error. There are no animals available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=animalsmenu();
+if(res!="")
+{
+bosstyp2="animal";
+bosstyp3=res;
+}
+}
+}
+if(buildem2=="hum2")
+{
+string[] human=find_directories("sounds/"+soundpack+"/npc/humans/*");
+if(human.length()==0)
+{
+dlg_snd("Error. There are no humans available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=humansmenu();
+if(res!="")
+{
+bosstyp2="human";
+bosstyp3=res;
+}
+}
+}
+if(buildem2=="pj2")
+{
+string[] projectile=find_directories("sounds/"+soundpack+"/npc/projectiles/*");
+if(projectile.length()==0)
+{
+dlg_snd("Error. There are no projectiles available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=projesmenu();
+if(res!="")
+{
+bosstyp2="projectile";
+bosstyp3=res;
+}
+}
+}
+if(buildem2=="rt2")
+{
+string[] robot=find_directories("sounds/"+soundpack+"/npc/robots/*");
+if(robot.length()==0)
+{
+dlg_snd("Error. There are no robots available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=robotsmenu();
+if(res!="")
+{
+bosstyp2="robot";
+bosstyp3=res;
+}
+}
+}
+if(buildem2=="zb2")
+{
+string[] zombie=find_directories("sounds/"+soundpack+"/npc/zombies/*");
+if(zombie.length()==0)
+{
+dlg_snd("Error. There are no zombies available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=zombiesmenu();
+if(res!="")
+{
+bosstyp2="zombie";
+bosstyp3=res;
+}
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres18=m.run("Should the boss attack you?",true);
+if(mres18==0)
+{
+speak("canceled");
+return;
+}
+if(mres18==1)
+{
+fb=true;
+}
+if(mres18==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres19=m.run("Should the boss move on the x axes?",true);
+if(mres19==0)
+{
+speak("canceled");
+return;
+}
+if(mres19==1)
+{
+mb=true;
+}
+if(mres19==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres20=m.run("Should the boss move on the y axes?",true);
+if(mres20==0)
+{
+speak("canceled");
+return;
+}
+if(mres20==1)
+{
+mb2=true;
+}
+if(mres20==2)
+{
+mb2=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres21=m.run("Should the boss teleport randomly on the x axes?",true);
+if(mres21==0)
+{
+speak("canceled");
+return;
+}
+if(mres21==1)
+{
+tb=true;
+}
+if(mres21==2)
+{
+tb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres22=m.run("Should the boss teleport randomly on the y axes?",true);
+if(mres22==0)
+{
+speak("canceled");
+return;
+}
+if(mres22==1)
+{
+tb2=true;
+}
+if(mres22==2)
+{
+tb2=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres23=m.run("Should the boss heal it's health randomly?",true);
+if(mres23==0)
+{
+speak("canceled");
+return;
+}
+if(mres23==1)
+{
+hb=true;
+}
+if(mres23==2)
+{
+hb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres24=m.run("Should the boss drop an item after killing it?",true);
+if(mres24==0)
+{
+speak("canceled");
+return;
+}
+if(mres24==1)
+{
+itms=true;
+}
+if(mres24==2)
+{
+itms=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"boss "+x+" "+y+" "+bossrange+" "+bossrange2+" "+bossrange3+" "+bossrange4+" "+minhp+" "+card+" "+damage+" "+firetime+" "+launchtime+" "+speedtime+" "+teltime+" "+healtime+" "+lv+" "+xn+" "+bosstyp+" "+bosstyp2+" "+bosstyp3+" "+fb+" "+mb+" "+mb2+" "+tb+" "+tb2+" "+hb+" "+itms);
+mapper.close();
+spawn_boss(x, y, bossrange, bossrange2, bossrange3, bossrange4, minhp, minhp, card, damage, firetime, launchtime, speedtime, teltime, healtime, lv, xn, bosstyp, bosstyp2, bosstyp3, fb, mb, mb2, tb, tb2, hb, itms);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="cn")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this calander.");
+string my=vd.input_box("","Enter the y of this calander.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this calander.");
+if(x=="" and y=="" and txt=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+txt=text;
+string[] calander=find_directories("sounds/"+soundpack+"/objects/calanders/*");
+if(calander.length()==0)
+{
+dlg_snd("Error. There are no calanders available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=calandersmenu();
+if(res!="")
+{
+calandertyp=res;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this calendar to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"calander "+x+" "+y+" "+txt+" "+calandertyp+" "+dmd);
+mapper.close();
+spawn_calander(x, y, txt, calandertyp, dmd);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="cl")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this clock.");
+string my=vd.input_box("","Enter the y of this clock.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this clock.");
+if(x=="" and y=="" and txt=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+txt=text;
+string[] clock=find_directories("sounds/"+soundpack+"/objects/clocks/*");
+if(clock.length()==0)
+{
+dlg_snd("Error. There are no clocks available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=clocksmenu();
+if(res!="")
+{
+clocktyp=res;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this clock to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"clock "+x+" "+y+" "+txt+" "+clocktyp+" "+dmd);
+mapper.close();
+spawn_clock(x, y, txt, clocktyp, dmd);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="cb")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this conveyor belt.");
+string mx2=vd.input_box("","Enter the maximum x of this conveyor belt.");
+string my=vd.input_box("","Enter the minimum y of this conveyor belt.");
+string my2=vd.input_box("","Enter the maximum y of this conveyor belt.");
+string dr=vd.input_box("","Enter the direction of this conveyor belt. 1 for left, 2 for right, 3 for down, and 4 for up.");
+string sp=vd.input_box("","Enter the speed of this conveyor belt.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and direction=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+direction=string_to_number(dr);
+speedtime=string_to_number(sp);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+string[] belt=find_directories("sounds/"+soundpack+"/objects/belts/*");
+if(belt.length()==0)
+{
+dlg_snd("Error. There are no belts available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=beltsmenu();
+if(res!="")
+{
+belttyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"belt "+x+" "+paxx+" "+y+" "+paxy+" "+direction+" "+speedtime+" "+tiletype+" "+belttyp);
+mapper.close();
+spawn_belt(x, paxx, y, paxy, direction, speedtime, tiletype, belttyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="dlg")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this dialog.");
+string mx2=vd.input_box("","Enter the maximum x of this dialog.");
+string my=vd.input_box("","Enter the minimum y of this dialog.");
+string my2=vd.input_box("","Enter the maximum y of this dialog.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this dialog. You can seperate them by dashes for reading multiple lines.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and txt=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+txt=text;
+string[] dialog=find_directories("sounds/"+soundpack+"/dialogs/*");
+if(dialog.length()==0)
+{
+dlg_snd("Error. There are no dialogs available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=dlgsmenu();
+if(res!="")
+{
+dlgtyp=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres25=m.run("Do you want this dialog to auto activate when stepped on?",true);
+if(mres25==0)
+{
+speak("canceled");
+return;
+}
+if(mres25==1)
+{
+dlt=true;
+}
+if(mres25==2)
+{
+dlt=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"dialog "+x+" "+paxx+" "+y+" "+paxy+" "+txt+" "+dlgtyp+" "+dlt);
+mapper.close();
+spawn_dialog(x, paxx, y, paxy, txt, dlgtyp, dlt);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="ds")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sx=vd.input_box("","Enter the starting x of this door.");
+string sy=vd.input_box("","Enter the starting y of this door.");
+string nx=vd.input_box("","Enter the finishing x of this door.");
+string ny=vd.input_box("","Enter the finishing y of this door.");
+string hp=vd.input_box("","Enter the health of this door. Press enter to use the default health.", "1");
+string sp=vd.input_box("","Enter the speed of this door.");
+if(x=="" and y=="" and x2=="" and y2=="" and minhp=="" and speedtime=="")
+return;
+x=string_to_number(sx);
+y=string_to_number(sy);
+x2=string_to_number(nx);
+y2=string_to_number(ny);
+minhp=string_to_number(hp);
+speedtime=string_to_number(sp);
+string[] dloop=find_directories("sounds/"+soundpack+"/objects/doors/loop/*");
+if(dloop.length()==0)
+{
+dlg_snd("Error. There are no door loops available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=dloopsmenu();
+if(res!="")
+{
+looptyp=res;
+}
+}
+string[] dmove=find_directories("sounds/"+soundpack+"/objects/doors/move/*");
+if(dmove.length()==0)
+{
+dlg_snd("Error. There are no door moves available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res2=dmovesmenu();
+if(res2!="")
+{
+movtyp=res2;
+}
+}
+string[] dopen=find_directories("sounds/"+soundpack+"/objects/doors/open/*");
+if(dopen.length()==0)
+{
+dlg_snd("Error. There are no door opens available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res3=dopensmenu();
+if(res3!="")
+{
+opentyp=res3;
+}
+}
+string[] dclose=find_directories("sounds/"+soundpack+"/objects/doors/close/*");
+if(dclose.length()==0)
+{
+dlg_snd("Error. There are no door closes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res4=dclosesmenu();
+if(res4!="")
+{
+clostyp=res4;
+}
+}
+string[] desttype=find_directories("sounds/"+soundpack+"/objects/doors/dest/*");
+if(desttype.length()==0)
+{
+dlg_snd("Error. There are no door destructions available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res5=destsmenu();
+if(res5!="")
+{
+desttyp=res5;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres27=m.run("Do you want this door to autoactivate when stepped on?",true);
+if(mres27==0)
+{
+speak("canceled");
+return;
+}
+if(mres27==1)
+{
+dmt=true;
+}
+if(mres27==2)
+{
+dmt=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres28=m.run("Do you want this door to be destroyable?",true);
+if(mres28==0)
+{
+speak("canceled");
+return;
+}
+if(mres28==1)
+{
+dmd=true;
+}
+if(mres28==2)
+{
+dmd=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres23=m.run("Would you like to automatically build the opposite side of this door?",true);
+if(mres23==0)
+{
+speak("canceled");
+return;
+}
+if(mres23==1)
+{
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"door "+x2+" "+y2+" "+x+" "+y+" "+minhp+" "+speedtime+" "+looptyp+" "+movtyp+" "+opentyp+" "+clostyp+" "+desttyp+" "+dmt+" "+dmd);
+mapper.close();
+spawn_door(x2, y2, x, y, minhp, minhp, speedtime, looptyp, movtyp, opentyp, clostyp, desttyp, dmt, dmd);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(mres23==2)
+{
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"door "+x+" "+y+" "+x2+" "+y2+" "+minhp+" "+speedtime+" "+looptyp+" "+movtyp+" "+opentyp+" "+clostyp+" "+desttyp+" "+dmt+" "+dmd);
+mapper.close();
+spawn_door(x, y, x2, y2, minhp, minhp, speedtime, looptyp, movtyp, opentyp, clostyp, desttyp, dmt, dmd);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="ld")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sx=vd.input_box("","Enter the starting x of this lockable door.");
+string sy=vd.input_box("","Enter the starting y of this lockable door.");
+string nx=vd.input_box("","Enter the finishing x of this lockable door.");
+string ny=vd.input_box("","Enter the finishing y of this lockable door.");
+string hp=vd.input_box("","Enter the health of this lockable door. Press enter to use the default health.", "1");
+string sp=vd.input_box("","Enter the speed of this lockable door.");
+string ps=vd.input_box("","Enter the password of this lockable door.");
+if(x=="" and y=="" and x2=="" and y2=="" and minhp=="" and speedtime=="" and drpassword=="")
+return;
+x=string_to_number(sx);
+y=string_to_number(sy);
+x2=string_to_number(nx);
+y2=string_to_number(ny);
+minhp=string_to_number(hp);
+speedtime=string_to_number(sp);
+drpassword=ps;
+string[] dloop=find_directories("sounds/"+soundpack+"/objects/doors/loop/*");
+if(dloop.length()==0)
+{
+dlg_snd("Error. There are no door loops available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=dloopsmenu();
+if(res!="")
+{
+looptyp=res;
+}
+}
+string[] dmove=find_directories("sounds/"+soundpack+"/objects/doors/move/*");
+if(dmove.length()==0)
+{
+dlg_snd("Error. There are no door moves available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res2=dmovesmenu();
+if(res2!="")
+{
+movtyp=res2;
+}
+}
+string[] dopen=find_directories("sounds/"+soundpack+"/objects/doors/open/*");
+if(dopen.length()==0)
+{
+dlg_snd("Error. There are no door opens available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res3=dopensmenu();
+if(res3!="")
+{
+opentyp=res3;
+}
+}
+string[] dclose=find_directories("sounds/"+soundpack+"/objects/doors/close/*");
+if(dclose.length()==0)
+{
+dlg_snd("Error. There are no door closes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res4=dclosesmenu();
+if(res4!="")
+{
+clostyp=res4;
+}
+}
+string[] desttype=find_directories("sounds/"+soundpack+"/objects/doors/dest/*");
+if(desttype.length()==0)
+{
+dlg_snd("Error. There are no door destructions available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res5=destsmenu();
+if(res5!="")
+{
+desttyp=res5;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres27=m.run("Do you want this lockable door to autoactivate when stepped on?",true);
+if(mres27==0)
+{
+speak("canceled");
+return;
+}
+if(mres27==1)
+{
+dmt=true;
+}
+if(mres27==2)
+{
+dmt=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres28=m.run("Do you want this lockable door to be destroyable?",true);
+if(mres28==0)
+{
+speak("canceled");
+return;
+}
+if(mres28==1)
+{
+dmd=true;
+}
+if(mres28==2)
+{
+dmd=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres23=m.run("Would you like to automatically build the opposite side of this lockable door?",true);
+if(mres23==0)
+{
+speak("canceled");
+return;
+}
+if(mres23==1)
+{
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"psdoor "+x2+" "+y2+" "+x+" "+y+" "+minhp+" "+speedtime+" "+drpassword+" "+looptyp+" "+movtyp+" "+opentyp+" "+clostyp+" "+desttyp+" "+dmt+" "+dmd);
+mapper.close();
+spawn_psdoor(x2, y2, x, y, minhp, minhp, speedtime, drpassword, looptyp, movtyp, opentyp, clostyp, desttyp, dmt, dmd);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(mres23==2)
+{
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"psdoor "+x+" "+y+" "+x2+" "+y2+" "+minhp+" "+speedtime+" "+drpassword+" "+looptyp+" "+movtyp+" "+opentyp+" "+clostyp+" "+desttyp+" "+dmt+" "+dmd);
+mapper.close();
+spawn_psdoor(x, y, x2, y2, minhp, minhp, speedtime, drpassword, looptyp, movtyp, opentyp, clostyp, desttyp, dmt, dmd);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="psg")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sx=vd.input_box("","Enter the starting x of this passage.");
+string sy=vd.input_box("","Enter the starting y of this passage.");
+string dr=vd.input_box("","Enter the direction of this passage. 1 for left to right, and 2 for botum to top.");
+string lk=vd.input_box("","Enter the maximum length of this passage.");
+string sp=vd.input_box("","Enter the opening time of this passage.");
+if(x=="" and y=="" and direction=="" and ln=="" and speedtime=="")
+return;
+x=string_to_number(sx);
+y=string_to_number(sy);
+direction=string_to_number(dr);
+ln=string_to_number(lk);
+speedtime=string_to_number(sp);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+string[] dloop=find_directories("sounds/"+soundpack+"/objects/doors/loop/*");
+if(dloop.length()==0)
+{
+dlg_snd("Error. There are no door loops available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=dloopsmenu();
+if(res!="")
+{
+looptyp=res;
+}
+}
+string[] dopen=find_directories("sounds/"+soundpack+"/objects/doors/open/*");
+if(dopen.length()==0)
+{
+dlg_snd("Error. There are no door opens available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res2=dopensmenu();
+if(res2!="")
+{
+opentyp=res2;
+}
+}
+string[] dclose=find_directories("sounds/"+soundpack+"/objects/doors/close/*");
+if(dclose.length()==0)
+{
+dlg_snd("Error. There are no door closes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res3=dclosesmenu();
+if(res3!="")
+{
+clostyp=res3;
+}
+}
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp2=vd.input_box("","Enter the closing time of this passage.");
+if(speedtime2=="")
+return;
+speedtime2=string_to_number(sp);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"passage "+x+" "+y+" "+direction+" "+ln+" "+speedtime+" "+tiletype+" "+looptyp+" "+opentyp+" "+clostyp+" "+speedtime2);
+mapper.close();
+spawn_passage(x, y, direction, ln, speedtime, tiletype, looptyp, opentyp, clostyp, speedtime2);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="lg")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sx=vd.input_box("","Enter the starting x of this lockable passage.");
+string sy=vd.input_box("","Enter the starting y of this lockable passage.");
+string dr=vd.input_box("","Enter the direction of this lockable passage. 1 for left to right, and 2 for botum to top.");
+string lk=vd.input_box("","Enter the maximum length of this lockable passage.");
+string sp=vd.input_box("","Enter the opening time of this lockable passage.");
+if(x=="" and y=="" and direction=="" and ln=="" and speedtime=="")
+return;
+x=string_to_number(sx);
+y=string_to_number(sy);
+direction=string_to_number(dr);
+ln=string_to_number(lk);
+speedtime=string_to_number(sp);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+string[] dloop=find_directories("sounds/"+soundpack+"/objects/doors/loop/*");
+if(dloop.length()==0)
+{
+dlg_snd("Error. There are no door loops available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=dloopsmenu();
+if(res!="")
+{
+looptyp=res;
+}
+}
+string[] dopen=find_directories("sounds/"+soundpack+"/objects/doors/open/*");
+if(dopen.length()==0)
+{
+dlg_snd("Error. There are no door opens available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res2=dopensmenu();
+if(res2!="")
+{
+opentyp=res2;
+}
+}
+string[] dclose=find_directories("sounds/"+soundpack+"/objects/doors/close/*");
+if(dclose.length()==0)
+{
+dlg_snd("Error. There are no door closes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res3=dclosesmenu();
+if(res3!="")
+{
+clostyp=res3;
+}
+}
+string ps=vd.input_box("","Enter the password of this lockable passage.");
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp2=vd.input_box("","Enter the closing time of this lockable passage.");
+if(pspassword=="" and speedtime2=="")
+return;
+pspassword=ps;
+speedtime2=string_to_number(sp);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"pspassage "+x+" "+y+" "+direction+" "+ln+" "+speedtime+" "+tiletype+" "+looptyp+" "+opentyp+" "+clostyp+" "+pspassword+" "+speedtime2);
+mapper.close();
+spawn_pspassage(x, y, direction, ln, speedtime, tiletype, looptyp, opentyp, clostyp, pspassword, speedtime2);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="hum")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this human.");
+string my=vd.input_box("","Enter the y of this human.");
+string rng=vd.input_box("","Enter the horizontal atack range of this human.");
+string rng2=vd.input_box("","Enter the vertical atack range of this human.");
+string rng3=vd.input_box("","Enter the horizontal seeing range of this human.");
+string rng4=vd.input_box("","Enter the vertical seeing range of this human.");
+string hp=vd.input_box("","Enter the health of this human.");
+string hc=vd.input_box("","Enter the maximum lives of this human. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this human.");
+string ft=vd.input_box("","Enter the fire time of this human.");
+string sp=vd.input_box("","Enter the speed of this human.");
+string lev=vd.input_box("","Enter the level of this human.");
+string exper=vd.input_box("","Enter the xp of this human.");
+if(x=="" and y=="" and emrange=="" and emrange2=="" and emrange3=="" and emrange4=="" and minhp=="" and card=="" and damage=="" and firetime=="" and speedtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+emrange=string_to_number(rng);
+emrange2=string_to_number(rng2);
+emrange3=string_to_number(rng3);
+emrange4=string_to_number(rng4);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] human=find_directories("sounds/"+soundpack+"/npc/humans/*");
+if(human.length()==0)
+{
+dlg_snd("Error. There are no humans available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=humansmenu();
+if(res!="")
+{
+humtype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres2=m.run("Should the human attack you?",true);
+if(mres2==0)
+{
+speak("canceled");
+return;
+}
+if(mres2==1)
+{
+fb=true;
+}
+if(mres2==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres3=m.run("Should the human move on the x axes?",true);
+if(mres3==0)
+{
+speak("canceled");
+return;
+}
+if(mres3==1)
+{
+mb=true;
+}
+if(mres3==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres4=m.run("Should the human move on the y axes?",true);
+if(mres4==0)
+{
+speak("canceled");
+return;
+}
+if(mres4==1)
+{
+mb2=true;
+}
+if(mres4==2)
+{
+mb2=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres5=m.run("Should the human drop an item after killing it?",true);
+if(mres5==0)
+{
+speak("canceled");
+return;
+}
+if(mres5==1)
+{
+itms=true;
+}
+if(mres5==2)
+{
+itms=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"human "+x+" "+y+" "+emrange+" "+emrange2+" "+emrange3+" "+emrange4+" "+minhp+" "+card+" "+damage+" "+firetime+" "+speedtime+" "+lv+" "+xn+" "+humtype+" "+fb+" "+mb+" "+mb2+" "+itms);
+mapper.close();
+spawn_human(x, y, emrange, emrange2, emrange3, emrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, humtype, fb, mb, mb2, itms);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="huz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this human zone.");
+string mx2=vd.input_box("","Enter the maximum x of this human zone.");
+string my=vd.input_box("","Enter the y of this human zone.");
+string sp=vd.input_box("","Enter the spawn time of this human zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] human=find_directories("sounds/"+soundpack+"/npc/humans/*");
+if(human.length()==0)
+{
+dlg_snd("Error. There are no humans available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=humansmenu(true);
+if(res!="")
+{
+humtype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"human_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+humtype);
+mapper.close();
+spawn_humanzone(x, paxx, y, speedtime, humtype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="fbr")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this floor breaker.");
+string my=vd.input_box("","Enter the y of this floor breaker.");
+if(x=="" and y=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+string[] floorbtype=find_directories("sounds/"+soundpack+"/objects/floor breakers/*");
+if(floorbtype.length()==0)
+{
+dlg_snd("Error. There are no floor breakers available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=floorsmenu();
+if(res!="")
+{
+floortyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"floor_breaker "+x+" "+y+" "+floortyp);
+mapper.close();
+spawn_floorbreaker(x, y, floortyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="fld")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this force field.");
+string mx2=vd.input_box("","Enter the maximum x of this force field.");
+string my=vd.input_box("","Enter the minimum y of this force field.");
+string my2=vd.input_box("","Enter the maximum y of this force field.");
+string dm=vd.input_box("","Enter the maximum damage of this force field.");
+string sp=vd.input_box("","Enter the speed of this force field.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+string[] forcefield=find_directories("sounds/"+soundpack+"/objects/force fields/*");
+if(forcefield.length()==0)
+{
+dlg_snd("Error. There are no force fields available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=forcesmenu();
+if(res!="")
+{
+forcetyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"forcefield "+x+" "+paxx+" "+y+" "+paxy+" "+damage+" "+speedtime+" "+forcetyp);
+mapper.close();
+spawn_forcefield(x, paxx, y, paxy, damage, speedtime, forcetyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="hd")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this hazard.");
+string mx2=vd.input_box("","Enter the maximum x of this hazard.");
+string my=vd.input_box("","Enter the minimum y of this hazard.");
+string my2=vd.input_box("","Enter the maximum y of this hazard.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] hazardtype=find_directories("sounds/"+soundpack+"/objects/hazards/*");
+if(hazardtype.length()==0)
+{
+dlg_snd("Error. There are no hazards available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=hazardsmenu();
+if(res!="")
+{
+hazztype=res;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Would you like to automaticly spawn ledges on both sides of this hazard?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+lp=true;
+}
+if(mres==2)
+{
+lp=false;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"hazard "+x+" "+paxx+" "+y+" "+paxy+" "+hazztype+" "+lp);
+mapper.close();
+spawn_hazard(x, paxx, y, paxy, hazztype, lp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="hlp")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this helper.");
+string my=vd.input_box("","Enter the y of this helper.");
+string hp=vd.input_box("","Enter the health of this helper.");
+string hc=vd.input_box("","Enter the maximum lives of this helper. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this helper.");
+string ft=vd.input_box("","Enter the fire time of this helper.");
+string sp=vd.input_box("","Enter the speed of this helper.");
+string lev=vd.input_box("","Enter the level of this helper.");
+if(x=="" and y=="" and minhp=="" and card=="" and damage=="" and firetime=="" and speedtime=="" and lv=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+string[] helper=find_directories("sounds/"+soundpack+"/npc/helpers/*");
+if(helper.length()==0)
+{
+dlg_snd("Error. There are no helpers available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=helpersmenu();
+if(res!="")
+{
+helptyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"helper "+x+" "+y+" "+minhp+" "+card+" "+damage+" "+firetime+" "+speedtime+" "+lv+" "+helptyp);
+mapper.close();
+spawn_helper(x, y, minhp, minhp, card, damage, firetime, speedtime, lv, helptyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="hz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this heal zone.");
+string mx2=vd.input_box("","Enter the maximum x of this heal zone.");
+string my=vd.input_box("","Enter the minimum y of this heal zone.");
+string my2=vd.input_box("","Enter the maximum y of this heal zone.");
+string hm=vd.input_box("","Enter the healing mode of this heal zone. 0 for decreasing health, and 1 for increasing health.");
+string hp=vd.input_box("","Enter the health of this heal zone.");
+string ht=vd.input_box("","Enter the healing time of this heal zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and healthmode=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+healthmode=string_to_number(hm);
+damage=string_to_number(hp);
+speedtime=string_to_number(ht);
+string[] heals=find_directories("sounds/"+soundpack+"/objects/heal zones/*");
+if(heals.length()==0)
+{
+dlg_snd("Error. There are no heal zones available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=healsmenu();
+if(res!="")
+{
+healtyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"heal_zone "+x+" "+paxx+" "+y+" "+paxy+" "+healthmode+" "+damage+" "+speedtime+" "+healtyp);
+mapper.close();
+spawn_healzone(x, paxx, y, paxy, healthmode, damage, speedtime, healtype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="mn")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this mine.");
+string my=vd.input_box("","Enter the y of this mine.");
+string dm=vd.input_box("","Enter the maximum damage of this mine.");
+if(x=="" and y=="" and damage=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+damage=string_to_number(dm);
+string[] mine=find_directories("sounds/"+soundpack+"/objects/mines/*");
+if(mine.length()==0)
+{
+dlg_snd("Error. There are no mines available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=minesmenu();
+if(res!="")
+{
+minetyp=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Should this mine be auto activated?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+trg=true;
+}
+if(mres==2)
+{
+trg=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"mine "+x+" "+y+" "+damage+" "+minetyp+" "+trg);
+mapper.close();
+spawn_mine(x, y, damage, minetyp, trg);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="mhd")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the left x of this moving hazard.");
+string mx2=vd.input_box("","Enter the right x of this moving hazard.");
+string my=vd.input_box("","Enter the botum y of this moving hazard.");
+string my2=vd.input_box("","Enter the top y of this moving hazard.");
+string sx=vd.input_box("","Enter the maximum x length of this moving hazard.");
+string sy=vd.input_box("","Enter the maximum y length of this moving hazard.");
+string dr=vd.input_box("","Enter the direction of this moving hazard. 0 for Right and left, 1 for up and down, 2 for Diagonal up/right and down/left, 3 for diagonal up/left and down/right, 4 for Left and right, 5 for Down and up, 6 for Diagonal down/left and up/right, and 7 for diagonal down/right and up/left.");
+string sn=vd.input_box("","Enter the snap mode of this moving hazard. 0 for no snapping, 1 for forward to snap, 2 for backward to snap, and 3 for snap at ends.");
+string sp=vd.input_box("","Enter the sspeed of this moving hazard. 100 is equaled to 1000 milliseconds, 50 is equaled to 500 milliseconds, 10 is equaled to 100 milliseconds, 5 is equaled to 50 milliseconds, and 1 is equaled to 10 milliseconds.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and x2=="" and y2=="" and direction=="" and direction2=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+x2=string_to_number(sx);
+y2=string_to_number(sy);
+direction=string_to_number(dr);
+direction2=string_to_number(sn);
+speedtime=string_to_number(sp);
+string[] hazardtype=find_directories("sounds/"+soundpack+"/objects/hazards/*");
+if(hazardtype.length()==0)
+{
+dlg_snd("Error. There are no hazards available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=hazardsmenu();
+if(res!="")
+{
+hazztype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"mhazard "+x+" "+paxx+" "+y+" "+paxy+" "+x2+" "+y2+" "+direction+" "+direction2+" "+speedtime+" "+hazztype);
+mapper.close();
+spawn_moving_hazard(x, paxx, y, paxy, x2, y2, direction, direction2, speedtime, hazztype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="mpl")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the left x of this moving platform.");
+string mx2=vd.input_box("","Enter the right x of this moving platform.");
+string my=vd.input_box("","Enter the botum y of this moving platform.");
+string my2=vd.input_box("","Enter the top y of this moving platform.");
+string sx=vd.input_box("","Enter the maximum x length of this moving platform.");
+string dr=vd.input_box("","Enter the direction of this moving platform. 0 for Right and left, 1 for up and down, 2 for Diagonal up/right and down/left, 3 for diagonal up/left and down/right, 4 for Left and right, 5 for Down and up, 6 for Diagonal down/left and up/right, and 7 for diagonal down/right and up/left.");
+string sn=vd.input_box("","Enter the snap mode of this moving platform. 0 for no snapping, 1 for forward to snap, 2 for backward to snap, and 3 for snap at ends.");
+string sp=vd.input_box("","Enter the sspeed of this moving platform. 100 is equaled to 1000 milliseconds, 50 is equaled to 500 milliseconds, 10 is equaled to 100 milliseconds, 5 is equaled to 50 milliseconds, and 1 is equaled to 10 milliseconds.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and x2=="" and direction=="" and direction2=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+x2=string_to_number(sx);
+direction=string_to_number(dr);
+direction2=string_to_number(sn);
+speedtime=string_to_number(sp);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+string[] mplatform=find_directories("sounds/"+soundpack+"/objects/moving platforms/*");
+if(mplatform.length()==0)
+{
+dlg_snd("Error. There are no moving platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=mplatsmenu();
+if(res!="")
+{
+mplattyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres2= s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres2==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume2=s.get_item_value(0);
+pitch2=s.get_item_value(1);
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string vof=vd.input_box("","Enter the volume offset of this moving platform.");
+if(volset=="")
+return;
+volset=string_to_number(vof);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"mplatform "+x+" "+paxx+" "+y+" "+paxy+" "+x2+" "+direction+" "+direction2+" "+speedtime+" "+tiletype+" "+volume+" "+pitch+" "+mplattyp+" "+volume2+" "+pitch2+" "+volset);
+mapper.close();
+spawn_moving_platform(x, paxx, y, paxy, x2, direction, direction2, speedtime, tiletype, volume, pitch, mplattyp, volume2, pitch2, volset);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="mz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this menu zone.");
+string mx2=vd.input_box("","Enter the maximum x of this menu zone.");
+string my=vd.input_box("","Enter the minimum y of this menu zone.");
+string my2=vd.input_box("","Enter the maximum y of this menu zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"menu_zone "+x+" "+paxx+" "+y+" "+paxy);
+mapper.close();
+create_menuzone(x, paxx, y, paxy);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="cp")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this checkpoint.");
+string my=vd.input_box("","Enter the y of this checkpoint.");
+string sp=vd.input_box("","Enter the speed of this checkpoint. Press enter to use the default speed.", "350");
+if(x=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] checktype=find_directories("sounds/"+soundpack+"/objects/checkpoints/*");
+if(checktype.length()==0)
+{
+dlg_snd("Error. There are no checkpoints available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=checksmenu();
+if(res!="")
+{
+checktyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"checkpoint "+x+" "+y+" "+speedtime+" "+checktyp);
+mapper.close();
+spawn_checkpoint(x, y, speedtime, checktyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="obj")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this item.");
+string my=vd.input_box("","Enter the y of this item.");
+string sp=vd.input_box("","Enter the speed of this item. Press enter to use the default speed.", "500");
+if(x=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+setupmenu();
+m.add_item_tts("health", "hp");
+m.add_item_tts("other", "ot");
+int mres=m.run("Items menu",true);
+string itsm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(itsm=="hp")
+{
+string[] ithealth=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(ithealth.length()==0)
+{
+dlg_snd("Error. There are no health items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=healthsmenu();
+if(res!="")
+{
+itemtype="health";
+itemtype2=res;
+}
+}
+}
+if(itsm=="ot")
+{
+string[] itother=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/other/*");
+if(itother.length()==0)
+{
+dlg_snd("Error. There are no other items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=othersmenu();
+if(res!="")
+{
+itemtype="other";
+itemtype2=res;
+}
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres28=m.run("Do you want this item to be autograbbed when stepped on?",true);
+if(mres28==0)
+{
+speak("canceled");
+return;
+}
+if(mres28==1)
+{
+itm=true;
+}
+if(mres28==2)
+{
+itm=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"item "+x+" "+y+" "+speedtime+" "+itemtype+" "+itemtype2+" "+itm);
+mapper.close();
+spawn_obj(x, y, speedtime, itemtype, itemtype2, itm);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="iz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this item zone.");
+string mx2=vd.input_box("","Enter the maximum x of this item zone.");
+string my=vd.input_box("","Enter the minimum y of this item zone.");
+string my2=vd.input_box("","Enter the maximum y of this item zone.");
+string sp=vd.input_box("","Enter the spawn time of this item zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+speedtime=string_to_number(sp);
+setupmenu();
+m.add_item_tts("health", "hp");
+m.add_item_tts("other", "ot");
+int mres=m.run("Items menu",true);
+string itsm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(itsm=="hp")
+{
+string[] ithealth=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
+if(ithealth.length()==0)
+{
+dlg_snd("Error. There are no health items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=healthsmenu();
+if(res!="")
+{
+itemtype="health";
+itemtype2=res;
+}
+}
+}
+if(itsm=="ot")
+{
+string[] itother=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/other/*");
+if(itother.length()==0)
+{
+dlg_snd("Error. There are no other items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=othersmenu();
+if(res!="")
+{
+itemtype="other";
+itemtype2=res;
+}
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"item_zone "+x+" "+paxx+" "+y+" "+paxy+" "+speedtime+" "+itemtype+" "+itemtype2);
+mapper.close();
+spawn_objzone(x, paxx, y, paxy, speedtime, itemtype, itemtype2);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="lf")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this lift.");
+string mx2=vd.input_box("","Enter the maximum x of this lift.");
+string my=vd.input_box("","Enter the minimum y of this lift.");
+string my2=vd.input_box("","Enter the maximum y of this lift.");
+string dr=vd.input_box("","Enter the direction of this lift. 0 for down and up, and 1 for up and down.");
+string sp=vd.input_box("","Enter the speed of this lift.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and direction=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+direction=string_to_number(dr);
+speedtime=string_to_number(sp);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+string[] liftform=find_directories("sounds/"+soundpack+"/objects/lifts/*");
+if(liftform.length()==0)
+{
+dlg_snd("Error. There are no lifts available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=liftsmenu();
+if(res!="")
+{
+lifttyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres2= s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres2==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume2=s.get_item_value(0);
+pitch2=s.get_item_value(1);
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"lift "+x+" "+paxx+" "+y+" "+paxy+" "+direction+" "+speedtime+" "+tiletype+" "+volume+" "+pitch+" "+lifttyp+" "+volume2+" "+pitch2);
+mapper.close();
+spawn_lift(x, paxx, y, paxy, direction, speedtime, tiletype, volume, pitch, lifttyp, volume2, pitch2);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="mus")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this music source.");
+string mx2=vd.input_box("","Enter the maximum x of this music source.");
+string my=vd.input_box("","Enter the minimum y of this music source.");
+string my2=vd.input_box("","Enter the maximum y of this music source.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] music=find_directories("sounds/"+soundpack+"/soundtracks/musics/*");
+if(music.length()==0)
+{
+dlg_snd("Error. There are no music sources available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+mustyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"music_source "+x+" "+paxx+" "+y+" "+paxy+" "+mustyp+" "+volume+" "+pitch);
+mapper.close();
+spawn_musicsource(x, paxx, y, paxy, mustyp, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="pf")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this platform.");
+string mx2=vd.input_box("","Enter the maximum x of this platform.");
+string my=vd.input_box("","Enter the y of this platform.");
+if(x=="" and paxx=="" and y=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"platform "+x+" "+paxx+" "+y+" "+tiletype+" "+volume+" "+pitch);
+mapper.close();
+spawn_platform(x, paxx, y, y, tiletype, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="pj")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this projectile.");
+string my=vd.input_box("","Enter the y of this projectile.");
+string dr=vd.input_box("","Enter the direction of this projectile. 0 for left, and 1 for right");
+string hp=vd.input_box("","Enter the health of this projectile.");
+string hc=vd.input_box("","Enter the maximum lives of this projectile. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this projectile.");
+string sp=vd.input_box("","Enter the speed of this projectile.");
+string lev=vd.input_box("","Enter the level of this projectile.");
+string exper=vd.input_box("","Enter the xp of this projectile.");
+if(x=="" and y=="" and direction=="" and minhp=="" and card=="" and damage=="" and speedtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+direction=string_to_number(dr);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] projectile=find_directories("sounds/"+soundpack+"/npc/projectiles/*");
+if(projectile.length()==0)
+{
+dlg_snd("Error. There are no projectiles available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=projesmenu();
+if(res!="")
+{
+potype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres8=m.run("Should the projectile attack you?",true);
+if(mres8==0)
+{
+speak("canceled");
+return;
+}
+if(mres8==1)
+{
+fb=true;
+}
+if(mres8==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres9=m.run("Should the projectile move on the x axes?",true);
+if(mres9==0)
+{
+speak("canceled");
+return;
+}
+if(mres9==1)
+{
+mb=true;
+}
+if(mres9==2)
+{
+mb=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"projectile "+x+" "+y+" "+direction+" "+minhp+" "+card+" "+damage+" "+speedtime+" "+lv+" "+xn+" "+potype+" "+fb+" "+mb);
+mapper.close();
+spawn_projectile(x, y, direction, minhp, minhp, card, damage, speedtime, lv, xn, potype, fb, mb);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="pz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this projectile zone.");
+string mx2=vd.input_box("","Enter the maximum x of this projectile zone.");
+string my=vd.input_box("","Enter the y of this projectile zone.");
+string sp=vd.input_box("","Enter the spawn time of this projectile zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] projectile=find_directories("sounds/"+soundpack+"/npc/projectiles/*");
+if(projectile.length()==0)
+{
+dlg_snd("Error. There are no projectiles available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=projesmenu(true);
+if(res!="")
+{
+potype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"projectile_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+potype);
+mapper.close();
+spawn_projzone(x, paxx, y, speedtime, potype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="rev")
+{
+form.reset();
+form.create_window("reverb space", false);
+int mx=form.create_input_box("Enter the minimum x of this reverb space");
+int mx2=form.create_input_box("Enter the maximum x of this reverb space");
+int my=form.create_input_box("Enter the minimum y of this reverb space");
+int my2=form.create_input_box("Enter the maximum y of this reverb space");
+int rd=form.create_input_box("Enter the id of this reverb space", generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"));
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int dr=form.create_slider("&dry_mix: ", 50, 0, 100, "percent");
+int wm=form.create_slider("&wet_mix: ", 50, 0, 100, "percent");
+int rm=form.create_slider("&room_size: ", 50, 0, 100, "percent");
+int dp=form.create_slider("dam&ping: ", 50, 0, 100, "percent");
+int wt=form.create_slider("w&idth: ", 50, 0, 100, "percent");
+int platile = form.create_list("te&st surface");
+string[] plats = find_directories("sounds/" + soundpack + "/objects/platforms/*");
+string current_tile = gmt(me.x, me.y);
+int selected_index = 0;
+for (uint i = 0; i < plats.length(); i++)
+{
+form.add_list_item(platile, plats[i], plats[i]);
+if (plats[i] == current_tile)
+selected_index = i;
+}
+form.set_list_position(platile, selected_index);
+tiletype = plats[selected_index];
+int revok = form.create_button("&okay",true);
+int revcn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+reverid=form.get_text(rd);
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+int list_position = form.get_list_position(platile);
+if (list_position != -1)
+{
+tiletype = form.get_list_item(platile, list_position);
+}
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(revcn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if (form.get_current_focus() == platile)
+{
+@temp.mixer = mixer();
+if (key_down(KEY_SPACE) && keyrowhold == 1 && movetimer.elapsed >= movetime)
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+temp.mixer.set_fx(fxtype);
+temp.destroy_sound(tileslot);
+tileslot = temp.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
+movetimer.restart();
+}
+if (key_pressed(KEY_SPACE) && keyrowhold == 0)
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+temp.mixer.set_fx(fxtype);
+temp.destroy_sound(tileslot);
+tileslot = temp.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
+}
+if (control_is_down() && key_repeating(KEY_L))
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+temp.mixer.set_fx(fxtype);
+temp.destroy_sound(tileslot);
+tileslot = temp.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*land*"), false, 0, 0, tilevolume, tilepitch);
+}
+if (control_is_down() && key_repeating(KEY_H))
+{
+revdry = form.get_slider(dr) / 100.0;
+revwet = form.get_slider(wm) / 100.0;
+revsize = form.get_slider(rm) / 100.0;
+revdamp = form.get_slider(dp) / 100.0;
+revwidth = form.get_slider(wt) / 100.0;
+string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
+temp.mixer.set_fx(fxtype);
+temp.destroy_sound(tileslot);
+tileslot = temp.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/platforms/" + tiletype + "/*fall*"), false, 0, 0, tilevolume, tilepitch);
+}
+}
+if(form.is_pressed(revok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(rd)=="")
+{
+speak("Reverb id is required.");
+form.focus(rd);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"reverb "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" "+round(revdry, 2)+" "+round(revwet, 2)+" "+round(revsize, 2)+" "+round(revdamp, 2)+" "+round(revwidth, 2));
+mapper.close();
+spawn_reverb_space(x, paxx, y, paxy, reverid, revdry, revwet, revsize, revdamp, revwidth);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+game(true);
+}
+}
+}
+}
+if(buildem=="rt")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this robot.");
+string my=vd.input_box("","Enter the y of this robot.");
+string rng=vd.input_box("","Enter the horizontal atack range of this robot.");
+string rng2=vd.input_box("","Enter the vertical atack range of this robot.");
+string rng3=vd.input_box("","Enter the horizontal seeing range of this robot.");
+string rng4=vd.input_box("","Enter the vertical seeing range of this robot.");
+string hp=vd.input_box("","Enter the health of this robot.");
+string hc=vd.input_box("","Enter the maximum lives of this robot. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this robot.");
+string ft=vd.input_box("","Enter the fire time of this robot.");
+string sp=vd.input_box("","Enter the speed of this robot.");
+string lev=vd.input_box("","Enter the level of this robot.");
+string exper=vd.input_box("","Enter the xp of this robot.");
+if(x=="" and y=="" and robrange=="" and robrange2=="" and robrange3=="" and robrange4=="" and minhp=="" and card=="" and damage=="" and firetime=="" and speedtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+robrange=string_to_number(rng);
+robrange2=string_to_number(rng2);
+robrange3=string_to_number(rng3);
+robrange4=string_to_number(rng4);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] robot=find_directories("sounds/"+soundpack+"/npc/robots/*");
+if(robot.length()==0)
+{
+dlg_snd("Error. There are no robots available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=robotsmenu();
+if(res!="")
+{
+rotype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres2=m.run("Should the robot attack you?",true);
+if(mres2==0)
+{
+speak("canceled");
+return;
+}
+if(mres2==1)
+{
+fb=true;
+}
+if(mres2==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres3=m.run("Should the robot move on the x axes?",true);
+if(mres3==0)
+{
+speak("canceled");
+return;
+}
+if(mres3==1)
+{
+mb=true;
+}
+if(mres3==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres4=m.run("Should the robot move on the y axes?",true);
+if(mres4==0)
+{
+speak("canceled");
+return;
+}
+if(mres4==1)
+{
+mb2=true;
+}
+if(mres4==2)
+{
+mb2=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres5=m.run("Should the robot drop an item after killing it?",true);
+if(mres5==0)
+{
+speak("canceled");
+return;
+}
+if(mres5==1)
+{
+itms=true;
+}
+if(mres5==2)
+{
+itms=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"robot "+x+" "+y+" "+robrange+" "+robrange2+" "+robrange3+" "+robrange4+" "+minhp+" "+card+" "+damage+" "+firetime+" "+speedtime+" "+lv+" "+xn+" "+rotype+" "+fb+" "+mb+" "+mb2+" "+itms);
+mapper.close();
+spawn_robot(x, y, robrange, robrange2, robrange3, robrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, rotype, fb, mb, mb2, itms);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="rz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this robot zone.");
+string mx2=vd.input_box("","Enter the maximum x of this robot zone.");
+string my=vd.input_box("","Enter the y of this robot zone.");
+string sp=vd.input_box("","Enter the spawn time of this robot zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] robot=find_directories("sounds/"+soundpack+"/npc/robots/*");
+if(robot.length()==0)
+{
+dlg_snd("Error. There are no robots available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=robotsmenu(true);
+if(res!="")
+{
+rotype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"robot_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+rotype);
+mapper.close();
+spawn_robotzone(x, paxx, y, speedtime, rotype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="sz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this safe zone.");
+string mx2=vd.input_box("","Enter the maximum x of this safe zone.");
+string my=vd.input_box("","Enter the minimum y of this safe zone.");
+string my2=vd.input_box("","Enter the maximum y of this safe zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] safes=find_directories("sounds/"+soundpack+"/objects/safe zones/*");
+if(safes.length()==0)
+{
+dlg_snd("Error. There are no safe zones available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=safsmenu();
+if(res!="")
+{
+saftyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"safe_zone "+x+" "+paxx+" "+y+" "+paxy+" "+saftyp);
+mapper.close();
+spawn_safezone(x, paxx, y, paxy, saftyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="svcam")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this security camera.");
+string my=vd.input_box("","Enter the y of this security camera.");
+string rng=vd.input_box("","Enter the horizontal seeing range of this security camera.");
+string rng2=vd.input_box("","Enter the vertical seeing range of this security camera.");
+string dr=vd.input_box("","Enter the direction of this security camera. 1 for left, and 2 for right.");
+string sp=vd.input_box("","Enter the speed of this security camera.");
+string hp=vd.input_box("","Enter the health of this security camera.");
+string lev=vd.input_box("","Enter the level of this security camera.");
+string exper=vd.input_box("","Enter the xp of this security camera.");
+if(x=="" and y=="" and camrange=="" and camrange2=="" and direction=="" and speedtime=="" and minhp=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+camrange=string_to_number(rng);
+camrange2=string_to_number(rng2);
+direction=string_to_number(dr);
+speedtime=string_to_number(sp);
+minhp=string_to_number(hp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] camera=find_directories("sounds/"+soundpack+"/objects/cameras/*");
+if(camera.length()==0)
+{
+dlg_snd("Error. There are no cameras available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=camsmenu();
+if(res!="")
+{
+camtyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"camera "+x+" "+y+" "+camrange+" "+camrange2+" "+direction+" "+speedtime+" "+minhp+" "+lv+" "+xn+" "+camtyp);
+mapper.close();
+spawn_camera(x, y, camrange, camrange2, direction, speedtime, minhp, minhp, lv, xn, camtyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="sn")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this sign.");
+string my=vd.input_box("","Enter the y of this sign.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this sign.");
+if(x=="" and y=="" and txt=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+txt=text;
+string[] signs=find_directories("sounds/"+soundpack+"/objects/signs/*");
+if(signs.length()==0)
+{
+dlg_snd("Error. There are no signs available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=signsmenu();
+if(res!="")
+{
+signtyp=res;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this sign to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Would you like the sign sound to be looped?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+lpg=true;
+}
+if(mres==2)
+{
+lpg=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"sign "+x+" "+y+" "+txt+" "+signtyp+" "+dmd+" "+lpg);
+mapper.close();
+spawn_sign(x, y, txt, signtyp, dmd, lpg);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="src")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this sound source.");
+string mx2=vd.input_box("","Enter the maximum x of this sound source.");
+string my=vd.input_box("","Enter the minimum y of this sound source.");
+string my2=vd.input_box("","Enter the maximum y of this sound source.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] source=find_directories("sounds/"+soundpack+"/soundtracks/sources/*");
+if(source.length()==0)
+{
+dlg_snd("Error. There are no sources available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=sorcesmenu();
+if(res!="")
+{
+sorcetyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"sound_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch);
+mapper.close();
+spawn_soundsource(x, paxx, y, paxy, sorcetyp, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="sp")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this spike.");
+string mx2=vd.input_box("","Enter the maximum x of this spike.");
+string my=vd.input_box("","Enter the minimum y of this spike.");
+string my2=vd.input_box("","Enter the maximum y of this spike.");
+string hp=vd.input_box("","Enter the health of this spike. Press enter to use the default health.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this spike.");
+string sp=vd.input_box("","Enter the speed of this spike.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+minhp=string_to_number(hp);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+string[] spike=find_directories("sounds/"+soundpack+"/objects/spikes/*");
+if(spike.length()==0)
+{
+dlg_snd("Error. There are no spikes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=spikesmenu();
+if(res!="")
+{
+spiktype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this spike to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"spike "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+damage+" "+speedtime+" "+spiktype+" "+dmd);
+mapper.close();
+spawn_spike(x, paxx, y, paxy, minhp, minhp, damage, speedtime, spiktype, dmd);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="st")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this spawnpoint.");
+string my=vd.input_box("","Enter the y of this spawnpoint.");
+if(x=="" and y=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"spawnpoint "+x+" "+y);
+mapper.close();
+create_spawnpoint(x, y);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="sf")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this staircase.");
+string mx2=vd.input_box("","Enter the maximum x of this staircase.");
+string my=vd.input_box("","Enter the minimum y of this staircase.");
+string my2=vd.input_box("","Enter the maximum y of this staircase.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"staircase "+x+" "+paxx+" "+y+" "+paxy+" "+tiletype+" "+volume+" "+pitch);
+mapper.close();
+spawn_staircase(x, paxx, y, paxy, tiletype, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="tp")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sx=vd.input_box("","Enter the starting x of this teleporter.");
+string sy=vd.input_box("","Enter the starting y of this teleporter.");
+string nx=vd.input_box("","Enter the finishing x of this teleporter.");
+string ny=vd.input_box("","Enter the finishing y of this teleporter.");
+string rng=vd.input_box("","Enter the horizontal seeing range of this teleporter.");
+string rng2=vd.input_box("","Enter the vertical seeing range of this teleporter.");
+string sp=vd.input_box("","Enter the speed of this teleporter.");
+if(x=="" and y=="" and x2=="" and y2=="" and telrange=="" and telrange2=="" and speedtime=="")
+return;
+x=string_to_number(sx);
+y=string_to_number(sy);
+x2=string_to_number(nx);
+y2=string_to_number(ny);
+telrange=string_to_number(rng);
+telrange2=string_to_number(rng2);
+speedtime=string_to_number(sp);
+string[] teleporter=find_directories("sounds/"+soundpack+"/objects/teleporters/*");
+if(teleporter.length()==0)
+{
+dlg_snd("Error. There are no teleporters available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=teleportersmenu();
+if(res!="")
+{
+teltype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres16=m.run("Should the teleporter move on the x axes?",true);
+if(mres16==0)
+{
+speak("canceled");
+return;
+}
+if(mres16==1)
+{
+mb=true;
+}
+if(mres16==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres17=m.run("Should the teleporter move on the y axes?",true);
+if(mres17==0)
+{
+speak("canceled");
+return;
+}
+if(mres17==1)
+{
+mb2=true;
+}
+if(mres17==2)
+{
+mb2=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres18=m.run("Should this teleporter be single-use only?",true);
+if(mres18==0)
+{
+speak("canceled");
+return;
+}
+if(mres18==1)
+{
+sse=true;
+}
+if(mres18==2)
+{
+sse=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"teleporter "+x+" "+y+" "+x2+" "+y2+" "+telrange+" "+telrange2+" "+speedtime+" "+teltype+" "+mb+" "+mb2+" "+sse);
+mapper.close();
+spawn_teleporter(x, y, x2, y2, telrange, telrange2, speedtime, teltype, mb, mb2, sse);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="txt")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this text square.");
+string my=vd.input_box("","Enter the y of this text square.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this text square.");
+if(x=="" and y=="" and txt=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+txt=text;
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"text_square "+x+" "+y+" "+txt);
+mapper.close();
+spawn_text_square(x, y, txt);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="tbm")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this time bomb.");
+string my=vd.input_box("","Enter the y of this time bomb.");
+string dm=vd.input_box("","Enter the maximum damage of this time bomb.");
+string sp=vd.input_box("","Enter the speed of this time bomb.");
+if(x=="" and y=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+string[] timebomb=find_directories("sounds/"+soundpack+"/objects/time bombs/*");
+if(timebomb.length()==0)
+{
+dlg_snd("Error. There are no time bombs available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=timbombsmenu();
+if(res!="")
+{
+timbotype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"timebomb "+x+" "+y+" "+damage+" "+speedtime+" "+timbotype);
+mapper.close();
+spawn_timebomb(x, y, damage, speedtime, timbotype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="trc")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this timed source.");
+string mx2=vd.input_box("","Enter the maximum x of this timed source.");
+string my=vd.input_box("","Enter the minimum y of this timed source.");
+string my2=vd.input_box("","Enter the maximum y of this timed source.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] source=find_directories("sounds/"+soundpack+"/soundtracks/sources/*");
+if(source.length()==0)
+{
+dlg_snd("Error. There are no sources available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=sorcesmenu();
+if(res!="")
+{
+sorcetyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("","Enter the speed of this timed source.");
+if(speedtime=="")
+return;
+speedtime=string_to_number(sp);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"timed_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch+" "+speedtime);
+mapper.close();
+spawn_timedsource(x, paxx, y, paxy, volume, pitch, speedtime, sorcetyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="tmc")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this timed music.");
+string mx2=vd.input_box("","Enter the maximum x of this timed music.");
+string my=vd.input_box("","Enter the minimum y of this timed music.");
+string my2=vd.input_box("","Enter the maximum y of this timed music.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] music=find_directories("sounds/"+soundpack+"/soundtracks/musics/*");
+if(music.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+mustyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("","Enter the speed of this timed music.");
+if(speedtime=="")
+return;
+speedtime=string_to_number(sp);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"timed_music "+x+" "+paxx+" "+y+" "+paxy+" "+mustyp+" "+volume+" "+pitch+" "+speedtime);
+mapper.close();
+spawn_timedmusic(x, paxx, y, paxy, volume, pitch, speedtime, mustyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="tmt")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this timed text.");
+string mx2=vd.input_box("","Enter the maximum x of this timed text.");
+string my=vd.input_box("","Enter the minimum y of this timed text.");
+string my2=vd.input_box("","Enter the maximum y of this timed text.");
+string sp=vd.input_box("","Enter the speed of this timed text.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this timed text.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and speedtime=="" and txt=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+speedtime=string_to_number(sp);
+txt=text;
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"timed_text "+x+" "+paxx+" "+y+" "+paxy+" "+speedtime+" "+txt);
+mapper.close();
+spawn_timedtext(x, paxx, y, paxy, speedtime, txt);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="trp")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this travelpoint.");
+string mx2=vd.input_box("","Enter the maximum x of this travelpoint.");
+string my=vd.input_box("","Enter the minimum y of this travelpoint.");
+string my2=vd.input_box("","Enter the maximum y of this travelpoint.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string mtext=vd.input_box("","Enter the destenation map of this travelpoint.");
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string dx=vd.input_box("","Enter the destenation x of this travelpoint.");
+string dy=vd.input_box("","Enter the destenation y of this travelpoint.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string dtext=vd.input_box("","Enter the destenation text of this travelpoint.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and txt=="" and x2=="" and y2=="" and txt2=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+txt=mtext;
+x2=string_to_number(dx);
+y2=string_to_number(dy);
+txt2=dtext;
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Would you like to automatically build the opposite side of this travelpoint?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string mtext2=vd.input_box("","Enter the destenation map of this travelpoint to go back to.");
+if(txt=="")
+return;
+txt=mtext2;
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"travelpoint "+x+" "+paxx+" "+y+" "+paxy+" "+txt+" "+y2+" "+x2+" "+txt2);
+mapper.close();
+spawn_travelpoint(x, paxx, y, paxy, txt, y2, x2, txt2);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(mres==2)
+{
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"travelpoint "+x+" "+paxx+" "+y+" "+paxy+" "+txt+" "+x2+" "+y2+" "+txt2);
+mapper.close();
+spawn_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="tt")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this turret.");
+string my=vd.input_box("","Enter the y of this turret.");
+string hp=vd.input_box("","Enter the health of this turret.");
+string hc=vd.input_box("","Enter the maximum lives of this turret. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this turret.");
+string ft=vd.input_box("","Enter the fire time of this turret.");
+string lt=vd.input_box("","Enter the launch time of this turret.");
+string sp=vd.input_box("","Enter the speed of this turret.");
+string lev=vd.input_box("","Enter the level of this turret.");
+string exper=vd.input_box("","Enter the xp of this turret.");
+if(x=="" and y=="" and minhp=="" and card=="" and damage=="" and firetime=="" and launchtime=="" and speedtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+launchtime=string_to_number(lt);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] turret=find_directories("sounds/"+soundpack+"/npc/turrets/*");
+if(turret.length()==0)
+{
+dlg_snd("Error. There are no turrets available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=turretsmenu();
+if(res!="")
+{
+tutype=res;
+}
+}
+setupmenu();
+m.add_item_tts("animal","an2");
+m.add_item_tts("human", "hum2");
+m.add_item_tts("projectile","pj2");
+m.add_item_tts("robot","rt2");
+m.add_item_tts("zombie","zb2");
+int mres=m.run("What would you like this turret to spawn?",true);
+string buildem2=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(buildem2=="an2")
+{
+string[] animal=find_directories("sounds/"+soundpack+"/npc/animals/*");
+if(animal.length()==0)
+{
+dlg_snd("Error. There are no animals available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=animalsmenu();
+if(res!="")
+{
+tutype2="animal";
+tutype3=res;
+}
+}
+}
+if(buildem2=="hum2")
+{
+string[] human=find_directories("sounds/"+soundpack+"/npc/humans/*");
+if(human.length()==0)
+{
+dlg_snd("Error. There are no humans available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=humansmenu();
+if(res!="")
+{
+tutype2="human";
+tutype3=res;
+}
+}
+}
+if(buildem2=="pj2")
+{
+string[] projectile=find_directories("sounds/"+soundpack+"/npc/projectiles/*");
+if(projectile.length()==0)
+{
+dlg_snd("Error. There are no projectiles available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=projesmenu();
+if(res!="")
+{
+tutype2="projectile";
+tutype3=res;
+}
+}
+}
+if(buildem2=="rt2")
+{
+string[] robot=find_directories("sounds/"+soundpack+"/npc/robots/*");
+if(robot.length()==0)
+{
+dlg_snd("Error. There are no robots available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=robotsmenu();
+if(res!="")
+{
+tutype2="robot";
+tutype3=res;
+}
+}
+}
+if(buildem2=="zb2")
+{
+string[] zombie=find_directories("sounds/"+soundpack+"/npc/zombies/*");
+if(zombie.length()==0)
+{
+dlg_snd("Error. There are no zombies available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=zombiesmenu();
+if(res!="")
+{
+tutype2="zombie";
+tutype3=res;
+}
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres18=m.run("Should the turret attack you?",true);
+if(mres18==0)
+{
+speak("canceled");
+return;
+}
+if(mres18==1)
+{
+fb=true;
+}
+if(mres18==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres19=m.run("Should the turret move on the x axes?",true);
+if(mres19==0)
+{
+speak("canceled");
+return;
+}
+if(mres19==1)
+{
+mb=true;
+}
+if(mres19==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres20=m.run("Should the turret move on the y axes?",true);
+if(mres20==0)
+{
+speak("canceled");
+return;
+}
+if(mres20==1)
+{
+mb2=true;
+}
+if(mres20==2)
+{
+mb2=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"turret "+x+" "+y+" "+minhp+" "+card+" "+damage+" "+firetime+" "+launchtime+" "+speedtime+" "+lv+" "+xn+" "+tutype+" "+tutype2+" "+tutype3+" "+fb+" "+mb+" "+mb2);
+mapper.close();
+spawn_turret(x, y, minhp, minhp, card, damage, firetime, launchtime, speedtime, lv, xn, tutype, tutype2, tutype3, fb, mb, mb2);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="vh")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this vehicle.");
+string my=vd.input_box("","Enter the y of this vehicle.");
+string hp=vd.input_box("","Enter the health of this vehicle. Press enter to use the default health.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this vehicle.");
+if(x=="" and y=="" and minhp=="" and damage=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+damage=string_to_number(dm);
+string[] vehicle=find_directories("sounds/"+soundpack+"/objects/vehicles/*");
+if(vehicle.length()==0)
+{
+dlg_snd("Error. There are no vehicles available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=vehsmenu();
+if(res!="")
+{
+vehtyp=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres8=m.run("Should the vehicle hit other entities while moving?",true);
+if(mres8==0)
+{
+speak("canceled");
+return;
+}
+if(mres8==1)
+{
+fb=true;
+}
+if(mres8==2)
+{
+fb=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"vehicle "+x+" "+y+" "+minhp+" "+damage+" "+vehtyp+" "+fb);
+mapper.close();
+spawn_vehicle(x, y, minhp, minhp, damage, vehtyp, fb);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="vp")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this vanishing platform.");
+string mx2=vd.input_box("","Enter the maximum x of this vanishing platform.");
+string my=vd.input_box("","Enter the y of this vanishing platform.");
+if(x=="" and paxx=="" and y=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+tiletype=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+string[] vplatform=find_directories("sounds/"+soundpack+"/objects/vanishing platforms/*");
+if(vplatform.length()==0)
+{
+dlg_snd("Error. There are no vanishing platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=vplatsmenu();
+if(res!="")
+{
+vplattyp=res;
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres2= s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres2==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume2=s.get_item_value(0);
+pitch2=s.get_item_value(1);
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("","Enter the speed of this vanishing platform.");
+if(speedtime=="")
+return;
+speedtime=string_to_number(sp);
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"vanishing_platform "+x+" "+paxx+" "+y+" "+tiletype+" "+volume+" "+pitch+" "+vplattyp+" "+volume2+" "+pitch2+" "+speedtime);
+mapper.close();
+spawn_vanishing_platform(x, paxx, y, y, tiletype, volume, pitch, vplattyp, volume2, pitch2, speedtime);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="dlw")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this destroyable wall.");
+string mx2=vd.input_box("","Enter the maximum x of this destroyable wall.");
+string my=vd.input_box("","Enter the minimum y of this destroyable wall.");
+string my2=vd.input_box("","Enter the maximum y of this destroyable wall.");
+string hp=vd.input_box("","Enter the health of this destroyable wall. Press enter to use the default health.", "1");
+if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+minhp=string_to_number(hp);
+string[] border=find_directories("sounds/"+soundpack+"/objects/walls/*");
+if(border.length()==0)
+{
+dlg_snd("Error. There are no destroyable walls available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=destwallsmenu();
+if(res!="")
+{
+destwalltype=res;
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+}
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"dest_wall "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+destwalltype+" "+volume+" "+pitch);
+mapper.close();
+spawn_dest_wall(x, paxx, y, paxy, minhp, minhp, destwalltype, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="wl")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this wall.");
+string mx2=vd.input_box("","Enter the maximum x of this wall.");
+string my=vd.input_box("","Enter the minimum y of this wall.");
+string my2=vd.input_box("","Enter the maximum y of this wall.");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] border=find_directories("sounds/"+soundpack+"/objects/walls/*");
+if(border.length()==0)
+{
+dlg_snd("Error. There are no walls available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=wallsmenu();
+if(res!="")
+{
+walltype=res;
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+}
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"wall "+x+" "+paxx+" "+y+" "+paxy+" "+walltype+" "+volume+" "+pitch);
+mapper.close();
+spawn_wall(x, paxx, y, paxy, walltype, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="zb")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this zombie.");
+string my=vd.input_box("","Enter the y of this zombie.");
+string rng=vd.input_box("","Enter the horizontal atack range of this zombie.");
+string rng2=vd.input_box("","Enter the vertical atack range of this zombie.");
+string rng3=vd.input_box("","Enter the horizontal seeing range of this zombie.");
+string rng4=vd.input_box("","Enter the vertical seeing range of this zombie.");
+string hp=vd.input_box("","Enter the health of this zombie.");
+string hc=vd.input_box("","Enter the maximum lives of this zombie. Press enter to use the default lives.", "1");
+string dm=vd.input_box("","Enter the maximum damage of this zombie.");
+string ft=vd.input_box("","Enter the fire time of this zombie.");
+string sp=vd.input_box("","Enter the speed of this zombie.");
+string lev=vd.input_box("","Enter the level of this zombie.");
+string exper=vd.input_box("","Enter the xp of this zombie.");
+if(x=="" and y=="" and zombrange=="" and zombrange2=="" and zombrange3=="" and zombrange4=="" and minhp=="" and card=="" and damage=="" and firetime=="" and speedtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+zombrange=string_to_number(rng);
+zombrange2=string_to_number(rng2);
+zombrange3=string_to_number(rng3);
+zombrange4=string_to_number(rng4);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] zombie=find_directories("sounds/"+soundpack+"/npc/zombies/*");
+if(zombie.length()==0)
+{
+dlg_snd("Error. There are no zombies available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=zombiesmenu();
+if(res!="")
+{
+zotype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres2=m.run("Should the zombie attack you?",true);
+if(mres2==0)
+{
+speak("canceled");
+return;
+}
+if(mres2==1)
+{
+fb=true;
+}
+if(mres2==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres3=m.run("Should the zombie move on the x axes?",true);
+if(mres3==0)
+{
+speak("canceled");
+return;
+}
+if(mres3==1)
+{
+mb=true;
+}
+if(mres3==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres4=m.run("Should the zombie move on the y axes?",true);
+if(mres4==0)
+{
+speak("canceled");
+return;
+}
+if(mres4==1)
+{
+mb2=true;
+}
+if(mres4==2)
+{
+mb2=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres5=m.run("Should the zombie drop an item after killing it?",true);
+if(mres5==0)
+{
+speak("canceled");
+return;
+}
+if(mres5==1)
+{
+itms=true;
+}
+if(mres5==2)
+{
+itms=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"zombie "+x+" "+y+" "+zombrange+" "+zombrange2+" "+zombrange3+" "+zombrange4+" "+minhp+" "+card+" "+damage+" "+firetime+" "+speedtime+" "+lv+" "+xn+" "+zotype+" "+fb+" "+mb+" "+mb2+" "+itms);
+mapper.close();
+spawn_zombie(x, y, zombrange, zombrange2, zombrange3, zombrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, zotype, fb, mb, mb2, itms);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="zz")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this zombie zone.");
+string mx2=vd.input_box("","Enter the maximum x of this zombie zone.");
+string my=vd.input_box("","Enter the y of this zombie zone.");
+string sp=vd.input_box("","Enter the spawn time of this zombie zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] zombie=find_directories("sounds/"+soundpack+"/npc/zombies/*");
+if(zombie.length()==0)
+{
+dlg_snd("Error. There are no zombies available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=zombiesmenu(true);
+if(res!="")
+{
+zotype=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"zombie_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+zotype);
+mapper.close();
+spawn_zombiezone(x, paxx, y, speedtime, zotype);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="zn")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this zone.");
+string mx2=vd.input_box("","Enter the maximum x of this zone.");
+string my=vd.input_box("","Enter the minimum y of this zone.");
+string my2=vd.input_box("","Enter the maximum y of this zone.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and txt=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+txt=text;
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"zone "+x+" "+paxx+" "+y+" "+paxy+" "+txt);
+mapper.close();
+spawn_zone(x, paxx, y, paxy, txt);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+}

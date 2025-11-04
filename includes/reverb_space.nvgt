@@ -1,5 +1,5 @@
-reverb_effect@[] reverb_effects(0);
-class reverb_effect
+reverb_space@[] reverb_spaces(0);
+class reverb_space
 {
 double minx, maxx, miny, maxy;
 float dry_mix;
@@ -8,7 +8,7 @@ float room_size;
 float dampping;
 float width;
 string reverb_id;
-reverb_effect(double mx, double mx2, double my, double my2, string rd,float dm, float wm, float rs, float dp, float wt)
+reverb_space(double mx, double mx2, double my, double my2, string rd,float dm, float wm, float rs, float dp, float wt)
 {
 minx = mx;
 maxx = mx2;
@@ -24,16 +24,16 @@ width = wt;
 }
 string get_reverb_at(double x, double y)
 {
-for (uint i = 0; i < reverb_effects.length(); i++)
+for (uint i = 0; i < reverb_spaces.length(); i++)
 {
-if (reverb_effects[i].minx <= x && reverb_effects[i].maxx >= x && reverb_effects[i].miny <= y && reverb_effects[i].maxy >= y)
+if (reverb_spaces[i].minx <= x && reverb_spaces[i].maxx >= x && reverb_spaces[i].miny <= y && reverb_spaces[i].maxy >= y)
 {
-return reverb_effects[i].reverb_id;
+return reverb_spaces[i].reverb_id;
 }
 }
 return "";
 }
-void apply_reverb_effect(double x, double y, sound_pool@ pool)
+void apply_reverb_space(double x, double y, sound_pool@ pool)
 {
 string reverb_id = get_reverb_at(x, y);
 if (reverb_id == "")
@@ -41,24 +41,24 @@ if (reverb_id == "")
 pool.mixer.set_fx("$");
 return;
 }
-for (uint i = 0; i < reverb_effects.length(); i++)
+for (uint i = 0; i < reverb_spaces.length(); i++)
 {
-if (reverb_effects[i].reverb_id == reverb_id)
+if (reverb_spaces[i].reverb_id == reverb_id)
 {
-string fxtype = "$" + reverb_id + ":freeverb:" + reverb_effects[i].dry_mix + ":" + reverb_effects[i].wet_mix + ":" + reverb_effects[i].room_size + ":" + reverb_effects[i].dampping + ":" + reverb_effects[i].width;
+string fxtype = "$" + reverb_id + ":freeverb:" + reverb_spaces[i].dry_mix + ":" + reverb_spaces[i].wet_mix + ":" + reverb_spaces[i].room_size + ":" + reverb_spaces[i].dampping + ":" + reverb_spaces[i].width;
 pool.mixer.set_fx(fxtype);
 return;
 }
 }
 }
-void spawn_reverb_effect(double x1, double x2, double y1, double y2,string reverb_id, float dry_mix, float wet_mix,float room_size, float dampping, float width)
+void spawn_reverb_space(double x1, double x2, double y1, double y2,string reverb_id, float dry_mix, float wet_mix,float room_size, float dampping, float width)
 {
-reverb_effect rf1(x1, x2, y1, y2, reverb_id, dry_mix, wet_mix, room_size, dampping, width);
-reverb_effects.insert_last(rf1);
+reverb_space rs1(x1, x2, y1, y2, reverb_id, dry_mix, wet_mix, room_size, dampping, width);
+reverb_spaces.insert_last(rs1);
 }
-void destroy_all_reverb_effects()
+void destroy_all_reverb_spaces()
 {
-reverb_effects.resize(0);
+reverb_spaces.resize(0);
 }
 
 class reverb_target
@@ -76,7 +76,7 @@ void apply_reverb_targets(array<reverb_target@>@ targets)
 {
 for (uint i = 0; i < targets.length(); i++)
 {
-apply_reverb_effect(targets[i].x, targets[i].y, targets[i].pool);
+apply_reverb_space(targets[i].x, targets[i].y, targets[i].pool);
 }
 }
 
