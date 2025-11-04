@@ -1,0 +1,95 @@
+musicamb@[] musicambs(0);
+class musicamb
+{
+    double minx, maxx, miny, maxy;
+    int tracksound;
+    double volume;
+    double pitch;
+    string musictype;
+    bool is_playing;
+    musicamb(double mx, double mx2, double my, double my2, string mrt, double vol, double semitone)
+    {
+        minx = mx;
+        maxx = mx2;
+        miny = my;
+        maxy = my2;
+        musictype = mrt;
+        volume = vol;
+        pitch = semitone;
+        is_playing = false;
+        tracksound = musambpool.play_extended_2d(find_sound("sounds/"+soundpack+"/soundtracks/musics/" + musictype + "/*music*"), me.x, me.y, minx, miny, 0, 0, 0, 0, true, 0, 0, volume, pitch, false);
+            musambpool.update_sound_2d(tracksound, minx, miny);
+            musambpool.update_sound_range_2d(tracksound, 0, maxx - minx, 0, maxy - miny);
+            is_playing = true;
+        }
+void update(double listener_x, double listener_y)
+    {
+        bool in_range = (listener_x >= minx && listener_x <= maxx && listener_y >= miny && listener_y <= maxy);
+        if (in_range && !is_playing)
+        {
+            musambpool.resume_sound(tracksound);
+            is_playing = true;
+        }
+        else if (!in_range && is_playing)
+        {
+            musambpool.pause_sound(tracksound);
+            is_playing = false;
+        }
+    }
+}
+void update_musicambs(double listener_x, double listener_y)
+{
+    for (uint i = 0; i < musicambs.length(); i++)
+    {
+        musicambs[i].update(listener_x, listener_y);
+    }
+}
+void spawn_musicamb(double x1, double x2, double y1, double y2, string musictype, double soundvol, double soundpitch)
+{
+    musicamb amb1(x1, x2, y1, y2, musictype, soundvol, soundpitch);
+    musicambs.insert_last(amb1);
+}
+void destroy_all_musicambs()
+{
+    for (uint i = 0; i < musicambs.length(); i++)
+    {
+        musambpool.destroy_sound(musicambs[i].tracksound);
+    }
+    musicambs.resize(0);
+}
+
+musicsource@[] musicsources(0);
+class musicsource
+{
+double minx, maxx, miny, maxy;
+int tracksound;
+double volume;
+double pitch;
+string musictype;
+musicsource(double mx,double mx2,double my,double my2,string mrt,double vol,double semitone)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+musictype=mrt;
+volume=vol;
+pitch=semitone;
+tracksound=muspool.play_extended_2d(find_sound("sounds/"+soundpack+"/soundtracks/musics/"+musictype+"/*music*"),me.x,me.y,minx,miny,0,0,0,0,true,0,0,volume,pitch,false);
+muspool.update_sound_2d(tracksound,minx,miny);
+muspool.update_sound_range_2d(tracksound, 0,maxx-minx,0,maxy-miny);
+}
+}
+void spawn_musicsource(double x1,double x2,double y1,double y2,string musictype,double musvol,double muspitch)
+{
+musicsource musicsource1(x1,x2,y1,y2,musictype,musvol,muspitch);
+musicsources.insert_last(musicsource1);
+}
+void destroy_all_musicsources()
+{
+for(uint i=0; i<musicsources.length(); i++)
+{
+muspool.destroy_sound(musicsources[i].tracksound);
+}
+musicsources.resize(0);
+}

@@ -1,90 +1,237 @@
-reverb_effect@[]reverb_effects(0);
-sound_pool@[] pools;
+reverb_effect@[] reverb_effects(0);
 class reverb_effect
 {
-double minx,maxx,miny,maxy;
+double minx, maxx, miny, maxy;
 float dry_mix;
 float wet_mix;
 float room_size;
 float dampping;
 float width;
 string reverb_id;
-reverb_effect(double mx,double mx2,double my,double my2,string rd,float dm,float wm,float rs,float dp,float wt)
+reverb_effect(double mx, double mx2, double my, double my2, string rd,float dm, float wm, float rs, float dp, float wt)
 {
-minx=mx;
-maxx=mx2;
-miny=my;
-maxy=my2;
-reverb_id=rd;
-dry_mix=dm;
-wet_mix=wm;
-room_size=rs;
-dampping=dp;
-width=wt;
+minx = mx;
+maxx = mx2;
+miny = my;
+maxy = my2;
+reverb_id = rd;
+dry_mix = dm;
+wet_mix = wm;
+room_size = rs;
+dampping = dp;
+width = wt;
 }
 }
-void initialize_reverb_pools()
+string get_reverb_at(double x, double y)
 {
-pools = {p, animalpool, arropool, beltpool, bombpool, bosspool, breakerpool, ballpool, bulletpool, calpool, campool, canonpool, chainpool, clockpool, checkpool, dartpool, doorpool, foodpool, firepool, forcepool, grenadepool, humanpool, hazardpool, healpool, helperpool, itempool, knifepool, laserpool, liftpool, minepool, muspool, neadlepool, platpool, passagepool, projpool, pushpool, robpool, rockpool, rocketpool, rpgpool, saberpool, safepool, starpool, signpool, sourcepool, spikepool, telpool, turpool, vehpool, vanpool, wandpool, waterpool, zombpool};
-}
-void revfxloop()
+for (uint i = 0; i < reverb_effects.length(); i++)
 {
-bool reverb_applied=false;
-string applied_reverb_id="";
-for(uint i=0; i<reverb_effects.length(); i++)
+if (reverb_effects[i].minx <= x && reverb_effects[i].maxx >= x && reverb_effects[i].miny <= y && reverb_effects[i].maxy >= y)
 {
-if(reverb_effects[i].minx<=me.x && reverb_effects[i].maxx>=me.x && reverb_effects[i].miny<=me.y && reverb_effects[i].maxy>=me.y or reverb_effects[i].minx<=cam.x && reverb_effects[i].maxx>=cam.x && reverb_effects[i].miny<=cam.y && reverb_effects[i].maxy>=cam.y)
-{
-if(!reverb_applied)
-{
-string fxtype="$"+reverb_effects[i].reverb_id+":freeverb:"+reverb_effects[i].dry_mix+":"+reverb_effects[i].wet_mix+":"+reverb_effects[i].room_size+":"+reverb_effects[i].dampping+":"+reverb_effects[i].width;
-for(uint j=0; j<pools.length(); j++)
-{
-pools[j].mixer.set_fx(fxtype);
-}
-reverb_applied=true;
-applied_reverb_id=reverb_effects[i].reverb_id;
+return reverb_effects[i].reverb_id;
 }
 }
+return "";
 }
-if(!reverb_applied)
+void apply_reverb_effect(double x, double y, sound_pool@ pool)
 {
-for(uint j=0; j<pools.length(); j++)
+string reverb_id = get_reverb_at(x, y);
+if (reverb_id == "")
 {
-pools[j].mixer.set_fx("$");
+pool.mixer.set_fx("$");
+return;
 }
-}
-else
+for (uint i = 0; i < reverb_effects.length(); i++)
 {
-for(uint i=0; i<reverb_effects.length(); i++)
+if (reverb_effects[i].reverb_id == reverb_id)
 {
-if(reverb_effects[i].reverb_id!=applied_reverb_id)
-{
-for(uint j=0; j<pools.length(); j++)
-{
-pools[j].mixer.set_fx("$"+reverb_effects[i].reverb_id);
+string fxtype = "$" + reverb_id + ":freeverb:" + reverb_effects[i].dry_mix + ":" + reverb_effects[i].wet_mix + ":" + reverb_effects[i].room_size + ":" + reverb_effects[i].dampping + ":" + reverb_effects[i].width;
+pool.mixer.set_fx(fxtype);
+return;
 }
 }
 }
-}
-}void spawn_reverb_effect(double x1,double x2,double y1,double y2,string reverb_id,float dry_mix,float wet_mix,float room_size,float dampping,float width)
+void spawn_reverb_effect(double x1, double x2, double y1, double y2,string reverb_id, float dry_mix, float wet_mix,float room_size, float dampping, float width)
 {
-reverb_effect rf1(x1,x2,y1,y2,reverb_id,dry_mix,wet_mix,room_size,dampping,width);
+reverb_effect rf1(x1, x2, y1, y2, reverb_id, dry_mix, wet_mix, room_size, dampping, width);
 reverb_effects.insert_last(rf1);
-if(rf1.minx<=me.x && rf1.maxx>=me.x && rf1.miny<=me.y && rf1.maxy>=me.y or rf1.minx<=cam.x && rf1.maxx>=cam.x && rf1.miny<=cam.y && rf1.maxy>=cam.y)
-{
-string fxtype="$"+rf1.reverb_id+":freeverb:"+rf1.dry_mix+":"+rf1.wet_mix+":"+rf1.room_size+":"+rf1.dampping+":"+rf1.width;
-for(uint j=0; j<pools.length(); j++)
-{
-pools[j].mixer.set_fx(fxtype);
-}
-}
 }
 void destroy_all_reverb_effects()
 {
-for(uint j=0; j<pools.length(); j++)
-{
-pools[j].mixer.set_fx("$");
-}
 reverb_effects.resize(0);
+}
+
+class reverb_target
+{
+double x, y;
+sound_pool@ pool;
+reverb_target(double _x, double _y, sound_pool@ _pool)
+{
+x = _x;
+y = _y;
+@pool = @_pool;
+}
+}
+void apply_reverb_targets(array<reverb_target@>@ targets)
+{
+for (uint i = 0; i < targets.length(); i++)
+{
+apply_reverb_effect(targets[i].x, targets[i].y, targets[i].pool);
+}
+}
+
+void apply_reverb_pools()
+{
+array<reverb_target@> all_targets;
+all_targets.insert_last(reverb_target(me.x, me.y, p));
+all_targets.insert_last(reverb_target(cam.x, cam.y, campool));
+for (uint i = 0; i < animals.length(); i++)
+{
+all_targets.insert_last(reverb_target(animals[i].amx, animals[i].amy, animalpool));
+}
+for (uint i = 0; i < bodyfalls.length(); i++)
+{
+all_targets.insert_last(reverb_target(bodyfalls[i].fallx, bodyfalls[i].fally, bodypool));
+}
+for (uint i = 0; i < bullets.length(); i++)
+{
+all_targets.insert_last(reverb_target(bullets[i].bullx, bullets[i].bully, bulletpool));
+}
+for (uint i = 0; i < humans.length(); i++)
+{
+all_targets.insert_last(reverb_target(humans[i].humx, humans[i].humy, humanpool));
+}
+for (uint i = 0; i < helpers.length(); i++)
+{
+all_targets.insert_last(reverb_target(helpers[i].helpx, helpers[i].helpy, helperpool));
+}
+for (uint i = 0; i < projectiles.length(); i++)
+{
+all_targets.insert_last(reverb_target(projectiles[i].prox, projectiles[i].proy, projpool));
+}
+for (uint i = 0; i < robots.length(); i++)
+{
+all_targets.insert_last(reverb_target(robots[i].robx, robots[i].roby, robpool));
+}
+for (uint i = 0; i < turrets.length(); i++)
+{
+all_targets.insert_last(reverb_target(turrets[i].turx, turrets[i].tury, turpool));
+}
+for (uint i = 0; i < zombies.length(); i++)
+{
+all_targets.insert_last(reverb_target(zombies[i].zombx, zombies[i].zomby, zombpool));
+}
+for (uint i = 0; i < bombs.length(); i++)
+{
+all_targets.insert_last(reverb_target(bombs[i].bombx, bombs[i].bomby, bombpool));
+}
+for (uint i = 0; i < timebombs.length(); i++)
+{
+all_targets.insert_last(reverb_target(timebombs[i].timbombx, timebombs[i].timbomby, bombpool));
+}
+for (uint i = 0; i < sucams.length(); i++)
+{
+all_targets.insert_last(reverb_target(sucams[i].sucamx, sucams[i].sucamy, sucampool));
+}
+for (uint i = 0; i < checkpoints.length(); i++)
+{
+all_targets.insert_last(reverb_target(checkpoints[i].checkx, checkpoints[i].checky, checkpool));
+}
+for (uint i = 0; i < belts.length(); i++)
+{
+all_targets.insert_last(reverb_target(belts[i].minx, belts[i].miny, beltpool));
+}
+for (uint i = 0; i < doors.length(); i++)
+{
+all_targets.insert_last(reverb_target(doors[i].startx, doors[i].starty, doorpool));
+}
+for (uint i = 0; i < psdoors.length(); i++)
+{
+all_targets.insert_last(reverb_target(psdoors[i].startx, psdoors[i].starty, psdoorpool));
+}
+for (uint i = 0; i < floorbreakers.length(); i++)
+{
+all_targets.insert_last(reverb_target(floorbreakers[i].breakerx, floorbreakers[i].breakery, breakerpool));
+}
+for (uint i = 0; i < forcefields.length(); i++)
+{
+all_targets.insert_last(reverb_target(forcefields[i].minx, forcefields[i].miny, forcepool));
+}
+for (uint i = 0; i < hazards.length(); i++)
+{
+all_targets.insert_last(reverb_target(hazards[i].minx, hazards[i].miny, hazardpool));
+}
+for (uint i = 0; i < healzones.length(); i++)
+{
+all_targets.insert_last(reverb_target(healzones[i].minx, healzones[i].miny, healpool));
+}
+for (uint i = 0; i < objs.length(); i++)
+{
+all_targets.insert_last(reverb_target(objs[i].itx, objs[i].ity, itempool));
+}
+for (uint i = 0; i < moving_platforms.length(); i++)
+{
+all_targets.insert_last(reverb_target(moving_platforms[i].currentx, moving_platforms[i].currenty, platpool));
+}
+for (uint i = 0; i < lifts.length(); i++)
+{
+all_targets.insert_last(reverb_target(lifts[i].minx, lifts[i].lifty, liftpool));
+}
+for (uint i = 0; i < mines.length(); i++)
+{
+all_targets.insert_last(reverb_target(mines[i].minex, mines[i].miney, minepool));
+}
+for (uint i = 0; i < passages.length(); i++)
+{
+all_targets.insert_last(reverb_target(passages[i].startx, passages[i].starty, passagepool));
+}
+for (uint i = 0; i < pspassages.length(); i++)
+{
+all_targets.insert_last(reverb_target(pspassages[i].startx, pspassages[i].starty, pspassagepool));
+}
+for (uint i = 0; i < ambsources.length(); i++)
+{
+all_targets.insert_last(reverb_target(ambsources[i].minx, ambsources[i].miny, sourceambpool));
+}
+for (uint i = 0; i < soundsources.length(); i++)
+{
+all_targets.insert_last(reverb_target(soundsources[i].minx, soundsources[i].miny, sourcepool));
+}
+for (uint i = 0; i < musicambs.length(); i++)
+{
+all_targets.insert_last(reverb_target(musicambs[i].minx, musicambs[i].miny, musambpool));
+}
+for (uint i = 0; i < musicsources.length(); i++)
+{
+all_targets.insert_last(reverb_target(musicsources[i].minx, musicsources[i].miny, muspool));
+}
+for (uint i = 0; i < timedmusics.length(); i++)
+{
+all_targets.insert_last(reverb_target(timedmusics[i].minx, timedmusics[i].miny, timemuspool));
+}
+for (uint i = 0; i < timedsources.length(); i++)
+{
+all_targets.insert_last(reverb_target(timedsources[i].minx, timedsources[i].miny, timesourcepool));
+}
+for (uint i = 0; i < signs.length(); i++)
+{
+all_targets.insert_last(reverb_target(signs[i].signx, signs[i].signy, signpool));
+}
+for (uint i = 0; i < spikes.length(); i++)
+{
+all_targets.insert_last(reverb_target(spikes[i].minx, spikes[i].miny, spikepool));
+}
+for (uint i = 0; i < teleporters.length(); i++)
+{
+all_targets.insert_last(reverb_target(teleporters[i].telx, teleporters[i].tely, telpool));
+}
+for (uint i = 0; i < vanishing_platforms.length(); i++)
+{
+all_targets.insert_last(reverb_target(vanishing_platforms[i].minx, vanishing_platforms[i].miny, vanpool));
+}
+for (uint i = 0; i < vehicles.length(); i++)
+{
+all_targets.insert_last(reverb_target(vehicles[i].vehx, vehicles[i].vehy, vehpool));
+}
+apply_reverb_targets(@all_targets);
 }
