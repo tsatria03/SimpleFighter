@@ -22,6 +22,7 @@ void destroymap()
 destroy_all_animals();
 destroy_all_animalzones();
 destroy_all_belts();
+destroy_all_bikes();
 destroy_all_bombs();
 destroy_all_bombzones();
 destroy_all_bosses();
@@ -1000,6 +1001,14 @@ int sp=stn(sd[4]);
 string amtype=sd[5];
 spawn_animalzone(mx, mx2, y, sp, amtype);
 }
+else if(sd[0]=="bike" && sd.length()==5)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+double hp=stn(sd[3]);
+string biktyp=sd[4];
+spawn_bike(x, y, hp, hp, biktyp);
+}
 else if(sd[0]=="bomb" && sd.length()==6)
 {
 int x=stn(sd[1]);
@@ -1862,8 +1871,8 @@ void fallcheck()
 if(jumping==0 && falling==false && (gmt(me.x,me.y)==""||gmt(me.x,me.y)=="air") && doormove==false && psdoormove==false and me.y>miny)
 {
 falling=true;
-if(charfallsound==1 and me.y>7 or me.y<=0) fallslot=p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*fall*"),false);
-if(charfallsound2==1 and me.y>7 or me.y<=0) fallslot=p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*plummet*"),false);
+if((charfallsound==1 && !onbike) && (me.y > 7 || me.y <= 0)) fallslot = p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*fall*"), false);
+if((charfallsound2==1 && !onbike) && (me.y > 7 || me.y <= 0)) fallslot = p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*plummet*"), false);
 }
 if(falling)
 {
@@ -1906,7 +1915,10 @@ if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
 if(fallcounter>=0) p.destroy_sound(fallslot);
 if(shieldhitsound==1 and fallcounter>=8 and shieldon==1) shieldslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch);
 if(charhurtsound==1 and fallcounter>=8 and shieldon==0) painslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
-if(fallcounter<=7) playland();
+if(fallcounter<=7)
+{
+playland();
+}
 else if(fallcounter>7)
 {
 playfall();

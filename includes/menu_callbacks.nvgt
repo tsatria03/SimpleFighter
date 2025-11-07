@@ -1120,6 +1120,58 @@ if(defsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/npc/anim
 }
 return 0;
 }
+string bikesmenu()
+{
+string[] biketypes=find_directories("sounds/"+soundpack+"/objects/bikes/*");
+setupmenu();
+m.set_callback(@bikes_callback,"");
+for (uint i=0; i<biketypes.length(); i++)
+{
+m.add_item_tts(biketypes[i],biketypes[i],"",true);
+}
+int mres=m.run("bikes menu", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=biketypes.length())
+{
+biktyp=biketypes[mres-1];
+}
+return m.get_item_name(mres);
+}
+int bikes_callback(dynamic_menu_pro@ m, string data)
+{
+string biketype;
+if(m.menu_position>0)
+biketype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+string[] hitsfx=find_files("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/*hurt*");
+if(hitsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/"+hitsfx[random(0,hitsfx.length()-1)],false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+string[] hitsfx=find_files("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/*hurt*");
+if(hitsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/"+hitsfx[random(0,hitsfx.length()-1)],false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+string[] namesfx=find_files("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/*becon*");
+if(namesfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/"+namesfx[random(0,namesfx.length()-1)],false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+string[] defsfx=find_files("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/*death*");
+if(defsfx.length()!=0) prevslot=t.play_stationary("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/"+defsfx[random(0,defsfx.length()-1)],false);
+}
+return 0;
+}
 string bombsmenu()
 {
 string[] bombtype=find_directories("sounds/"+soundpack+"/objects/bombs/*");

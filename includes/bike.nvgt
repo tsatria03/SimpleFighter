@@ -1,0 +1,462 @@
+string[]unbikable={"swamp", "marsh", "deepwater", "underwater", "debris", "rubble", "fire", "branch", "tree"};
+bool onbike;
+bike@[]bikes(0);
+class bike
+{
+bool moveable;
+int bellsound, bikesound, changesound, crashsound, defsound, hurtsound, speedsound, radarsound, turnsound, stucksound;
+double bikehealth;
+double bikemaxhealth;
+int bikex;
+int bikey;
+int bikedir;
+int bikespeed;
+int biketime;
+string lasttile = "";
+string biketype;
+timer biketimer;
+bike(int bkx,int bky,double hp,double maxhp,string bkt)
+{
+bikex=bkx;
+bikey=bky;
+bikehealth=hp;
+bikemaxhealth=maxhp;
+biketype=bkt;
+onbike=false;
+bikesound=bikepool.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/bikes/"+biketype+"/misc/*becon*"),me.x,me.y,bikex,bikey,0,0,0,0,true,0,0,bikevolume,bikepitch,false);
+bikepool.update_sound_2d(bikesound,bikex,bikey);
+}
+}
+void bikeloop()
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+if(key_down(KEY_RIGHT) and bikes[i].biketimer.elapsed>=bikes[i].biketime and bikes[i].moveable==true)
+{
+if(facing=="right"==false)
+{
+bikepool.destroy_sound(bikes[i].turnsound);
+bikes[i].turnsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*turn*"),false,0,0,bikevolume,bikepitch,false);
+facing="right";
+speak(facing);
+bikes[i].bikedir=1;
+bikes[i].biketimer.restart();
+}
+else
+{
+string nexttile = gmt(me.x + 5, me.y);
+if (!is_bikable(nexttile))
+{
+speak("You can't bike here!");
+bikes[i].biketimer.restart();
+return;
+}
+me.x+=5;
+bikes[i].bikex+=5;
+check_radar(bikes[i].bikedir, @bikes[i]);
+string current_tile = identify_biketile(gmt(me.x, me.y));
+if (bikes[i].lasttile != current_tile)
+{
+bikepool.destroy_sound(bikes[i].changesound);
+bikes[i].changesound=bikepool.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/bikes/" + bikes[i].biketype + "/misc/*change*"), false, 0, 0, bikevolume, bikepitch, false);
+bikes[i].lasttile = current_tile;
+}
+bikes[i].bikesound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,bikevolume,bikepitch,false);
+bikes[i].biketimer.restart();
+}
+}
+if(key_down(KEY_LEFT) and bikes[i].biketimer.elapsed>=bikes[i].biketime and bikes[i].moveable==true)
+{
+if(facing=="left"==false)
+{
+bikepool.destroy_sound(bikes[i].turnsound);
+bikes[i].turnsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*turn*"),false,0,0,bikevolume,bikepitch,false);
+facing="left";
+speak(facing);
+bikes[i].bikedir=0;
+bikes[i].biketimer.restart();
+}
+else
+{
+string prevtile = gmt(me.x - 5, me.y);
+if (!is_bikable(prevtile))
+{
+speak("You can't bike here!");
+bikes[i].biketimer.restart();
+return;
+}
+me.x-=5;
+bikes[i].bikex-=5;
+check_radar(bikes[i].bikedir, @bikes[i]);
+string current_tile = identify_biketile(gmt(me.x, me.y));
+if (bikes[i].lasttile != current_tile)
+{
+bikepool.destroy_sound(bikes[i].changesound);
+bikes[i].changesound=bikepool.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/bikes/" + bikes[i].biketype + "/misc/*change*"), false, 0, 0, bikevolume, bikepitch, false);
+bikes[i].lasttile = current_tile;
+}
+bikes[i].bikesound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,bikevolume,bikepitch,false);
+bikes[i].biketimer.restart();
+}
+}
+if(me.x==bikes[i].bikex and me.y==bikes[i].bikey and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+if(bikes[i].moveable==false)
+{
+cammable=false;
+jumpable=false;
+moveable=false;
+speedable=false;
+spiable=false;
+sittable=false;
+turnable=false;
+telable=false;
+bikepool.destroy_sound(bikes[i].bikesound);
+bikes[i].bikesound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*start*"),false,0,0,bikevolume,bikepitch,false);
+speak("bike started");
+facing="right";
+bikes[i].bikedir=1;
+bikes[i].bikespeed=5;
+onbike=true;
+bikes[i].moveable=true;
+}
+else if(bikes[i].moveable==true)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+bikepool.destroy_sound(bikes[i].bikesound);
+bikes[i].bikesound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*stop*"),false,0,0,bikevolume,bikepitch,false);
+speak("bike stopped");
+facing="left";
+bikes[i].bikedir=0;
+bikes[i].bikespeed=5;
+onbike=false;
+bikes[i].moveable=false;
+}
+}
+if(key_pressed(KEY_SPACE) and bikes[i].moveable==true and paused==0)
+{
+bikepool.destroy_sound(bikes[i].bellsound);
+bikes[i].bellsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*bell*"),true,0,0,bikevolume,bikepitch,false);
+}
+if(spiable==false)
+{
+if(key_pressed(KEY_UP) and bikes[i].bikespeed!=10 and bikes[i].moveable==true and paused==0)
+{
+bikepool.destroy_sound(bikes[i].speedsound);
+bikes[i].speedsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*speed*"),false,0,0,bikevolume,bikepitch,false);
+speak(bikes[i].bikespeed+1);
+bikes[i].bikespeed+=1;
+}
+if(key_pressed(KEY_DOWN) and bikes[i].bikespeed!=1 and bikes[i].moveable==true and paused==0)
+{
+bikepool.destroy_sound(bikes[i].speedsound);
+bikes[i].speedsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*speed*"),false,0,0,bikevolume,bikepitch,false);
+speak(bikes[i].bikespeed-1);
+bikes[i].bikespeed-=1;
+}
+}
+if(paused==1)
+{
+bikepool.pause_sound(bikes[i].bikesound);
+}
+else
+{
+bikepool.resume_sound(bikes[i].bikesound);
+}
+if(bikes[i].bikespeed>=1)
+{
+bikes[i].biketime=1500/bikes[i].bikespeed;
+}
+if(me.x <= 0 && bikes[i].bikex <= 0)
+{
+if(bikes[i].bikespeed>=1 and bikes[i].bikespeed<=5)
+{
+bikes[i].stucksound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*stuck*"),false,0,0,bikevolume,bikepitch,false);
+facing="right";
+bikes[i].bikedir=1;
+me.x+=5;
+bikes[i].bikex+=5;
+bikes[i].biketimer.restart();
+}
+else if(bikes[i].bikespeed>=6 and bikes[i].bikespeed<=10)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+bikepool.destroy_sound(bikes[i].bellsound);
+bikepool.destroy_sound(bikes[i].stucksound);
+bikepool.destroy_sound(bikes[i].bikesound);
+bikes[i].crashsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*crash*"),false,0,0,bikevolume,bikepitch,false);
+bikes[i].bikespeed=5;
+onbike=false;
+bikes[i].moveable=false;
+bikes.remove_at(i);
+return;
+}
+}
+if(me.x >= maxx && bikes[i].bikex >= maxx)
+{
+if(bikes[i].bikespeed>=1 and bikes[i].bikespeed<=5)
+{
+bikes[i].stucksound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*stuck*"),false,0,0,bikevolume,bikepitch,false);
+facing="left";
+bikes[i].bikedir=0;
+me.x-=5;
+bikes[i].bikex-=5;
+bikes[i].biketimer.restart();
+}
+else if(bikes[i].bikespeed>=6 and bikes[i].bikespeed<=10)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+bikepool.destroy_sound(bikes[i].bellsound);
+bikepool.destroy_sound(bikes[i].stucksound);
+bikepool.destroy_sound(bikes[i].bikesound);
+bikes[i].crashsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*crash*"),false,0,0,bikevolume,bikepitch,false);
+bikes[i].bikespeed=5;
+onbike=false;
+bikes[i].moveable=false;
+bikes.remove_at(i);
+return;
+}
+}
+if (check_wall_left(me.x, me.y, bikes[i].bikespeed))
+{
+if(bikes[i].bikespeed>=1 and bikes[i].bikespeed<=5)
+{
+bikes[i].stucksound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*stuck*"),false,0,0,bikevolume,bikepitch,false);
+facing="right";
+bikes[i].bikedir=1;
+me.x+=5;
+bikes[i].bikex+=5;
+bikes[i].biketimer.restart();
+}
+else if(bikes[i].bikespeed>=6 and bikes[i].bikespeed<=10)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+bikepool.destroy_sound(bikes[i].bellsound);
+bikepool.destroy_sound(bikes[i].stucksound);
+bikepool.destroy_sound(bikes[i].bikesound);
+bikes[i].crashsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*crash*"),false,0,0,bikevolume,bikepitch,false);
+bikes[i].bikespeed=5;
+onbike=false;
+bikes[i].moveable=false;
+bikes.remove_at(i);
+return;
+}
+}
+if (check_wall_right(me.x, me.y, bikes[i].bikespeed))
+{
+if(bikes[i].bikespeed>=1 and bikes[i].bikespeed<=5)
+{
+bikes[i].stucksound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*stuck*"),false,0,0,bikevolume,bikepitch,false);
+facing="left";
+bikes[i].bikedir=0;
+me.x-=5;
+bikes[i].bikex-=5;
+bikes[i].biketimer.restart();
+}
+else if(bikes[i].bikespeed>=6 and bikes[i].bikespeed<=10)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+bikepool.destroy_sound(bikes[i].bellsound);
+bikepool.destroy_sound(bikes[i].stucksound);
+bikepool.destroy_sound(bikes[i].bikesound);
+bikes[i].crashsound=bikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*crash*"),false,0,0,bikevolume,bikepitch,false);
+bikes[i].bikespeed=5;
+onbike=false;
+bikes[i].moveable=false;
+bikes.remove_at(i);
+return;
+}
+}
+if(bikes[i].bikehealth<=0)
+{
+cammable=true;
+jumpable=true;
+moveable=true;
+speedable=true;
+spiable=true;
+sittable=true;
+turnable=true;
+telable=true;
+bikepool.destroy_sound(bikes[i].bellsound);
+bikepool.destroy_sound(bikes[i].stucksound);
+bikepool.destroy_sound(bikes[i].bikesound);
+bikes[i].defsound=bikepool.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/bikes/"+bikes[i].biketype+"/misc/*death*"),me.x,me.y,bikes[i].bikex,bikes[i].bikey,0,0,0,0,false,0,0,bikevolume,bikepitch,false);
+bikes[i].bikespeed=5;
+onbike=false;
+bikes[i].moveable=false;
+bikes.remove_at(i);
+return;
+}
+}
+}
+void spawn_bike(int x,int y,double hp,double maxhp,string biketype)
+{
+bike bk1(x,y,hp,maxhp,biketype);
+bikes.insert_last(bk1);
+}
+void destroy_all_bikes()
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+bikepool.destroy_sound(bikes[i].bellsound);
+bikepool.destroy_sound(bikes[i].bikesound);
+}
+bikes.resize(0);
+}
+
+bool is_bikable(string tile)
+{
+if (tile == "") return false;
+for (uint i = 0; i < unbikable.length(); i++)
+{
+if (string_contains(tile, unbikable[i], 1) > -1)
+return false;
+}
+return true;
+}
+bool check_wall_left(double x, double y, double speed)
+{
+for (int offset = 1; offset <= speed; offset++)
+{
+double px = x - offset;
+if (dest_wall_in_bounds(px, y) || string_contains(gmt(px, y), "wall", 1) > -1 || gmt(px, y) == "")
+return true;
+}
+return false;
+}
+bool check_wall_right(double x, double y, double speed)
+{
+for (int offset = 0; offset <= speed; offset++)
+{
+double px = x + offset;
+if (dest_wall_in_bounds(px-5, y) || string_contains(gmt(px-5, y), "wall", 1) > -1 || gmt(px-5, y) == "")
+return true;
+}
+return false;
+}
+bool dest_wall_in_bounds(double x, double y)
+{
+for (uint j = 0; j < dest_walls.length(); j++)
+{
+if (x >= dest_walls[j].minx && x <= dest_walls[j].maxx && y >= dest_walls[j].miny && y <= dest_walls[j].maxy)
+{
+return true;
+}
+}
+return false;
+}
+
+string identify_biketile(string tile)
+{
+if(string_contains(tile,"rock",1)>-1)
+{
+return "rock";
+}
+if(string_contains(tile,"ash",1)>-1)
+{
+return "ash";
+}
+if(string_contains(tile,"bridge",1)>-1)
+{
+return "bridge";
+}
+if(string_contains(tile,"grate",1)>-1)
+{
+return "grate";
+}
+if(string_contains(tile,"fence",1)>-1)
+{
+return "fence";
+}
+if(string_contains(tile,"dirt",1)>-1)
+{
+return "dirt";
+}
+if(string_contains(tile,"water",1)>-1)
+{
+return "water";
+}
+if(string_contains(tile,"mud",1)>-1)
+{
+return "mud";
+}
+if(string_contains(tile,"metal",1)>-1)
+{
+return "metal";
+}
+if(string_contains(tile,"grass",1)>-1)
+{
+return "grass";
+}
+if(string_contains(tile,"gravel",1)>-1)
+{
+return "gravel";
+}
+if(string_contains(tile,"wood",1)>-1 and tile!="wood_pile")
+{
+return "wood";
+}
+if(string_contains(tile,"leaves",1)>-1 or string_contains(tile,"weed",1)>-1 or string_contains(tile,"brush",1)>-1)
+{
+return "weeds";
+}
+else return "misc";
+}
+
+void check_radar(int dir, bike@ bk)
+{
+int step = (dir == 0) ? -1 : 1;
+for (uint i = 0; i <= 25; i++)
+{
+double check_x = me.x + (i * step);
+string tile = gmt(check_x, me.y);
+if (string_contains(tile, "wall", 1) > -1 || tile == "")
+{
+bk.radarsound = bikepool.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/bikes/" + bk.biketype + "/misc/*radar*"), false, 0, 0, bikevolume, bikepitch, false);
+break;
+}
+for (uint j = 0; j < dest_walls.length(); j++)
+{
+if (check_x >= dest_walls[j].minx && check_x <= dest_walls[j].maxx && me.y    >= dest_walls[j].miny && me.y    <= dest_walls[j].maxy)
+{
+bk.radarsound = bikepool.play_stationary_extended(find_sound("sounds/" + soundpack + "/objects/bikes/" + bk.biketype + "/misc/*radar*"), false, 0, 0, bikevolume, bikepitch, false);
+break;
+}
+}
+}
+}

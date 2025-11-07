@@ -3,6 +3,7 @@ void buildmenu()
 setupmenu();
 m.add_item_tts("animal", "an");
 m.add_item_tts("animal zone", "az");
+m.add_item_tts("bike", "bk");
 m.add_item_tts("blockage", "bl");
 m.add_item_tts("bomb", "bm");
 m.add_item_tts("bomb zone", "bz");
@@ -369,6 +370,42 @@ mapdata=mapper.read();
 mapper.write("\r\n"+"blockage "+x+" "+paxx+" "+y+" "+paxy+" "+txt);
 mapper.close();
 spawn_blockage(x, paxx, y, paxy, txt);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="bk")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this bike.");
+string my=vd.input_box("","Enter the y of this bike.");
+string hp=vd.input_box("","Enter the health of this bike. Press enter to use the default health.", "1");
+if(x=="" and y=="" and minhp=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+string[] bike=find_directories("sounds/"+soundpack+"/objects/bikes/*");
+if(bike.length()==0)
+{
+dlg_snd("Error. There are no bikes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=bikesmenu();
+if(res!="")
+{
+biktyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"bike "+x+" "+y+" "+minhp+" "+biktyp);
+mapper.close();
+spawn_bike(x, y, minhp, minhp, vehtyp);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
@@ -1159,9 +1196,6 @@ spawn_door(x2, y2, x, y, minhp, minhp, speedtime, looptyp, movtyp, opentyp, clos
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
-}
-if(mres23==2)
-{
 }
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
@@ -3685,38 +3719,6 @@ txt=mtext;
 x2=string_to_number(dx);
 y2=string_to_number(dy);
 txt2=dtext;
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound="menu1.ogg";
-m.enter_sound="menu2.ogg";
-m.open_sound="menu3.ogg";
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Would you like to automatically build the opposite side of this travelpoint?",true);
-if(mres==0)
-{
-speak("canceled");
-return;
-}
-if(mres==1)
-{
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string mtext2=vd.input_box("","Enter the destenation map of this travelpoint to go back to.");
-if(txt3=="")
-return;
-txt3=mtext2;
-resume_pools();
-mapper.open("data/maps/"+txt2+".map","ab");
-mapdata=mapper.read();
-mapper.write("\r\n"+"travelpoint "+x2+" "+x2+" "+y2+" "+y2+" "+txt3+" "+x+" "+y+" "+txt2);
-mapper.close();
-spawn_travelpoint(x2, x2, y2, y2, txt3, x, y, txt2);
-load_map(mapmode, mapname, mapowner);
-mpool.play_stationary("mapupdate.ogg",false);
-speak("Map updated.");
-}
-if(mres==2)
-{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -3726,7 +3728,6 @@ spawn_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
-}
 }
 if(buildem=="tt")
 {
