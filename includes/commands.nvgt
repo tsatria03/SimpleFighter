@@ -426,12 +426,13 @@ coms.close();
 string content = string_replace(comsplit, "\r\n", "\n", true);
 array<string> lines = content.split("\n");
 setupmenu(false);
-m.add_item_tts("Total commands " + lines.length() + ".");
+m.add_item_tts("These are the available commands you can use in the builder part of the game.");
 for(uint i=0; i<lines.length(); i++)
 {
 m.add_item_tts(lines[i], lines[i]);
 }
-int mres=m.run("Help menu. These are the available commands you can use in the builder part of the game.",true);
+m.add_item_tts("Total commands: " + lines.length() + ".");
+int mres=m.run("Help menu.",true);
 string comhp=m.get_item_name(mres);
 if(mres==0)
 {
@@ -662,8 +663,32 @@ else if (base_command == "relmap")
 {
 if (parsed.length() == 1)
 {
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to reload the current map?",true);
+if(mres==0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+resume_pools();
 load_map(mapmode, mapname, mapowner);
 speak("map reloaded");
+}
+if(mres==2)
+{
+resume_pools();
+speak("canceled");
+return;
+}
 }
 else
 {

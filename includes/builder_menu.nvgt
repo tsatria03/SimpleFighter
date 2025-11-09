@@ -15,6 +15,8 @@ m.add_item_tts("conveyor belt", "cb");
 m.add_item_tts("destroyable wall", "dlw");
 m.add_item_tts("dialog", "dlg");
 m.add_item_tts("door", "ds");
+m.add_item_tts("elevator", "elv");
+m.add_item_tts("elevator floor", "elvf");
 m.add_item_tts("floor breaker", "fbr");
 m.add_item_tts("force field", "fld");
 m.add_item_tts("hazard", "hd");
@@ -811,7 +813,7 @@ vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@
 string mx=vd.input_box("","Enter the x of this calander.");
 string my=vd.input_box("","Enter the y of this calander.");
 vd.set_disallowed_chars("", false, "This character is not allowed.");
-string text=vd.input_box("","Enter the text of this calander.");
+string text=vd.input_box("","Enter the text of this calander. Press enter to use the default text.", "The date is ");
 if(x=="" and y=="" and txt=="")
 return;
 x=string_to_number(mx);
@@ -869,7 +871,7 @@ vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@
 string mx=vd.input_box("","Enter the x of this clock.");
 string my=vd.input_box("","Enter the y of this clock.");
 vd.set_disallowed_chars("", false, "This character is not allowed.");
-string text=vd.input_box("","Enter the text of this clock.");
+string text=vd.input_box("","Enter the text of this clock. Press enter to use the default text.", "The time is ");
 if(x=="" and y=="" and txt=="")
 return;
 x=string_to_number(mx);
@@ -1209,6 +1211,149 @@ load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
 }
+if(buildem=="elv")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this elevator.");
+string my=vd.input_box("","Enter the y of this elevator.");
+string sp=vd.input_box("","Enter the speed of this elevator.");
+string text=vd.input_box("","Enter the menu text of this elevator. Press enter to use the default menu text.", "Choose the floor you'd like to go to.");
+if(x=="" and y=="" and speedtime=="" and txt=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+txt=text;
+string[] eldloop=find_directories("sounds/"+soundpack+"/objects/elevators/loop/*");
+if(eldloop.length()==0)
+{
+dlg_snd("Error. There are no elevator loops available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=eldloopsmenu();
+if(res!="")
+{
+ellooptyp=res;
+}
+}
+string[] eldmove=find_directories("sounds/"+soundpack+"/objects/elevators/move/*");
+if(eldmove.length()==0)
+{
+dlg_snd("Error. There are no elevator moves available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res2=eldmovesmenu();
+if(res2!="")
+{
+elmovtyp=res2;
+}
+}
+string[] eldopen=find_directories("sounds/"+soundpack+"/objects/elevators/open/*");
+if(eldopen.length()==0)
+{
+dlg_snd("Error. There are no elevator opens available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res3=eldopensmenu();
+if(res3!="")
+{
+elopentyp=res3;
+}
+}
+string[] eldclose=find_directories("sounds/"+soundpack+"/objects/elevators/close/*");
+if(eldclose.length()==0)
+{
+dlg_snd("Error. There are no elevator closes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res4=eldclosesmenu();
+if(res4!="")
+{
+elclostyp=res4;
+}
+}
+string[] elbeeptype=find_directories("sounds/"+soundpack+"/objects/elevators/beep/*");
+if(elbeeptype.length()==0)
+{
+dlg_snd("Error. There are no elevator beeps available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res5=elbeepsmenu();
+if(res5!="")
+{
+elbeeptyp=res5;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound="menu1.ogg";
+m.enter_sound="menu2.ogg";
+m.open_sound="menu3.ogg";
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres27=m.run("Do you want the elevator floors to be spoken?",true);
+if(mres27==0)
+{
+speak("canceled");
+return;
+}
+if(mres27==1)
+{
+fls=true;
+}
+if(mres27==2)
+{
+fls=false;
+}
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"elevator "+x+" "+y+" "+speedtime+" "+txt+" "+ellooptyp+" "+elmovtyp+" "+elopentyp+" "+elclostyp+" "+elbeeptyp+" "+fls);
+mapper.close();
+spawn_elevator(x, y, speedtime, txt, ellooptyp, elmovtyp, elopentyp, elclostyp, elbeeptyp, fls);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
+if(buildem=="elvf")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this elevator floor.");
+string mx2=vd.input_box("","Enter the maximum x of this elevator floor.");
+string my=vd.input_box("","Enter the y of this elevator floor.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string text=vd.input_box("","Enter the text of this elevator floor.");
+if(x=="" and paxx=="" and y=="" and txt=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+txt=text;
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"el_floor "+x+" "+paxx+" "+y+" "+txt);
+mapper.close();
+spawn_el_floor(x, paxx, y, txt);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+}
 if(buildem=="ld")
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
@@ -1218,6 +1363,7 @@ string nx=vd.input_box("","Enter the finishing x of this lockable door.");
 string ny=vd.input_box("","Enter the finishing y of this lockable door.");
 string hp=vd.input_box("","Enter the health of this lockable door. Press enter to use the default health.", "1");
 string sp=vd.input_box("","Enter the speed of this lockable door.");
+vd.set_disallowed_chars("", false, "This character is not allowed.");
 string ps=vd.input_box("","Enter the password of this lockable door.");
 if(x=="" and y=="" and x2=="" and y2=="" and minhp=="" and speedtime=="" and drpassword=="")
 return;
@@ -1370,9 +1516,6 @@ load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
 }
-if(mres23==2)
-{
-}
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -1390,14 +1533,12 @@ string sx=vd.input_box("","Enter the starting x of this passage.");
 string sy=vd.input_box("","Enter the starting y of this passage.");
 string dr=vd.input_box("","Enter the direction of this passage. 1 for left to right, and 2 for botum to top.");
 string lk=vd.input_box("","Enter the maximum length of this passage.");
-string sp=vd.input_box("","Enter the opening time of this passage.");
-if(x=="" and y=="" and direction=="" and ln=="" and speedtime=="")
+if(x=="" and y=="" and direction=="" and ln=="")
 return;
 x=string_to_number(sx);
 y=string_to_number(sy);
 direction=string_to_number(dr);
 ln=string_to_number(lk);
-speedtime=string_to_number(sp);
 string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
 if(platform.length()==0)
 {
@@ -1459,16 +1600,18 @@ clostyp=res3;
 }
 }
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("","Enter the opening time of this passage.");
 string sp2=vd.input_box("","Enter the closing time of this passage.");
-if(speedtime2=="")
+if(speedtime=="" and speedtime2=="")
 return;
+speedtime=string_to_number(sp);
 speedtime2=string_to_number(sp);
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"passage "+x+" "+y+" "+direction+" "+ln+" "+speedtime+" "+tiletype+" "+looptyp+" "+opentyp+" "+clostyp+" "+speedtime2);
+mapper.write("\r\n"+"passage "+x+" "+y+" "+direction+" "+ln+" "+tiletype+" "+looptyp+" "+opentyp+" "+clostyp+" "+speedtime+" "+speedtime2);
 mapper.close();
-spawn_passage(x, y, direction, ln, speedtime, tiletype, looptyp, opentyp, clostyp, speedtime2);
+spawn_passage(x, y, direction, ln, tiletype, looptyp, opentyp, clostyp, speedtime, speedtime2);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
@@ -1480,14 +1623,12 @@ string sx=vd.input_box("","Enter the starting x of this lockable passage.");
 string sy=vd.input_box("","Enter the starting y of this lockable passage.");
 string dr=vd.input_box("","Enter the direction of this lockable passage. 1 for left to right, and 2 for botum to top.");
 string lk=vd.input_box("","Enter the maximum length of this lockable passage.");
-string sp=vd.input_box("","Enter the opening time of this lockable passage.");
-if(x=="" and y=="" and direction=="" and ln=="" and speedtime=="")
+if(x=="" and y=="" and direction=="" and ln=="")
 return;
 x=string_to_number(sx);
 y=string_to_number(sy);
 direction=string_to_number(dr);
 ln=string_to_number(lk);
-speedtime=string_to_number(sp);
 string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
 if(platform.length()==0)
 {
@@ -1548,19 +1689,22 @@ if(res3!="")
 clostyp=res3;
 }
 }
+vd.set_disallowed_chars("", false, "This character is not allowed.");
 string ps=vd.input_box("","Enter the password of this lockable passage.");
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("","Enter the opening time of this lockable passage.");
 string sp2=vd.input_box("","Enter the closing time of this lockable passage.");
-if(pspassword=="" and speedtime2=="")
+if(pspassword=="" and speedtime=="" and speedtime2=="")
 return;
 pspassword=ps;
-speedtime2=string_to_number(sp);
+speedtime=string_to_number(sp);
+speedtime2=string_to_number(sp2);
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"pspassage "+x+" "+y+" "+direction+" "+ln+" "+speedtime+" "+tiletype+" "+looptyp+" "+opentyp+" "+clostyp+" "+pspassword+" "+speedtime2);
+mapper.write("\r\n"+"pspassage "+x+" "+y+" "+direction+" "+ln+" "+tiletype+" "+looptyp+" "+opentyp+" "+clostyp+" "+pspassword+" "+speedtime+" "+speedtime2);
 mapper.close();
-spawn_pspassage(x, y, direction, ln, speedtime, tiletype, looptyp, opentyp, clostyp, pspassword, speedtime2);
+spawn_pspassage(x, y, direction, ln, tiletype, looptyp, opentyp, clostyp, pspassword, speedtime, speedtime2);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");

@@ -3,13 +3,9 @@ void clearmap()
 destroy_all_ambsources();
 destroy_all_blockages();
 destroy_all_dest_walls();
-destroy_all_doors();
 destroy_all_musicambs();
 destroy_all_musicsources();
 destroy_all_platforms();
-destroy_all_psdoors();
-destroy_all_pspassages();
-destroy_all_passages();
 destroy_all_reverb_spaces();
 destroy_all_soundsources();
 destroy_all_spawnpoints();
@@ -32,6 +28,9 @@ destroy_all_cameras();
 destroy_all_checkpoints();
 destroy_all_clocks();
 destroy_all_dialogs();
+destroy_all_doors();
+destroy_all_el_floors();
+destroy_all_elevators();
 destroy_all_humans();
 destroy_all_humanzones();
 destroy_all_floorbreakers();
@@ -46,6 +45,9 @@ destroy_all_moving_hazards();
 destroy_all_moving_platforms();
 destroy_all_objs();
 destroy_all_objzones();
+destroy_all_psdoors();
+destroy_all_passages();
+destroy_all_pspassages();
 destroy_all_projectiles();
 destroy_all_projzones();
 destroy_all_robots();
@@ -480,19 +482,41 @@ bool amt=string_to_bool(sd[13]);
 bool dbl=string_to_bool(sd[14]);
 spawn_psdoor(sx, sy, sx2, sy2, hp, hp, sp, drpass, lotype, motype, optype, cotype, dotype, amt, dbl);
 }
+else if(sd[0]=="elevator" && sd.length()>=11)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int sp=stn(sd[3]);
+string txt=join_string_array(sd, 4, sd.length()-6);
+string ellotype=sd[sd.length()-6];
+string elmotype=sd[sd.length()-5];
+string eloptype=sd[sd.length()-4];
+string elcotype=sd[sd.length()-3];
+string elbetype=sd[sd.length()-2];
+bool fsp=string_to_bool(sd[sd.length()-1]);
+spawn_elevator(x, y, sp, txt, ellotype, elmotype, eloptype, elcotype, elbetype, fsp);
+}
+else if(sd[0]=="el_floor" && sd.length()>=5)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+string txt=join_string_array(sd, 4, sd.length());
+spawn_el_floor(mx, mx2, y, txt);
+}
 else if(sd[0]=="passage" && sd.length()==11)
 {
 int sx=stn(sd[1]);
 int sy=stn(sd[2]);
 int dir=stn(sd[3]);
 int lt=stn(sd[4]);
-int sp=stn(sd[5]);
-string tiletype=sd[6];
-string lotype=sd[7];
-string optype=sd[8];
-string cotype=sd[9];
+string tiletype=sd[5];
+string lotype=sd[6];
+string optype=sd[7];
+string cotype=sd[8];
+int sp=stn(sd[9]);
 int sp2=stn(sd[10]);
-spawn_passage(sx, sy, dir, lt, sp, tiletype, lotype, optype, cotype, sp2);
+spawn_passage(sx, sy, dir, lt, tiletype, lotype, optype, cotype, sp, sp2);
 }
 else if(sd[0]=="pspassage" && sd.length()==12)
 {
@@ -500,14 +524,14 @@ int sx=stn(sd[1]);
 int sy=stn(sd[2]);
 int dir=stn(sd[3]);
 int lt=stn(sd[4]);
-int sp=stn(sd[5]);
-string tiletype=sd[6];
-string lotype=sd[7];
-string optype=sd[8];
-string cotype=sd[9];
-string pspass=sd[10];
+string tiletype=sd[5];
+string lotype=sd[6];
+string optype=sd[7];
+string cotype=sd[8];
+string pspass=sd[9];
+int sp=stn(sd[10]);
 int sp2=stn(sd[11]);
-spawn_pspassage(sx, sy, dir, lt, sp, tiletype, lotype, optype, cotype, pspass, sp2);
+spawn_pspassage(sx, sy, dir, lt, tiletype, lotype, optype, cotype, pspass, sp, sp2);
 }
 else if(sd[0]=="menu_zone" && sd.length()==5)
 {
@@ -1633,7 +1657,10 @@ safezones[i].player_in_zone = false;
 }
 for(uint i=0; i<signs.length(); i++)
 {
+if(jumping==0)
+{
 if(signs[i].looping==false) signs[i].signsound=signpool.play_2d(find_sound("sounds/"+soundpack+"/objects/signs/"+signs[i].signtype+"/*step*"),me.x,me.y,signs[i].signx,signs[i].signy,false);
+}
 }
 for(uint i=0; i<forcefields.length(); i++)
 {
@@ -1869,7 +1896,7 @@ atapex=true;
 }
 void fallcheck()
 {
-if(jumping==0 && falling==false && (gmt(me.x,me.y)==""||gmt(me.x,me.y)=="air") && doormove==false && psdoormove==false and me.y>miny)
+if(jumping==0 && falling==false && (gmt(me.x,me.y)==""||gmt(me.x,me.y)=="air") && doormove==false && psdoormove==false  && elvmove==false && me.y>miny)
 {
 falling=true;
 if((charfallsound==1 && !onbike) && (me.y > 7 || me.y <= 0)) fallslot = p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*fall*"), false);
