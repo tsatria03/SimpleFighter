@@ -4,8 +4,11 @@ class vehicle
 {
 bool fireable, moveable;
 int beepsound, hurtsound, defsound, speedsound, vehsound, turnsound, wepsound;
+double current_pitch = 100;
 double vehhealth;
 double vehmaxhealth;
+int accel_delay;
+int brake_delay;
 int damage;
 int vehx;
 int vehy;
@@ -15,7 +18,8 @@ int vehspeed2;
 int vehtime;
 string vehtype;
 timer vehtimer;
-vehicle(int vx,int vy,double hp,double maxhp,int dm,int vsp,string vt,bool vf)
+timer slowdown_timer;
+vehicle(int vx,int vy,double hp,double maxhp,int dm,int vsp,int acs,int bcs,string vt,bool vf)
 {
 vehx=vx;
 vehy=vy;
@@ -23,9 +27,12 @@ vehhealth=hp;
 vehmaxhealth=maxhp;
 damage=dm;
 vehspeed=vsp;
+accel_delay=acs;
+brake_delay=bcs;
 vehtype=vt;
 fireable=vf;
 invehicle=false;
+slowdown_timer.restart();
 vehsound=vehpool.play_extended_2d(find_sound("sounds/"+soundpack+"/objects/vehicles/"+vehtype+"/*beacon*"),me.x,me.y,vehx,vehy,0,0,0,0,true,0,0,carvolume,carpitch,false);
 vehpool.update_sound_2d(vehsound,vehx,vehy);
 }
@@ -113,18 +120,21 @@ speak(facing);
 vehicles[i].turnsound=vehpool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/vehicles/"+vehicles[i].vehtype+"/*turn*"),false,0,0,carvolume,carpitch,false);
 vehicles[i].vehdir=1;
 }
-if(key_repeating(KEY_UP) and vehicles[i].vehspeed2!=10 and vehicles[i].moveable==true and paused==0)
-{
-vehicles[i].speedsound=vehpool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/vehicles/"+vehicles[i].vehtype+"/*speed*"),false,0,0,carvolume,carpitch,false);
-speak("speed "+(vehicles[i].vehspeed2+1));
-vehicles[i].vehspeed2+=1;
-}
-if(key_repeating(KEY_DOWN) and vehicles[i].vehspeed2!=1 and vehicles[i].moveable==true and paused==0)
-{
-vehicles[i].speedsound=vehpool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/vehicles/"+vehicles[i].vehtype+"/*speed*"),false,0,0,carvolume,carpitch,false);
-speak("speed "+(vehicles[i].vehspeed2-1));
-vehicles[i].vehspeed2-=1;
-}
+if (key_down(KEY_UP) && vehicles[i].vehspeed2 < 10 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].accel_delay && vehicles[i].moveable==true && paused==0)
+    {
+        vehicles[i].vehspeed2++;
+        vehicles[i].slowdown_timer.restart();
+    }
+    else if (key_down(KEY_DOWN) && vehicles[i].vehspeed2 > 1 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].brake_delay && vehicles[i].moveable==true && paused==0)
+    {
+        vehicles[i].vehspeed2--;
+        vehicles[i].slowdown_timer.restart();
+    }
+    else if (key_up(KEY_UP) && key_up(KEY_DOWN) && vehicles[i].vehspeed2 > 1 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].accel_delay *2 && vehicles[i].moveable==true && paused==0)
+    {
+        vehicles[i].vehspeed2--;
+        vehicles[i].slowdown_timer.restart();
+    }
 }
 if(paused==1)
 {
@@ -136,8 +146,10 @@ vehpool.resume_sound(vehicles[i].vehsound);
 }
 if(vehicles[i].vehspeed2>=1)
 {
-vehpool.update_sound_start_values(vehicles[i].vehsound,carpan, carvolume, carpitch);
-carpitch=20*vehicles[i].vehspeed2;
+double target_pitch = 50 + pow(vehicles[i].vehspeed2, 1.2) * 20;
+target_pitch = clamp(target_pitch, 50.0, 500.0);
+vehicles[i].current_pitch += (target_pitch - vehicles[i].current_pitch) * 0.1;
+vehpool.update_sound_start_values(vehicles[i].vehsound,carpan, carvolume, vehicles[i].current_pitch);
 vehicles[i].vehtime=vehicles[i].vehspeed/vehicles[i].vehspeed2;
 }
 if(me.x<=0 and vehicles[i].vehx<=0)
@@ -296,9 +308,9 @@ return;
 }
 }
 }
-void spawn_vehicle(int x,int y,double hp,double maxhp,int dm,int sp,string vehtype,bool fireable)
+void spawn_vehicle(int x,int y,double hp,double maxhp,int dm,int sp,int sp2,int sp3,string vehtype,bool fireable)
 {
-vehicle vh1(x,y,hp,maxhp,dm,sp,vehtype,fireable);
+vehicle vh1(x,y,hp,maxhp,dm,sp,sp2,sp3,vehtype,fireable);
 vehicles.insert_last(vh1);
 }
 void destroy_all_vehicles()
