@@ -12,6 +12,7 @@ m.add_item_tts("calander", "cn");
 m.add_item_tts("checkpoint", "cp");
 m.add_item_tts("clock", "cl");
 m.add_item_tts("conveyor belt", "cb");
+m.add_item_tts("command blocker", "cbl");
 m.add_item_tts("destroyable wall", "dlw");
 m.add_item_tts("dialog", "dlg");
 m.add_item_tts("door", "ds");
@@ -64,7 +65,7 @@ m.add_item_tts("wall", "wl");
 m.add_item_tts("zombie", "zb");
 m.add_item_tts("zombie zone", "zz");
 m.add_item_tts("zone", "zn");
-int mres=m.run("Builder menu",true);
+int mres=m.run("Build menu",true);
 string buildem=m.get_item_name(mres);
 if(mres==0)
 {
@@ -4242,6 +4243,107 @@ spawn_vanishing_platform(x, paxx, y, y, tiletype, volume, pitch, vplattyp, volum
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+}
+if(buildem=="cbl")
+{
+form.reset();
+form.create_window("command blocker", false);
+int mx=form.create_input_box("Enter the minimum x of this command blocker");
+int mx2=form.create_input_box("Enter the maximum x of this command blocker");
+int my=form.create_input_box("Enter the minimum y of this command blocker");
+int my2=form.create_input_box("Enter the maximum y of this command blocker");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int comlist = form.create_list("Select commands to block or allow", 0, true);
+string[] allcommands = {"changemap", "cm", "delmap", "dm", "getall", "gl", "give", "gv", "go", "gozone", "gz", "help", "hp", "invclear", "ic", "kill", "kn", "killall", "kl", "maps", "mp", "menu", "mu", "newmap", "nm", "preffs", "pf", "rawmap", "rp", "rawdata", "rd", "relchar", "rc", "relmap", "rm", "relshields", "rs", "relweps", "rw", "stats", "st"};
+for (uint i = 0; i < allcommands.length(); i++)
+{
+form.add_list_item(comlist, allcommands[i], "", -1, false);
+}
+int cw = form.create_checkbox("Enable whitelist", false);
+int comok = form.create_button("&okay",true);
+int comcn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+ctl = form.is_checked(cw);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(comcn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(comok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
+comslist.resize(0);
+        int[] selected = form.get_checked_list_items(comlist);
+        for (uint i = 0; i < selected.length(); i++)
+{
+            string cmd = form.get_list_item(comlist, selected[i]);
+            comslist.insert_last(cmd);
+        }
+        if (comslist.length() == 0)
+{
+            speak("You must select at least one command.");
+form.focus(comlist);
+continue;
+        }
+resume_pools();
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"cblocker "+x+" "+paxx+" "+y+" "+paxy+" "+string_join(comslist, ", ")+" "+ctl);
+mapper.close();
+spawn_cblocker(x, paxx, y, paxy, comslist, ctl);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary("mapupdate.ogg",false);
+speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="dlw")
 {

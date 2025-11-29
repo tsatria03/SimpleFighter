@@ -18,8 +18,9 @@ int anirange4;
 int damage;
 int animaltime;
 int firetime;
+int taunttime;
 string animaltype;
-timer animaltimer, firetimer;
+timer animaltimer, firetimer, taunttimer;
 animal(int ax,int ay,int anrange,int anrange2,int anrange3,int anrange4,double hp,double maxhp,int ac,int dm,int ft,int sp,double amlv,double axp,string at,bool amf,bool amt,bool amt2,bool dpm)
 {
 this.anihealth=hp;
@@ -43,7 +44,6 @@ moveable=amt;
 moveable2=amt2;
 dropitem=dpm;
 spawnsound=animalpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/animals/"+animaltype+"/*spawn*"),me.x,me.y,amx,amy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-amsound=animalpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/animals/"+animaltype+"/*taunt*"),me.x,me.y,amx,amy,0,0,0,0,true,0,0,painvolume,painpitch,false);
 }
 }
 void animalloop()
@@ -122,6 +122,13 @@ animals[i].stepsound = 0;
 animalpool.update_sound_2d(animals[i].amsound, animals[i].amx, animals[i].amy);
 animals[i].animaltimer.restart();
 }
+}
+if (animals[i].taunttimer.elapsed >= animals[i].taunttime)
+{
+animals[i].amsound = animalpool.play_extended_2d(find_sound("sounds/" + soundpack + "/npc/animals/" + animals[i].animaltype + "/*taunt*"), me.x, me.y, animals[i].amx, animals[i].amy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+int amdelay = round(animalpool.get_sound_length(animals[i].amsound), 0);
+animals[i].taunttime = (amdelay <= 0 ? random(500, 1000) : amdelay);
+animals[i].taunttimer.restart();
 }
 if(absolute(me.x-animals[i].amx)<=animals[i].anirange and absolute(me.y-animals[i].amy)<=animals[i].anirange2 and animals[i].firetimer.elapsed>=animals[i].firetime and animals[i].fireable==true and invehicle==false and paused==0)
 {
@@ -221,7 +228,8 @@ xp += gained_xp;
 kombatlog.insert_last(gained_xp + " experience gained. Defeated " + animals[i].animaltype + " level " + animals[i].amlevel + ".");
 }
 kills+=1;
-spawn_bodyfall(animals[i].amx, animals[i].amy, random(500,1000));
+int falldelay = round(animalpool.get_sound_length(animals[i].defsound), 0);
+spawn_bodyfall(animals[i].amx, animals[i].amy, (falldelay <= 0 ? random(500, 1000) : falldelay));
 string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
 if(healtype.length()!=0 and animals[i].dropitem==true) spawn_obj(animals[i].amx, animals[i].amy, 500, "health", random_string(healtype), true);
 if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
@@ -268,10 +276,11 @@ int firetime;
 int healtime;
 int launchtime;
 int teltime;
+int taunttime;
 string bosstype;
 string bosstype2;
 string bosstype3;
-timer bosstimer, firetimer, healtimer, launchtimer, teltimer;
+timer bosstimer, firetimer, healtimer, launchtimer, teltimer, taunttimer;
 boss(int bx,int by,int bsrange,int bsrange2,int bsrange3,int bsrange4,double hp,double maxhp,int bc,int dm,int ft,int lt,int sp,int tlt,int hlt,double blv,double bxp,string bt,string bs,string bs2,bool bf,bool bm,bool bm2,bool tb,bool tb2,bool rgp,bool dpm)
 {
 this.bossehealth=hp;
@@ -303,7 +312,6 @@ telleble2=tb2;
 regenhp=rgp;
 dropitem=dpm;
 spawnsound=bosspool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/bosses/"+bosstype+"/*spawn*"),me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-bossesound=bosspool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/bosses/"+bosstype+"/*taunt*"),me.x,me.y,bossx,bossy,0,0,0,0,true,0,0,painvolume,painpitch,false);
 }
 void regenerate_bosshp(double hp)
 {
@@ -424,6 +432,13 @@ bosspool.update_sound_2d(bosses[i].bossesound, bosses[i].bossx, bosses[i].bossy)
 bosses[i].bosstimer.restart();
 }
 }
+if (bosses[i].taunttimer.elapsed >= bosses[i].taunttime)
+{
+bosses[i].bossesound = bosspool.play_extended_2d(find_sound("sounds/" + soundpack + "/npc/bosses/" + bosses[i].bosstype + "/*taunt*"), me.x, me.y, bosses[i].bossx, bosses[i].bossy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+int bossdelay = round(bosspool.get_sound_length(bosses[i].bossesound), 0);
+bosses[i].taunttime = (bossdelay <= 0 ? random(500, 1000) : bossdelay);
+bosses[i].taunttimer.restart();
+}
 if(absolute(me.x-bosses[i].bossx)<=bosses[i].boserange and absolute(me.y-bosses[i].bossy)<=bosses[i].boserange2 and bosses[i].firetimer.elapsed>=bosses[i].firetime and bosses[i].fireable==true and invehicle==false and paused==0)
 {
 bosses[i].stepsound=0;
@@ -510,7 +525,8 @@ xp += gained_xp;
 kombatlog.insert_last(gained_xp + " experience gained. Defeated " + bosses[i].bosstype + " level " + bosses[i].bosslevel + ".");
 }
 kills+=1;
-spawn_bodyfall(bosses[i].bossx, bosses[i].bossy, random(500,1000));
+int falldelay = round(bosspool.get_sound_length(bosses[i].defsound), 0);
+spawn_bodyfall(bosses[i].bossx, bosses[i].bossy, (falldelay <= 0 ? random(500, 1000) : falldelay));
 string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
 if(healtype.length()!=0 and bosses[i].dropitem==true) spawn_obj(bosses[i].bossx, bosses[i].bossy, 500, "health", random_string(healtype), true);
 if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
@@ -555,8 +571,9 @@ int humrange4;
 int damage;
 int humantime;
 int firetime;
+int taunttime;
 string humantype, weapontype, weapontype2;
-timer humantimer, firetimer, reftimer;
+timer humantimer, firetimer, reftimer, taunttimer;
 human(int hux,int huy,int hurange,int hurange2,int hurange3,int hurange4,double hp,double maxhp,int huc,int dm,int ft,int sp,double humlv,double huxp,string hut,bool humf,bool humt,bool humt2,bool dpm)
 {
 this.humihealth=hp;
@@ -585,7 +602,6 @@ string[] weapon=find_directories("sounds/"+soundpack+"/equipments/weapons/"+weap
 weapontype2 = weapon[random(0, weapon.length() - 1)];
 drawsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*draw*"),me.x,me.y,humx,humy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
 spawnsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humantype+"/*spawn*"),me.x,me.y,humx,humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-humsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humantype+"/*taunt*"),me.x,me.y,humx,humy,0,0,0,0,true,0,0,painvolume,painpitch,false);
 if(weapontype=="melee")
 {
 wepdef = 0;
@@ -686,6 +702,13 @@ humanpool.update_sound_2d(humans[i].humsound, humans[i].humx, humans[i].humy);
 humans[i].humantimer.restart();
 }
 }
+if (humans[i].taunttimer.elapsed >= humans[i].taunttime)
+{
+humans[i].humsound = humanpool.play_extended_2d(find_sound("sounds/" + soundpack + "/npc/humans/" + humans[i].humantype + "/*taunt*"), me.x, me.y, humans[i].humx, humans[i].humy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+int humdelay = round(humanpool.get_sound_length(humans[i].humsound), 0);
+humans[i].taunttime = (humdelay <= 0 ? random(500, 1000) : humdelay);
+humans[i].taunttimer.restart();
+}
 if(absolute(me.x-humans[i].humx)<=humans[i].humrange and absolute(me.y-humans[i].humy)<=humans[i].humrange2 and humans[i].firetimer.elapsed>=humans[i].firetime and humans[i].fireable==true and invehicle==false and paused==0)
 {
 humans[i].stepsound=0;
@@ -783,7 +806,8 @@ xp += gained_xp;
 kombatlog.insert_last(gained_xp + " experience gained. Defeated " + humans[i].humantype + " level " + humans[i].humlevel + ".");
 }
 kills+=1;
-spawn_bodyfall(humans[i].humx, humans[i].humy, random(500,1000));
+int falldelay = round(humanpool.get_sound_length(humans[i].defsound), 0);
+spawn_bodyfall(humans[i].humx, humans[i].humy, (falldelay <= 0 ? random(500, 1000) : falldelay));
 string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
 if(healtype.length()!=0 and humans[i].dropitem==true) spawn_obj(humans[i].humx, humans[i].humy, 500, "health", random_string(healtype), true);
 if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
@@ -1065,7 +1089,8 @@ else if(helpers[i].helpercard<=1 and paused==0)
 helperpool.destroy_sound(helpers[i].hurtsound);
 helperpool.destroy_sound(helpers[i].helpersound);
 helpers[i].defsound=helperpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/helpers/"+helpers[i].helpertype+"/*death*"),me.x,me.y,helpers[i].helpx,helpers[i].helpy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-spawn_bodyfall(helpers[i].helpx, helpers[i].helpy, random(500,1000));
+int falldelay = round(helperpool.get_sound_length(helpers[i].defsound), 0);
+spawn_bodyfall(helpers[i].helpx, helpers[i].helpy, (falldelay <= 0 ? random(500, 1000) : falldelay));
 helpers.remove_at(i);
 return;
 }
@@ -1323,8 +1348,9 @@ int roborange4;
 int damage;
 int robottime;
 int firetime;
+int taunttime;
 string robottype;
-timer robottimer, firetimer;
+timer robottimer, firetimer, taunttimer;
 robot(int rx,int ry,int rbrange,int rbrange2,int rbrange3,int rbrange4,double hp,double maxhp,int rc,int dm,int ft,int sp,double roblv,double rxp,string rt,bool robf,bool robt,bool robt2,bool dpm)
 {
 this.robhealth=hp;
@@ -1348,7 +1374,6 @@ moveable=robt;
 moveable2=robt2;
 dropitem=dpm;
 spawnsound=robpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/robots/"+robottype+"/*spawn*"),me.x,me.y,robx,roby,0,0,0,0,false,0,0,painvolume,painpitch,false);
-robsound=robpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/robots/"+robottype+"/*taunt*"),me.x,me.y,robx,roby,0,0,0,0,true,0,0,painvolume,painpitch,false);
 }
 }
 void robloop()
@@ -1427,6 +1452,13 @@ robots[i].stepsound = 0;
 robpool.update_sound_2d(robots[i].robsound, robots[i].robx, robots[i].roby);
 robots[i].robottimer.restart();
 }
+}
+if (robots[i].taunttimer.elapsed >= robots[i].taunttime)
+{
+robots[i].robsound = robpool.play_extended_2d(find_sound("sounds/" + soundpack + "/npc/robots/" + robots[i].robottype + "/*taunt*"), me.x, me.y, robots[i].robx, robots[i].roby, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+int robdelay = round(robpool.get_sound_length(robots[i].robsound), 0);
+robots[i].taunttime = (robdelay <= 0 ? random(500, 1000) : robdelay);
+robots[i].taunttimer.restart();
 }
 if(absolute(me.x-robots[i].robx)<=robots[i].roborange and absolute(me.y-robots[i].roby)<=robots[i].roborange2 and robots[i].firetimer.elapsed>=robots[i].firetime and robots[i].fireable==true and invehicle==false and paused==0)
 {
@@ -1514,7 +1546,8 @@ xp += gained_xp;
 kombatlog.insert_last(gained_xp + " experience gained. Defeated " + robots[i].robottype + " level " + robots[i].roblevel + ".");
 }
 kills+=1;
-spawn_bodyfall(robots[i].robx, robots[i].roby, random(500,1000));
+int falldelay = round(robpool.get_sound_length(robots[i].defsound), 0);
+spawn_bodyfall(robots[i].robx, robots[i].roby, (falldelay <= 0 ? random(500, 1000) : falldelay));
 string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
 if(healtype.length()!=0 and robots[i].dropitem==true) spawn_obj(robots[i].robx, robots[i].roby, 500, "health", random_string(healtype), true);
 if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
@@ -1749,8 +1782,9 @@ int zombirange4;
 int damage;
 int zombietime;
 int firetime;
+int taunttime;
 string zombietype;
-timer zombietimer, firetimer;
+timer zombietimer, firetimer, taunttimer;
 zombie(int zx,int zy,int zbrange,int zbrange2,int zbrange3,int zbrange4,double hp,double maxhp,int zc,int dm,int ft,int sp,double zomblv,double zxp,string zt,bool zombf,bool zombt,bool zombt2,bool dpm)
 {
 this.zombhealth=hp;
@@ -1774,7 +1808,6 @@ moveable=zombt;
 moveable2=zombt2;
 dropitem=dpm;
 spawnsound=zombpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/zombies/"+zombietype+"/*spawn*"),me.x,me.y,zombx,zomby,0,0,0,0,false,0,0,painvolume,painpitch,false);
-zombsound=zombpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/zombies/"+zombietype+"/*taunt*"),me.x,me.y,zombx,zomby,0,0,0,0,true,0,0,painvolume,painpitch,false);
 }
 }
 void zombloop()
@@ -1853,6 +1886,13 @@ zombies[i].stepsound = 0;
 zombpool.update_sound_2d(zombies[i].zombsound, zombies[i].zombx, zombies[i].zomby);
 zombies[i].zombietimer.restart();
 }
+}
+if (zombies[i].taunttimer.elapsed >= zombies[i].taunttime)
+{
+zombies[i].zombsound = zombpool.play_extended_2d(find_sound("sounds/" + soundpack + "/npc/zombies/" + zombies[i].zombietype + "/*taunt*"), me.x, me.y, zombies[i].zombx, zombies[i].zomby, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+int zombdelay = round(zombpool.get_sound_length(zombies[i].zombsound), 0);
+zombies[i].taunttime = (zombdelay <= 0 ? random(500, 1000) : zombdelay);
+zombies[i].taunttimer.restart();
 }
 if(absolute(me.x-zombies[i].zombx)<=zombies[i].zombirange and absolute(me.y-zombies[i].zomby)<=zombies[i].zombirange2 and zombies[i].firetimer.elapsed>=zombies[i].firetime and zombies[i].fireable==true and invehicle==false and paused==0)
 {
@@ -1952,7 +1992,8 @@ xp += gained_xp;
 kombatlog.insert_last(gained_xp + " experience gained. Defeated " + zombies[i].zombietype + " level " + zombies[i].zomblevel + ".");
 }
 kills+=1;
-spawn_bodyfall(zombies[i].zombx, zombies[i].zomby, random(500,1000));
+int falldelay = round(zombpool.get_sound_length(zombies[i].defsound), 0);
+spawn_bodyfall(zombies[i].zombx, zombies[i].zomby, (falldelay <= 0 ? random(500, 1000) : falldelay));
 string[] healtype=find_directories("sounds/"+soundpack+"/equipments/items/unsorted/health/*");
 if(healtype.length()!=0 and zombies[i].dropitem==true) spawn_obj(zombies[i].zombx, zombies[i].zomby, 500, "health", random_string(healtype), true);
 if(charkillsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*kill*"),false);
