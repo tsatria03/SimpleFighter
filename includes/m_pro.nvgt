@@ -168,6 +168,51 @@ return "";
 return item_list[item - 1].name;
 }
 
+void find_item_by_name()
+{
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+    string query = vd.input_box("Find an item", "Enter a keyword to search for:", "");
+    if (query == "" || get_last_error() == -12)
+    {
+        speak("Cancelled.");
+        return;
+    }
+    string lower_query = string_to_lower_case(query);
+    int start_index = menu_position;
+    int item_count = item_list.length();
+    bool found = false;
+    for (int i = start_index; i < item_count; i++)
+    {
+        string name = string_to_lower_case(item_list[i].name);
+        string option = string_to_lower_case(item_list[i].option);
+        if (name.find(lower_query) != -1 || option.find(lower_query) != -1)
+        {
+            menu_position = i + 1;
+            play_click_sound();
+            speak("Item " + string(menu_position) + ": " + item_list[i].option);
+            found = true;
+            return;
+        }
+    }
+    for (int i = 0; i < start_index; i++)
+    {
+        string name = string_to_lower_case(item_list[i].name);
+        string option = string_to_lower_case(item_list[i].option);
+        if (name.find(lower_query) != -1 || option.find(lower_query) != -1)
+        {
+            menu_position = i + 1;
+            play_click_sound();
+            speak("Item " + string(menu_position) + ": " + item_list[i].option);
+            found = true;
+            return;
+        }
+    }
+    if (!found)
+    {
+        speak("No matching item found for " + query);
+    }
+}
+
 int run(string intro, bool is_intro_tts) {
 return run_extended(intro, is_intro_tts, 0, false);
 }
@@ -598,6 +643,11 @@ if(key_repeating(KEY_TAB))
             internal_sound.play();
         }
     }
+}
+if (key_repeating(KEY_F3))
+{
+    find_item_by_name();
+    continue;
 }
 if(allow_escape == true)
 {
