@@ -353,20 +353,78 @@ speak("Map updated.");
 }
 if(buildem=="bl")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum x of this blockage.");
-string mx2=vd.input_box("","Enter the maximum x of this blockage.");
-string my=vd.input_box("","Enter the minimum y of this blockage.");
-string my2=vd.input_box("","Enter the maximum y of this blockage.");
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string text=vd.input_box("","Enter the text of this blockage.");
-if(x=="" and paxx=="" and y=="" and paxy=="" and txt=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-txt=text;
+form.reset();
+form.create_window("blockage", false);
+int mx=form.create_input_box("Enter the minimum x of this blockage");
+int mx2=form.create_input_box("Enter the maximum x of this blockage");
+int my=form.create_input_box("Enter the minimum y of this blockage");
+int my2=form.create_input_box("Enter the maximum y of this blockage");
+int bltext=form.create_input_box("Enter the text of this blockage");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+txt=form.get_text(bltext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(bltext)=="")
+{
+speak("Blockage text is required.");
+form.focus(bltext);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -376,6 +434,10 @@ spawn_blockage(x, paxx, y, paxy, txt);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="bk")
 {
@@ -1333,18 +1395,69 @@ speak("Map updated.");
 }
 if(buildem=="elvf")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum x of this elevator floor.");
-string mx2=vd.input_box("","Enter the maximum x of this elevator floor.");
-string my=vd.input_box("","Enter the y of this elevator floor.");
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string text=vd.input_box("","Enter the text of this elevator floor.");
-if(x=="" and paxx=="" and y=="" and txt=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-txt=text;
+form.reset();
+form.create_window("elevator floor", false);
+int mx=form.create_input_box("Enter the minimum x of this elevator floor");
+int mx2=form.create_input_box("Enter the maximum x of this elevator floor");
+int my=form.create_input_box("Enter the y of this elevator floor");
+int elvftext=form.create_input_box("Enter the text of this elevator floor");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+txt=form.get_text(elvftext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(elvftext)=="")
+{
+speak("Floor text is required.");
+form.focus(elvftext);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -1354,6 +1467,10 @@ spawn_el_floor(x, paxx, y, txt);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="ld")
 {
@@ -2312,26 +2429,83 @@ speak("Map updated.");
 }
 if(buildem=="mz")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum x of this menu zone.");
-string mx2=vd.input_box("","Enter the maximum x of this menu zone.");
-string my=vd.input_box("","Enter the minimum y of this menu zone.");
-string my2=vd.input_box("","Enter the maximum y of this menu zone.");
-if(x=="" and paxx=="" and y=="" and paxy=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
+form.reset();
+form.create_window("menu zone", false);
+int mx=form.create_input_box("Enter the minimum x of this menu zone");
+int mx2=form.create_input_box("Enter the maximum x of this menu zone");
+int my=form.create_input_box("Enter the minimum y of this menu zone");
+int my2=form.create_input_box("Enter the maximum y of this menu zone");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"menu_zone "+x+" "+paxx+" "+y+" "+paxy);
 mapper.close();
-create_menuzone(x, paxx, y, paxy);
+spawn_menuzone(x, paxx, y, paxy);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="cp")
 {
@@ -2988,7 +3162,7 @@ spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*
 }
 else if(form.get_text(rd)=="")
 {
-speak("Reverb id is required.");
+speak("Id is required.");
 form.focus(rd);
 spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
 }
@@ -3468,13 +3642,52 @@ speak("Map updated.");
 }
 if(buildem=="st")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the x of this spawnpoint.");
-string my=vd.input_box("","Enter the y of this spawnpoint.");
-if(x=="" and y=="")
-return;
-x=string_to_number(mx);
-y=string_to_number(my);
+form.reset();
+form.create_window("spawnpoint", false);
+int mx=form.create_input_box("Enter the x of this spawnpoint");
+int my=form.create_input_box("Enter the y of this spawnpoint");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+y=string_to_number(form.get_text(my));
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -3484,6 +3697,10 @@ create_spawnpoint(x, y);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="sf")
 {
@@ -3644,16 +3861,60 @@ speak("Map updated.");
 }
 if(buildem=="txt")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the x of this text square.");
-string my=vd.input_box("","Enter the y of this text square.");
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string text=vd.input_box("","Enter the text of this text square.");
-if(x=="" and y=="" and txt=="")
-return;
-x=string_to_number(mx);
-y=string_to_number(my);
-txt=text;
+form.reset();
+form.create_window("text square", false);
+int mx=form.create_input_box("Enter the x of this text square");
+int my=form.create_input_box("Enter the y of this text square");
+int tqtext=form.create_input_box("Enter the text of this text square");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+y=string_to_number(form.get_text(my));
+txt=form.get_text(tqtext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(tqtext)=="")
+{
+speak("Text is required.");
+form.focus(tqtext);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -3663,6 +3924,10 @@ spawn_text_square(x, y, txt);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="tbm")
 {
@@ -3816,22 +4081,87 @@ speak("Map updated.");
 }
 if(buildem=="tmt")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum x of this timed text.");
-string mx2=vd.input_box("","Enter the maximum x of this timed text.");
-string my=vd.input_box("","Enter the minimum y of this timed text.");
-string my2=vd.input_box("","Enter the maximum y of this timed text.");
-string sp=vd.input_box("","Enter the speed of this timed text.");
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string text=vd.input_box("","Enter the text of this timed text.");
-if(x=="" and paxx=="" and y=="" and paxy=="" and speedtime=="" and txt=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-speedtime=string_to_number(sp);
-txt=text;
+form.reset();
+form.create_window("timed text", false);
+int mx=form.create_input_box("Enter the minimum x of this timed text");
+int mx2=form.create_input_box("Enter the maximum x of this timed text");
+int my=form.create_input_box("Enter the minimum y of this timed text");
+int my2=form.create_input_box("Enter the maximum y of this timed text");
+int sp=form.create_input_box("Enter the speed of this timed text");
+int tmtext=form.create_input_box("Enter the text of this timed text");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+speedtime=string_to_number(form.get_text(sp));
+txt=form.get_text(tmtext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(sp)=="")
+{
+speak("Speed is required.");
+form.focus(sp);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(tmtext)=="")
+{
+speak("Text is required.");
+form.focus(tmtext);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -3841,31 +4171,111 @@ spawn_timedtext(x, paxx, y, paxy, speedtime, txt);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="trp")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum x of this travelpoint.");
-string mx2=vd.input_box("","Enter the maximum x of this travelpoint.");
-string my=vd.input_box("","Enter the minimum y of this travelpoint.");
-string my2=vd.input_box("","Enter the maximum y of this travelpoint.");
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string mtext=vd.input_box("","Enter the destenation map of this travelpoint.");
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string dx=vd.input_box("","Enter the destenation x of this travelpoint.");
-string dy=vd.input_box("","Enter the destenation y of this travelpoint.");
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string dtext=vd.input_box("","Enter the destenation text of this travelpoint.");
-if(x=="" and paxx=="" and y=="" and paxy=="" and txt=="" and x2=="" and y2=="" and txt2=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-txt=mtext;
-x2=string_to_number(dx);
-y2=string_to_number(dy);
-txt2=dtext;
+form.reset();
+form.create_window("travelpoint", false);
+int mx=form.create_input_box("Enter the minimum x of this travelpoint");
+int mx2=form.create_input_box("Enter the maximum x of this travelpoint");
+int my=form.create_input_box("Enter the minimum y of this travelpoint");
+int my2=form.create_input_box("Enter the maximum y of this travelpoint");
+int dmap=form.create_input_box("Enter the destenation map of this travelpoint");
+int dx=form.create_input_box("Enter the destenation x of this travelpoint");
+int dy=form.create_input_box("Enter the destenation y of this travelpoint");
+int dtext=form.create_input_box("Enter the destenation text of this travelpoint");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(dx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(dy, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+txt=form.get_text(dmap);
+x2=string_to_number(form.get_text(dx));
+y2=string_to_number(form.get_text(dy));
+txt2=form.get_text(dtext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(dmap)=="")
+{
+speak("Destenation map is required.");
+form.focus(tmtext);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(dx)=="")
+{
+speak("Destenation x is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(dy)=="")
+{
+speak("Destenation y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(dtext)=="")
+{
+speak("Destenation text is required.");
+form.focus(tmtext);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -3875,6 +4285,10 @@ spawn_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 if(buildem=="tt")
 {
@@ -4627,20 +5041,78 @@ speak("Map updated.");
 }
 if(buildem=="zn")
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum x of this zone.");
-string mx2=vd.input_box("","Enter the maximum x of this zone.");
-string my=vd.input_box("","Enter the minimum y of this zone.");
-string my2=vd.input_box("","Enter the maximum y of this zone.");
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string text=vd.input_box("","Enter the text of this zone.");
-if(x=="" and paxx=="" and y=="" and paxy=="" and txt=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-txt=text;
+form.reset();
+form.create_window("zone", false);
+int mx=form.create_input_box("Enter the minimum x of this zone");
+int mx2=form.create_input_box("Enter the maximum x of this zone");
+int my=form.create_input_box("Enter the minimum y of this zone");
+int my2=form.create_input_box("Enter the maximum y of this zone");
+int zntext=form.create_input_box("Enter the text of this zone");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+txt=form.get_text(zntext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game(true);
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(zntext)=="")
+{
+speak("Zone text is required.");
+form.focus(zntext);
+spool.play_stationary(find_sound("sounds/"+soundpack+"/menus/"+menutype+"/*open*"),false);
+}
+else
+{
 resume_pools();
 mapper.open("data/maps/"+mapname+".map","ab");
 mapdata=mapper.read();
@@ -4650,5 +5122,9 @@ spawn_zone(x, paxx, y, paxy, txt);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary("mapupdate.ogg",false);
 speak("Map updated.");
+game(true);
+}
+}
+}
 }
 }
