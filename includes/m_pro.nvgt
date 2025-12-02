@@ -168,48 +168,75 @@ return "";
 return item_list[item - 1].name;
 }
 
+string get_display_label(int i)
+{
+    if (!item_list[i].is_filename)
+    {
+        return translate(item_list[i].option);
+    }
+    return (item_list[i].name != "") ? item_list[i].name : item_list[i].option;
+}
+
 void find_item_by_name()
 {
-    vd.set_disallowed_chars("", false, "This character is not allowed.");
-    string query = vd.input_box("Find an item", "Enter a keyword to search for:", "");
-    if (query == "" || get_last_error() == -12)
+    form.reset();
+    form.create_window("Find an item", false);
+    int query = form.create_input_box("Enter a keyword to search for:");
+    int q_ok = form.create_button("&Okay", true);
+    int q_cancel = form.create_button("&Cancel");
+    form.focus(query);
+    spool.play_stationary(find_sound("sounds/" + soundpack + "/menus/" + menutype + "/*open*"), false);
+    while (true)
     {
-        speak("Cancelled.");
-        return;
-    }
-    string lower_query = string_to_lower_case(query);
-    int start_index = menu_position;
-    int item_count = item_list.length();
-    bool found = false;
-    for (int i = start_index; i < item_count; i++)
-    {
-        string name = string_to_lower_case(item_list[i].name);
-        string option = string_to_lower_case(item_list[i].option);
-        if (name.find(lower_query) != -1 || option.find(lower_query) != -1)
+        key_echocheck(form);
+        form.monitor();
+        wait(5);
+        if (key_pressed(KEY_ESCAPE) || form.is_pressed(q_cancel))
         {
-            menu_position = i + 1;
-            play_click_sound();
-            speak("Item " + string(menu_position) + ": " + item_list[i].name);
-            found = true;
+            speak("Cancelled.");
             return;
         }
-    }
-    for (int i = 0; i < start_index; i++)
-    {
-        string name = string_to_lower_case(item_list[i].name);
-        string option = string_to_lower_case(item_list[i].option);
-        if (name.find(lower_query) != -1 || option.find(lower_query) != -1)
+        if (form.is_pressed(q_ok))
         {
-            menu_position = i + 1;
-            play_click_sound();
-            speak("Item " + string(menu_position) + ": " + item_list[i].name);
-            found = true;
+string q_input = string_trim_sides(form.get_text(query));
+            if (q_input == "")
+            {
+                speak("Input is required.");
+    form.focus(query);
+    spool.play_stationary(find_sound("sounds/" + soundpack + "/menus/" + menutype + "/*open*"), false);
+continue;
+            }
+            string lower_query = string_to_lower_case(q_input);
+            int start_index = menu_position;
+            int item_count = item_list.length();
+            bool found = false;
+            for (int i = start_index; i < item_count; i++)
+            {
+                string name = string_to_lower_case(item_list[i].name);
+                string option = string_to_lower_case(item_list[i].option);
+                if (name.find(lower_query) != -1 || option.find(lower_query) != -1)
+                {
+                    menu_position = i + 1;
+                    play_click_sound();
+                    speak("Item " + string(menu_position) + ": " + get_display_label(i));
+                    return;
+                }
+            }
+            for (int i = 0; i < start_index; i++)
+            {
+                string name = string_to_lower_case(item_list[i].name);
+                string option = string_to_lower_case(item_list[i].option);
+                if (name.find(lower_query) != -1 || option.find(lower_query) != -1)
+                {
+                    menu_position = i + 1;
+                    play_click_sound();
+                    speak("Item " + string(menu_position) + ": " + get_display_label(i));
+                    return;
+                }
+            }
+            speak("No matching item found for " + q_input);
             return;
         }
-    }
-    if (!found)
-    {
-        speak("No matching item found for " + query);
     }
 }
 int run(string intro, bool is_intro_tts) {
@@ -646,7 +673,6 @@ if(key_repeating(KEY_TAB))
 if (key_repeating(KEY_F3))
 {
     find_item_by_name();
-    continue;
 }
 if(allow_escape == true)
 {
