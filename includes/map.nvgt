@@ -1671,7 +1671,8 @@ for(uint i=0; i<forcefields.length(); i++)
 if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcefields[i].maxx>=me.x && forcefields[i].miny<=me.y && forcefields[i].maxy>=me.y && shieldon==1 && shieldstrength<=maxshieldstrength && paused==0)
 {
 if(shieldhitsound==1) shieldslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
-shieldstrength-=forcefields[i].damage-shielddefence;
+int sdm = max(1, (forcefields[i].damage) - (shielddefence * 3));
+shieldstrength -= sdm;
 pbounce(5);
 return;
 }
@@ -1679,7 +1680,7 @@ else if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcef
 {
 forcefields[i].wepsound=forcepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/force fields/"+forcefields[i].forcetype+"/*hit*"),false,0,0,painvolume,painpitch,false);
 if(charhurtsound==1) painslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
-int dmg = forcefields[i].damage - defence;
+int dmg = max(1, (forcefields[i].damage) - (defence * 3));
 health -= dmg;
 hearttime -= dmg;
 kombatlog.insert_last(forcefields[i].forcetype + "'s attack took you " + dmg + " damage.");
@@ -1954,15 +1955,15 @@ playland();
 else if(fallcounter>7)
 {
 playfall();
-int shield_damage = fallcounter * fallmod - shielddefence;
+int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
 if(fallcounter>=8 and shieldon==1)
 {
 jumpable=false;
 onstaircase=false;
 moveable=false;
 sitting=true;
-shieldstrength-=shield_damage;
-kombatlog.insert_last(shield_damage+ " damage to "+shieldtype+", falling down.");
+shieldstrength-=sdm;
+kombatlog.insert_last(sdm+ " damage to "+shieldtype+", falling down.");
 stun_target("me", "", 10 * fallcounter);
 if(shieldstrength<=0)
 {
@@ -1970,27 +1971,27 @@ jumpable=false;
 onstaircase=false;
 moveable=false;
 sitting=true;
-health -= shield_damage;
-hearttime -= shield_damage;
-kombatlog.insert_last(shield_damage+ " damage to player, falling down.");
+health -= sdm;
+hearttime -= sdm;
+kombatlog.insert_last(sdm+ " damage to player, falling down.");
 int ct = clamp((fallcounter - 8) * 10, 0, 100);
 int count = clamp((fallcounter - 8) / 2, 1, 5);
-break_charbones(ct, shield_damage, 10 * fallcounter, count);
+break_charbones(ct, sdm, 10 * fallcounter, count);
 }
 }
-int health_damage= fallcounter * fallmod - defence;
+int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
 if(fallcounter>=8 and shieldon==0)
 {
 jumpable=false;
 onstaircase=false;
 moveable=false;
 sitting=true;
-health -= health_damage;
-hearttime-=health_damage;
-kombatlog.insert_last(health_damage+ " damage to player, falling down.");
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(dmg+ " damage to player, falling down.");
 int ct = clamp((fallcounter - 8) * 10, 0, 100);
 int count = clamp((fallcounter - 8) / 2, 1, 5);
-break_charbones(ct, health_damage, 10 * fallcounter, count);
+break_charbones(ct, dmg, 10 * fallcounter, count);
 }
 }
 falling=false;
