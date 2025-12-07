@@ -218,6 +218,61 @@ void destroy_all_zombiezones()
 zombiezones.resize(0);
 }
 
+healzone@[]healzones(0);
+class healzone
+{
+bool in_zone;
+int healsound, takesound;
+double minx, maxx, miny, maxy;
+int healmode;
+int healhp;
+int healtime;
+string healtype;
+timer healtimer;
+healzone(double mx,double mx2,double my,double my2,int hm,int hp,int ht,string hlt)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+healmode=hm;
+healhp=hp;
+healtime=ht;
+healtype=hlt;
+}
+}
+void healzoneloop()
+{
+for(uint i=0; i<healzones.length(); i++)
+{
+if(healzones[i].minx<=me.x and healzones[i].maxx>=me.x and healzones[i].miny<=me.y and healzones[i].maxy>=me.y and healzones[i].healtimer.elapsed>=healzones[i].healtime)
+{
+healzones[i].healtimer.restart();
+if(healzones[i].healmode==0)
+{
+if(shieldon==1 and invehicle==false) shieldstrength-=healzones[i].healhp;
+if(shieldon==0 and invehicle==false) health-=healzones[i].healhp;
+if(shieldon==0 and invehicle==false) hearttime-=healzones[i].healhp;
+}
+if(healzones[i].healmode==1)
+{
+if(shieldon==1 and invehicle==false) shieldstrength+=healzones[i].healhp;
+if(shieldon==0 and invehicle==false) health+=healzones[i].healhp;
+if(shieldon==0 and invehicle==false) hearttime+=healzones[i].healhp;
+}
+}
+}
+}
+void spawn_healzone(double x1,double x2,double y1,double y2,int hm,int hp,int ht,string hlt)
+{
+healzone hz1(x1,x2,y1,y2,hm,hp,ht,hlt);
+healzones.insert_last(hz1);
+}
+void destroy_all_healzones()
+{
+healzones.resize(0);
+}
+
 menuzone@[]menuzones(0);
 class menuzone
 {
@@ -260,7 +315,7 @@ string newline=vd.input_box("","Enter the line you'd like to add.");
 mapper.write("\r\n"+newline);
 mapper.close();
 load_map(mapmode, mapname, mapowner);(mapname);
-mpool.play_stationary("mapupdate.ogg",false);
+mpool.play_stationary(find_sound("sounds/"+soundpack+"/misc/mapupdate.ogg"),false);
 speak("Map updated.");
 }
 if(mapem=="remline")
@@ -305,7 +360,7 @@ mapdata=mapper.read();
 mapper.write(final);
 mapper.close();
 load_map(mapmode, mapname, mapowner);(mapname);
-mpool.play_stationary("mapupdate.ogg",false);
+mpool.play_stationary(find_sound("sounds/"+soundpack+"/misc/mapupdate.ogg"),false);
 speak("Map updated.");
 }
 }
@@ -347,7 +402,7 @@ mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(mapline);
 mapper.close();
 load_map(mapmode, mapname, mapowner);(mapname);
-mpool.play_stationary("mapupdate.ogg",false);
+mpool.play_stationary(find_sound("sounds/"+soundpack+"/misc/mapupdate.ogg"),false);
 speak("Map updated.");
 }
 }
@@ -355,9 +410,9 @@ if(mapem=="dcm")
 {
 setupmenu();
 m.wrap_sound="none.ogg";
-m.click_sound="menu1.ogg";
-m.enter_sound="menu2.ogg";
-m.open_sound="menu3.ogg";
+m.click_sound=find_sound("sounds/"+soundpack+"/misc/menu1.ogg");
+m.enter_sound=find_sound("sounds/"+soundpack+"/misc/menu2.ogg");
+m.open_sound=find_sound("sounds/"+soundpack+"/misc/menu3.ogg");
 m.add_item_tts("yes");
 m.add_item_tts("no");
 int mres=m.run("Are you sure you want to delete "+mapname+"? This action cannot be undone.",true);
@@ -373,7 +428,7 @@ if(file_exists("data/maps/"+mapname+".map")) file_delete("data/maps/"+mapname+".
 if(fademode==0) fade_multi_pool(0);
 if(fademode==1) fade_multi_pool(1);
 speak("map deleted");
-dlgplay("mapdelete.ogg",false);
+dlgplay(find_sound("sounds/"+soundpack+"/misc/mapdelete.ogg"),false);
 me.x=0;
 me.y=0;
 clearmap();
@@ -442,9 +497,9 @@ if(mapem=="clboard2")
 {
 setupmenu();
 m.wrap_sound="none.ogg";
-m.click_sound="menu1.ogg";
-m.enter_sound="menu2.ogg";
-m.open_sound="menu3.ogg";
+m.click_sound=find_sound("sounds/"+soundpack+"/misc/menu1.ogg");
+m.enter_sound=find_sound("sounds/"+soundpack+"/misc/menu2.ogg");
+m.open_sound=find_sound("sounds/"+soundpack+"/misc/menu3.ogg");
 m.add_item_tts("yes");
 m.add_item_tts("no");
 int mres=m.run("Are you sure you want to overwrite all existing map data with what's on your clipboard?",true);
@@ -475,7 +530,7 @@ mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(clipboard_data);
 mapper.close();
 load_map(mapmode, mapname, mapowner);(mapname);
-mpool.play_stationary("mapupdate.ogg", false);
+mpool.play_stationary(find_sound("sounds/"+soundpack+"/misc/mapupdate.ogg"), false);
 speak("Map updated.");
 }
 if(mres==2)
@@ -588,9 +643,9 @@ if(mapem=="rcm")
 {
 setupmenu();
 m.wrap_sound="none.ogg";
-m.click_sound="menu1.ogg";
-m.enter_sound="menu2.ogg";
-m.open_sound="menu3.ogg";
+m.click_sound=find_sound("sounds/"+soundpack+"/misc/menu1.ogg");
+m.enter_sound=find_sound("sounds/"+soundpack+"/misc/menu2.ogg");
+m.open_sound=find_sound("sounds/"+soundpack+"/misc/menu3.ogg");
 m.add_item_tts("yes");
 m.add_item_tts("no");
 int mres=m.run("Are you sure you want to reload "+mapname+"?",true);
