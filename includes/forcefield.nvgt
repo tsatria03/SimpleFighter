@@ -58,11 +58,28 @@ return;
 else if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcefields[i].maxx>=me.x && forcefields[i].miny<=me.y && forcefields[i].maxy>=me.y && shieldon==0 && paused==0)
 {
 forcefields[i].wepsound=forcepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/force fields/"+forcefields[i].forcetype+"/*hit*"),false,0,0,painvolume,painpitch,false);
-if(charhurtsound==1) painslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
 int dmg = max(1, (forcefields[i].damage) - (defence * 3));
 health -= dmg;
 hearttime -= dmg;
 kombatlog.insert_last(forcefields[i].forcetype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
 pbounce(5);
 return;
 }

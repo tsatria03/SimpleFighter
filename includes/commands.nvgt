@@ -65,9 +65,14 @@ cmd = comd;
 else
 {
 vd.set_disallowed_chars("", false, "This character is not allowed.");
-cmd=vd.input_box("","Enter the command you'd like to use.");
-if(cmd=="")
-return;
+cmd = vd.input_box("", "Enter the command(s) you'd like to use. Separate each command with a semicolon.");
+if (cmd == "")
+    return;
+if (cmd.find("; ") != -1)
+{
+    comstack(cmd);
+    return;
+}
 }
 string[] sd=string_split(cmd, "/", true);
 if(sd.length()<2)
@@ -536,7 +541,7 @@ speak("Killed all entities.");
 }
 else
 {
-speak("Invalid command syntax. Usage: /killal, or /kl.");
+speak("Invalid command syntax. Usage: /killall, or /kl.");
 game(true);
 }
 }
@@ -1088,6 +1093,17 @@ else
 speak("Unknown command: /"+base_command);
 game(true);
 }
+}
+void comstack(string input)
+{
+    string[] commands = string_split(input, "; ", true);
+    for (uint i = 0; i < commands.length(); i++)
+    {
+        string cmd = string_trim_sides(commands[i]);
+        if (cmd == "")
+            continue;
+        comparse(cmd);
+    }
 }
 void use_command(string cmd, bool announce_commands=false)
 {

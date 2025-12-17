@@ -80,11 +80,28 @@ else if(me.x==bullets[i].bullx and me.y==bullets[i].bully and shieldon==0 and in
 bulletpool.destroy_sound(bullets[i].bullsound);
 if(wephitsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
 if(wepshellsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
-if(charhurtsound==1) painslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
 int dmg = bullets[i].damage - defence;
 health -= dmg;
 hearttime -= dmg;
 kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
 bullets.remove_at(i);
 return;
 }

@@ -52,11 +52,28 @@ else if(me.x==mines[i].minex and me.y==mines[i].miney and mines[i].triggered==tr
 minepool.destroy_sound(mines[i].minesound);
 mines[i].explodesound=minepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/mines/"+mines[i].minetype+"/*explode*"),false,0,0,weaponvolume,weaponpitch,false);
 mines[i].wepsound=minepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/mines/"+mines[i].minetype+"/*hit*"),false,0,0,weaponvolume,weaponpitch,false);
-if(charhurtsound==1) painslot=minepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
 int dmg = max(1, (mines[i].damage) - (defence * 3));
 health -= dmg;
 hearttime -= dmg;
 kombatlog.insert_last(mines[i].minetype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
 mines[i].triggered=false;
 mines.remove_at(i);
 return;

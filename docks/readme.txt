@@ -69,7 +69,7 @@ Letter, Z: Anounces ammo of a particular weapon category, if pressed.
 Letter, Y: Anounces how long you've been playing the game, if pressed.
 Letter, U: Anounces the current map you're playing on in the builder mode, if pressed.
 Letter, H: Anounces your current health in percentages and how many lives you have, if pressed.
-Letter, B: Equips a shield if one is available, if pressed.
+Letter, O: Equips a shield if one is available, if pressed.
 Letter, N: Anounces the total kills of all npcs in one of the game modes, if pressed.
 Letter, M: Anounces your current shield strength in percentages, if pressed.
 Semicolon: Anounces the current maximum jump height, if pressed.
@@ -97,25 +97,26 @@ Letter, W: Opens the weapons menu, if pressed.
 Letter, S: Opens the shields menu, if pressed.
 Letter, E: Opens the object viewer menu, if pressed.
 Shift plus letter E: Opens the combat log viewer menu, if pressed.
-Letter, O: Opens the Builder menu in the builder mode, if pressed.
+Letter, B: Opens the Builder menu in the builder mode, if pressed.
 Letter, V: Opens the points menu, if pressed.
 
 Creating sound packs.
 This game allows you to create customizeable sound packs that you can use in various situations.
 
-Character sound listing: 29 total.
+Character sound listing: 30 total.
 buy.ogg: This sound is played when your character purchases upgrades.
 break.ogg: This sound is played when a character breaks a certain bone in their body.
 cameraair.ogg: This sound is played when air is detected while your character uses the camera.
 camerahazard.ogg: This sound is played when a hazard is detected while your character uses the camera.
 cameraplayer.ogg: This sound is played when a player is detected while your character uses the camera.
+crit.ogg: This sound is played when your character gets criticly hurt.
 death.ogg: This sound is played when your character dies.
 fail.ogg: This sound is played when a character's broken bone starts  to kill them from too much pain.
 fall.ogg: This sound is played when your character starts falling.
 healing.ogg: This sound is played When your character is healing.
 healstart.ogg: This sound is played when your character starts healing.
 healstop.ogg: This sound is played when your character stops healing.
-hurt.ogg: This sound is played when your character gets hurt.
+hurt.ogg: This sound is played when your character gets mildly hurt.
 inv.ogg: This sound is played when your character cycles through there inventory.
 jump.ogg: This sound is played when your character starts jumping.
 kill.ogg: This sound is played when your character kills an entity.

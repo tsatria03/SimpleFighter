@@ -47,11 +47,28 @@ kombatlog.insert_last(spikes[i].spiketype + "'s attack took " + shieldtype + " "
 else if(spikes[i].minx<=me.x and spikes[i].maxx>=me.x and spikes[i].miny<=me.y and spikes[i].maxy>=me.y and shieldon==0 and paused==0)
 {
 spikes[i].hitsound=spikepool.play_stationary_extended(find_sound("sounds/"+soundpack+"/objects/spikes/"+spikes[i].spiketype+"/*hit*"),false,0,0,painvolume,painpitch,false);
-if(charhurtsound==1) painslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
 int dmg = max(1, (spikes[i].damage) - (defence * 3));
 health -= dmg;
 hearttime -= dmg;
 kombatlog.insert_last(spikes[i].spiketype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
 }
 if(spikes[i].spikehealth<=0)
 {
