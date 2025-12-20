@@ -1,6 +1,6 @@
 void game_input()
 {
-if(key_pressed(KEY_SLASH) and building==true)
+if(key_pressed(KEY_SLASH))
 {
 comparse();
 }
@@ -38,7 +38,7 @@ shieldtype=res;
 }
 }
 }
-if(key_pressed(KEY_B) and building==true)
+if(key_pressed(KEY_B))
 {
 pause_pools();
 buildmenu();
@@ -482,7 +482,7 @@ zonestatus=1;
 }
 }
 }
-if(key_pressed(KEY_Q) and building==true)
+if(key_pressed(KEY_Q))
 {
 if(get_zone_at(me.x, me.y)!="")
 {
@@ -565,26 +565,6 @@ else if(jumpheight<=20)
 jumpheight=5;
 speak("jump hight reset");
 }
-}
-if (key_pressed(KEY_F4) and maxx!=10 and building==false)
-{
-maxx-=10;
-speak("max x position decreased to"+maxx+"tiles");
-}
-if(key_pressed(KEY_F5) and maxx!=1000 and building==false)
-{
-maxx+=10;
-speak("max x position increased to"+maxx+"tiles");
-}
-if(key_pressed(KEY_F6) and maxy!=10 and building==false)
-{
-maxy-=10;
-speak("max y position decreased to"+maxy+"tiles");
-}
-if(key_pressed(KEY_F7) and maxy!=1000 and building==false)
-{
-maxy+=10;
-speak("max y position increased to"+maxy+"tiles");
 }
 if(key_pressed(KEY_COMMA))
 {
@@ -796,14 +776,10 @@ speak("Reflection mode off.");
 }
 }
 }
-if(key_pressed(KEY_Y))
-{
-if(building==false) speak("You've been playing for a total of;"+timeelapsed.m()+"minutes,"+timeelapsed.s()+"seconds");
-}
 if(key_pressed(KEY_U))
 {
 pause_pools();
-if(building==true) mapmenu2();
+mapmenu2();
 }
 if(key_pressed(KEY_H))
 {
@@ -886,21 +862,6 @@ manule_use_item();
 }
 if(key_repeating(KEY_E))
 {
-if(objinf==0)
-{
-if(gamemode==1 and building==false) speak("there are;"+animals.length()+"animals spawned on the map.");
-if(gamemode==2 and building==false) speak("there are;"+humans.length()+"humans spawned on the map.");
-if(gamemode==3 and building==false) speak("there are;"+projectiles.length()+"projectiles spawned on the map.");
-if(gamemode==4 and building==false) speak("there are;"+robots.length()+"robots spawned on the map.");
-if(gamemode==5 and building==false) speak("there are;"+zombies.length()+"zombies spawned on the map.");
-if(gamemode==6 and building==false) speak("there are;"+animals.length()+amtype+";"+"spawned on the map.");
-if(gamemode==7 and building==false) speak("there are;"+humans.length()+humtype+";"+"spawned on the map.");
-if(gamemode==8 and building==false) speak("there are;"+projectiles.length()+potype+";"+"spawned on the map.");
-if(gamemode==9 and building==false) speak("there are;"+robots.length()+rotype+";"+"spawned on the map.");
-if(gamemode==10 and building==false) speak("there are;"+zombies.length()+zotype+";"+"spawned on the map.");
-}
-else if(objinf==1)
-{
 if(animals.length()==0 and bikes.length()==0 and bosses.length()==0 and dest_walls.length()==0 and doors.length()==0 and psdoors.length()==0 and humans.length()==0 and helpers.length()==0 and projectiles.length()==0 and robots.length()==0 and spikes.length()==0  and sucams.length()==0 and turrets.length()==0 and vehicles.length()==0 and zombies.length()==0)
 {
 speak("there are no objects on the field to view.");
@@ -909,7 +870,6 @@ else
 {
 pause_pools();
 infomenu();
-}
 }
 }
 if(key_pressed(KEY_N))
@@ -934,7 +894,6 @@ resume_game();
 else if(pausem==1)
 {
 p.play_stationary(find_sound("sounds/"+soundpack+"/misc/pause.ogg"),false);
-if(autosave==1) writedata();
 pause_game();
 pausemenu();
 }
@@ -1052,90 +1011,12 @@ shieldon = 0;
 }
 }
 
-void game(bool is_building)
+void game()
 {
-building=is_building;
-gametimer.force(gametime);
-if(building==false and musmode==1) spawn_musicsource(0, maxx*10, 0, maxy*10, mustyp, volume, pitch);
 while(true)
 {
 wait(5);
 setupgame();
-if(amsptimer.elapsed>=amsptime and animals.length()<aninum and gamemode==1 and building==false and spawnable==true)
-{
-string[] animaltype=find_directories("sounds/"+soundpack+"/npc/animals/*");
-spawn_animal(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, random_string(animaltype), true, true, random_bool(), random_bool());
-amsptimer.restart();
-}
-if(emsptimer.elapsed>=emsptime and humans.length()<huminum and gamemode==2 and building==false and spawnable==true)
-{
-string[] humantype=find_directories("sounds/"+soundpack+"/npc/humans/*");
-spawn_human(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, random_string(humantype), true, true, random_bool(), random_bool());
-emsptimer.restart();
-}
-if(prosptimer.elapsed>=prosptime and projectiles.length()<projnum and gamemode==3 and building==false and spawnable==true)
-{
-string[] projtype=find_directories("sounds/"+soundpack+"/npc/projectiles/*");
-spawn_projectile(random(0, maxx), 0, random(0, 1), 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), 1, 1*level, random_string(projtype), true, true);
-prosptimer.restart();
-}
-if(robsptimer.elapsed>=robsptime and robots.length()<robnum and gamemode==4 and building==false and spawnable==true)
-{
-string[] robottype=find_directories("sounds/"+soundpack+"/npc/robots/*");
-spawn_robot(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, random_string(robottype), true, true, random_bool(), random_bool());
-robsptimer.restart();
-}
-if(zombsptimer.elapsed>=zombsptime and zombies.length()<zombnum and gamemode==5 and building==false and spawnable==true)
-{
-string[] zombietype=find_directories("sounds/"+soundpack+"/npc/zombies/*");
-spawn_zombie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, random_string(zombietype), true, true, random_bool(), random_bool());
-zombsptimer.restart();
-}
-if(amsptimer.elapsed>=amsptime and animals.length()<aninum and gamemode==6 and building==false and spawnable==true and  amtype!="")
-{
-string[] animaltype=find_directories("sounds/"+soundpack+"/npc/animals/*");
-if(amtype!="" and animaltype.find(amtype)>-1)
-{
-spawn_animal(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, amtype, true, true, random_bool(), random_bool());
-amsptimer.restart();
-}
-}
-if(emsptimer.elapsed>=emsptime and humans.length()<huminum and gamemode==7 and building==false and spawnable==true and  humtype!="")
-{
-string[] humantype=find_directories("sounds/"+soundpack+"/npc/humans/*");
-if(humtype!="" and humantype.find(humtype)>-1)
-{
-spawn_human(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, humtype, true, true, random_bool(), random_bool());
-emsptimer.restart();
-}
-}
-if(prosptimer.elapsed>=prosptime and projectiles.length()<projnum and gamemode==8 and building==false and spawnable==true and  potype!="")
-{
-string[] projtype=find_directories("sounds/"+soundpack+"/npc/projectiles/*");
-if(potype!="" and projtype.find(potype)>-1)
-{
-spawn_projectile(random(0, maxx), 0, random(0, 1), 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), 1, 1*level, potype, true, true);
-prosptimer.restart();
-}
-}
-if(robsptimer.elapsed>=robsptime and robots.length()<robnum and gamemode==9 and building==false and spawnable==true and  rotype!="")
-{
-string[] robottype=find_directories("sounds/"+soundpack+"/npc/robots/*");
-if(rotype!="" and robottype.find(rotype)>-1)
-{
-spawn_robot(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, rotype, true, true, random_bool(), random_bool());
-robsptimer.restart();
-}
-}
-if(zombsptimer.elapsed>=zombsptime and zombies.length()<zombnum and gamemode==10 and building==false and spawnable==true and  zotype!="")
-{
-string[] zombietype=find_directories("sounds/"+soundpack+"/npc/zombies/*");
-if(zotype!="" and zombietype.find(zotype)>-1)
-{
-spawn_zombie(random(0, maxx), 0, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), 1, 1*level, zotype, true, true, random_bool(), random_bool());
-zombsptimer.restart();
-}
-}
 if(heartsound==1 and hearttimer.elapsed>=hearttime)
 {
 if(hearttype==1)
@@ -1203,16 +1084,6 @@ if(xp>=xprequiered)
 {
 level+=1;
 points+=10*level*levmod-10;
-if(gamemode==1 and building==false) aninum+=1;
-if(gamemode==2 and building==false) huminum+=1;
-if(gamemode==3 and building==false) projnum+=1;
-if(gamemode==4 and building==false) robnum+=1;
-if(gamemode==5 and building==false) zombnum+=1;
-if(gamemode==6 and building==false) aninum+=1;
-if(gamemode==7 and building==false) huminum+=1;
-if(gamemode==8 and building==false) projnum+=1;
-if(gamemode==9 and building==false) robnum+=1;
-if(gamemode==10 and building==false) zombnum+=1;
 xprequiered=(levmod*(level*(level*4)));
 kombatlog.insert_last("Leveled up to " + level + ". " + (xprequiered - xp) + " experience required to the next level.");
 if(charlevsound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*lev*"),false);
@@ -1259,14 +1130,6 @@ lifecard-=1;
 health=maxhealth;
 hearttime=maxhealth;
 }
-}
-if(animals.length()>=50 or humans.length()>=50 or projectiles.length()>=50 or robots.length()>=50 or zombies.length()>=50)
-{
-aninum=50;
-huminum=50;
-projnum=50;
-robnum=50;
-zombnum=50;
 }
 if(bonehealth<=0)
 {
@@ -1335,11 +1198,9 @@ if(fademode==0) fade_multi_pool(0);
 if(fademode==1) fade_multi_pool(1);
 me.x=0;
 me.y=0;
-if(building==true) clearmap();
-if(building==true) destroymap();
-if(building==true) mainmenu();
-if(building==false) destroygame();
-if(building==false) mainmenu();
+clearmap();
+destroymap();
+mainmenu();
 }
 else if(gamxit==1)
 {
@@ -1361,11 +1222,9 @@ if(fademode==0) fade_multi_pool(0);
 if(fademode==1) fade_multi_pool(1);
 me.x=0;
 me.y=0;
-if(building==true) clearmap();
-if(building==true) destroymap();
-if(building==true) mainmenu();
-if(building==false) destroygame();
-if(building==false) mainmenu();
+clearmap();
+destroymap();
+mainmenu();
 }
 if(mres==2)
 {
