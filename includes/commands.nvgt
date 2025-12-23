@@ -68,30 +68,30 @@ vd.set_disallowed_chars("", false, "This character is not allowed.");
 cmd = vd.input_box("", "Enter the command you'd like to use. Separate each command with a semicolon.");
 if (cmd == "")
     return;
+}
 if (cmd.find(";") != -1)
 {
     comstack(cmd);
     return;
 }
-}
 string[] sd=string_split(cmd, "/", true);
 if(sd.length()<2)
 {
 speak("Invalid command syntax. Make sure to include '/' followed by a command.");
-game();
+if(!in_commandstack) game();
 }
 string command = sd[1];
 string[] parsed = string_split(command, " ", true);
 if (parsed.length() < 1)
 {
 speak("No command entered after '/'.");
-game();
+if(!in_commandstack) game();
 }
 string base_command = parsed[0];
 if (is_command_blocked(base_command))
 {
 speak("This command cannot be used in this area.");
-game();
+if(!in_commandstack) game();
 return;
 }
 if (base_command == "go")
@@ -113,8 +113,73 @@ gop(entity, id, x, y);
 else
 {
 speak("Invalid command syntax. Usage: /go x y, or /go entity id x y.");
-game();
+if(!in_commandstack) game();
 }
+}
+else if (base_command == "draw" || base_command == "dr")
+{
+    if (parsed.length() == 3)
+    {
+        string new_weapontype  = parsed[1];
+        string new_weapontype2 = parsed[2];
+        if (new_weapontype == "archery")
+        {
+        drawable = true;
+        melee = false;
+        useitems = false;
+        p.destroy_sound(refslot);
+        wepdef = 0;
+        weapontype  = "archery";
+        weapontype2 = new_weapontype2;
+        destroy_all_weapons();
+        weaponparse();
+        draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+        }
+else if (new_weapontype == "artillery")
+        {
+        drawable = true;
+        melee = false;
+        useitems = false;
+        p.destroy_sound(refslot);
+        wepdef = 0;
+        weapontype  = "artillery";
+        weapontype2 = new_weapontype2;
+        destroy_all_weapons();
+        weaponparse();
+        draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+        }
+else if (new_weapontype == "explosive")
+        {
+        drawable = true;
+        melee = false;
+        useitems = false;
+        p.destroy_sound(refslot);
+        wepdef = 0;
+        weapontype  = "explosive";
+        weapontype2 = new_weapontype2;
+        destroy_all_weapons();
+        weaponparse();
+        draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+        }
+else if (new_weapontype == "melee")
+        {
+        drawable = true;
+        melee = true;
+        useitems = false;
+        p.destroy_sound(refslot);
+        wepdef = 0;
+        weapontype  = "melee";
+        weapontype2 = new_weapontype2;
+        destroy_all_weapons();
+        weaponparse();
+        draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+        }
+}
+    else
+    {
+        speak("Invalid command syntax. Usage: /draw weapontype weapontype2, or /dr weapontype weapontype2.");
+        if (!in_commandstack) game();
+    }
 }
 else if(base_command == "kn" || base_command=="kill")
 {
@@ -349,7 +414,7 @@ speak("Invalid entity type: "+entity+".");
 else
 {
 speak("Invalid command syntax. Usage: /kill entity id x y, or /kn entity id x y.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "kl" || base_command == "killall")
@@ -542,7 +607,7 @@ speak("Killed all entities.");
 else
 {
 speak("Invalid command syntax. Usage: /killall, or /kl.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "hp" || base_command == "help")
@@ -567,7 +632,7 @@ string comhp=m.get_item_name(mres);
 if(mres==0)
 {
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 }
 else
@@ -578,7 +643,7 @@ speak("Failed to open docks/commands.txt.");
 else
 {
 speak("Invalid command syntax. Usage: /help, or /hp.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "gl" || base_command == "getall")
@@ -588,7 +653,7 @@ if (parsed.length() == 1)
 if(objs.length() == 0)
 {
 speak("There are no items on this map.");
-game();
+if(!in_commandstack) game();
 }
 else
 {
@@ -604,7 +669,7 @@ speak("Collected all items.");
 else
 {
 speak("Invalid command syntax. Usage: /getall, or /gl.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "ic" || base_command == "invclear")
@@ -614,7 +679,7 @@ if (parsed.length() == 1)
 if (inv.get_size()==0)
 {
 speak("There are no items in your inventory.");
-game();
+if(!in_commandstack) game();
 }
 else
 {
@@ -625,7 +690,7 @@ speak("Your inventory has been cleared.");
 else
 {
 speak("Invalid command syntax. Usage: /invclear, or /ic.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if(base_command == "gv" || base_command=="give")
@@ -662,7 +727,7 @@ mapmenu2();
 else
 {
 speak("Invalid command syntax. Usage: /menu, or /mu.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "pf" || base_command == "preffs")
@@ -675,7 +740,7 @@ settingsmenu2();
 else
 {
 speak("Invalid command syntax. Usage: /preffs, or /pf.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "st" || base_command == "stats")
@@ -688,7 +753,7 @@ statsmenu2();
 else
 {
 speak("Invalid command syntax. Usage: /stats, or /st.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "cm" || base_command == "changemap")
@@ -708,7 +773,7 @@ load_map(mapmode, mapname, mapowner);
 else
 {
 speak("Map " + mapname + " not found. Please check the name and try again.");
-game();
+if(!in_commandstack) game();
 }
 if(x >= minx && x <= maxx && y >= miny && y <= maxy)
 {
@@ -717,13 +782,13 @@ gop("me", "", x, y);
 else
 {
 speak("Invalid coordinates. Please make sure x and y are within the map boundaries.");
-game();
+if(!in_commandstack) game();
 }
 }
 else
 {
 speak("Invalid command syntax. Usage: /changemap mapname x y, or /cm mapname x y.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "nm" || base_command == "newmap")
@@ -750,7 +815,7 @@ string[] platform=find_directories("sounds/"+soundpack+"/objects/platforms/*");
 if(platform.length()==0)
 {
 dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
-game();
+if(!in_commandstack) game();
 }
 else
 {
@@ -763,7 +828,7 @@ tiletype=res;
 if(file_exists("data/maps/"+mapname+".map"))
 {
 dlg_snd("Error. A map with this name already exists. Press enter to continue.");
-game();
+if(!in_commandstack) game();
 }
 else
 {
@@ -774,7 +839,33 @@ load_map(mapmode, mapname, mapowner);
 else
 {
 speak("Invalid command syntax. Usage: /newmap, or /nm.");
-game();
+if(!in_commandstack) game();
+}
+}
+else if (base_command == "pl" || base_command == "play")
+{
+if (parsed.length() == 2)
+{
+string sfx = parsed[1];
+temp.play_stationary(find_sound("sounds/"+soundpack+"/misc/"+sfx+"*"),false);
+}
+else
+{
+speak("Invalid command syntax. Usage: /play sound, or /pl sound.");
+if(!in_commandstack) game();
+}
+}
+else if (base_command == "sp" || base_command == "speek")
+{
+if (parsed.length() >= 2)
+{
+string txt=join_string_array(parsed, 1, parsed.length());
+speak(txt);
+}
+else
+{
+speak("Invalid command syntax. Usage: /speek text, or /sp text.");
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "rm" || base_command == "relmap")
@@ -811,7 +902,7 @@ return;
 else
 {
 speak("Invalid command syntax. Usage: /relmap, or /rm.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "rc" || base_command == "relchar")
@@ -829,7 +920,7 @@ speak("character reloaded");
 else
 {
 speak("Invalid command syntax. Usage: /relchar, or /rc.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "rs" || base_command == "relshields")
@@ -843,7 +934,20 @@ speak("shields reloaded");
 else
 {
 speak("Invalid command syntax. Usage: /relshields, or /rs.");
-game();
+if(!in_commandstack) game();
+}
+}
+else if (base_command == "rk" || base_command == "relscripts")
+{
+if (parsed.length() == 1)
+{
+load_scriptkeys();
+speak("script keys reloaded");
+}
+else
+{
+speak("Invalid command syntax. Usage: /relscripts, or /rk.");
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "rw" || base_command == "relweps")
@@ -857,7 +961,7 @@ speak("weapons reloaded");
 else
 {
 speak("Invalid command syntax. Usage: /relweps, or /rw.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "gz" || base_command == "gozone")
@@ -867,7 +971,7 @@ if (parsed.length() == 1)
 if (zones.length() == 0)
 {
 speak("There are no zones available on this map.");
-game();
+if(!in_commandstack) game();
 }
 pause_pools();
 setupmenu();
@@ -883,7 +987,7 @@ if(mres==0)
 {
 resume_pools();
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 if (mres==0 and mres>=zones.length())
 {
@@ -907,7 +1011,7 @@ gop("me", "", target_x, target_y);
 else
 {
 speak("Invalid command syntax. Usage: /gozone, or /gz.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "mp" || base_command == "maps")
@@ -920,7 +1024,7 @@ if(maps.length()==0)
 pause_pools();
 dlg_snd("Error. There are no maps available to view. Press enter to continue.");
 resume_pools();
-game();
+if(!in_commandstack) game();
 }
 else
 {
@@ -950,13 +1054,13 @@ if(mres==0)
 {
 resume_pools();
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 if (mres==0 and mres>=maps.length())
 {
 resume_pools();
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 if (mres>0 and mres<=maps.length())
 {
@@ -972,7 +1076,7 @@ load_map(mapmode, mapname, mapowner);
 else
 {
 speak("Invalid command syntax. Usage: /maps, or /mp.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "rp" || base_command == "rawmap")
@@ -988,7 +1092,7 @@ mapper.close();
 else
 {
 speak("Invalid command syntax. Usage: /rawmap, or /rp.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "rd" || base_command == "rawdata")
@@ -1007,7 +1111,7 @@ if(mres==0)
 {
 resume_pools();
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 if(mres==1)
 {
@@ -1016,7 +1120,7 @@ if (clipboard_data == "")
 {
 dlg_snd("Error. The clipboard is empty.");
 resume_pools();
-game();
+if(!in_commandstack) game();
 }
 string[] lines = string_split(clipboard_data, "\r\n", true);
 bool is_valid = validate_map_data(lines);
@@ -1024,7 +1128,7 @@ if (!is_valid)
 {
 dlg_snd("Error. The clipboard data is invalid.");
 resume_pools();
-game();
+if(!in_commandstack) game();
 }
 mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(clipboard_data);
@@ -1037,13 +1141,13 @@ if(mres==2)
 {
 resume_pools();
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 }
 else
 {
 speak("Invalid command syntax. Usage: /rawdata, or /rd.");
-game();
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "dm" || base_command == "delmap")
@@ -1061,7 +1165,7 @@ int mres=m.run("Are you sure you want to delete "+mapname+"? This action cannot 
 if(mres==0)
 {
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 if(mres==1)
 {
@@ -1079,33 +1183,35 @@ mapmenu();
 if(mres==2)
 {
 speak("canceled");
-game();
+if(!in_commandstack) game();
 }
 }
 else
 {
 speak("Invalid command syntax. Usage: /delmap, or /dm.");
-game();
+if(!in_commandstack) game();
 }
 }
 else
 {
 speak("Unknown command: /"+base_command);
-game();
+if(!in_commandstack) game();
 }
 }
 void comstack(string input)
 {
     string[] commands = string_split(input, ";", true);
+    in_commandstack = true;
     for (uint i = 0; i < commands.length(); i++)
     {
         string cmd = string_trim_sides(commands[i]);
         if (cmd == "")
             continue;
-if (cmd.substr(0, 1) != "/")
-cmd = "/" + cmd;
+        if (cmd.substr(0, 1) != "/")
+            cmd = "/" + cmd;
         comparse(cmd);
     }
+    in_commandstack = false;
 }
 void load_scriptkeys()
 {
@@ -1121,11 +1227,22 @@ void use_scriptkey(uint index)
 {
     if (!scriptkeys_loaded)
         load_scriptkeys();
-    if (index >= scriptkeys.length())
+    if (scriptkeys.length() == 0)
+    {
+        speak("No scriptkeys are defined.");
         return;
+    }
+    if (index >= scriptkeys.length())
+    {
+        speak("Scriptkey " + (index + 1) + " not found.");
+        return;
+    }
     string cmd = string_trim_sides(scriptkeys[index]);
     if (cmd == "")
+    {
+        speak("Scriptkey " + (index + 1) + " not found.");
         return;
+    }
     use_command(cmd);
 }
 void use_command(string cmd, bool announce_commands=false)
