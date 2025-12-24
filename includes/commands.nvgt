@@ -964,6 +964,87 @@ speak("Invalid command syntax. Usage: /relweps, or /rw.");
 if(!in_commandstack) game();
 }
 }
+else if (base_command == "sd" || base_command == "suicide")
+{
+if (parsed.length() == 1)
+{
+if(lifecard>=2)
+{
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/*punch*"),false);
+if(charlifesound==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*life*"),false);
+lifecard-=1;
+health=maxhealth;
+hearttime=maxhealth;
+bonehealth=0;
+broken_bones.delete_all();
+}
+else if(lifecard<=1)
+{
+p.destroy_sound(painslot);
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/*punch*"),false);
+if(chardeathsound==1) dlgplay(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*death*"), true, true, 30);
+dlgplay(find_sound("sounds/"+soundpack+"/objects/platforms/"+gmt(me.x,me.y)+"/*fall*"));
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=find_sound("sounds/"+soundpack+"/misc/menu1.ogg");
+m.enter_sound=find_sound("sounds/"+soundpack+"/misc/menu2.ogg");
+m.open_sound=find_sound("sounds/"+soundpack+"/misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("You have died. Would you like to try again?",true);
+if(mres==0)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+bonehealth=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+}
+if(mres==1)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+}
+if(mres==2)
+{
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+me.x=0;
+me.y=0;
+mainmenu();
+}
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /relchar, or /rc.");
+if(!in_commandstack) game();
+}
+}
 else if (base_command == "gz" || base_command == "gozone")
 {
 if (parsed.length() == 1)
@@ -1215,12 +1296,47 @@ void comstack(string input)
 }
 void load_scriptkeys()
 {
+    string[] old_cmds = scriptkeys;
+    int[] old_lastused = scriptkey_lastused;
+    scriptkeys.resize(0);
+    scriptkey_cooldown.resize(0);
+    scriptkey_lastused.resize(0);
+    scriptkey_speak.resize(0);
     if (!file_exists("docks/scriptkeys.txt"))
-    {
-        scriptkeys.resize(0);
         return;
+    string[] lines = clean_lines("docks/scriptkeys.txt");
+    for (uint i = 0; i < lines.length(); i++)
+    {
+        string line = string_trim_sides(lines[i]);
+        if (line == "")
+            continue;
+        string[] parts = string_split(line, " ", true);
+        int cd = 0;
+        bool speakflag = false;
+        string cmd;
+        uint idx = 0;
+        if (parts.length() > idx && string_is_digits(parts[idx]))
+        {
+            cd = stn(parts[idx]);
+            idx++;
+        }
+        if (parts.length() > idx && (parts[idx] == "true" || parts[idx] == "false"))
+        {
+            speakflag = (parts[idx] == "true");
+            idx++;
+        }
+        cmd = join_string_array(parts, idx, parts.length());
+        cmd = string_trim_sides(cmd);
+        if (cmd == "")
+            continue;
+        scriptkeys.insert_last(cmd);
+        scriptkey_cooldown.insert_last(cd);
+        scriptkey_speak.insert_last(speakflag);
+        if (i < old_lastused.length())
+            scriptkey_lastused.insert_last(old_lastused[i]);
+        else
+            scriptkey_lastused.insert_last(0);
     }
-    scriptkeys = clean_lines("docks/scriptkeys.txt");
     scriptkeys_loaded = true;
 }
 void use_scriptkey(uint index)
@@ -1237,19 +1353,27 @@ void use_scriptkey(uint index)
         speak("Scriptkey " + (index + 1) + " not found.");
         return;
     }
+    int sctime = comtimer.elapsed;
+    int last = scriptkey_lastused[index];
+    int cooldown = scriptkey_cooldown[index];
+    if (cooldown > 0 && sctime - last < cooldown)
+    {
+        if (scriptkey_speak[index])
+            speak("This command cannot be used yet.");
+        return;
+    }
     string cmd = string_trim_sides(scriptkeys[index]);
     if (cmd == "")
     {
         speak("Scriptkey " + (index + 1) + " not found.");
         return;
     }
+    scriptkey_lastused[index] = sctime;
     use_command(cmd);
 }
-void use_command(string cmd, bool announce_commands=false)
+void use_command(string cmd)
 {
 if (cmd == "")
 return;
-if (announce_commands)
-speak("Command: " + cmd);
 comparse(cmd);
 }
