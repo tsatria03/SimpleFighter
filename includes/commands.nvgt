@@ -65,7 +65,7 @@ cmd = comd;
 else
 {
 vd.set_disallowed_chars("", false, "This character is not allowed.");
-cmd = vd.input_box("", "Enter the command you'd like to use. Separate each command with a semicolon.");
+cmd = vd.input_box("", "Enter the commands you'd like to use. Separate each command with a semicolon.");
 if (cmd == "")
     return;
 }
@@ -1281,18 +1281,38 @@ if(!in_commandstack) game();
 }
 void comstack(string input)
 {
-    string[] commands = string_split(input, ";", true);
-    in_commandstack = true;
-    for (uint i = 0; i < commands.length(); i++)
+    string[] parts = string_split(input, ";", true);
+    for (uint i = 0; i < parts.length(); i++)
     {
-        string cmd = string_trim_sides(commands[i]);
-        if (cmd == "")
+        string part = string_trim_sides(parts[i]);
+        if (part == "")
             continue;
-        if (cmd.substr(0, 1) != "/")
-            cmd = "/" + cmd;
-        comparse(cmd);
+        uint pos = 0;
+        while (pos < part.length() && part.substr(pos, 1) >= "0" && part.substr(pos, 1) <= "9")
+        {
+            pos++;
+        }
+        if (pos > 0)
+        {
+            int delay = stn(part.substr(0, pos));
+            if (delay > 0)
+            {
+                int start_time = stacktimer.elapsed;
+                while(stacktimer.elapsed - start_time < delay)
+                {
+continue;
+                }
+            }
+            part = string_trim_sides(part.substr(pos));
+        }
+        if (part == "")
+            continue;
+        if (part.substr(0, 1) != "/")
+            part = "/" + part;
+        in_commandstack = true;
+        comparse(part);
+        in_commandstack = false;
     }
-    in_commandstack = false;
 }
 void load_scriptkeys()
 {

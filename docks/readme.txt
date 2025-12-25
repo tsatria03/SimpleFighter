@@ -62,15 +62,14 @@ Letter, T: Sit or stand at your current location, if pressed.
 Letter, A: Decreases your overall movement speed, if pressed.
 Letter, D: Increases your overall movement speed, if pressed.
 Letter, F: Resets your overall movement speed back to default, if pressed.
-Letter, Q: Anounces the zone you're on in the builder mode, if pressed.
+Letter, Q: Anounces the zone you're on, if pressed.
+Shift plus letter Q: Toggles zone anouncements on or off, if pressed.
 Letter, P: Pauses or resumes the currently active game, if pressed.
 Letter, R: Reloads ammo into a particular weapon category, if pressed.
 Letter, Z: Anounces ammo of a particular weapon category, if pressed.
-Letter, Y: Anounces how long you've been playing the game, if pressed.
-Letter, U: Anounces the current map you're playing on in the builder mode, if pressed.
 Letter, H: Anounces your current health in percentages and how many lives you have, if pressed.
 Letter, O: Equips a shield if one is available, if pressed.
-Letter, N: Anounces the total kills of all npcs in one of the game modes, if pressed.
+Letter, N: Anounces the total kills of all npcs, if pressed.
 Letter, M: Anounces your current shield strength in percentages, if pressed.
 Semicolon: Anounces the current maximum jump height, if pressed.
 Apostrophe: Anounces the current overall movement speed, if pressed.
@@ -79,16 +78,12 @@ PERIOD: Anounces the current maximum Y position, if pressed.
 F1: Decreases your maximum jump height, if pressed.
 F2: Increases your maximum jump height, if pressed.
 F3: Resets your jump height back to default, if pressed.
-F4: Decreases your maximum X position in one of the game modes, if pressed.
-F5: Increases your maximum X position in one of the game modes, if pressed.
-F6: Decreases your maximum Y position in one of the game modes, if pressed.
-F7: Increases your maximum Y position in one of the game modes, if pressed.
 Control: Fires the currently selected weapon, if pressed/held down.
 Tab: Cycles forward through the available inventory items, if pressed.
 Shift plus tab: Cycles backward through the available inventory items, if pressed.
 Shift plus enter: Uses an inventory item when it's currently focused, if pressed/held down.
 Shift plus left braket: Drops an inventory item depending on where you're facing, if pressed.
-Alt plus slash: Opens a prompt that lets you type the x and y Coordinates you'd like to move to on the map in the builder mode, if pressed.
+Slash: Opens a prompt that lets you type a command that you could use on the map, if pressed.
 Enter: Interacts with various objects, such as doors, signs, passages, dialogs, and various other menu items, if pressed.
 Escape: Exits the current game or map and returns you to the last focused menu, if pressed.
 
@@ -97,7 +92,8 @@ Letter, W: Opens the weapons menu, if pressed.
 Letter, S: Opens the shields menu, if pressed.
 Letter, E: Opens the object viewer menu, if pressed.
 Shift plus letter E: Opens the combat log viewer menu, if pressed.
-Letter, B: Opens the Builder menu in the builder mode, if pressed.
+Shift plus letter H: Opens the command help menu, if pressed.
+Letter, B: Opens the Builder menu, if pressed.
 Letter, V: Opens the points menu, if pressed.
 
 Creating sound packs.
