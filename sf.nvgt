@@ -20,16 +20,7 @@ charparse();
 shieldparse();
 weaponparse();
 readpreffs();
-if(directory_exists("sounds") and !directory_empty("sounds"))
-{
-wait(500);
 mainmenu();
-}
-else
-{
-wait(500);
-downloadsounds();
-}
 }
 }
 
@@ -124,50 +115,6 @@ if (form.is_pressed(dockclose))
 {
 docksmenu();
 }
-}
-}
-
-void downloadsounds()
-{
-quest=question("Error", "There are no sounds detected in the game! Would you like to download them now?");
-if (quest==1)
-{
-if (file_exists("sounds.7z"))
-{
-alert("file found", "This file already exists. The downloader will now skip to the extraction process.");
-}
-else
-{
-string result=dl_file("https://github.com/tsatria03/SimpleFighter/releases/download/V6.90/sounds.7z", "sounds.7z");
-if (result != "finished")
-{
-alert("download error", "Download failed or was canceled.");
-if(file_exists("sounds.7z")) file_delete("sounds.7z");
-mainmenu();
-}
-alert("finished", "Download completed successfully.");
-}
-alert("extracting", "Extracting files.");
-progslot=temp.play_stationary_extended(find_sound("sounds/"+soundpack+"/misc/pi2.ogg"), true, 0, 0, 0, 100);
-if(!directory_exists("sounds")) directory_create("sounds");
-bool result=run("lib/7zr.exe", "x sounds.7z -o\"sounds\" -y", true, true);
-if (result==true)
-{
-temp.destroy_sound(progslot);
-alert("extraction_complete", "Extraction finished successfully.");
-if(file_exists("sounds.7z")) file_delete("sounds.7z");
-alert("restarting", "The game will now restart to apply changes.");
-restart();
-}
-else
-{
-alert("extraction_error", "Error occurred during extraction.");
-mainmenu();
-}
-}
-else
-{
-mainmenu();
 }
 }
 

@@ -67,17 +67,69 @@ bulletpool.destroy_sound(bullets[i].bullsound);
 if(weprecsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*rico*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
 bullets[i].bull_bounce();
 }
-if(me.x==bullets[i].bullx and me.y==bullets[i].bully and shieldon==1 and invehicle==false and onbike==false)
+if(me.x==bullets[i].bullx and me.y==bullets[i].bully and invehicle==false and onbike==false)
+{
+if(melee==true and weapontype=="melee" and wepdef==1)
+{
+int refchance = random(0, 100);
+int refprob = 80;
+if(refchance < refprob)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
+weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"),false,0,0,weaponvolume,weaponpitch,false);
+}
+else
+{
+if(shieldon==1)
+{
+bulletpool.destroy_sound(bullets[i].bullsound);
+int sdm = max(1, bullets[i].damage *0.5 - shielddefence * 3);
+shieldstrength -= sdm;
+kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took " + shieldtype + " " + sdm + " damage.");
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+bullets.remove_at(i);
+return;
+}
+else
+{
+bulletpool.destroy_sound(bullets[i].bullsound);
+if(wephitsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+if(wepshellsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+int dmg = max(1, bullets[i].damage * 0.5 - defence * 3);
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = find_sound("sounds/" + soundpack + "/characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+bullets.remove_at(i);
+return;
+}
+}
+}
+else if (shieldon == 1)
+{
 if(shieldhitsound==1) shieldslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
 int sdm = max(1, (bullets[i].damage) - (shielddefence * 3));
 shieldstrength -= sdm;
 kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took " + shieldtype + " " + sdm + " damage.");
-bullets.remove_at(i);
-return;
 }
-else if(me.x==bullets[i].bullx and me.y==bullets[i].bully and shieldon==0 and invehicle==false and onbike==false)
+else
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
 if(wephitsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
@@ -106,6 +158,7 @@ painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpit
 }
 bullets.remove_at(i);
 return;
+}
 }
 if(absolute(bullets[i].bullx-me.x)>bullets[i].range or absolute(bullets[i].bully-me.y)>bullets[i].range2)
 {
@@ -188,9 +241,10 @@ else
 bulletpool.destroy_sound(bullets[i].bullsound);
 if(wephitsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
 if(wepshellsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
-humans[i5].hurtsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humans[i5].humantype+"/*hurt*"),me.x,me.y,humans[i5].humx,humans[i5].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-humans[i5].humanhealth -= (bullets[i].damage * 0.5);
-kombatlog.insert_last(bullets[i].damage+" damage to "+humans[i5].humantype+" by "+weapontype2+"'s weapon attack.");
+int dmg = max(0, bullets[i].damage * 0.5 - humans[i5].defence*3);
+humans[i5].humanhealth -= dmg;
+kombatlog.insert_last(dmg+" damage to "+humans[i5].humantype+" by "+weapontype2+"'s weapon attack.");
+if(dmg>0) humans[i5].hurtsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humans[i5].humantype+"/*hurt*"),me.x,me.y,humans[i5].humx,humans[i5].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
 bullets.remove_at(i);
 return;
 }
@@ -200,9 +254,10 @@ else if(humans[i5].humx==bullets[i].bullx and humans[i5].humy==bullets[i].bully)
 bulletpool.destroy_sound(bullets[i].bullsound);
 if(wephitsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
 if(wepshellsound==1) bullets[i].wepsound=bulletpool.play_extended_2d(find_sound("sounds/"+soundpack+"/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,bullets[i].bullx,bullets[i].bully,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
-humans[i5].hurtsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humans[i5].humantype+"/*hurt*"),me.x,me.y,humans[i5].humx,humans[i5].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
-humans[i5].humanhealth-=bullets[i].damage;
-kombatlog.insert_last(bullets[i].damage+" damage to "+humans[i5].humantype+" by "+weapontype2+"'s weapon attack.");
+int dmg = max(0, bullets[i].damage - humans[i5].defence*3);
+humans[i5].humanhealth -= dmg;
+kombatlog.insert_last(dmg+" damage to "+humans[i5].humantype+" by "+weapontype2+"'s weapon attack.");
+if(dmg>0) humans[i5].hurtsound=humanpool.play_extended_2d(find_sound("sounds/"+soundpack+"/npc/humans/"+humans[i5].humantype+"/*hurt*"),me.x,me.y,humans[i5].humx,humans[i5].humy,0,0,0,0,false,0,0,painvolume,painpitch,false);
 bullets.remove_at(i);
 return;
 }

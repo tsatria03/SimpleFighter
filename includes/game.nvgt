@@ -4,7 +4,12 @@ if(key_pressed(KEY_SLASH))
 {
 comparse();
 }
-uint offset = shift_is_down() ? ordered_scriptkeys.length() : 0;
+uint bank = 0;
+if (shift_is_down() && alt_is_down())
+    bank = 2;
+else if (shift_is_down())
+    bank = 1;
+uint offset = bank * ordered_scriptkeys.length();
 for (uint i = 0; i < ordered_scriptkeys.length(); i++)
 {
     if (key_repeating(ordered_scriptkeys[i]))
@@ -395,8 +400,8 @@ speak("You must enable auto walking in order to increase the moving speed.");
 }
 else if(speedable==true)
 {
-p.play_stationary(find_sound("sounds/"+soundpack+"/misc/speed.ogg"),false);
 modspeed+=1;
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/change.ogg"),false);
 speak("speed"+modspeed);
 }
 }
@@ -408,8 +413,8 @@ speak("You must enable auto walking in order to decrease the moving speed.");
 }
 else if(speedable==true)
 {
-p.play_stationary(find_sound("sounds/"+soundpack+"/misc/speed.ogg"),false);
 modspeed-=1;
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/change.ogg"),false);
 speak("speed"+modspeed);
 }
 }
@@ -422,6 +427,7 @@ speak("moving speed is already reset");
 else if(modspeed<=20)
 {
 modspeed=5;
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/change.ogg"),false);
 speak("moving speed reset");
 }
 }
@@ -553,14 +559,16 @@ bonecheck();
 if(chartelsound3==1) p.play_stationary(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*telxy*"),false);
 }
 }
-if(key_pressed(KEY_F1) and jumpheight!=1)
+if(key_repeating(KEY_F1) and jumpheight!=1)
 {
 jumpheight-=1;
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/change.ogg"),false);
 speak("jump height decreased to"+jumpheight+"squares");
 }
-if(key_pressed(KEY_F2) and jumpheight!=20)
+if(key_repeating(KEY_F2) and jumpheight!=20)
 {
 jumpheight+=1;
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/change.ogg"),false);
 speak("jump height increased to"+jumpheight+"squares");
 }
 if(key_pressed(KEY_F3))
@@ -572,6 +580,7 @@ speak("jump hight is already reset");
 else if(jumpheight<=20)
 {
 jumpheight=5;
+p.play_stationary(find_sound("sounds/"+soundpack+"/misc/change.ogg"),false);
 speak("jump hight reset");
 }
 }
@@ -702,7 +711,7 @@ if (ascending==false and jumptimer.elapsed>=jumptime2 and atapex==false)
 jumptimer.restart();
 me.y-=1;
 checkforplatforms();
-if (me.y<=ty1)
+if (me.y <= ty1)
 {
 me.y=ty1;
 jumping=0;
@@ -874,7 +883,7 @@ drawable=false;
 manule_use_item();
 }
 }
-if(key_repeating(KEY_E))
+if(!shift_is_down() and key_repeating(KEY_E))
 {
 if(animals.length()==0 and bikes.length()==0 and bosses.length()==0 and dest_walls.length()==0 and doors.length()==0 and psdoors.length()==0 and humans.length()==0 and helpers.length()==0 and projectiles.length()==0 and robots.length()==0 and spikes.length()==0  and sucams.length()==0 and turrets.length()==0 and vehicles.length()==0 and zombies.length()==0)
 {
