@@ -733,34 +733,54 @@ return 0;
 }
 string archersmenu()
 {
-string[] archers=find_directories("sounds/"+soundpack+"/equipments/weapons/archery/*");
-sort_naturally(archers);
-setupmenu();
-m.set_callback(@archers_callback,"");
-for (uint i=0; i<archers.length(); i++)
-{
-m.add_item_tts(archers[i],archers[i],"",true);
-}
-int mres=m.run("Archery menu", true);
-if(mres==0)
-{
-weaponsmenu();
-}
-if(mres>0 and mres<=archers.length())
-{
-resume_pools();
-weapontype2=archers[mres-1];
-destroy_all_weapons();
-weaponparse();
-}
-return m.get_item_name(mres);
+    string[] archers = find_directories("sounds/" + soundpack + "/equipments/weapons/archery/*");
+    sort_naturally(archers);
+    setupmenu();
+    m.set_callback(@archers_callback, "");
+    for (uint i = 0; i < archers.length(); i++)
+    {
+        string weapon_name = archers[i];
+        string info_path = "sounds/" + soundpack + "/equipments/weapons/archery/" + weapon_name + "/info.sif";
+        double unlock_level = 0;
+        if (file_exists(info_path))
+        {
+            file f;
+            f.open(info_path, "rb");
+            string[] lines = string_split(f.read(), "\r\n", true);
+            f.close();
+            for (uint j = 0; j < lines.length(); j++)
+            {
+                string[] kv = string_split(lines[j], "=", true);
+                if (kv.length() == 2 && kv[0] == "unlock level")
+                {
+                    unlock_level = parse_double(kv[1]);
+                    break;
+                }
+            }
+        }
+        bool is_unlocked = level >= unlock_level;
+string label = weapon_name;
+if (!is_unlocked)
+    label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+        m.add_item_tts(label, weapon_name, "", is_unlocked);
+    }
+    int mres = m.run("Archery menu", true);
+    if (mres == 0) weaponsmenu();
+    if (mres > 0 && mres <= archers.length())
+    {
+        resume_pools();
+        weapontype2 = archers[mres - 1];
+        destroy_all_weapons();
+        weaponparse();
+    }
+    return m.get_item_name(mres);
 }
 int archers_callback(dynamic_menu_pro@ m, string data)
 {
 string archers;
 if(m.menu_position>0)
 archers=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+    if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
 {
 t.destroy_sound(prevslot);
 string[] firesfx=find_files("sounds/"+soundpack+"/equipments/weapons/archery/"+archers+"/*fire*");
@@ -807,27 +827,47 @@ return 0;
 }
 string gunsmenu()
 {
-string[] fighters=find_directories("sounds/"+soundpack+"/equipments/weapons/artillery/*");
-sort_naturally(fighters);
-setupmenu();
-m.set_callback(@guns_callback,"");
-for (uint i=0; i<fighters.length(); i++)
-{
-m.add_item_tts(fighters[i],fighters[i],"",true);
-}
-int mres=m.run("artillery menu", true);
-if(mres==0)
-{
-weaponsmenu();
-}
-if(mres>0 and mres<=fighters.length())
-{
-resume_pools();
-weapontype2=fighters[mres-1];
-destroy_all_weapons();
-weaponparse();
-}
-return m.get_item_name(mres);
+    string[] fighters = find_directories("sounds/" + soundpack + "/equipments/weapons/artillery/*");
+    sort_naturally(fighters);
+    setupmenu();
+    m.set_callback(@guns_callback, "");
+    for (uint i = 0; i < fighters.length(); i++)
+    {
+        string weapon_name = fighters[i];
+        string info_path = "sounds/" + soundpack + "/equipments/weapons/artillery/" + weapon_name + "/info.sif";
+        double unlock_level = 0;
+        if (file_exists(info_path))
+        {
+            file f;
+            f.open(info_path, "rb");
+            string[] lines = string_split(f.read(), "\r\n", true);
+            f.close();
+            for (uint j = 0; j < lines.length(); j++)
+            {
+                string[] kv = string_split(lines[j], "=", true);
+                if (kv.length() == 2 && kv[0] == "unlock level")
+                {
+                    unlock_level = parse_double(kv[1]);
+                    break;
+                }
+            }
+        }
+        bool is_unlocked = level >= unlock_level;
+        string label = weapon_name;
+        if (!is_unlocked)
+            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+        m.add_item_tts(label, weapon_name, "", is_unlocked);
+    }
+    int mres = m.run("Artillery menu", true);
+    if (mres == 0) weaponsmenu();
+    if (mres > 0 && mres <= fighters.length())
+    {
+        resume_pools();
+        weapontype2 = fighters[mres - 1];
+        destroy_all_weapons();
+        weaponparse();
+    }
+    return m.get_item_name(mres);
 }
 int guns_callback(dynamic_menu_pro@ m, string data)
 {
@@ -881,27 +921,47 @@ return 0;
 }
 string explosesmenu()
 {
-string[] killers=find_directories("sounds/"+soundpack+"/equipments/weapons/explosive/*");
-sort_naturally(killers);
-setupmenu();
-m.set_callback(@bombs_callback,"");
-for (uint i=0; i<killers.length(); i++)
-{
-m.add_item_tts(killers[i],killers[i],"",true);
-}
-int mres=m.run("explosive menu", true);
-if(mres==0)
-{
-weaponsmenu();
-}
-if(mres>0 and mres<=killers.length())
-{
-resume_pools();
-weapontype2=killers[mres-1];
-destroy_all_weapons();
-weaponparse();
-}
-return m.get_item_name(mres);
+    string[] killers = find_directories("sounds/" + soundpack + "/equipments/weapons/explosive/*");
+    sort_naturally(killers);
+    setupmenu();
+    m.set_callback(@bombs_callback, "");
+    for (uint i = 0; i < killers.length(); i++)
+    {
+        string weapon_name = killers[i];
+        string info_path = "sounds/" + soundpack + "/equipments/weapons/explosive/" + weapon_name + "/info.sif";
+        double unlock_level = 0;
+        if (file_exists(info_path))
+        {
+            file f;
+            f.open(info_path, "rb");
+            string[] lines = string_split(f.read(), "\r\n", true);
+            f.close();
+            for (uint j = 0; j < lines.length(); j++)
+            {
+                string[] kv = string_split(lines[j], "=", true);
+                if (kv.length() == 2 && kv[0] == "unlock level")
+                {
+                    unlock_level = parse_double(kv[1]);
+                    break;
+                }
+            }
+        }
+        bool is_unlocked = level >= unlock_level;
+        string label = weapon_name;
+        if (!is_unlocked)
+            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+        m.add_item_tts(label, weapon_name, "", is_unlocked);
+    }
+    int mres = m.run("Explosive menu", true);
+    if (mres == 0) weaponsmenu();
+    if (mres > 0 && mres <= killers.length())
+    {
+        resume_pools();
+        weapontype2 = killers[mres - 1];
+        destroy_all_weapons();
+        weaponparse();
+    }
+    return m.get_item_name(mres);
 }
 int bombs_callback(dynamic_menu_pro@ m, string data)
 {
@@ -955,27 +1015,47 @@ return 0;
 }
 string meleesmenu()
 {
-string[] brawlers=find_directories("sounds/"+soundpack+"/equipments/weapons/melee/*");
-sort_naturally(brawlers);
-setupmenu();
-m.set_callback(@swords_callback,"");
-for (uint i=0; i<brawlers.length(); i++)
-{
-m.add_item_tts(brawlers[i],brawlers[i],"",true);
-}
-int mres=m.run("melee menu", true);
-if(mres==0)
-{
-weaponsmenu();
-}
-if(mres>0 and mres<=brawlers.length())
-{
-resume_pools();
-weapontype2 = brawlers[mres-1];
-destroy_all_weapons();
-weaponparse();
-}
-return m.get_item_name(mres);
+    string[] brawlers = find_directories("sounds/" + soundpack + "/equipments/weapons/melee/*");
+    sort_naturally(brawlers);
+    setupmenu();
+    m.set_callback(@swords_callback, "");
+    for (uint i = 0; i < brawlers.length(); i++)
+    {
+        string weapon_name = brawlers[i];
+        string info_path = "sounds/" + soundpack + "/equipments/weapons/melee/" + weapon_name + "/info.sif";
+        double unlock_level = 0;
+        if (file_exists(info_path))
+        {
+            file f;
+            f.open(info_path, "rb");
+            string[] lines = string_split(f.read(), "\r\n", true);
+            f.close();
+            for (uint j = 0; j < lines.length(); j++)
+            {
+                string[] kv = string_split(lines[j], "=", true);
+                if (kv.length() == 2 && kv[0] == "unlock level")
+                {
+                    unlock_level = parse_double(kv[1]);
+                    break;
+                }
+            }
+        }
+        bool is_unlocked = level >= unlock_level;
+        string label = weapon_name;
+        if (!is_unlocked)
+            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+        m.add_item_tts(label, weapon_name, "", is_unlocked);
+    }
+    int mres = m.run("Melee menu", true);
+    if (mres == 0) weaponsmenu();
+    if (mres > 0 && mres <= brawlers.length())
+    {
+        resume_pools();
+        weapontype2 = brawlers[mres - 1];
+        destroy_all_weapons();
+        weaponparse();
+    }
+    return m.get_item_name(mres);
 }
 int swords_callback(dynamic_menu_pro@ m, string data)
 {
@@ -1011,32 +1091,55 @@ return 0;
 }
 string shieldsmenu()
 {
-string[] armors=find_directories("sounds/"+soundpack+"/equipments/shields/*");
-sort_naturally(armors);
-setupmenu();
-m.set_callback(@shields_callback,"");
-for (uint i=0; i<armors.length(); i++)
-{
-m.add_item_tts(armors[i],armors[i],"",true);
-}
-int mres=m.run("Shields menu", true);
-if(mres==0)
-{
-resume_pools();
-speak("canceled");
-}
-if(mres>0 and mres<=armors.length())
-{
-resume_pools();
-shieldtype=armors[mres-1];
-destroy_all_shields();
-shieldparse();
-t.destroy_sound(prevslot);
-string[] drawsfx=find_files("sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/*draw*");
-if(drawsfx.length()!=0 and shielddrawsound==1) shieldslot=p.play_stationary_extended("sounds/"+soundpack+"/equipments/shields/"+shieldtype+"/"+drawsfx[random(0,drawsfx.length()-1)],false,0,0,shieldvolume,shieldpitch);
-speak(shieldtype+";"+"equipped");
-}
-return m.get_item_name(mres);
+    string[] armors = find_directories("sounds/" + soundpack + "/equipments/shields/*");
+    sort_naturally(armors);
+    setupmenu();
+    m.set_callback(@shields_callback, "");
+    for (uint i = 0; i < armors.length(); i++)
+    {
+        string shield_name = armors[i];
+        string info_path = "sounds/" + soundpack + "/equipments/shields/" + shield_name + "/info.sif";
+        double unlock_level = 0;
+        if (file_exists(info_path))
+        {
+            file f;
+            f.open(info_path, "rb");
+            string[] lines = string_split(f.read(), "\r\n", true);
+            f.close();
+            for (uint j = 0; j < lines.length(); j++)
+            {
+                string[] kv = string_split(lines[j], "=", true);
+                if (kv.length() == 2 && kv[0] == "unlock level")
+                {
+                    unlock_level = parse_double(kv[1]);
+                    break;
+                }
+            }
+        }
+        bool is_unlocked = level >= unlock_level;
+        string label = shield_name;
+        if (!is_unlocked)
+            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+        m.add_item_tts(label, shield_name, "", is_unlocked);
+    }
+    int mres = m.run("Shields menu", true);
+    if (mres == 0)
+    {
+        resume_pools();
+        speak("Canceled");
+    }
+    if (mres > 0 && mres <= armors.length())
+    {
+        resume_pools();
+        shieldtype = armors[mres - 1];
+        destroy_all_shields();
+        shieldparse();
+        t.destroy_sound(prevslot);
+        string[] drawsfx = find_files("sounds/" + soundpack + "/equipments/shields/" + shieldtype + "/*draw*");
+        if (drawsfx.length() != 0 && shielddrawsound == 1) shieldslot = p.play_stationary_extended("sounds/" + soundpack + "/equipments/shields/" + shieldtype + "/" + drawsfx[random(0, drawsfx.length() - 1)], false, 0, 0, shieldvolume, shieldpitch);
+        speak(shieldtype + " " + "equipped");
+    }
+    return m.get_item_name(mres);
 }
 int shields_callback(dynamic_menu_pro@ m, string data)
 {
