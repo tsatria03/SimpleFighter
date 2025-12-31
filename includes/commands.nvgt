@@ -612,39 +612,51 @@ if(!in_commandstack) game();
 }
 else if (base_command == "hp" || base_command == "help")
 {
-if (parsed.length() == 1)
-{
-if(coms.open("references/commands.txt", "rb"))
-{
-comsplit=coms.read();
-coms.close();
-string content = string_replace(comsplit, "\r\n", "\n", true);
-array<string> lines = content.split("\n");
-setupmenu(false);
-m.add_item_tts("These are the available commands you can use in the game.");
-for(uint i=0; i<lines.length(); i++)
-{
-m.add_item_tts(lines[i], lines[i]);
-}
-m.add_item_tts("Total commands: " + lines.length() + ".");
-int mres=m.run("Help menu.",true);
-string comhp=m.get_item_name(mres);
-if(mres==0)
-{
-speak("canceled");
-if(!in_commandstack) game();
-}
-}
-else
-{
-speak("Failed to open references/commands.txt.");
-}
-}
-else
-{
-speak("Invalid command syntax. Usage: /help, or /hp.");
-if(!in_commandstack) game();
-}
+    if (parsed.length() == 1)
+    {
+        if (coms.open("data/references/commands.txt", "rb"))
+        {
+            comsplit = coms.read();
+            coms.close();
+            string content = string_replace(comsplit, "\r\n", "\n", true);
+            array<string> raw = content.split("\n");
+            array<string> lines;
+            for (uint i = 0; i < raw.length(); i++)
+            {
+                string l = string_trim_sides(raw[i]);
+                if (l != "")
+                    lines.insert_last(l);
+            }
+            if (lines.length() == 0)
+            {
+                speak("There are no commands available to view.");
+                if (!in_commandstack) game();
+            }
+            setupmenu(false);
+            m.add_item_tts("These are the available commands you can use in the game.");
+            for (uint i = 0; i < lines.length(); i++)
+            {
+                m.add_item_tts(lines[i], lines[i]);
+            }
+            m.add_item_tts("Total commands: " + lines.length() + ".");
+            int mres = m.run("Help menu.", true);
+            if (mres == 0)
+            {
+                speak("canceled");
+                if (!in_commandstack) game();
+            }
+        }
+        else
+        {
+            speak("Failed to open data/references/commands.txt.");
+            if (!in_commandstack) game();
+        }
+    }
+    else
+    {
+        speak("Invalid command syntax. Usage: /help, or /hp.");
+        if (!in_commandstack) game();
+    }
 }
 else if (base_command == "gl" || base_command == "getall")
 {
@@ -763,7 +775,7 @@ if (parsed.length() == 4)
 string mapname=parsed[1];
 int x = stn(parsed[2]);
 int y = stn(parsed[3]);
-if (file_exists("maps/" + mapname + ".map"))
+if (file_exists("data/maps/" + mapname + ".map"))
 {
 if (x >= minx && x <= maxx && y >= miny && y <= maxy)
 {
@@ -825,7 +837,7 @@ if(res!="")
 tiletype=res;
 }
 }
-if(file_exists("maps/"+mapname+".map"))
+if(file_exists("data/maps/"+mapname+".map"))
 {
 dlg_snd("Error. A map with this name already exists. Press enter to continue.");
 if(!in_commandstack) game();
@@ -927,6 +939,15 @@ else if (base_command == "rs" || base_command == "relshields")
 {
 if (parsed.length() == 1)
 {
+p.destroy_sound(shieldloop);
+p.destroy_sound(shieldslot);
+drawnshield=false;
+fireable=true;
+jumpable=true;
+moveable=true;
+shieldon=0;
+shieldweight=1;
+shieldtype="none";
 destroy_all_shields();
 shieldparse();
 speak("shields reloaded");
@@ -1100,7 +1121,7 @@ else if (base_command == "mp" || base_command == "maps")
 {
 if (parsed.length() == 1)
 {
-string[] maps=find_files("maps/*.map");
+string[] maps=find_files("data/maps/*.map");
 if(maps.length()==0)
 {
 pause_pools();
@@ -1115,7 +1136,7 @@ setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
 string temp_map_name = string_replace(maps[i], ".map", "", true);
-mapper.open("maps/"+temp_map_name+".map", "rb");
+mapper.open("data/maps/"+temp_map_name+".map", "rb");
 string temp_map_data = mapper.read();
 mapper.close();            
 string temp_owner;
@@ -1129,7 +1150,7 @@ temp_owner = sd[1];
 break;
 }
 }            
-m.add_item_tts(temp_map_name + " (by " + temp_owner + ", size: " + measure_file_size(file_get_size("maps/" + maps[i]))+")");
+m.add_item_tts(temp_map_name + " (by " + temp_owner + ", size: " + measure_file_size(file_get_size("data/maps/" + maps[i]))+")");
 }
 int mres=m.run("Maps menu", true);
 if(mres==0)
@@ -1165,7 +1186,7 @@ else if (base_command == "rp" || base_command == "rawmap")
 {
 if (parsed.length() == 1)
 {
-mapper.open("maps/" + mapname + ".map", "rb");
+mapper.open("data/maps/" + mapname + ".map", "rb");
 mapdata=mapper.read();
 clipboard_copy_text(mapdata);
 speak("The data of "+mapname+" has been copied to your clipboard");
@@ -1212,7 +1233,7 @@ dlg_snd("Error. The clipboard data is invalid.");
 resume_pools();
 if(!in_commandstack) game();
 }
-mapper.open("maps/" + mapname + ".map", "wb");
+mapper.open("data/maps/" + mapname + ".map", "wb");
 mapper.write(clipboard_data);
 mapper.close();
 load_map(mapmode, mapname, mapowner);
@@ -1251,7 +1272,7 @@ if(!in_commandstack) game();
 }
 if(mres==1)
 {
-if(file_exists("maps/"+mapname+".map")) file_delete("maps/"+mapname+".map");
+if(file_exists("data/maps/"+mapname+".map")) file_delete("data/maps/"+mapname+".map");
 if(fademode==0) fade_multi_pool(0);
 if(fademode==1) fade_multi_pool(1);
 speak("map deleted");
@@ -1323,9 +1344,9 @@ void load_scriptkeys()
     scriptkey_cooldown.resize(0);
     scriptkey_lastused.resize(0);
     scriptkey_speak.resize(0);
-    if (!file_exists("references/scriptkeys.txt"))
+    if (!file_exists("data/references/scriptkeys.txt"))
         return;
-    string[] lines = clean_lines("references/scriptkeys.txt");
+    string[] lines = clean_lines("data/references/scriptkeys.txt");
     for (uint i = 0; i < lines.length(); i++)
     {
         string line = string_trim_sides(lines[i]);
