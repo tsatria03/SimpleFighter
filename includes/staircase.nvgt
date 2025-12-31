@@ -1,10 +1,59 @@
 bool onstaircase;
+dest_staircase@[]dest_staircases(0);
+class dest_staircase
+{
+bool abletojump;
+double minx,maxx,miny,maxy;
+double dest_stairshealth;
+double dest_stairsmaxhealth;
+double volume;
+double pitch;
+string tile;
+dest_staircase(double mx,double mx2,double my,double my2,double hp,double maxhp,string dst,double vol,double semitone)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+dest_stairshealth=hp;
+dest_stairsmaxhealth=maxhp;
+tile=dst;
+volume=vol;
+pitch=semitone;
+spawn_dest_plat(minx, maxx, miny, maxy, dest_stairshealth, dest_stairsmaxhealth, tile, volume, pitch);
+}
+}
+void dest_stairscheck()
+{
+for (uint i=0; i<dest_staircases.length(); i++)
+{
+if (me.x>=dest_staircases[i].minx&&me.x<=dest_staircases[i].maxx&&me.y>=dest_staircases[i].miny&&me.y<=dest_staircases[i].maxy)
+{
+onstaircase=true;
+if (me.y==dest_staircases[i].maxy) dest_staircases[i].abletojump=true;
+else dest_staircases[i].abletojump=false;
+}
+else
+{
+onstaircase=false;
+dest_staircases[i].abletojump=true;
+}
+}
+}
+void spawn_dest_staircase(double x1,double x2,double y1,double y2,double hp,double hp2,string tile,double stairsvolume,double stairspitch)
+{
+dest_staircase dsr1(x1,x2,y1,y2,hp,hp2,tile,stairsvolume,stairspitch);
+dest_staircases.insert_last(dsr1);
+}
+void destroy_all_dest_staircases()
+{
+dest_staircases.resize(0);
+}
+
 staircase@[] staircases(0);
 class staircase
 {
 bool abletojump;
-bool spiable;
-int staircsound;
 double minx, maxx, miny, maxy;
 double stairsvolume;
 double stairspitch;
@@ -20,17 +69,6 @@ stairsvolume=vol;
 stairspitch=semitone;
 spawn_platform(minx, maxx, miny, maxy, tile, stairsvolume, stairspitch);
 }
-}
-bool is_staircase(double x, double y)
-{
-    for (uint i = 0; i < staircases.length(); i++)
-    {
-        if (x >= staircases[i].minx && x <= staircases[i].maxx && y >= staircases[i].miny && y <= staircases[i].maxy)
-        {
-            return true;
-        }
-    }
-    return false;
 }
 void stairscheck()
 {

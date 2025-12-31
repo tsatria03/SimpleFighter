@@ -13,6 +13,8 @@ m.add_item_tts("checkpoint", "cp");
 m.add_item_tts("clock", "cl");
 m.add_item_tts("conveyor belt", "cb");
 m.add_item_tts("command blocker", "cbl");
+m.add_item_tts("destroyable platform", "dlp");
+m.add_item_tts("destroyable staircase", "dls");
 m.add_item_tts("destroyable wall", "dlw");
 m.add_item_tts("dialog", "dlg");
 m.add_item_tts("door", "ds");
@@ -4760,6 +4762,108 @@ game();
 }
 }
 }
+}
+if(buildem=="dlp")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this destroyable platform.");
+string mx2=vd.input_box("","Enter the maximum x of this destroyable platform.");
+string my=vd.input_box("","Enter the y of this destroyable platform.");
+string hp=vd.input_box("","Enter the health of this destroyable platform. Press enter to use the default health.", "1");
+if(x=="" and paxx=="" and y=="" and minhp=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+string[] destplat=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(destplat.length()==0)
+{
+dlg_snd("Error. There are no destroyable platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=destplatsmenu();
+if(res!="")
+{
+destplattype=res;
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+}
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"dest_plat "+x+" "+paxx+" "+y+" "+minhp+" "+destplattype+" "+volume+" "+pitch);
+mapper.close();
+spawn_dest_plat(x, paxx, y, y, minhp, minhp, destplattype, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary(find_sound("sounds/"+soundpack+"/misc/mapupdate.ogg"),false);
+speak("Map updated.");
+}
+if(buildem=="dls")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the minimum x of this destroyable staircase.");
+string mx2=vd.input_box("","Enter the maximum x of this destroyable staircase.");
+string my=vd.input_box("","Enter the minimum y of this destroyable staircase.");
+string my2=vd.input_box("","Enter the maximum y of this destroyable staircase.");
+string hp=vd.input_box("","Enter the health of this destroyable staircase. Press enter to use the default health.", "1");
+if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+minhp=string_to_number(hp);
+string[] destplat=find_directories("sounds/"+soundpack+"/objects/platforms/*");
+if(destplat.length()==0)
+{
+dlg_snd("Error. There are no destroyable platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=destplatsmenu();
+if(res!="")
+{
+destplattype=res;
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 0.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+resume_pools();
+speak("Canceled");
+return;
+}
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+}
+mapper.open("data/maps/"+mapname+".map","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"dest_staircase "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+destplattype+" "+volume+" "+pitch);
+mapper.close();
+spawn_dest_staircase(x, paxx, y, paxy, minhp, minhp, destplattype, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary(find_sound("sounds/"+soundpack+"/misc/mapupdate.ogg"),false);
+speak("Map updated.");
 }
 if(buildem=="dlw")
 {
