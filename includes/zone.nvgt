@@ -222,7 +222,7 @@ healzone@[]healzones(0);
 class healzone
 {
 bool in_zone;
-int healsound, takesound;
+int hitsound, healsound, takesound;
 double minx, maxx, miny, maxy;
 int healmode;
 int healhp;
@@ -248,17 +248,30 @@ for(uint i=0; i<healzones.length(); i++)
 if(healzones[i].minx<=me.x and healzones[i].maxx>=me.x and healzones[i].miny<=me.y and healzones[i].maxy>=me.y and healzones[i].healtimer.elapsed>=healzones[i].healtime)
 {
 healzones[i].healtimer.restart();
-if(healzones[i].healmode==0)
+if(healzones[i].healmode==0 and invehicle==false)
 {
-if(shieldon==1 and invehicle==false) shieldstrength-=healzones[i].healhp;
-if(shieldon==0 and invehicle==false) health-=healzones[i].healhp;
-if(shieldon==0 and invehicle==false) hearttime-=healzones[i].healhp;
+if(shieldon==1)
+{
+shieldstrength-=healzones[i].healhp;
 }
-if(healzones[i].healmode==1)
+else if(shieldon==0)
 {
-if(shieldon==1 and invehicle==false) shieldstrength+=healzones[i].healhp;
-if(shieldon==0 and invehicle==false) health+=healzones[i].healhp;
-if(shieldon==0 and invehicle==false) hearttime+=healzones[i].healhp;
+healzones[i].hitsound=healpool.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*bleed*"),false,0,0,painvolume,painpitch,false);
+health-=healzones[i].healhp;
+hearttime-=healzones[i].healhp;
+}
+}
+if(healzones[i].healmode==1 and invehicle==false)
+{
+if(shieldon==1)
+{
+shieldstrength+=healzones[i].healhp;
+}
+else if(shieldon==0)
+{
+health+=healzones[i].healhp;
+hearttime+=healzones[i].healhp;
+}
 }
 }
 }
