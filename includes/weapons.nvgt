@@ -77,37 +77,65 @@ if(wep_maxammo<loadedammo)
 {
 loadedammo=wep_maxammo;
 }
-if(wepdrawsound==1) weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapon_name+"/"+weapon_name2+"/*draw*"),false,0,0,weaponvolume,weaponpitch,false);
+if(wepdrawsound==1) weaponslot=p.play_stationary_extended(get_sound("equipments/weapons/"+weapon_name+"/"+weapon_name2+"/*draw*"),false,0,0,weaponvolume,weaponpitch,false);
+}
+void check_weapon_reload()
+{
+    if (isReloading && reloadTimer.elapsed >= reload_duration)
+    {
+        loadedammo += pending_ammo;
+        ammo -= pending_ammo;
+        pending_ammo = 0;
+        isReloading = false;
+if(wepreloadsound==1) weaponslot = p.play_stationary_extended(get_sound("equipments/weapons/" + weapontype + "/" + weapontype2 + "/*ping*"), false, 0, 0, weaponvolume, weaponpitch, false);
+    }
 }
 void reload_weapon()
 {
-if(ammo<=0)
-{
-bonecheck();
-if(wepemptysound==1) weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*empty*"),false,0,0,weaponvolume,weaponpitch,false);
-speak("No ammo.");
+    if (isReloading)
+    {
+        speak("This weapon is still reloading.");
+        return;
+    }
+    if (ammo <= 0)
+    {
+        bonecheck();
+        if (wepemptysound == 1)
+        {
+            weaponslot = p.play_stationary_extended(get_sound("equipments/weapons/" + weapontype + "/" + weapontype2 + "/*empty*"), false, 0, 0, weaponvolume, weaponpitch, false);
+        }
+        speak("No ammo.");
+    }
+    else
+    {
+        int am;
+        if (ammo < maxammo)
+        {
+            am = ammo;
+        }
+        else
+        {
+            am = maxammo;
+            if (loadedammo < maxammo && loadedammo > 0)
+            {
+                am = maxammo - loadedammo;
+            }
+        }
+        if (wepreloadsound == 1)
+        {
+            weaponslot = p.play_stationary_extended(get_sound("equipments/weapons/" + weapontype + "/" + weapontype2 + "/*reload*"), false, 0, 0, weaponvolume, weaponpitch, false);
+            reload_duration = p.get_sound_length(weaponslot);
+        }
+        else
+        {
+            reload_duration = 0;
+        }
+        isReloading = true;
+        reloadTimer.restart();
+        pending_ammo = am;
+    }
 }
-else
-{
-int am;
-if(ammo<maxammo)
-{
-am=ammo;
-}
-if(ammo>=maxammo)
-{
-am=maxammo;
-if(loadedammo<maxammo and loadedammo>0)
-{
-am=maxammo-loadedammo;
-}
-}
-loadedammo+=am;
-ammo-=am; 
-bonecheck();
-if(wepreloadsound==1) weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*reload*"),false,0,0,weaponvolume,weaponpitch,false);
-}
-}
+
 void spawn_bltdir(int bltmode)
 {
 bullmode=bltmode;
@@ -141,12 +169,12 @@ weapontimer.restart();
 if(loadedammo==0 and melee==false)
 {
 bonecheck();
-if(wepemptysound==1) weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*empty*"),false,0,0,weaponvolume,weaponpitch,false);
+if(wepemptysound==1) weaponslot=p.play_stationary_extended(get_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*empty*"),false,0,0,weaponvolume,weaponpitch,false);
 }
 else
 {
 bonecheck();
-if(wepfiresound==1) weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,weaponvolume,weaponpitch,false);
+if(wepfiresound==1) weaponslot=p.play_stationary_extended(get_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,weaponvolume,weaponpitch,false);
 spawn_bltdir(bullmode);
 if(melee==false)
 {
@@ -163,13 +191,13 @@ weapontimer2.restart();
 if(loadedammo==0 and melee==false)
 {
 bonecheck();
-if(wepemptysound==1) weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*empty*"),false,0,0,weaponvolume,weaponpitch,false);
+if(wepemptysound==1) weaponslot=p.play_stationary_extended(get_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*empty*"),false,0,0,weaponvolume,weaponpitch,false);
 }
 else
 {
 bonecheck();
-if(charswingsound==1 and weapontype=="melee") weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/characters/"+chartype+"/*swing*"),false,0,0,weaponvolume,weaponpitch,false);
-if(wepfiresound==1) weaponslot=p.play_stationary_extended(find_sound("sounds/"+soundpack+"/equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,weaponvolume,weaponpitch,false);
+if(charswingsound==1 and weapontype=="melee") weaponslot=p.play_stationary_extended(get_sound("characters/"+chartype+"/*swing*"),false,0,0,weaponvolume,weaponpitch,false);
+if(wepfiresound==1) weaponslot=p.play_stationary_extended(get_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,weaponvolume,weaponpitch,false);
 spawn_bltdir(bullmode);
 if(melee==false)
 {
