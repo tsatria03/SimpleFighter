@@ -781,7 +781,7 @@ if (parsed.length() == 4)
 string mapname=parsed[1];
 int x = stn(parsed[2]);
 int y = stn(parsed[3]);
-if (file_exists("data/maps/" + mapname + ".map"))
+if (directory_exists("data/maps/" + mapname))
 {
 if (x >= minx && x <= maxx && y >= miny && y <= maxy)
 {
@@ -843,13 +843,14 @@ if(res!="")
 tiletype=res;
 }
 }
-if(file_exists("data/maps/"+mapname+".map"))
+if(directory_exists("data/maps/"+mapname))
 {
 dlg_snd("Error. A map with this name already exists. Press enter to continue.");
 if(!in_commandstack) game();
 }
 else
 {
+directory_create("data/maps/"+mapname);
 create_map(mapmode, mapname, mapowner, minx, maxx, miny, maxy, tiletype);
 load_map(mapmode, mapname, mapowner);
 }
@@ -1127,7 +1128,7 @@ else if (base_command == "mp" || base_command == "maps")
 {
 if (parsed.length() == 1)
 {
-string[] maps=find_files("data/maps/*.map");
+string[] maps=find_directories("data/maps/*");
 if(maps.length()==0)
 {
 pause_pools();
@@ -1142,7 +1143,7 @@ setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
 string temp_map_name = string_replace(maps[i], ".map", "", true);
-mapper.open("data/maps/"+temp_map_name+".map", "rb");
+mapper.open("data/maps/"+temp_map_name+"/"+"info.map", "rb");
 string temp_map_data = mapper.read();
 mapper.close();            
 string temp_owner;
@@ -1156,7 +1157,9 @@ temp_owner = sd[1];
 break;
 }
 }            
-m.add_item_tts(temp_map_name + " (by " + temp_owner + ", size: " + measure_file_size(file_get_size("data/maps/" + maps[i]))+")");
+uint64 size = get_directory_size("data/maps/" + maps[i]);
+string readable_size = measure_file_size(size);
+m.add_item_tts(temp_map_name + " (by " + temp_owner + ", size: " + readable_size+")", maps[i]);
 }
 int mres=m.run("Maps menu", true);
 if(mres==0)
@@ -1192,7 +1195,7 @@ else if (base_command == "rp" || base_command == "rawmap")
 {
 if (parsed.length() == 1)
 {
-mapper.open("data/maps/" + mapname + ".map", "rb");
+mapper.open("data/maps/"+mapname+"/"+"info.map", "rb");
 mapdata=mapper.read();
 clipboard_copy_text(mapdata);
 speak("The data of "+mapname+" has been copied to your clipboard");
@@ -1239,11 +1242,11 @@ dlg_snd("Error. The clipboard data is invalid.");
 resume_pools();
 if(!in_commandstack) game();
 }
-mapper.open("data/maps/" + mapname + ".map", "wb");
+mapper.open("data/maps/"+mapname+"/"+"info.map", "wb");
 mapper.write(clipboard_data);
 mapper.close();
 load_map(mapmode, mapname, mapowner);
-mpool.play_stationary(get_sound("misc/mapupdate.ogg"), false);
+mpool.play_stationary(find_sound("data/maps/"+mapname+"/"+"*update*"), false);
 speak("Map updated.");
 }
 if(mres==2)
@@ -1278,11 +1281,11 @@ if(!in_commandstack) game();
 }
 if(mres==1)
 {
-if(file_exists("data/maps/"+mapname+".map")) file_delete("data/maps/"+mapname+".map");
+if(directory_exists("data/maps/"+mapname)) directory_delete("data/maps/"+mapname);
 if(fademode==0) fade_multi_pool(0);
 if(fademode==1) fade_multi_pool(1);
 speak("map deleted");
-dlgplay(get_sound("misc/mapdelete.ogg"),false);
+dlgplay(find_sound("data/maps/"+mapname+"/"+"*delete*"),false);
 me.x=0;
 me.y=0;
 clearmap();
