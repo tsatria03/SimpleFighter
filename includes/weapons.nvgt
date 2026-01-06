@@ -55,8 +55,127 @@ void destroy_all_weapons()
 weapons.resize(0);
 }
 
+void arseparse(string wepcad)
+{
+if(file_exists("sounds/"+soundpack+"/equipments/weapons/"+wepcad+"/"+weapontype2+"/info.sif"))
+{
+bool success=info.open("sounds/"+soundpack+"/equipments/weapons/"+wepcad+"/"+weapontype2+"/info.sif", "rb");
+if(!success)
+{
+mainmenu();
+}
+string content=info.read();
+string[] lines=string_split(content,"\r\n",true);
+for(uint i=0; i<lines.length(); i++)
+{
+string[] data=string_split(lines[i],"=",true);
+if (data.length()<2)
+{
+alert("Error","Error reading line "+(i+1)+".");
+mainmenu();
+}
+if (data[0]=="name")
+{
+name=data[1];
+}
+if (data[0]=="damage")
+{
+wepdamage=parse_int(data[1]);
+}
+if (data[0]=="mode")
+{
+wephold=parse_int(data[1]);
+}
+if (data[0]=="horizontal range")
+{
+weprange=parse_int(data[1]);
+}
+if (data[0]=="vertical range")
+{
+weprange2=parse_int(data[1]);
+}
+if (data[0]=="bullet speed")
+{
+wepspeed=parse_int(data[1]);
+}
+if (data[0]=="repeat time")
+{
+weapontime=parse_int(data[1]);
+}
+if (data[0]=="spam time")
+{
+weapontime2=parse_int(data[1]);
+}
+if (data[0]=="weight")
+{
+wepweight=parse_int(data[1]);
+}
+if (data[0]=="ammo")
+{
+ammo=parse_double(data[1]);
+}
+if (data[0]=="loaded ammo")
+{
+loadedammo=parse_double(data[1]);
+}
+if (data[0]=="max ammo")
+{
+maxammo=parse_double(data[1]);
+}
+if (data[0]=="unlock level")
+{
+weplevel=parse_double(data[1]);
+}
+if(data[0]=="draw sound")
+{
+wepdrawsound=parse_int(data[1]);
+}
+if(data[0]=="empty sound")
+{
+wepemptysound=parse_int(data[1]);
+}
+if(data[0]=="fire sound")
+{
+wepfiresound=parse_int(data[1]);
+}
+if(data[0]=="hit sound")
+{
+wephitsound=parse_int(data[1]);
+}
+if(data[0]=="loop sound")
+{
+weploopsound=parse_int(data[1]);
+}
+if(data[0]=="rec sound")
+{
+weprecsound=parse_int(data[1]);
+}
+if(data[0]=="reload sound")
+{
+wepreloadsound=parse_int(data[1]);
+}
+if(data[0]=="shell sound")
+{
+wepshellsound=parse_int(data[1]);
+}
+}
+add_weapon(wepdamage, wephold, weprange, weprange2, wepspeed, weapontime, weapontime2, wepweight, ammo, loadedammo, maxammo, weplevel, wepdrawsound, wepemptysound, wepfiresound, wephitsound, weploopsound, weprecsound, wepreloadsound, wepshellsound);
+}
+}
+
+void weaponparse()
+{
+arseparse("archery");
+arseparse("artillery");
+arseparse("explosive");
+arseparse("melee");
+}
+
 void draw_weapon(string weapon_name,string weapon_name2,int wep_range,int wep_range2,int wep_damage,int wep_speed,int wep_maxammo,bool is_melee)
 {
+isReloading = false;
+pending_ammo = 0;
+reload_duration = 0;
 weapontype=weapon_name;
 weapontype2=weapon_name2;
 weprange=wep_range;
@@ -135,7 +254,6 @@ void reload_weapon()
         pending_ammo = am;
     }
 }
-
 void spawn_bltdir(int bltmode)
 {
 bullmode=bltmode;
