@@ -781,7 +781,7 @@ if (parsed.length() == 4)
 string mapname=parsed[1];
 int x = stn(parsed[2]);
 int y = stn(parsed[3]);
-if (directory_exists("data/maps/" + mapname))
+if (directory_exists("data/maps/decompiled/" + mapname))
 {
 if (x >= minx && x <= maxx && y >= miny && y <= maxy)
 {
@@ -815,7 +815,7 @@ if (parsed.length() == 1)
 {
 vd.set_disallowed_chars("", false, "This character is not allowed.");
 string name=vd.input_box("","Enter the name of this map.");
-string name2=vd.input_box("","Enter the author of this map. Press enter to use the default author.", "noone");
+string name2=vd.input_box("","Enter the owner of this map. Press enter to use the default owner.", "noone");
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
 string mx=vd.input_box("","Enter the minimum length of this map.");
 string mx2=vd.input_box("","Enter the maximum length of this map.");
@@ -829,29 +829,14 @@ double minx=string_to_number(mx);
 double maxx=string_to_number(mx2);
 double miny=string_to_number(my);
 double maxy=string_to_number(my2);
-string[] platform=find_directories("data/maps/"+mapname+"/assets/objects/platforms/*");
-if(platform.length()==0)
-{
-dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
-if(!in_commandstack) game();
-}
-else
-{
-string res=platsmenu();
-if(res!="")
-{
-tiletype=res;
-}
-}
-if(directory_exists("data/maps/"+mapname))
+if(directory_exists("data/maps/decompiled/"+mapname))
 {
 dlg_snd("Error. A map with this name already exists. Press enter to continue.");
 if(!in_commandstack) game();
 }
 else
 {
-directory_create("data/maps/"+mapname);
-create_map(mapmode, mapname, mapowner, minx, maxx, miny, maxy, tiletype);
+create_map(mapmode, mapname, mapowner, minx, maxx, miny, maxy);
 load_map(mapmode, mapname, mapowner);
 }
 }
@@ -908,7 +893,7 @@ return;
 if(mres==1)
 {
 resume_pools();
-load_map(mapmode, mapname, mapowner);
+load_map(mapmode, mapname, mapowner, anounce_mapload:false);
 speak("map reloaded");
 }
 if(mres==2)
@@ -1128,7 +1113,7 @@ else if (base_command == "mp" || base_command == "maps")
 {
 if (parsed.length() == 1)
 {
-string[] maps=find_directories("data/maps/*");
+string[] maps=find_directories("data/maps/decompiled/*");
 if(maps.length()==0)
 {
 pause_pools();
@@ -1142,8 +1127,8 @@ pause_pools();
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
-string temp_map_name = string_replace(maps[i], ".map", "", true);
-mapper.open("data/maps/"+temp_map_name+"/"+"info.map", "rb");
+string temp_map_name = string_replace(maps[i], ".sif", "", true);
+mapper.open("data/maps/decompiled/"+temp_map_name+"/"+"info.sif", "rb");
 string temp_map_data = mapper.read();
 mapper.close();            
 string temp_owner;
@@ -1151,15 +1136,15 @@ string[] lines = delinear(temp_map_data);
 for (uint j = 0; j < lines.length(); j++)
 {
 string[] sd = string_split(lines[j], " ", true);
-if (sd[0] == "contributor" && sd.length() == 2)
+if (sd[0] == "owner" && sd.length() == 2)
 {
 temp_owner = sd[1];
 break;
 }
 }            
-uint64 size = get_directory_size("data/maps/" + maps[i]);
+uint64 size = get_directory_size("data/maps/decompiled/" + maps[i]);
 string readable_size = measure_file_size(size);
-m.add_item_tts(temp_map_name + " (by " + temp_owner + ", size: " + readable_size+")", maps[i]);
+m.add_item_tts(temp_map_name + " (by " + temp_owner + ". Total size: " + readable_size+")", maps[i]);
 }
 int mres=m.run("Maps menu", true);
 if(mres==0)
@@ -1178,7 +1163,7 @@ if (mres>0 and mres<=maps.length())
 {
 resume_pools();
 mapname=maps[mres-1];
-mapname=string_replace(mapname, ".map", "", true);
+mapname=string_replace(mapname, ".sif", "", true);
 me.x=0;
 me.y=0;
 load_map(mapmode, mapname, mapowner);
@@ -1195,7 +1180,7 @@ else if (base_command == "rp" || base_command == "rawmap")
 {
 if (parsed.length() == 1)
 {
-mapper.open("data/maps/"+mapname+"/"+"info.map", "rb");
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "rb");
 mapdata=mapper.read();
 clipboard_copy_text(mapdata);
 speak("The data of "+mapname+" has been copied to your clipboard");
@@ -1242,7 +1227,7 @@ dlg_snd("Error. The clipboard data is invalid.");
 resume_pools();
 if(!in_commandstack) game();
 }
-mapper.open("data/maps/"+mapname+"/"+"info.map", "wb");
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "wb");
 mapper.write(clipboard_data);
 mapper.close();
 load_map(mapmode, mapname, mapowner);
@@ -1285,7 +1270,7 @@ if(fademode==0) fade_multi_pool(0);
 if(fademode==1) fade_multi_pool(1);
 speak("map deleted");
 dlgplay(get_map_sound("map/*delete*"),false);
-if(directory_exists("data/maps/"+mapname)) directory_delete("data/maps/"+mapname);
+if(directory_exists("data/maps/decompiled/"+mapname)) directory_delete("data/maps/decompiled/"+mapname);
 me.x=0;
 me.y=0;
 clearmap();

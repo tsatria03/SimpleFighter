@@ -75,6 +75,11 @@ int string_to_int(string str)
     }
     return isNegative ? -result : result;
 }
+int string_find(const string&in text, const string&in term)
+{
+    return text.find(term);
+}
+
 string int_to_string(int value)
 {
     if (value == 0)
@@ -132,6 +137,24 @@ return true;
 return false;
 }
 
+bool load_map_pack(const string&in name, const string&in key)
+{
+    mapname = name;
+    string compiled_path = "data/maps/compiled/" + name;
+    if (file_exists(compiled_path))
+    {
+        set_sound_storage(compiled_path);
+        set_sound_decryption_key(key, true);
+        map_pack_loaded = true;
+        return true;
+    }
+    else
+    {
+        map_pack_loaded = false;
+        return false;
+    }
+}
+
 bool int_to_bool(int i)
 {
 return i==1? true:false;
@@ -169,7 +192,7 @@ if (key == "maxy") has_maxy = true;
 return has_name && has_contributor && has_minx && has_maxx && has_miny && has_maxy;
 }
 
-string find_sound(string soundname)
+string find_sound_in_disk(string soundname)
 {
 string[] snd=find_files(soundname);
 if (snd.length()>0)
@@ -182,16 +205,55 @@ else
 return "";
 }
 
-string get_map_sound(const string&in path)
+string find_sound_in_pack(const string name, const string format = "", pack@[] packs = {})
 {
-string fullpath = "data/maps/" + mapname + "/assets/" + path;
-return find_sound(fullpath);
+uint l1, l2, l3;
+pack@ p;
+string[] files;
+string wildcards = "%0.*".format(name);
+string ffile;
+string[] formats = {"ogg", "mp3", "wav"};
+regexp re("^%0\\.(%1)$".format(name, (format.empty()) ? join(formats, "|") : format), RE_CASELESS);
+packs.insert_last(sound_default_pack);
+l1 = packs.length();
+for (uint i = 0; i < l1; i ++) {
+@p = @packs[i];
+if (p == null)
+continue;
+files = p.list_files();
+l2 = files.length();
+for (uint j = 0; j < l2; j ++) {
+if (re.match(files[j]))
+return files[j];
+}
+}
+files = find_files(wildcards);
+l3 = files.length();
+if (l3 < 1)
+return "";
+for (uint i = 0; i < l3; i ++) {
+if (re.match(files[i]))
+return files[i];
+}
+return "";
 }
 
+string get_map_sound(const string&in path)
+{
+    if (map_pack_loaded)
+    {
+        string basepath = "assets/" + path;
+        string result = find_sound_in_pack(basepath);
+        if (result != "")
+            return result;
+    }
+    string fullpath = "data/maps/decompiled/" + mapname + "/assets/" + path;
+    return find_sound_in_disk(fullpath);
+}
 string get_pack_sound(const string&in path)
 {
 string fullpath = "sounds/" + soundpack + "/" + path;
-return find_sound(fullpath);
+return find_sound_in_disk(fullpath);
 }
 
     string[] clean_lines(string filepath)
@@ -604,6 +666,208 @@ pitches.insert_last(walls[i].pitch);
 }
 }
 
+void create_subfolders(string filepath)
+{
+    string[] parts = string_split(filepath, "/", true);
+    if (parts.length() <= 1) return;
+    parts.resize(parts.length() - 1);
+    string path;
+    for (uint i = 0; i < parts.length(); i++)
+    {
+        path += parts[i];
+        if (i < parts.length() - 1) path += "/";
+        if (!directory_exists(path)) directory_create(path);
+    }
+}
+void extract_file(pack@ pf, const string&in filename, const string&in outfile)
+{
+    uint size = pf.get_file_size(filename);
+    string content = pf.read_file(filename, 0, size);
+    if (use_key)
+    {
+        string decrypted;
+        if (strpack)
+            decrypted = string_decrypt(content, decrypt_key);
+        else
+            decrypted = file_decrypt(content, decrypt_key);
+        if (decrypted != "")
+            content = decrypted;
+    }
+    file f;
+    f.open(outfile, "wb");
+    f.write(content);
+    f.close();
+}
+void find_stuff(string base, string path)
+{
+    string[] dirs = find_directories(path + "\\*");
+    string[] files = find_files(path + "\\*.*");
+    for (uint i = 0; i < files.length(); i++)
+        file_list.insert_last(path + "/" + files[i]);
+    for (uint j = 0; j < dirs.length(); j++)
+        find_stuff(base, path + "/" + dirs[j]);
+}
+
+void compile_map()
+{
+    filename = input_box("Map Compiler", "Enter the name of the map file to create (e.g., main.map)");
+    if (filename == "")
+    {
+        alert("Error", "You may not compile an empty map!");
+        mapmenu();
+    }
+    if (!string_ends_with(filename, ".map"))
+        filename += ".map";
+    string full_output_path = "data/maps/compiled/" + filename;
+    if (!directory_exists("data/maps/compiled"))
+        directory_create("data/maps/compiled");
+    foldername = input_box("Map Compiler", "Enter the path containing files to compile");
+    if (foldername == "")
+        mapmenu();
+if (!string_starts_with(foldername, "data/maps/decompiled/"))
+    foldername = "data/maps/decompiled/" + foldername;
+    int answer = question("Map Compiler", "Would you like these files to be encrypted?");
+    if (answer == 1)
+    {
+        encrypt = true;
+        encryption_key = input_box("Map Compiler", "Enter the encryption key for this map.");
+        if (encryption_key == "")
+            mapmenu();
+        if (string_left(encryption_key, 6) == "file::")
+        {
+            if (!f.open(string_trim_left(encryption_key, 6), "rb"))
+            {
+                alert("Error", "Failed to open key file.");
+                mapmenu();
+            }
+            encryption_key = f.read();
+            f.close();
+        }
+        if (string_left(encryption_key, 10) == "str::hex::")
+        {
+            strpack = true;
+            encryption_key = hex_to_string(string_trim_left(encryption_key, 10));
+        }
+        else if (string_left(encryption_key, 5) == "hex::")
+        {
+            encryption_key = hex_to_string(string_trim_left(encryption_key, 5));
+        }
+        else if (string_left(encryption_key, 5) == "str::")
+        {
+            strpack = true;
+            encryption_key = string_trim_left(encryption_key, 5);
+        }
+    }
+    if (!directory_exists(foldername))
+    {
+        alert("Error", "Folder does not exist!");
+        mapmenu();
+    }
+    if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
+    {
+        alert("Error", "Failed to create map file at: " + full_output_path);
+        mapmenu();
+    }
+    file_list.resize(0);
+    find_stuff(foldername, foldername);
+    alert("Map Compiler", "There are " + file_list.length() + " files in the map. Press OK to start compiling!");
+    int percent = -1;
+    for (uint i = 0; i < file_list.length(); i++)
+    {
+        double progress = (double(i) / double(file_list.length())) * 100.0;
+        int rounded = int(progress);
+        if (rounded != percent)
+        {
+            percent = rounded;
+            beep_percentage(percent);
+        }
+        string relative = string_replace(file_list[i], foldername + "/", "", true);
+        pfile.add_file(file_list[i], relative);
+    }
+    pfile.close();
+    alert("Success!", "Map compiled to " + full_output_path);
+    mapmenu();
+}
+void decompile_map()
+{
+    filename = input_box("Map Decompiler", "Enter the name of the map file to decompile (e.g., main.map)");
+    if (filename == "")
+    {
+        alert("Error", "You may not decompile an empty map!");
+        mapmenu();
+    }
+    if (!string_starts_with(filename, "data/maps/compiled/"))
+        filename = "data/maps/compiled/" + filename;
+    decrypt_key = input_box("Map Decompiler", "Enter the decryption key for this map. Leave blank for no decryption key.");
+    if (get_last_error() == -12) mapmenu();
+    if (decrypt_key != "")
+    {
+        use_key = true;
+        if (string_left(decrypt_key, 6) == "file::")
+        {
+            if (!tempfile.open(string_trim_left(decrypt_key, 6), "rb"))
+            {
+                alert("Error", "Failed to open key file.");
+                mapmenu();
+            }
+            decrypt_key = tempfile.read();
+            tempfile.close();
+        }
+        if (string_left(decrypt_key, 10) == "str::hex::")
+        {
+            strpack = true;
+            decrypt_key = hex_to_string(string_trim_left(decrypt_key, 10));
+        }
+        else if (string_left(decrypt_key, 5) == "hex::")
+        {
+            decrypt_key = hex_to_string(string_trim_left(decrypt_key, 5));
+        }
+        else if (string_left(decrypt_key, 5) == "str::")
+        {
+            strpack = true;
+            decrypt_key = string_trim_left(decrypt_key, 5);
+        }
+    }
+    end = input_box("Map Decompiler", "Enter anything you want added to the end of the filenames, such as .ogg or .wav.");
+    if (get_last_error() == -12) mapmenu();
+    if (!pfile.open(filename, PACK_OPEN_MODE_READ))
+    {
+        alert("Error", "Could not open the specified map file: " + filename);
+        mapmenu();
+    }
+    contents = pfile.list_files();
+    if (contents.length() == 0)
+    {
+        alert("Error", "No files found in this map.");
+        mapmenu();
+    }
+    alert("Get Ready", contents.length() + " files are about to be extracted!");
+    if (!directory_exists("data/maps/decompiled"))
+        directory_create("data/maps/decompiled");
+string base_name = strip_extension(strip_directory(filename));
+    string base_dir = "data/maps/decompiled/" + base_name;
+    if (!directory_exists(base_dir))
+        directory_create(base_dir);
+    double prev_percent = -1;
+    for (uint i = 0; i < contents.length(); i++)
+    {
+        double percent = ((i + 1.0) / contents.length()) * 100.0;
+        percent = round(percent, 0);
+        if (percent != prev_percent)
+        {
+            beep_percentage(int(percent));
+            prev_percent = percent;
+        }
+        string relative_path = contents[i];
+        string output_path = base_dir + "/" + relative_path + end;
+        create_subfolders(output_path);
+        extract_file(pfile, relative_path, output_path);
+    }
+    pfile.close();
+    alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
+    mapmenu();
+}
+
 void key_echocheck(audio_form@ form)
 {
 if (key_pressed(KEY_F2))
@@ -873,11 +1137,14 @@ output.close();
 return true;
 }
 
+string file_encrypt(const string& encrypted_content, const string& encryption_key)
+{
+return string_encrypt(encrypted_content, encryption_key);
+}
 string file_decrypt(const string& encrypted_content, const string& encryption_key)
 {
 return string_decrypt(encrypted_content, encryption_key);
 }
-
 int get_distance(int a, int b)
 {
 return absolute(a - b);
@@ -1081,7 +1348,7 @@ return false;
 }
 }
 
-buggreport@[] reports(0); // Initialize an empty array for bug reports
+buggreport@[] reports(0);
 class buggreport {
     string name;
     string subject;
@@ -1093,21 +1360,17 @@ class buggreport {
         name = n;
         subject = s;
         content = c;
-        id = generate_token(4); // Generate a 4-character token
-        closed = false; // Initialize the closed status
+        id = generate_token(4);
+        closed = false;
     }
 
     void send_report() {
-        // Submits this report to a server to be viewed by admins
-        // Placeholder for server submission logic
     }
 }
 
 void report_bug(string n, string s, string c) {
-    buggreport new_report(n, s, c); // Create a new bug report
-    reports.insert_last(@new_report); // Add the report to the array
-
-    // Alert with report details
+    buggreport new_report(n, s, c);
+    reports.insert_last(@new_report);
     alert("New Report!", "You received a new report from " + new_report.name + 
           ", with ID " + new_report.id + 
           ". Subject: " + new_report.subject + 
