@@ -89,6 +89,7 @@ Escape: Exits the current game or map and returns you to the last focused menu, 
 
 Menu keys.
 Letter, W: Opens the weapons menu, if pressed.
+Letter, I: Opens the inventory menu, if pressed.
 Letter, S: Opens the shields menu, if pressed.
 Letter, E: Opens the object viewer menu, if pressed.
 Shift plus letter E: Opens the combat log viewer menu, if pressed.
