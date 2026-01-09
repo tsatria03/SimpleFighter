@@ -320,32 +320,64 @@ speak("current location, "+me.x+", "+me.y+". "+"You're walking on "+gmt(me.x,me.
 }
 }
 
-void load_map(string mode, string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds)
+void load_map(string mode, string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false)
 {
-mapmode=mode;
-mapname=name;
-mapowner=owner;
-maploadbeeps=loadbeeps;
-maploadsounds=loadsounds;
-clearmap();
-destroymap();
-if(string_ends_with(mapname,".sif"))
-{
-mapname=string_replace(mapname,".sif","",true);
-}
-if(!file_exists("data/maps/decompiled/"+mapname+"/"+"info.sif"))
-{
-dlg_snd("Error. This map is invalid. Please check for the map's info file and try again. Press enter to continue.");
-mainmenu();
-}
-mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","rb");
-mapdata=mapper.read();
-mapper.close();
+    mapmode = mode;
+    mapname = name;
+    mapowner = owner;
+    maploadbeeps = loadbeeps;
+    maploadsounds = loadsounds;
+    clearmap();
+    destroymap();
+    if (string_ends_with(mapname, ".sif"))
+        mapname = string_replace(mapname, ".sif", "", true);
+    if (string_ends_with(mapname, ".map"))
+        mapname = string_replace(mapname, ".map", "", true);
+    string decompiled_info_path = "data/maps/decompiled/" + mapname + "/info.sif";
+    string compiled_path = "data/maps/compiled/" + mapname + ".map";
+    string mapdata = "";
+    bool loaded = false;
+    map_is_compiled = false;
+    if (!force_compiled && file_exists(decompiled_info_path))
+    {
+        set_sound_storage("");
+        set_sound_decryption_key("", true);
+        map_pack_loaded = false;
+        mapper.open(decompiled_info_path, "rb");
+        mapdata = mapper.read();
+        mapper.close();
+        loaded = true;
+        map_is_compiled = false;
+    }
+    else if (file_exists(compiled_path))
+    {
+        if (!load_map_pack(mapname, ""))
+        {
+            dlg_snd("Error: Map failed to load.");
+            mapmenu();
+        }
+        if (map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+        {
+            if (map_pack.file_exists("info.sif"))
+            {
+                uint size = map_pack.get_file_size("info.sif");
+                mapdata = map_pack.read_file("info.sif", 0, size);
+                loaded = true;
+                map_is_compiled = true;
+            }
+            map_pack.close();
+        }
+    }
+    if (!loaded)
+    {
+        dlg_snd("Error: Map not found or missing info.sif.");
+        mapmenu();
+    }
 sound mapload;
 timer maploadtimer;
 if(anounce_mapload==true) speak("loading map");
-if(loadsounds==1) mpool.play_stationary(get_map_sound("map/*loadstart*"),false);
-if(loadsounds==1) mapload.load(get_map_sound("map/*loading*"));
+if(loadsounds==1) mpool.play_stationary(get_pack_sound("misc/maploadstart.ogg"),false);
+if(loadsounds==1) mapload.load(get_pack_sound("misc/maploading.ogg"));
 if(loadsounds==1) mapload.play_looped();
 string[] lines=delinear(mapdata);
 double percent=0;
@@ -1250,7 +1282,7 @@ telable=true;
 }
 }
 if(loadsounds==1) mapload.stop();
-if(loadsounds==1) mpool.play_stationary(get_map_sound("map/*loadstop*"),false);
+if(loadsounds==1) mpool.play_stationary(get_pack_sound("misc/maploadstop.ogg"),false);
 if(loadbeeps == 1 && last_beep_percent<100)
 {
 if(speak_percentage==true) speak("100 "+"percent");
@@ -1267,7 +1299,7 @@ minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
-string[] mapdirs = {"data/maps/decompiled/" + mapname, "data/maps/decompiled/" + mapname + "/assets", "data/maps/decompiled/" + mapname + "/assets/dialogs", "data/maps/decompiled/" + mapname + "/assets/map", "data/maps/decompiled/" + mapname + "/assets/musics", "data/maps/decompiled/" + mapname + "/assets/npc", "data/maps/decompiled/" + mapname + "/assets/objects", "data/maps/decompiled/" + mapname + "/assets/sources"};
+string[] mapdirs = {"data/maps/decompiled/" + mapname, "data/maps/decompiled/" + mapname + "/assets", "data/maps/decompiled/" + mapname + "/assets/dialogs", "data/maps/decompiled/" + mapname + "/assets/musics", "data/maps/decompiled/" + mapname + "/assets/npc", "data/maps/decompiled/" + mapname + "/assets/objects", "data/maps/decompiled/" + mapname + "/assets/sources"};
 for (uint i = 0; i < mapdirs.length(); i++)
 {
     directory_create(mapdirs[i]);
@@ -1278,7 +1310,7 @@ mapper.write("mode "+mode+"\r\n"+"name "+name+"\r\n"+"minx "+mx+"\r\n"+"maxx "+m
 mapper.close();
 me.x=0;
 me.y=0;
-dlg("The map template has been created successfully. Please place the sounds that you want in the assets folder. When you're done, you can visit the map by going to the maps menu.");
+dlg("The map template has been created successfully. Please place the sounds that you want in the assets folder. When you're done, you can visit the map by going to the decompiled maps menu.");
 }
 
 void cam_left()

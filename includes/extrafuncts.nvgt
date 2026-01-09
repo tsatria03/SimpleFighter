@@ -140,7 +140,7 @@ return false;
 bool load_map_pack(const string&in name, const string&in key)
 {
     mapname = name;
-    string compiled_path = "data/maps/compiled/" + name;
+    string compiled_path = "data/maps/compiled/" + name + ".map";
     if (file_exists(compiled_path))
     {
         set_sound_storage(compiled_path);
@@ -205,37 +205,25 @@ else
 return "";
 }
 
-string find_sound_in_pack(const string name, const string format = "", pack@[] packs = {})
+string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
 {
-uint l1, l2, l3;
-pack@ p;
-string[] files;
-string wildcards = "%0.*".format(name);
-string ffile;
-string[] formats = {"ogg", "mp3", "wav"};
-regexp re("^%0\\.(%1)$".format(name, (format.empty()) ? join(formats, "|") : format), RE_CASELESS);
-packs.insert_last(sound_default_pack);
-l1 = packs.length();
-for (uint i = 0; i < l1; i ++) {
-@p = @packs[i];
-if (p == null)
-continue;
-files = p.list_files();
-l2 = files.length();
-for (uint j = 0; j < l2; j ++) {
-if (re.match(files[j]))
-return files[j];
-}
-}
-files = find_files(wildcards);
-l3 = files.length();
-if (l3 < 1)
-return "";
-for (uint i = 0; i < l3; i ++) {
-if (re.match(files[i]))
-return files[i];
-}
-return "";
+    if (p is null)
+        return "";
+    string[] files = p.list_files();
+    string[] matches;
+    string pattern = soundname;
+    pattern = string_replace(pattern, ".", "\\.", true);
+    pattern = string_replace(pattern, "*", ".*", true);
+    pattern = "^" + pattern + "$";
+    regexp re(pattern, RE_CASELESS);
+    for (uint i = 0; i < files.length(); i++)
+    {
+        if (re.match(files[i]))
+            matches.insert_last(files[i]);
+    }
+    if (matches.length() > 0)
+        return matches[random(0, matches.length() - 1)];
+    return "";
 }
 
 string get_map_sound(const string&in path)
@@ -248,7 +236,7 @@ string get_map_sound(const string&in path)
             return result;
     }
     string fullpath = "data/maps/decompiled/" + mapname + "/assets/" + path;
-    return find_sound_in_disk(fullpath);
+return find_sound_in_disk(fullpath);
 }
 string get_pack_sound(const string&in path)
 {
@@ -743,21 +731,19 @@ if (!string_starts_with(foldername, "data/maps/decompiled/"))
             encryption_key = f.read();
             f.close();
         }
-        if (string_left(encryption_key, 10) == "str::hex::")
-        {
-            strpack = true;
-            encryption_key = hex_to_string(string_trim_left(encryption_key, 10));
+            if (string_left(encryption_key, 5) == "str::")
+            {
+                strpack = true;
+                encryption_key = string_trim_left(encryption_key, 5);
+            }
+            if (string_left(encryption_key, 5) == "hex::")
+                encryption_key = hex_to_string(string_trim_left(encryption_key, 5));
+            if (string_left(encryption_key, 10) == "str::hex::")
+            {
+                strpack = true;
+                encryption_key = hex_to_string(string_trim_left(encryption_key, 10));
+            }
         }
-        else if (string_left(encryption_key, 5) == "hex::")
-        {
-            encryption_key = hex_to_string(string_trim_left(encryption_key, 5));
-        }
-        else if (string_left(encryption_key, 5) == "str::")
-        {
-            strpack = true;
-            encryption_key = string_trim_left(encryption_key, 5);
-        }
-    }
     if (!directory_exists(foldername))
     {
         alert("Error", "Folder does not exist!");
@@ -768,9 +754,10 @@ if (!string_starts_with(foldername, "data/maps/decompiled/"))
         alert("Error", "Failed to create map file at: " + full_output_path);
         mapmenu();
     }
-    file_list.resize(0);
     find_stuff(foldername, foldername);
     alert("Map Compiler", "There are " + file_list.length() + " files in the map. Press OK to start compiling!");
+show_window("Compiling map.");
+wait(5);
     int percent = -1;
     for (uint i = 0; i < file_list.length(); i++)
     {
@@ -786,6 +773,7 @@ if (!string_starts_with(foldername, "data/maps/decompiled/"))
     }
     pfile.close();
     alert("Success!", "Map compiled to " + full_output_path);
+show_window("Simple fighter, version "+version);
     mapmenu();
 }
 void decompile_map()
@@ -848,6 +836,8 @@ string base_name = strip_extension(strip_directory(filename));
     string base_dir = "data/maps/decompiled/" + base_name;
     if (!directory_exists(base_dir))
         directory_create(base_dir);
+show_window("Decompiling map.");
+wait(5);
     double prev_percent = -1;
     for (uint i = 0; i < contents.length(); i++)
     {
@@ -865,6 +855,7 @@ string base_name = strip_extension(strip_directory(filename));
     }
     pfile.close();
     alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
+show_window("Simple fighter, version "+version);
     mapmenu();
 }
 
