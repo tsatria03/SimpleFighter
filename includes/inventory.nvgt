@@ -172,6 +172,19 @@ else
 inv.set(item,a+amount);
 }
 }
+void focus_item(const string&in item)
+{
+    string[] keys = inv.get_keys();
+    keys.sort_ascending();
+    for (uint i = 0; i < keys.length(); i++)
+    {
+        if (keys[i] == item)
+        {
+            invpos = i;
+            return;
+        }
+    }
+}
 void clear_inv()
 {
 inv.delete_all();
@@ -184,27 +197,29 @@ void cycle_inv(int dir)
         speak("empty");
         return;
     }
+    string[] keys = inv.get_keys();
+    keys.sort_ascending();
     if (dir == 1)
         invpos += 1;
     else
         invpos -= 1;
-    if (invpos >= inv.get_size())
+    if (invpos >= keys.length())
         invpos = 0;
     else if (invpos < 0)
-        invpos = inv.get_size() - 1;
-    double invpan = convert_to_pan(inv.get_size(), invpos, -25, 25);
+        invpos = keys.length() - 1;
+    double invpan = convert_to_pan(keys.length(), invpos, -25, 25);
     if (charinvsound == 1) invslot = p.play_stationary_extended(get_pack_sound("characters/" + chartype + "/*inv*"), false, 0, invpan, 0, 100, false);
     int a;
-    inv.get(inv.get_keys()[invpos], a);
+    inv.get(keys[invpos], a);
     if (a == 1)
-        speak(inv.get_keys()[invpos] + ". Item " + (invpos + 1) + " of " + inv.get_keys().length());
+        speak(keys[invpos] + ". Item " + (invpos + 1) + " of " + keys.length());
     else
-        speak(inv.get_keys()[invpos] + "s, " + a + ". Item " + (invpos + 1) + " of " + inv.get_keys().length());
+        speak(keys[invpos] + "s, " + a + ". Item " + (invpos + 1) + " of " + keys.length());
 }
 void useitem(string current)
 {
-string[] healtype=find_directories("data/maps/decompiled/"+mapname+"/assets/objects/items/health/*");
-string[] misktype=find_directories("data/maps/decompiled/"+mapname+"/assets/objects/items/other/*");
+string[] healtype=get_map_sound_folders("objects/items/health/*");
+string[] misktype=get_map_sound_folders("objects/items/other/*");
 for(uint i1=0; i1<healtype.length(); i1++)
 {
 for (uint i2=0; i2<misktype.length(); i2++)

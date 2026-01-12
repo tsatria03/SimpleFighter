@@ -226,6 +226,37 @@ string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
     return "";
 }
 
+string[] get_map_sound_folders(const string&in path)
+{
+    dictionary seen;
+    string[] result;
+    string map_path = "data/maps/decompiled/" + mapname + "/assets/" + path;
+    string[] map_dirs = find_directories(map_path);
+    for (uint i = 0; i < map_dirs.length(); i++)
+    {
+        seen[map_dirs[i]] = true;
+        result.insert_last(map_dirs[i]);
+    }
+    string global_path = "sounds/" + soundpack + "/" + path;
+    string[] global_dirs = find_directories(global_path);
+    for (uint i = 0; i < global_dirs.length(); i++)
+    {
+        if (!seen.exists(global_dirs[i]))
+            result.insert_last(global_dirs[i]);
+    }
+    sort_naturally(result);
+    return result;
+}
+
+string[] get_pack_sound_folders(const string&in path)
+{
+    string[] result;
+    string global_path = "sounds/" + soundpack + "/" + path;
+    result = find_directories(global_path);
+    sort_naturally(result);
+    return result;
+}
+
 string get_map_sound(const string&in path)
 {
     if (map_pack_loaded)
@@ -235,8 +266,12 @@ string get_map_sound(const string&in path)
         if (result != "")
             return result;
     }
-    string fullpath = "data/maps/decompiled/" + mapname + "/assets/" + path;
-return find_sound_in_disk(fullpath);
+    string soundpath = "data/maps/decompiled/" + mapname + "/assets/" + path;
+    string result = find_sound_in_disk(soundpath);
+    if (result != "")
+        return result;
+    string globalpath = "sounds/" + soundpack + "/" + path;
+    return find_sound_in_disk(globalpath);
 }
 string get_pack_sound(const string&in path)
 {
