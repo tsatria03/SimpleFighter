@@ -82,7 +82,6 @@ Control: Fires the currently selected weapon, if pressed/held down.
 Tab: Cycles forward through the available inventory items, if pressed.
 Shift plus tab: Cycles backward through the available inventory items, if pressed.
 Shift plus enter: Uses an inventory item when it's currently focused, if pressed/held down.
-Shift plus left braket: Drops an inventory item depending on where you're facing, if pressed.
 Slash: Opens a prompt that lets you type a command that you could use on the map, if pressed.
 Enter: Interacts with various objects, such as doors, signs, passages, dialogs, and various other menu items, if pressed.
 Escape: Exits the current game or map and returns you to the last focused menu, if pressed.
