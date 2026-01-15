@@ -2811,6 +2811,54 @@ prevslot=t.play_stationary(get_map_sound("objects/safe zones/"+saftype+"/*out*")
 }
 return 0;
 }
+string plainsmenu()
+{
+string[] plaintype=get_map_sound_folders("objects/aircrafts/*");
+setupmenu();
+m.set_callback(@aircrafts_callback,"");
+for (uint i=0; i<plaintype.length(); i++)
+{
+m.add_item_tts(plaintype[i],plaintype[i],"",true);
+}
+int mres=m.run("aircrafts menu", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=aircrafts.length())
+{
+plaintyp=plaintype[mres-1];
+}
+return m.get_item_name(mres);
+}
+int aircrafts_callback(dynamic_menu_pro@ m, string data)
+{
+string plaintype;
+if(m.menu_position>0)
+plaintype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/aircrafts/"+plaintype+"/*hurt*"), false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/aircrafts/"+plaintype+"/*hurt*"), false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/aircrafts/"+plaintype+"/*engin*"), false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/aircrafts/"+plaintype+"/*death*"), false);
+}
+return 0;
+}
 string vehsmenu()
 {
 string[] vehtype=get_map_sound_folders("objects/vehicles/*");

@@ -1,6 +1,7 @@
 void buildmenu()
 {
 setupmenu();
+m.add_item_tts("aircraft", "acf");
 m.add_item_tts("animal", "an");
 m.add_item_tts("animal zone", "az");
 m.add_item_tts("bike", "bk");
@@ -74,6 +75,42 @@ if(mres==0)
 resume_pools();
 speak("canceled");
 return;
+}
+if(buildem=="acf")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("","Enter the x of this aircraft.");
+string my=vd.input_box("","Enter the y of this aircraft.");
+string hp=vd.input_box("","Enter the health of this aircraft. Press enter to use the default health.", "1");
+if(x=="" and y=="" and minhp=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+string[] aircraft=get_map_sound_folders("objects/aircrafts/*");
+if(aircraft.length()==0)
+{
+dlg_snd("Error. There are no aircrafts available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=plainsmenu();
+if(res!="")
+{
+plaintyp=res;
+}
+}
+resume_pools();
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"aircraft "+x+" "+y+" "+minhp+" "+plaintyp);
+mapper.close();
+spawn_aircraft(x, y, minhp, minhp, plaintyp);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+speak("Map updated.");
 }
 if(buildem=="srcamb")
 {
