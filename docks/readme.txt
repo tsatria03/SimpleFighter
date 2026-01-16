@@ -57,16 +57,15 @@ Shift plus up arrow: Moves the spire up to find objects on the top side of the m
 
 Miscellaneous keys.
 Letter, C: Check your current location and the tile being walked on, if pressed.
-Letter, X: toggles auto walking on or off, if pressed.
 Letter, T: Sit or stand at your current location, if pressed.
 Letter, A: Decreases your overall movement speed, if pressed.
 Letter, D: Increases your overall movement speed, if pressed.
 Letter, F: Resets your overall movement speed back to default, if pressed.
 Letter, Q: Anounces the zone you're on, if pressed.
-Shift plus letter Q: Toggles zone anouncements on or off, if pressed.
+Letter, Z: Toggles zone anouncements on or off, if pressed.
 Letter, P: Pauses or resumes the currently active game, if pressed.
 Letter, R: Reloads ammo into a particular weapon category, if pressed.
-Letter, Z: Anounces ammo of a particular weapon category, if pressed.
+Letter, X: Anounces ammo of a particular weapon category, if pressed.
 Letter, H: Anounces your current health in percentages and how many lives you have, if pressed.
 Letter, O: Equips a shield if one is available, if pressed.
 Letter, N: Anounces the total kills of all npcs, if pressed.
