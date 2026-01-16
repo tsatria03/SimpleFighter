@@ -2,6 +2,8 @@ void buildmenu()
 {
 setupmenu();
 m.add_item_tts("aircraft", "acf");
+m.add_item_tts("aircraft beacon", "acb");
+m.add_item_tts("aircraft turbulence", "act");
 m.add_item_tts("animal", "an");
 m.add_item_tts("animal zone", "az");
 m.add_item_tts("bike", "bk");
@@ -111,6 +113,139 @@ spawn_aircraft(x, y, minhp, minhp, plaintyp);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");
+}
+if(buildem=="acb")
+{
+form.reset();
+form.create_window("aircraft beacon", false);
+int mx=form.create_input_box("Enter the x of this aircraft beacon.");
+int wt=form.create_input_box("Enter the width of this aircraft beacon.");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(wt, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+width=string_to_number(form.get_text(wt));
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(wt)=="")
+{
+speak("Width is required.");
+form.focus(wt);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else
+{
+resume_pools();
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"airbeacon "+x+" "+width);
+mapper.close();
+spawn_airbeacon(x, 0, width);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+speak("Map updated.");
+game();
+}
+}
+}
+}
+if(buildem=="act")
+{
+form.reset();
+form.create_window("aircraft turbulence", false);
+int mx=form.create_input_box("Enter the x of this aircraft turbulence");
+int my=form.create_input_box("Enter the minimum y of this aircraft turbulence");
+int my2=form.create_input_box("Enter the maximum y of this aircraft turbulence");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+-=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay",true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else
+{
+resume_pools();
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"turbulence "+x+" "+y+" "+paxy);
+mapper.close();
+spawn_turbulence(x, y, paxy);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+speak("Map updated.");
+game();
+}
+}
+}
 }
 if(buildem=="srcamb")
 {
