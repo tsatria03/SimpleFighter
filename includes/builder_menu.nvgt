@@ -56,6 +56,7 @@ m.add_item_tts("sound source", "src");
 m.add_item_tts("spike", "sp");
 m.add_item_tts("spawnpoint", "st");
 m.add_item_tts("staircase", "sf");
+m.add_item_tts("switch", "stc");
 m.add_item_tts("teleporter", "tp");
 m.add_item_tts("text square", "txt");
 m.add_item_tts("time bomb", "tbm");
@@ -3924,6 +3925,61 @@ mapdata=mapper.read();
 mapper.write("\r\n"+"staircase "+x+" "+paxx+" "+y+" "+paxy+" "+tiletype+" "+volume+" "+pitch);
 mapper.close();
 spawn_staircase(x, paxx, y, paxy, tiletype, volume, pitch);
+load_map(mapmode, mapname, mapowner);
+mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+speak("Map updated.");
+}
+if(buildem=="stc")
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string scx=vd.input_box("","Enter the x of this switch.");
+string scy=vd.input_box("","Enter the y of this switch.");
+if(x=="" and y=="")
+return;
+x=string_to_number(scx);
+y=string_to_number(scy);
+string[] switcher=get_map_sound_folders("objects/switches/*");
+if(switcher.length()==0)
+{
+dlg_snd("Error. There are no switches available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=switchesmenu();
+if(res!="")
+{
+switchtyp=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Should this switch be single-use only?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+sse=true;
+}
+if(mres==2)
+{
+sse=false;
+}
+resume_pools();
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"switch "+x+" "+y+" "+switchtyp+" "+sse);
+mapper.close();
+spawn_switcher(x, y, switchtyp, sse);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");

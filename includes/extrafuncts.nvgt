@@ -1,3 +1,43 @@
+bool is_admin()
+{
+library l;
+l.load("shell32.dll");
+dictionary@ d = l.call("bool IsUserAnAdmin()");
+return bool(d["0"]);
+}
+bool array_contains(const string[]& arr, const string& value)
+{
+for (uint i = 0; i < arr.length(); i++)
+{
+if (arr[i] == value)
+{
+return true;
+}
+}
+return false;
+}
+bool is_newer_version(string oldv, string newv)
+{
+    oldv = string_trim_sides(oldv);
+    newv = string_trim_sides(newv);
+    return string_to_number(newv) > string_to_number(oldv);
+}
+bool preglobals()
+{
+if (!SCREEN_READER_AVAILABLE)
+{
+alert("error", "cannot load screen reader components");
+}
+else if (!SOUND_AVAILABLE)
+{
+alert("error", "cannot load soundsystem");
+}
+else
+{
+return true;
+}
+return false;
+}
 double string_to_double(string str)
 {
     double result = 0.0;
@@ -627,6 +667,16 @@ for(uint i=0; i<a.length(); i++)
 final+=(a[i]+"\r\n");
 }
 return final;
+}
+
+string get_downloads_folder()
+{
+    if (system_is_windows)
+        return expand_environment_variables("%USERPROFILE%\\Downloads\\");
+    else if (system_is_unix)
+        return expand_environment_variables("$HOME/Downloads/");
+    else
+        return "";
 }
 
 string join_string_array(string[] arr, uint start, uint end)

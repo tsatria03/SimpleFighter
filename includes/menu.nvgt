@@ -4,8 +4,9 @@ setupmenu(true);
 if(hidedocks==false) m.add_item_tts("documentation menu", "help");
 if(hidemaps==false) m.add_item_tts("map menu", "map");
 if(hidesets==false) m.add_item_tts("settings menu", "settings");
+m.add_item_tts("check for updates", "chup");
 m.add_item_tts("test speakers", "st");
-m.add_item_tts("restart game", "rx");
+if(system_is_windows) m.add_item_tts("restart game", "rx");
 m.add_item_tts("exit game", "ex");
 int mres=m.run("Main menu. Please choose an option with your arrow keys, then press enter to activate one.",true);
 string main=m.get_item_name(mres);
@@ -35,11 +36,16 @@ speak("exiting");
 m.fade_music();
 exit();
 }
+if (main == "chup")
+{
+m.fade_music();
+check_for_updates(version, "SimpleFighter", true);
+}
 if(main=="rx")
 {
 speak("restarting");
 m.fade_music();
-restart();
+restart("sf.exe");
 }
 if(main=="settings")
 {
@@ -192,6 +198,13 @@ string buildem=m.get_item_name(mres);
 if(mres==0)
 {
 mainmenu();
+}
+if(buildem=="dmg")
+{
+//get a list of maps that the user can download.
+}
+if(buildem=="dmg2")
+{
 }
 if(buildem=="mg")
 {
@@ -711,7 +724,7 @@ return;
 if(mres==1)
 {
 resume_pools();
-load_map(mapmode, mapname, mapowner, anounce_mapload:false);
+load_map(mapmode, mapname, mapowner, anounce_mapload:false, force_compiled:map_is_compiled, force_spawned:true);
 speak("map reloaded");
 }
 if(mres==2)
@@ -746,6 +759,8 @@ spk = form.create_button("Select sound &pack. Currently set to " + soundpack);
 int sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
 int skipm = form.create_button("Set up and down skip amoun&t in menus. Currently set to " + mskipnum + " items per press");
 int hideme = form.create_button("Show or h&ide main menu items");
+int autup = form.create_checkbox("Enable checking for game updates at startup", auto_check_updates);
+int runmode = form.create_checkbox("Enable auto running in maps", autorun);
 int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
 int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
 int hms = form.create_checkbox("Enable heart monitor for all characters", int_to_bool(heartsound));
@@ -776,6 +791,8 @@ while (true)
 {
 form.monitor();
 wait(5);
+auto_check_updates=form.is_checked(autup);
+autorun = form.is_checked(runmode);
 autojump = bool_to_int(form.is_checked(sjn));
 fademode = bool_to_int(form.is_checked(fdv));
 heartsound = bool_to_int(form.is_checked(hms));
@@ -973,8 +990,7 @@ dlg("Settings reset. Press enter to continue.");
 resetpreffs();
 speak("restarting");
 wait(500);
-restart();
-exit();
+restart("sf.exe");
 }
 if(mres==2)
 {
@@ -998,6 +1014,8 @@ void settingsmenu2()
 {
 form.reset();
 form.create_window("preferences", false);
+int autup = form.create_checkbox("Enable checking for game updates at startup", auto_check_updates);
+int runmode = form.create_checkbox("Enable auto running in maps", autorun);
 int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
 int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
 int hms = form.create_checkbox("Enable heart monitor for all characters", int_to_bool(heartsound));
@@ -1021,12 +1039,14 @@ int psl = form.create_checkbox("Enable side scrolling in menus", int_to_bool(sid
 int esc=form.create_checkbox("Ask to exit when pressing escape",int_to_bool(gamxit));
 int preffsok = form.create_button("&save settings", true);
 int preffscn = form.create_button("&cancel");
-form.focus(sjn);
+form.focus(autup);
 spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
 while (true)
 {
 form.monitor();
 wait(5);
+auto_check_updates=form.is_checked(autup);
+autorun = form.is_checked(runmode);
 autojump = bool_to_int(form.is_checked(sjn));
 fademode = bool_to_int(form.is_checked(fdv));
 heartsound = bool_to_int(form.is_checked(hms));

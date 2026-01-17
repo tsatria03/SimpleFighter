@@ -2725,6 +2725,49 @@ prevslot=t.play_stationary(get_map_sound("objects/signs/"+signtype+"/*loop*"), f
 }
 return 0;
 }
+string switchesmenu()
+{
+string[] switchtype=get_map_sound_folders("objects/switches/*");
+setupmenu();
+m.set_callback(@switches_callback,"");
+for (uint i=0; i<switchtype.length(); i++)
+{
+m.add_item_tts(switchtype[i],switchtype[i],"",true);
+}
+int mres=m.run("switches menu", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=switchtype.length())
+{
+switchtyp=switchtype[mres-1];
+}
+return m.get_item_name(mres);
+}
+int switches_callback(dynamic_menu_pro@ m, string data)
+{
+string switchtype;
+if(m.menu_position>0)
+switchtype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/switches/"+switchtype+"/*press*"), false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/switches/"+switchtype+"/*press*"), false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/switches/"+switchtype+"/*loop*"), false);
+}
+return 0;
+}
 string healsmenu()
 {
 string[] healthtype=get_map_sound_folders("objects/heal zones/*");

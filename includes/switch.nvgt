@@ -1,0 +1,64 @@
+switcher@[]switchers(0);
+class switcher
+{
+bool toggled=true;
+bool singleuse;
+int switchsound, pressound;
+int switchx;
+int switchy;
+string switchtype;
+switcher(int stx,int sty,string stp,bool sgl)
+{
+switchx=stx;
+switchy=sty;
+switchtype=stp;
+singleuse=sgl;
+switchsound=switchpool.play_2d(get_map_sound("objects/switches/"+switchtype+"/*loop*"),me.x,me.y,switchx,switchy,true);
+}
+}
+void switchloop()
+{
+for(uint i=0; i<switchers.length(); i++)
+{
+if(me.x==switchers[i].switchx and me.y==switchers[i].switchy and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+if(switchers[i].singleuse==true)
+{
+switchers[i].toggled=false;
+switchpool.destroy_sound(switchers[i].switchsound);
+switchers[i].pressound=switchpool.play_stationary(get_map_sound("objects/switches/"+switchers[i].switchtype+"/*press*"),false);
+speak("Switch killed.");
+switchers.remove_at(i);
+return;
+}
+if(switchers[i].toggled==true)
+{
+switchers[i].toggled=false;
+switchpool.destroy_sound(switchers[i].switchsound);
+switchers[i].pressound=switchpool.play_stationary(get_map_sound("objects/switches/"+switchers[i].switchtype+"/*press*"),false);
+speak("Switch off.");
+}
+else if(switchers[i].toggled==false)
+{
+switchers[i].toggled=true;
+switchpool.destroy_sound(switchers[i].switchsound);
+switchers[i].switchsound=switchpool.play_2d(get_map_sound("objects/switches/"+switchers[i].switchtype+"/*loop*"),me.x,me.y,switchers[i].switchx,switchers[i].switchy,true);
+switchers[i].pressound=switchpool.play_stationary(get_map_sound("objects/switches/"+switchers[i].switchtype+"/*press*"),false);
+speak("Switch on.");
+}
+}
+}
+}
+void spawn_switcher(int x,int y,string switchtype,bool singleuse)
+{
+switcher sc1(x,y,switchtype,singleuse);
+switchers.insert_last(sc1);
+}
+void destroy_all_switchers()
+{
+for(uint i=0; i<switchers.length(); i++)
+{
+switchpool.destroy_sound(switchers[i].switchsound);
+}
+switchers.resize(0);
+}

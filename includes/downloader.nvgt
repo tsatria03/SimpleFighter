@@ -1,0 +1,89 @@
+string dl_file(string url, string disk_file,bool quiet=false,string msg="Downloading. Press Space for percentage, 1 2 and 3 keys for detailed progress, or escape to cancel. Press m to mute or unmute progress beeps. Press h to read this help message again.")
+{
+internet_request r(url, disk_file);
+if(!quiet) speak(msg);
+double last_percentage=0;
+int progbeeps=1;
+string status;
+while(r.complete!=true)
+{
+wait(5);
+if (r.download_percent==r.download_percent && r.download_percent>=0 && r.download_percent-last_percentage>=1)
+{
+if(progbeeps==1 && r.download_percent>0) beep_percentage(r.download_percent);
+last_percentage=r.download_percent;
+}
+if (key_pressed(KEY_ESCAPE))
+{
+status="canceled";
+speak(status);
+return status;
+}
+if (key_pressed(KEY_1))
+{
+string size=round(r.download_size/1024/1024, 2)+" MB ("+round(r.download_size/1024, 2)+" KB)";
+speak("File size: "+size);
+}
+if (key_pressed(KEY_2))
+{
+string size=round(r.bytes_downloaded/1024/1024, 2)+" MB ("+round(r.bytes_downloaded/1024, 2)+" KB)";
+speak("Total downloaded: "+size);
+}
+if (key_pressed(KEY_3))
+{
+string size=(round(r.download_size/1024/1024, 2)-round(r.bytes_downloaded/1024/1024, 2))+" MB( "+(round(r.download_size/1024, 2)-round(r.bytes_downloaded/1024, 2))+" KB)";
+speak("Total remaining: "+size);
+}
+if (key_pressed(KEY_H))
+{
+speak(msg);
+}
+if (key_pressed(KEY_M))
+{
+if(progbeeps==1)
+{
+progbeeps=0;
+speak("Progress beeps muted.");
+}
+else if(progbeeps==0)
+{
+progbeeps=1;
+speak("Progress beeps unmuted.");
+}
+}
+if (key_pressed(KEY_SPACE))
+{
+if(r.download_percent==r.download_percent && r.download_percent>=0)
+{
+speak(round(r.download_percent, 2)+" percent downloaded");
+}
+else
+{
+speak("Download progress unavailable.");
+}
+}
+if(r.complete==true)
+{
+status="finished";
+}
+}
+return status;
+}
+
+void beep_percentage(double val)
+{
+if(val<0 && val!=val)
+{
+return;
+}
+val=round(val,0);
+val=clamp(val,0,100);
+uint freq=uint(110*pow(2,val/25));
+float dur=40;
+float amp=0.4;
+uint sr=44100;
+float[]@ samples=triangle_wave(freq,dur,amp,sr);
+samples=adsr_envelope(samples,5,0,1,5,sr);
+@progress_sound=push_audio(samples,sr);
+progress_sound.play();
+}
