@@ -3960,7 +3960,7 @@ m.enter_sound=get_pack_sound("misc/menu2.ogg");
 m.open_sound=get_pack_sound("misc/menu3.ogg");
 m.add_item_tts("yes");
 m.add_item_tts("no");
-int mres=m.run("Should this switch be single-use only?",true);
+int mres=m.run("Should this switch be auto activated?",true);
 if(mres==0)
 {
 speak("canceled");
@@ -3968,18 +3968,39 @@ return;
 }
 if(mres==1)
 {
-sse=true;
+trg=true;
 }
 if(mres==2)
+{
+trg=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres2=m.run("Should this switch be single-use only?",true);
+if(mres2==0)
+{
+speak("canceled");
+return;
+}
+if(mres2==1)
+{
+sse=true;
+}
+if(mres2==2)
 {
 sse=false;
 }
 resume_pools();
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"switch "+x+" "+y+" "+switchtyp+" "+sse);
+mapper.write("\r\n"+"switch "+x+" "+y+" "+switchtyp+" "+trg+" "+sse);
 mapper.close();
-spawn_switcher(x, y, switchtyp, sse);
+spawn_switcher(x, y, switchtyp, trg, sse);
 load_map(mapmode, mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");
