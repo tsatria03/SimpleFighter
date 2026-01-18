@@ -1,6 +1,7 @@
 void mainmenu()
 {
 setupmenu(true);
+if(hidedev==false) m.add_item_tts("developer menu", "dlm");
 if(hidedocks==false) m.add_item_tts("documentation menu", "help");
 if(hidemaps==false) m.add_item_tts("map menu", "map");
 if(hidesets==false) m.add_item_tts("settings menu", "settings");
@@ -15,6 +16,10 @@ if(mres==0)
 speak("exiting");
 m.fade_music();
 exit();
+}
+if(main=="dlm")
+{
+devmenu();
 }
 if(main=="map")
 {
@@ -53,13 +58,40 @@ m.fade_music();
 settingsmenu();
 }
 }
+void devmenu()
+{
+setupmenu(true);
+m.add_item_tts("layouts editor", "ldr");
+m.add_item_tts("layouts viewer", "ldv");
+m.add_item_tts("back", "back");
+int mres=m.run("Developer menu",true);
+string dvm=m.get_item_name(mres);
+if(mres==0)
+{
+mainmenu();
+}
+if(dvm=="ldr")
+{
+m.fade_music();
+//edit_layouts();
+}
+if(dvm=="ldv")
+{
+m.fade_music();
+//view_layouts();
+}
+if(dvm=="back")
+{
+mainmenu();
+}
+}
 void docksmenu()
 {
 setupmenu(true);
 m.add_item_tts("changelog", "changelog");
 m.add_item_tts("credits", "credits");
 m.add_item_tts("readme", "readme");
-if(!SCRIPT_COMPILED) m.add_item_tts("todo_list", "todo_list");
+m.add_item_tts("todo_list", "todo_list");
 m.add_item_tts("back", "back");
 int mres=m.run("Documentation menu",true);
 string dnm=m.get_item_name(mres);
@@ -94,7 +126,7 @@ mainmenu();
 }
 void hidemenu()
 {
-if(hidedocks==false)
+if(hidedev==false)
 {
 hidstatus="unhidden";
 }
@@ -102,7 +134,7 @@ else
 {
 hidstatus="hidden";
 }
-if(hidemaps==false)
+if(hidedocks==false)
 {
 hidstatus2="unhidden";
 }
@@ -110,7 +142,7 @@ else
 {
 hidstatus2="hidden";
 }
-if(hidesets==false)
+if(hidemaps==false)
 {
 hidstatus3="unhidden";
 }
@@ -118,10 +150,19 @@ else
 {
 hidstatus3="hidden";
 }
+if(hidesets==false)
+{
+hidstatus4="unhidden";
+}
+else
+{
+hidstatus4="hidden";
+}
 setupmenu();
-m.add_item_tts("Documentation menu. Status, "+hidstatus, "docks");
-m.add_item_tts("Map menu. Status, "+hidstatus2, "maps");
-m.add_item_tts("Settings menu. Status, "+hidstatus3, "settings");
+m.add_item_tts("Developer menu. Status, "+hidstatus, "dev");
+m.add_item_tts("Documentation menu. Status, "+hidstatus2, "docks");
+m.add_item_tts("Map menu. Status, "+hidstatus3, "maps");
+m.add_item_tts("Settings menu. Status, "+hidstatus4, "settings");
 m.add_item_tts("back", "back");
 int mres=m.run("Choose the main menu items you'd like to show or hide.",true);
 string hdm=m.get_item_name(mres);
@@ -130,18 +171,34 @@ if(mres==0)
 speak("canceled");
 settingsmenu();
 }
+if(hdm=="dev")
+{
+if(hidedev==false)
+{
+hidedev=true;
+hidstatus="hidden";
+dlg("Developer menu hidden. Press enter to continue.");
+}
+else
+{
+hidedev=false;
+hidstatus="unhidden";
+dlg("Developer menu unhidden. Press enter to continue.");
+}
+hidemenu();
+}
 if(hdm=="docks")
 {
 if(hidedocks==false)
 {
 hidedocks=true;
-hidstatus="hidden";
+hidstatus2="hidden";
 dlg("Documentation menu hidden. Press enter to continue.");
 }
 else
 {
 hidedocks=false;
-hidstatus="unhidden";
+hidstatus2="unhidden";
 dlg("Documentation menu unhidden. Press enter to continue.");
 }
 hidemenu();
@@ -151,13 +208,13 @@ if(hdm=="maps")
 if(hidemaps==false)
 {
 hidemaps=true;
-hidstatus2="hidden";
+hidstatus3="hidden";
 dlg("Map menu hidden. Press enter to continue.");
 }
 else
 {
 hidemaps=false;
-hidstatus2="unhidden";
+hidstatus3="unhidden";
 dlg("Map menu unhidden. Press enter to continue.");
 }
 hidemenu();
@@ -167,13 +224,13 @@ if(hdm=="settings")
 if(hidesets==false)
 {
 hidesets=true;
-hidstatus3="hidden";
+hidstatus4="hidden";
 dlg("Settings menu hidden. Press enter to continue.");
 }
 else
 {
 hidesets=false;
-hidstatus3="unhidden";
+hidstatus4="unhidden";
 dlg("Settings menu unhidden. Press enter to continue.");
 }
 hidemenu();

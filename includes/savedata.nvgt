@@ -1,61 +1,126 @@
+/*
+This class was made by Mason, with modifications made by me to include the reading and saving of boolion variables. I also changed the wording a bit on some of the functions.
+*/
+
+//savedata class.
+//by Ultrocity Audio
 class savedata
 {
+//internal variables for the class.
 string key;
 string fn;
 dictionary d;
+//the constructor
 savedata(string filename, string enckey="")
 {
 fn=filename;
 key=enckey;
 }
+//the function to load the saved data into the dictionary.
 void load()
 {
+		if (!file_exists(fn))
+		{
+			d.clear();
+			return;
+		}
 file f;
+//fn is our previously declared filename string, so use that.
 f.open(fn,"rb");
+//check for a decryption key.
 if (key=="")
 {
+//no key, so just deserialize.
 d=deserialize(f.read());
 }
 else
 {
+//deserialize but first decrypt.
 d=deserialize(string_decrypt(f.read(),key));
 }
+//close the file
 f.close();
 }
+//function to save the data into the file.
 void save()
 {
 file f;
+//again, use the FN string
 f.open(fn,"wb");
+//check for a key.
 if (key=="")
 f.write(serialize(d));
 else
 f.write(string_encrypt(serialize(d),key));
+f.close();
 }
+//overloaded function of add to add a boolion.
 void add(string name, bool value)
 {
 d.set(name,value);
 }
-bool readb(string name)
+//function to read a boolion.
+bool read_bool(string name)
 {
 bool tmp;
 d.get(name,tmp);
 return tmp;
 }
+//function to add a value.
 void add(string name, double value)
 {
 d.set(name,value);
 }
-double readn(string name)
+//function to read a number.
+double read_double(string name)
 {
 double tmp;
 d.get(name,tmp);
 return tmp;
 }
+//function to add a value.
+void add(string name, float value)
+{
+d.set(name,value);
+}
+//function to read a number.
+float read_float(string name)
+{
+float tmp;
+d.get(name,tmp);
+return tmp;
+}
+//function to add a value.
+void add(string name, int value)
+{
+d.set(name,value);
+}
+//function to read a number.
+int read_int(string name)
+{
+int tmp;
+d.get(name,tmp);
+return tmp;
+}
+//function to add a value.
+void add(string name, int64 value)
+{
+d.set(name,value);
+}
+//function to read a number.
+int64 read_int64(string name)
+{
+int64 tmp;
+d.get(name,tmp);
+return tmp;
+}
+//overloaded function of add to add a string.
 void add(string name, string value)
 {
 d.set(name,value);
 }
-string reads(string name)
+//function to read a string
+string read_string(string name)
 {
 string tmp;
 d.get(name,tmp);
@@ -68,21 +133,21 @@ void readpreffs()
 st.load();
 if(st.d.exists("chartype"))
 {
-chartype=st.reads("chartype");
+chartype=st.read_string("chartype");
 destroy_all_charas();
 charparse();
 }
 if(st.d.exists("keyboardtheme"))
 {
-keyboardtheme=st.reads("keyboardtheme");
+keyboardtheme=st.read_string("keyboardtheme");
 }
 if(st.d.exists("soundpack"))
 {
-soundpack=st.reads("soundpack");
+soundpack=st.read_string("soundpack");
 }
 if(st.d.exists("soundcard"))
 {
-soundcard=st.reads("soundcard");
+soundcard=st.read_string("soundcard");
 string[]@devices=get_sound_output_devices();
 devices.remove_at(0);
 for(uint i=0; i<devices.length(); i++)
@@ -96,124 +161,124 @@ break;
 }
 if(st.d.exists("menutype"))
 {
-menutype=st.reads("menutype");
+menutype=st.read_string("menutype");
 }
 if (st.d.exists("auto_check_updates"))
 {
-auto_check_updates = st.readb("auto_check_updates");
+auto_check_updates = st.read_bool("auto_check_updates");
 }
 if (st.d.exists("autorun"))
 {
-autorun = st.readb("autorun");
+autorun = st.read_bool("autorun");
 }
 if(st.d.exists("autojump"))
 {
-autojump=st.readn("autojump");
+autojump=st.read_int("autojump");
 }
 if(st.d.exists("fademode"))
 {
-fademode=st.readn("fademode");
+fademode=st.read_int("fademode");
 }
 if(st.d.exists("heartsound"))
 {
-heartsound=st.readn("heartsound");
+heartsound=st.read_int("heartsound");
 }
 if(st.d.exists("wallbump"))
 {
-wallbump=st.readb("wallbump");
+wallbump=st.read_bool("wallbump");
 }
 if(st.d.exists("turnmode"))
 {
-turnmode=st.readn("turnmode");
+turnmode=st.read_int("turnmode");
 }
 if(st.d.exists("maploadbeeps"))
 {
-maploadbeeps=st.readn("maploadbeeps");
+maploadbeeps=st.read_int("maploadbeeps");
 }
 if(st.d.exists("maploadsounds"))
 {
-maploadsounds=st.readn("maploadsounds");
+maploadsounds=st.read_int("maploadsounds");
 }
 if(st.d.exists("pausem"))
 {
-pausem=st.readn("pausem");
+pausem=st.read_int("pausem");
 }
 if(st.d.exists("spacehold"))
 {
-spacehold=st.readn("spacehold");
+spacehold=st.read_int("spacehold");
 }
 if(st.d.exists("hidedocks"))
 {
-hidedocks=st.readb("hidedocks");
+hidedocks=st.read_bool("hidedocks");
 }
 if(st.d.exists("hidemaps"))
 {
-hidemaps=st.readb("hidemaps");
+hidemaps=st.read_bool("hidemaps");
 }
 if(st.d.exists("hidesets"))
 {
-hidesets=st.readb("hidesets");
+hidesets=st.read_bool("hidesets");
 }
 if(st.d.exists("hrtf"))
 {
-hrtf=st.readb("hrtf");
+hrtf=st.read_bool("hrtf");
 }
 if(st.d.exists("echomode"))
 {
-echomode=st.readn("echomode");
+echomode=st.read_int("echomode");
 form.set_default_keyboard_echo(echomode);
 }
 if(st.d.exists("menumusvolume"))
 {
-menumusvolume=st.readn("menumusvolume");
+menumusvolume=st.read_int("menumusvolume");
 }
 if(st.d.exists("gamxit"))
 {
-gamxit=st.readn("gamxit");
+gamxit=st.read_int("gamxit");
 }
 if(st.d.exists("mreset"))
 {
-mreset=st.readn("mreset");
+mreset=st.read_int("mreset");
 }
 if(st.d.exists("mskipnum"))
 {
-mskipnum=st.readn("mskipnum");
+mskipnum=st.read_int("mskipnum");
 }
 if(st.d.exists("up_down"))
 {
-up_down=st.readn("up_down");
+up_down=st.read_int("up_down");
 }
 if(st.d.exists("left_right"))
 {
-left_right=st.readn("left_right");
+left_right=st.read_int("left_right");
 }
 if(st.d.exists("home_end"))
 {
-home_end=st.readn("home_end");
+home_end=st.read_int("home_end");
 }
 if(st.d.exists("wrap"))
 {
-wrap=st.readn("wrap");
+wrap=st.read_int("wrap");
 }
 if(st.d.exists("repeat_items"))
 {
-repeat_items=st.readn("repeat_items");
+repeat_items=st.read_int("repeat_items");
 }
 if(st.d.exists("numbers"))
 {
-numbers=st.readn("numbers");
+numbers=st.read_int("numbers");
 }
 if(st.d.exists("first_letter"))
 {
-first_letter=st.readn("first_letter");
+first_letter=st.read_int("first_letter");
 }
 if(st.d.exists("position_info"))
 {
-position_info=st.readn("position_info");
+position_info=st.read_int("position_info");
 }
 if(st.d.exists("side_scroll"))
 {
-side_scroll=st.readn("side_scroll");
+side_scroll=st.read_int("side_scroll");
 }
 }
 void writepreffs()
