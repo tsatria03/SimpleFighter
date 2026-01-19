@@ -1,9 +1,9 @@
 void mainmenu()
 {
 setupmenu(true);
-if(hidedev==false) m.add_item_tts("developer menu", "dlm");
 if(hidedocks==false) m.add_item_tts("documentation menu", "help");
 if(hidemaps==false) m.add_item_tts("map menu", "map");
+if(hidemisc==false) m.add_item_tts("miscellaneous menu", "msm");
 if(hidesets==false) m.add_item_tts("settings menu", "settings");
 m.add_item_tts("check for updates", "chup");
 m.add_item_tts("test speakers", "st");
@@ -17,15 +17,15 @@ speak("exiting");
 m.fade_music();
 exit();
 }
-if(main=="dlm")
-{
-m.fade_music();
-devmenu();
-}
 if(main=="map")
 {
 m.fade_music();
 mapmenu();
+}
+if(main=="msm")
+{
+m.fade_music();
+miscmenu();
 }
 if(main=="help")
 {
@@ -61,32 +61,45 @@ m.fade_music();
 settingsmenu();
 }
 }
-void devmenu()
+void miscmenu()
 {
 setupmenu();
 m.add_item_tts("layouts editor", "ldr");
 m.add_item_tts("layouts viewer", "ldv");
 m.add_item_tts("misc sound tester", "msr");
 m.add_item_tts("back", "back");
-int mres=m.run("Developer menu",true);
-string dvm=m.get_item_name(mres);
+int mres=m.run("Miscellaneous menu",true);
+string mcm=m.get_item_name(mres);
 if(mres==0)
 {
 mainmenu();
 }
-if(dvm=="ldr")
+if(mcm=="ldr")
 {
 edit_layouts();
 }
-if(dvm=="ldv")
+if(mcm=="ldv")
 {
 view_layouts();
 }
-if(dvm=="msr")
+if(mcm=="msr")
 {
-soundtester();
+string[] miscsound=find_files("data/sounds/"+soundpack+"/misc/*");
+if(miscsound.length()==0)
+{
+dlg_snd("Error. There are no misc sounds available to view. Press enter to continue.");
+miscmenu();
 }
-if(dvm=="back")
+else
+{
+string res=miscsoundsmenu();
+if(res!="")
+{
+string misctyp=res;
+}
+}
+}
+if(mcm=="back")
 {
 mainmenu();
 }
@@ -102,7 +115,7 @@ void edit_layouts()
     string choice = m.get_item_name(res);
     if (choice == "back" || res == 0)
 {
-        devmenu();
+        miscmenu();
         return;
     }
     string path = "data/layouts/" + choice + "/";
@@ -309,7 +322,7 @@ void view_layouts()
     int res = m.run("Select the layout type to view", true);
     string choice = m.get_item_name(res);
     if (choice == "back" || res == 0) {
-        devmenu();
+        miscmenu();
         return;
     }
     string path = "data/layouts/" + choice + "/";
@@ -377,30 +390,6 @@ void view_layouts()
     m.run("Viewing info for " + selected, true);
     view_layouts();
 }
-void soundtester()
-{
-string[] miscsounds=find_files("data/sounds/"+soundpack+"/misc/*");
-sort_naturally(miscsounds);
-if(miscsounds.length()==0)
-{
-dlg_snd("Error. There are no misc sounds available to view. Press enter to continue.");
-devmenu();
-}
-else
-{
-setupmenu();
-for(uint i=0; i<miscsounds.length(); i++)
-{
-string letter=string_replace(miscsounds[i],".ogg","",true)[0];
-m.add_item("data/sounds/"+soundpack+"/misc/"+miscsounds[i], miscsounds[i], letter, true);
-}
-}
-int mres=m.run("Misc sound tester",true);
-if(mres==0)
-{
-devmenu();
-}
-}
 void docksmenu()
 {
 setupmenu();
@@ -438,7 +427,7 @@ mainmenu();
 }
 void hidemenu()
 {
-if(hidedev==false)
+if(hidedocks==false)
 {
 hidstatus="unhidden";
 }
@@ -446,7 +435,7 @@ else
 {
 hidstatus="hidden";
 }
-if(hidedocks==false)
+if(hidemaps==false)
 {
 hidstatus2="unhidden";
 }
@@ -454,7 +443,7 @@ else
 {
 hidstatus2="hidden";
 }
-if(hidemaps==false)
+if(hidemisc==false)
 {
 hidstatus3="unhidden";
 }
@@ -471,9 +460,9 @@ else
 hidstatus4="hidden";
 }
 setupmenu();
-m.add_item_tts("Developer menu. Status, "+hidstatus, "dev");
-m.add_item_tts("Documentation menu. Status, "+hidstatus2, "docks");
-m.add_item_tts("Map menu. Status, "+hidstatus3, "maps");
+m.add_item_tts("Documentation menu. Status, "+hidstatus, "docks");
+m.add_item_tts("Map menu. Status, "+hidstatus2, "maps");
+m.add_item_tts("Miscellaneous menu. Status, "+hidstatus3, "misc");
 m.add_item_tts("Settings menu. Status, "+hidstatus4, "settings");
 m.add_item_tts("back", "back");
 int mres=m.run("Choose the main menu items you'd like to show or hide.",true);
@@ -483,34 +472,18 @@ if(mres==0)
 speak("canceled");
 settingsmenu();
 }
-if(hdm=="dev")
-{
-if(hidedev==false)
-{
-hidedev=true;
-hidstatus="hidden";
-dlg("Developer menu hidden. Press enter to continue.");
-}
-else
-{
-hidedev=false;
-hidstatus="unhidden";
-dlg("Developer menu unhidden. Press enter to continue.");
-}
-hidemenu();
-}
 if(hdm=="docks")
 {
 if(hidedocks==false)
 {
 hidedocks=true;
-hidstatus2="hidden";
+hidstatus="hidden";
 dlg("Documentation menu hidden. Press enter to continue.");
 }
 else
 {
 hidedocks=false;
-hidstatus2="unhidden";
+hidstatus="unhidden";
 dlg("Documentation menu unhidden. Press enter to continue.");
 }
 hidemenu();
@@ -520,14 +493,30 @@ if(hdm=="maps")
 if(hidemaps==false)
 {
 hidemaps=true;
-hidstatus3="hidden";
+hidstatus2="hidden";
 dlg("Map menu hidden. Press enter to continue.");
 }
 else
 {
 hidemaps=false;
-hidstatus3="unhidden";
+hidstatus2="unhidden";
 dlg("Map menu unhidden. Press enter to continue.");
+}
+hidemenu();
+}
+if(hdm=="misc")
+{
+if(hidemisc==false)
+{
+hidemisc=true;
+hidstatus3="hidden";
+dlg("Developer menu hidden. Press enter to continue.");
+}
+else
+{
+hidemisc=false;
+hidstatus3="unhidden";
+dlg("Developer menu unhidden. Press enter to continue.");
 }
 hidemenu();
 }

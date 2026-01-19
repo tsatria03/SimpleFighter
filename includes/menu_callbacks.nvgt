@@ -17,7 +17,6 @@ if(mres>0 and mres<=chars.length())
 {
 chartype=chars[mres-1];
 destroy_all_charas();
-destroy_all_charas();
 charparse();
 dlg("Character set. Press enter to continue.");
 settingsmenu();
@@ -837,6 +836,44 @@ prevslot=t.play_stationary(get_map_sound("npc/zombies/"+zombietype+"/*death*"), 
 return 0;
 }
 
+string miscsoundsmenu()
+{
+string[] miscsounds=find_files("data/sounds/"+soundpack+"/misc/*");
+sort_naturally(miscsounds);
+setupmenu2();
+m.set_callback(@miscsounds_callback,"");
+for(uint i=0; i<miscsounds.length(); i++)
+{
+string letter=string_replace(miscsounds[i],".ogg","",true)[0];
+m.add_item("data/sounds/"+soundpack+"/misc/"+miscsounds[i], miscsounds[i], letter, true);
+}
+int mres=m.run("Misc sound tester",true);
+if(mres==0)
+{
+miscmenu();
+}
+if(mres>0 and mres<=miscsounds.length())
+{
+miscmenu();
+}
+return m.get_item_name(mres);
+}
+int miscsounds_callback(dynamic_menu_pro@ m, string data)
+{
+string misctyp;
+if(m.menu_position>0)
+misctyp=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+speak(misctyp);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+speak(misctyp);
+}
+return 0;
+}
 string liftsmenu()
 {
 string[] lifts=get_map_sound_folders("objects/lifts/*");
