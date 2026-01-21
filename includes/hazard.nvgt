@@ -301,7 +301,6 @@ vanishing_hazard@[]vanishing_hazards(0);
 class vanishing_hazard
 {
 bool vanished;
-int vhazsound;
 int hazard_id;
 double minx, maxx, miny, maxy;
 int vhazardtime;
@@ -315,10 +314,7 @@ miny=my;
 maxy=my2;
 vhazardtype=vhtype;
 vhazardtime=vhtime;
-hazard_id = spawn_hazard(minx, maxx, miny, maxy, "", false);
-vhazsound=vanpool.play_2d(get_map_sound("objects/hazards/"+vhazardtype+"/*loop*"),me.x,me.y,minx,miny,true);
-vanpool.update_sound_2d(vhazsound,minx,miny);
-vanpool.update_sound_range_2d(vhazsound, 0, maxx-minx, 0, maxy-miny);
+hazard_id = spawn_hazard(minx, maxx, miny, maxy, vhazardtype, false);
 }
 }
 void vhazardcheck()
@@ -327,17 +323,13 @@ for(uint i=0; i<vanishing_hazards.length(); i++)
 {
 if(vanishing_hazards[i].vanished==false and vanishing_hazards[i].vhazardtimer.elapsed>=vanishing_hazards[i].vhazardtime)
 {
-vanpool.destroy_sound(vanishing_hazards[i].vhazsound);
 remove_hazard(vanishing_hazards[i].hazard_id);
 vanishing_hazards[i].vanished=true;
 vanishing_hazards[i].vhazardtimer.restart();
 }
 else if(vanishing_hazards[i].vanished==true and vanishing_hazards[i].vhazardtimer.elapsed>=vanishing_hazards[i].vhazardtime)
 {
-vanishing_hazards[i].hazard_id = spawn_hazard(vanishing_hazards[i].minx, vanishing_hazards[i].maxx, vanishing_hazards[i].miny, vanishing_hazards[i].maxy, "", false);
-vanishing_hazards[i].vhazsound=vanpool.play_2d(get_map_sound("objects/hazards/"+vanishing_hazards[i].vhazardtype+"/*loop*"),me.x,me.y,vanishing_hazards[i].minx,vanishing_hazards[i].miny,true);
-vanpool.update_sound_2d(vanishing_hazards[i].vhazsound,vanishing_hazards[i].minx,vanishing_hazards[i].miny);
-vanpool.update_sound_range_2d(vanishing_hazards[i].vhazsound, 0, vanishing_hazards[i].maxx-vanishing_hazards[i].minx, 0, vanishing_hazards[i].maxy-vanishing_hazards[i].miny);
+vanishing_hazards[i].hazard_id = spawn_hazard(vanishing_hazards[i].minx, vanishing_hazards[i].maxx, vanishing_hazards[i].miny, vanishing_hazards[i].maxy, vanishing_hazards[i].vhazardtype, false);
 vanishing_hazards[i].vanished=false;
 vanishing_hazards[i].vhazardtimer.restart();
 }
@@ -350,9 +342,5 @@ vanishing_hazards.insert_last(vh1);
 }
 void destroy_all_vanishing_hazards()
 {
-for(uint i=0; i<vanishing_hazards.length(); i++)
-{
-vanpool.destroy_sound(vanishing_hazards[i].vhazsound);
-}
 vanishing_hazards.resize(0);
 }
