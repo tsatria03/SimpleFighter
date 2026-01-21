@@ -1,3 +1,37 @@
+void clear_camera_markers()
+{
+    if (!sel_left_set && !sel_right_set && !sel_top_set && !sel_bottom_set)
+    {
+        speak("No selection points.");
+        return;
+    }
+    sel_left_set = false;
+    sel_right_set = false;
+    sel_top_set = false;
+    sel_bottom_set = false;
+    p.play_stationary(get_pack_sound("misc/selectclear.ogg"), false);
+    speak("Selection points cleared.");
+}
+void speak_camera_markers()
+{
+    if (!sel_left_set && !sel_right_set && !sel_top_set && !sel_bottom_set)
+    {
+        speak("No selection points.");
+        return;
+    }
+    string msg = "Selection points:";
+    if (sel_left_set)
+        msg += " left: " + sel_left + ",";
+    if (sel_right_set)
+        msg += " right: " + sel_right + ",";
+    if (sel_bottom_set)
+        msg += " bottom: " + sel_bottom + ",";
+    if (sel_top_set)
+        msg += " top: " + sel_top + ",";
+    if (msg.ends_with(","))
+        msg = msg.substr(0, msg.length() - 1);
+    speak(msg);
+}
 void clearmap()
 {
 destroy_all_ambsources();
@@ -70,6 +104,7 @@ destroy_all_timedtexts();
 destroy_all_travelpoints();
 destroy_all_turbulences();
 destroy_all_turrets();
+destroy_all_vanishing_hazards();
 destroy_all_vanishing_platforms();
 destroy_all_vehicles();
 destroy_all_zombies();
@@ -615,6 +650,16 @@ string tiletype=sd[5];
 double stairsvol=stn(sd[6]);
 double stairspitch=stn(sd[7]);
 spawn_staircase(mx, mx2, my, my2, tiletype, stairsvol, stairspitch);
+}
+else if(sd[0]=="vanishing_hazard" && sd.length()==7)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string hazardtype=sd[5];
+int sp=stn(sd[6]);
+spawn_vanishing_hazard(mx, mx2, my, my2, hazardtype, sp);
 }
 else if(sd[0]=="vanishing_platform" && sd.length()==11)
 {

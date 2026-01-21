@@ -44,10 +44,16 @@ Camera keys.
 Letter, G plus Left arrow: Moves the camera left on the X axis, if pressed/ held down.
 Letter, G plus Right arrow: Moves the camera right on the X axis, if pressed/ held down.
 Letter, G plus Up arrow: Moves the camera up on the Y axis, if pressed/ held down.
-Letter, G plus down arrow: Moves the camera down on the Y axis, if pressed/ held down.
+Letter, G plus Down arrow: Moves the camera down on the Y axis, if pressed/ held down.
+Letter, G plus J: sets a selection point on the left side of the X axis, if pressed.
+Letter, G plus L: sets a selection point on the right side of the X axis, if pressed.
+Letter, G plus K: sets a selection point on the bottom side of the Y axis, if pressed.
+Letter, G plus I: sets a selection point on the top side of the Y axis, if pressed.
 Letter, G plus letter M: Toggles the mfwc mode on or off for the camera, if pressed/ held down.
 Letter, G plus letter R: Anounces the camera's current Coordinates relative to your position on the map, if pressed/ held down.
 Letter, G plus letter T: Plays the current map tile at the camera's position, if pressed/ held down.
+Letter, G plus Semicolon: Speaks all of the newly created selection points, if pressed/ held down.
+Letter, G plus Apostrophe: Clears all of the newly created selection points, if pressed/ held down.
 
 Spire keys.
 Shift plus left arrow: Moves the spire left to find objects on the left side of the map, if pressed.
