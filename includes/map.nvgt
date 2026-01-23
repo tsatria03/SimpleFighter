@@ -128,36 +128,6 @@ void compile_map()
         mapmenu();
 if (!string_starts_with(foldername, "data/maps/decompiled/"))
     foldername = "data/maps/decompiled/" + foldername;
-    int answer = question("Map Compiler", "Would you like these files to be encrypted?");
-    if (answer == 1)
-    {
-        encrypt = true;
-        encryption_key = input_box("Map Compiler", "Enter the encryption key for this map.");
-        if (encryption_key == "")
-            mapmenu();
-        if (string_left(encryption_key, 6) == "file::")
-        {
-            if (!f.open(string_trim_left(encryption_key, 6), "rb"))
-            {
-                alert("Error", "Failed to open key file.");
-                mapmenu();
-            }
-            encryption_key = f.read();
-            f.close();
-        }
-            if (string_left(encryption_key, 5) == "str::")
-            {
-                strpack = true;
-                encryption_key = string_trim_left(encryption_key, 5);
-            }
-            if (string_left(encryption_key, 5) == "hex::")
-                encryption_key = hex_to_string(string_trim_left(encryption_key, 5));
-            if (string_left(encryption_key, 10) == "str::hex::")
-            {
-                strpack = true;
-                encryption_key = hex_to_string(string_trim_left(encryption_key, 10));
-            }
-        }
     if (!directory_exists(foldername))
     {
         alert("Error", "Folder does not exist!");
@@ -201,36 +171,6 @@ void decompile_map()
     }
     if (!string_starts_with(filename, "data/maps/compiled/"))
         filename = "data/maps/compiled/" + filename;
-    decrypt_key = input_box("Map Decompiler", "Enter the decryption key for this map. Leave blank for no decryption key.");
-    if (get_last_error() == -12) mapmenu();
-    if (decrypt_key != "")
-    {
-        use_key = true;
-        if (string_left(decrypt_key, 6) == "file::")
-        {
-            if (!tempfile.open(string_trim_left(decrypt_key, 6), "rb"))
-            {
-                alert("Error", "Failed to open key file.");
-                mapmenu();
-            }
-            decrypt_key = tempfile.read();
-            tempfile.close();
-        }
-        if (string_left(decrypt_key, 10) == "str::hex::")
-        {
-            strpack = true;
-            decrypt_key = hex_to_string(string_trim_left(decrypt_key, 10));
-        }
-        else if (string_left(decrypt_key, 5) == "hex::")
-        {
-            decrypt_key = hex_to_string(string_trim_left(decrypt_key, 5));
-        }
-        else if (string_left(decrypt_key, 5) == "str::")
-        {
-            strpack = true;
-            decrypt_key = string_trim_left(decrypt_key, 5);
-        }
-    }
     if (!pfile.open(filename, PACK_OPEN_MODE_READ))
     {
         alert("Error", "Could not open the specified map file: " + filename);
@@ -1516,7 +1456,7 @@ mapper.write("name "+name+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my
 mapper.close();
 me.x=0;
 me.y=0;
-dlg("The map template has been created successfully. Please place the sounds that you want in the assets folder. When you're done, you can visit the map by going to the decompiled maps menu.");
+dlg("The map template has been created successfully. Press enter to continue.");
 }
 
 void cam_left()
