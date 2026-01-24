@@ -6,7 +6,7 @@ if(hidemaps==false) m.add_item_tts("map menu", "map");
 if(hidemisc==false) m.add_item_tts("miscellaneous menu", "msm");
 if(hidesets==false) m.add_item_tts("settings menu", "settings");
 m.add_item_tts("check for updates", "chup");
-if(directory_exists("sounds") and !directory_empty("sounds")) m.add_item_tts("redownload all sounds", "rdl");
+if(directory_exists("sounds") and !directory_empty("sounds") and system_is_windows) m.add_item_tts("redownload all sounds", "rdl");
 m.add_item_tts("test speakers", "st");
 if(system_is_windows) m.add_item_tts("restart game", "rx");
 m.add_item_tts("exit game", "ex");
@@ -1229,6 +1229,7 @@ m.add_item_tts("upgrade maximum character attack,"+"currently set to;"+attack, "
 m.add_item_tts("upgrade maximum character defence,"+"currently set to;"+defence, "umd");
 if(melee==false) m.add_item_tts("upgrade maximum weapon ammo,"+"currently set to;"+maxammo, "uma");
 m.add_item_tts("upgrade maximum character health,"+"currently set to;"+maxhealth, "umh");
+m.add_item_tts("upgrade maximum character stamina,"+"currently set to;"+maxstamina, "umt");
 m.add_item_tts("upgrade maximum character lives,"+"currently set to;"+lifecard, "umlf");
 if(drawnshield==true) m.add_item_tts("upgrade maximum shield strength,"+"currently set to;"+maxshieldstrength, "umst");
 if(drawnshield==true) m.add_item_tts("upgrade maximum shield defence,"+"currently set to;"+shielddefence, "umsd");
@@ -1332,6 +1333,29 @@ speak("Perchis completed.");
 maxhealth+=tempstat;
 points-=tempstat;
 update_char_maxhealth(maxhealth);
+}
+}
+if(ptmem=="umt")
+{
+if(points<=0)
+{
+dlg_snd("Error, you don't have enough points to complete this action. Press enter to continue.");
+resume_pools();
+return;
+}
+else if(points>=1)
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string stm=vd.input_box("","How much stamina would you like to buy?");
+if(stamina=="")
+return;
+double tempstat=string_to_number(stm);
+if(charbuysound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*buy*"),false);
+resume_pools();
+speak("Perchis completed.");
+maxstamina+=tempstat;
+points-=tempstat;
+update_char_maxstamina(maxstamina);
 }
 }
 if(ptmem=="umlf")
@@ -1607,6 +1631,7 @@ else if(me.y>=0 ) m.add_item_tts("current location, "+me.x+", "+me.y+". "+"You'r
 if(lifecard>=2) m.add_item_tts("health, "+round(health/maxhealth*100,2)+"percent, "+health+"of "+maxhealth+"hitpoints remaining, with "+lifecard+"lives left");
 else if(lifecard<=1) m.add_item_tts("health, "+round(health/maxhealth*100,2)+"percent, "+health+"of "+maxhealth+"hitpoints remaining, with "+lifecard+"life left");
 if(shieldon==1) m.add_item_tts("shield strength, "+round(shieldstrength/maxshieldstrength*100,2)+"percent, "+shieldstrength+"of "+maxshieldstrength+"hitpoints remaining");
+m.add_item_tts("stamina, "+round(stamina/maxstamina*100,2)+"percent, "+stamina+"of "+maxstamina+"endurance remaining.");
 m.add_item_tts("Your maximum jump height is"+jumpheight+"squares");
 m.add_item_tts("Your maximum x position is"+maxx+"tiles");
 m.add_item_tts("Your maximum y position is"+maxy+"tiles");
@@ -1634,6 +1659,7 @@ else if(me.y>=0 ) m.add_item_tts("current location, "+me.x+", "+me.y+". "+"You'r
 if(lifecard>=2) m.add_item_tts("health, "+round(health/maxhealth*100,2)+"percent, "+health+"of "+maxhealth+"hitpoints remaining, with "+lifecard+"lives left");
 else if(lifecard<=1) m.add_item_tts("health, "+round(health/maxhealth*100,2)+"percent, "+health+"of "+maxhealth+"hitpoints remaining, with "+lifecard+"life left");
 if(shieldon==1) m.add_item_tts("shield strength, "+round(shieldstrength/maxshieldstrength*100,2)+"percent, "+shieldstrength+"of "+maxshieldstrength+"hitpoints remaining");
+m.add_item_tts("stamina, "+round(stamina/maxstamina*100,2)+"percent, "+stamina+"of "+maxstamina+"endurance remaining.");
 m.add_item_tts("Your maximum jump height is"+jumpheight+"squares");
 m.add_item_tts("Your maximum x position is"+maxx+"tiles");
 m.add_item_tts("Your maximum y position is"+maxy+"tiles");

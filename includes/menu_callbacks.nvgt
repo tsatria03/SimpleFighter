@@ -1578,6 +1578,7 @@ if (key_repeating(KEY_DELETE) || key_repeating(KEY_BACK) && usetimer.elapsed >= 
     }
     string item = keys[invpos];
     string[] healtype = get_map_sound_folders("objects/items/health/*");
+string[] healtype2 = get_map_sound_folders("objects/items/stamina/*");
     string[] misktype = get_map_sound_folders("objects/items/other/*");
     bool matched = false;
     for (uint i = 0; i < healtype.length(); i++)
@@ -1590,9 +1591,25 @@ if (key_repeating(KEY_DELETE) || key_repeating(KEY_BACK) && usetimer.elapsed >= 
             break;
         }
     }
+if (!matched)
+    {
+        speak("Cannot drop this item.");
+}
+    for (uint i = 0; i < healtype2.length(); i++)
+    {
+        if (item == healtype2[i])
+        {
+            drop_item(facing, "stamina", item);
+            give(item, -1);
+            matched = true;
+            break;
+        }
+    }
     if (!matched)
     {
-        for (uint i = 0; i < misktype.length(); i++)
+        speak("Cannot drop this item.");
+        }
+for (uint i = 0; i < misktype.length(); i++)
         {
             if (item == misktype[i])
             {
@@ -1602,11 +1619,10 @@ if (key_repeating(KEY_DELETE) || key_repeating(KEY_BACK) && usetimer.elapsed >= 
                 break;
             }
         }
-    }
     if (!matched)
     {
         speak("Cannot drop this item.");
-        return 0;
+return 0;
     }
     usetimer.restart();
 }
@@ -1735,6 +1751,7 @@ if(mres==0)
 setupmenu();
 m.add_item_tts("health", "hp");
 m.add_item_tts("other", "ot");
+m.add_item_tts("stamina", "st");
 int mres=m.run("Items menu",true);
 string itsm=m.get_item_name(mres);
 if(mres==0)
@@ -1756,6 +1773,15 @@ string res=othersmenu();
 if(res!="")
 {
 itemtype="other";
+itemtype2=res;
+}
+}
+if(itsm=="st")
+{
+string res=staminasmenu();
+if(res!="")
+{
+itemtype="stamina";
 itemtype2=res;
 }
 }
@@ -1804,7 +1830,7 @@ if(mres==0)
 setupmenu();
 m.add_item_tts("health", "hp");
 m.add_item_tts("other", "ot");
-m.add_item_tts("weapon", "wep");
+m.add_item_tts("stamina", "st");
 int mres=m.run("Items menu",true);
 string itsm=m.get_item_name(mres);
 if(mres==0)
@@ -1826,6 +1852,15 @@ string res=othersmenu();
 if(res!="")
 {
 itemtype="other";
+itemtype2=res;
+}
+}
+if(itsm=="st")
+{
+string res=staminasmenu();
+if(res!="")
+{
+itemtype="stamina";
 itemtype2=res;
 }
 }
@@ -1856,6 +1891,85 @@ if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_map_sound("objects/items/other/"+misktype+"/*loop*"), false);
+}
+return 0;
+}
+string staminasmenu()
+{
+string[] healtype2=get_map_sound_folders("objects/items/stamina/*");
+setupmenu();
+m.set_callback(@staminas_callback,"");
+for (uint i=0; i<healtype2.length(); i++)
+{
+m.add_item_tts(healtype2[i],healtype2[i],"",true);
+}
+int mres=m.run("staminas menu", true);
+if(mres==0)
+{
+setupmenu();
+m.add_item_tts("stamina", "hp");
+m.add_item_tts("other", "ot");
+m.add_item_tts("stamina", "st");
+int mres=m.run("Items menu",true);
+string itsm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+}
+if(itsm=="hp")
+{
+string res=staminasmenu();
+if(res!="")
+{
+itemtype="stamina";
+itemtype2=res;
+}
+}
+if(itsm=="ot")
+{
+string res=othersmenu();
+if(res!="")
+{
+itemtype="other";
+itemtype2=res;
+}
+}
+if(itsm=="st")
+{
+string res=staminasmenu();
+if(res!="")
+{
+itemtype="stamina";
+itemtype2=res;
+}
+}
+}
+if(mres>0 and mres<=healtype2.length())
+{
+itemtype2=healtype2[mres-1];
+}
+return m.get_item_name(mres);
+}
+int staminas_callback(dynamic_menu_pro@ m, string data)
+{
+string healtype2;
+if(m.menu_position>0)
+healtype2=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/items/stamina/"+healtype2+"/*get*"), false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/items/stamina/"+healtype2+"/*get*"), false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/items/stamina/"+healtype2+"/*loop*"), false);
 }
 return 0;
 }
@@ -2038,7 +2152,7 @@ return 0;
 }
 string timbombsmenu()
 {
-string[] timbombtype=get_map_sound_folders("time bombs/*");
+string[] timbombtype=get_map_sound_folders("objects/time bombs/*");
 setupmenu();
 m.set_callback(@timbombes_callback,"");
 for (uint i=0; i<timbombtype.length(); i++)
