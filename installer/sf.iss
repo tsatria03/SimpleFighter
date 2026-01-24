@@ -1,5 +1,5 @@
 #define MyAppName "SimpleFighter"
-#define MyAppVersion "7.9"
+#define MyAppVersion "8.0"
 #define MyAppPublisher "tsatria03"
 #define MyAppURL "https://tsatria03.itch.io/SimpleFighter"
 #define MyAppExeName "sf.exe"
