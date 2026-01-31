@@ -1,0 +1,507 @@
+class submenu_item
+{
+    string name;
+    string id;
+    submenu_item(string n, string i = "")
+    {
+        name = n;
+        id = i;
+    }
+}
+class submenu
+{
+    string title;
+    string id;
+    submenu@[] subs;
+    submenu_item@[] items;
+    int current_sub = 0;
+    int current_item = 0;
+    int last_sub_index = -1;
+    int last_item_index = -1;
+    bool has_focus = false;
+    bool enable_wrapping = true;
+    bool enable_first_letter_navigation = true;
+bool speak_sub_position = true;
+    bool speak_item_position = true;
+    bool say_sub_menu = true;
+    string click_sound;
+    string close_sound;
+    string enter_sound;
+    string edge_sound;
+    string open_sound;
+string sub_sound;
+    string wrap_sound;
+    string last_letter_pressed = "";
+    string last_search_query = "";
+    submenu(string t = "", string i = "")
+    {
+        title = t;
+        id = i;
+    }
+    void play(string soundname)
+    {
+        if (soundname != "")
+            spool.play_stationary(soundname, false);
+    }
+    void reset()
+    {
+        subs.resize(0);
+        current_sub = 0;
+        current_item = 0;
+        has_focus = false;
+        last_sub_index = -1;
+        last_item_index = -1;
+        last_letter_pressed = "";
+        last_search_query = "";
+    }
+    int get_sub_index(string id)
+    {
+        for (int i = 0; i < int(subs.length()); i++)
+            if (subs[i].id == id)
+                return i;
+        return -1;
+    }
+void add_submenu(string t, string id = "")
+{
+    string real_id = (id == "" ? t : id);
+    if (get_sub_index(real_id) != -1) return;
+    subs.insert_last(submenu(t, real_id));
+}
+void add_item(string sub_name, string item_name, string item_id = "")
+{
+    int s = get_sub_index(sub_name);
+    if (s == -1) return;
+    subs[s].items.insert_last(submenu_item(item_name, item_id));
+}
+void first_letter_nav()
+{
+    if (!enable_first_letter_navigation) return;
+    string chars = get_characters();
+    if (chars == "") return;
+    string letter = chars.substr(0, 1).lower();
+    if (!letter.is_alphabetic()) return;
+    if (has_focus)
+    {
+        submenu@ s = subs[current_sub];
+        if (s.items.length() == 0) return;
+        int start = (letter == last_letter_pressed) ? (s.current_item + 1) % s.items.length() : 0;
+        last_letter_pressed = letter;
+        int i = start;
+        do
+        {
+            if (s.items[i].name.lower().starts_with(letter))
+            {
+                s.current_item = i;
+                play(click_sound);
+submenu@ s = subs[current_sub];
+if (s.items.length() > 0)
+    speak(s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+                return;
+            }
+            i = (i + 1) % s.items.length();
+        }
+        while (i != start);
+        return;
+    }
+    if (subs.length() == 0) return;
+    int start = (letter == last_letter_pressed) ? (current_sub + 1) % subs.length() : 0;
+    last_letter_pressed = letter;
+    int i = start;
+    do
+    {
+        if (subs[i].title.lower().starts_with(letter))
+        {
+            current_sub = i;
+            play(sub_sound);
+            subs[current_sub].current_item = 0;
+            has_focus = false;
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+            return;
+        }
+        i = (i + 1) % subs.length();
+    }
+    while (i != start);
+}
+void find_item()
+{
+    if (has_focus)
+    {
+        submenu@ s = subs[current_sub];
+        if (s.items.length() == 0) return;
+        string q = input_box("Find item", "Enter keyword to search for:", last_search_query);
+        if (q == "" || get_last_error() == -12)
+        {
+            speak("Cancelled.");
+            return;
+        }
+        last_search_query = q;
+        string lq = q.lower();
+        for (int i = 0; i < int(s.items.length()); i++)
+        {
+            if (s.items[i].name.lower().find(lq) != -1)
+            {
+                s.current_item = i;
+                has_focus = true;
+                play(click_sound);
+                speak(s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+                return;
+            }
+        }
+        speak("No matching item found.");
+        return;
+    }
+    if (subs.length() == 0) return;
+    string q = input_box("Find submenu", "Enter keyword to search for:", last_search_query);
+    if (q == "" || get_last_error() == -12)
+    {
+        speak("Cancelled.");
+        return;
+    }
+    last_search_query = q;
+    string lq = q.lower();
+    for (int i = 0; i < int(subs.length()); i++)
+    {
+        if (subs[i].title.lower().find(lq) != -1)
+        {
+            current_sub = i;
+            has_focus = false;
+            subs[current_sub].current_item = 0;
+            play(sub_sound);
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+            return;
+        }
+    }
+    speak("No matching submenu found.");
+}
+string get_selected_sub_name()
+{
+    if (last_sub_index < 0) return "";
+    return subs[last_sub_index].title;
+}
+string get_selected_item_name()
+{
+    if (last_sub_index < 0 || last_item_index < 0) return "";
+    return subs[last_sub_index].items[last_item_index].name;
+}
+string get_selected_sub_id()
+{
+    if (last_sub_index < 0) return "";
+    return subs[last_sub_index].id;
+}
+string get_selected_item_id()
+{
+    if (last_sub_index < 0 || last_item_index < 0) return "";
+    return subs[last_sub_index].items[last_item_index].id;
+}
+int run(string intro = "", int sub_position = -1, int item_position = -1, bool speak_focused_key = false)
+{
+    if (subs.length() == 0)
+    {
+        speak("No submenus available.");
+        return -1;
+    }
+    bool sub_focused  = false;
+    bool item_focused = false;
+    has_focus = false;
+    if (sub_position >= 0 && sub_position < int(subs.length()))
+    {
+        current_sub = sub_position;
+        sub_focused = true;
+    }
+    else
+    {
+        current_sub = 0;
+    }
+    if (sub_focused)
+    {
+        submenu@ sm = subs[current_sub];
+        if (item_position >= 0 && item_position < int(sm.items.length()))
+        {
+            sm.current_item = item_position;
+            item_focused = true;
+            has_focus = true;
+        }
+        else
+        {
+            sm.current_item = 0;
+        }
+    }
+    if (intro != "")
+        speak(intro);
+    play(open_sound);
+    if (sub_focused)
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+    if (item_focused)
+{
+submenu@ s = subs[current_sub];
+if (s.items.length() > 0)
+    speak(s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+}
+    while (true)
+    {
+        wait(5);
+        if (enable_first_letter_navigation)
+            first_letter_nav();
+        if (key_pressed(KEY_F3))
+            find_item();
+if (key_repeating(KEY_TAB))
+{
+    if (intro != "")
+        speak(intro);
+    if (sub_focused && speak_focused_key)
+speak(intro+" "+subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+    if (item_focused && speak_focused_key)
+{
+submenu@ s = subs[current_sub];
+if (s.items.length() > 0)
+    speak(intro+" "+subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): "")+". "+s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+}
+}
+        if (key_repeating(KEY_LEFT))
+        {
+            if (!sub_focused)
+            {
+                sub_focused = true;
+                play(sub_sound);
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+                item_focused = false;
+                has_focus = false;
+                continue;
+            }
+            int prev = current_sub;
+            if (enable_wrapping)
+            {
+                current_sub = (current_sub - 1 + subs.length()) % subs.length();
+last_letter_pressed = "";
+                if (current_sub == int(subs.length()) - 1 && prev == 0)
+                    play(wrap_sound);
+                else
+play(sub_sound);
+            }
+            else
+            {
+                if (current_sub > 0)
+                {
+                    current_sub--;
+play(sub_sound);
+                }
+                else
+                {
+                    play(edge_sound);
+                }
+            }
+            item_focused = false;
+            has_focus = false;
+            subs[current_sub].current_item = 0;
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+        }
+        else if (key_repeating(KEY_RIGHT))
+        {
+            if (!sub_focused)
+            {
+                sub_focused = true;
+play(sub_sound);
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+                item_focused = false;
+                has_focus = false;
+                continue;
+            }
+            int prev = current_sub;
+            if (enable_wrapping)
+            {
+                current_sub = (current_sub + 1) % subs.length();
+last_letter_pressed = "";
+                if (current_sub == 0 && prev == int(subs.length()) - 1)
+                    play(wrap_sound);
+                else
+play(sub_sound);
+            }
+            else
+            {
+                if (current_sub < int(subs.length()) - 1)
+                {
+                    current_sub++;
+play(sub_sound);
+                }
+                else
+                {
+                    play(edge_sound);
+                }
+            }
+            item_focused = false;
+            has_focus = false;
+            subs[current_sub].current_item = 0;
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+        }
+        else if (key_repeating(KEY_HOME))
+        {
+            if (!sub_focused)
+            {
+                sub_focused = true;
+play(sub_sound);
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+                item_focused = false;
+                has_focus = false;
+                continue;
+            }
+            if (current_sub != 0)
+            {
+                current_sub = 0;
+last_letter_pressed = "";
+play(sub_sound);
+                item_focused = false;
+                has_focus = false;
+                subs[current_sub].current_item = 0;
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+            }
+            else
+            {
+last_letter_pressed = "";
+play(sub_sound);
+                item_focused = false;
+                has_focus = false;
+                subs[current_sub].current_item = 0;
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+            }
+        }
+        else if (key_repeating(KEY_END))
+        {
+            if (!sub_focused)
+            {
+                sub_focused = true;
+play(sub_sound);
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+                item_focused = false;
+                has_focus = false;
+                continue;
+            }
+            int last = subs.length() - 1;
+            if (current_sub != last)
+            {
+                current_sub = last;
+last_letter_pressed = "";
+play(sub_sound);
+                item_focused = false;
+                has_focus = false;
+                subs[current_sub].current_item = 0;
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+            }
+            else
+            {
+last_letter_pressed = "";
+play(sub_sound);
+                item_focused = false;
+                has_focus = false;
+                subs[current_sub].current_item = 0;
+speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
+            }
+        }
+else if (key_repeating(KEY_DOWN))
+{
+    if (!sub_focused)
+        continue;
+    submenu@ sm = subs[current_sub];
+    if (sm.items.length() == 0)
+    {
+        play(edge_sound);
+        continue;
+    }
+    if (!item_focused)
+    {
+        item_focused = true;
+        has_focus = true;
+        last_letter_pressed = "";
+        play(click_sound);
+submenu@ s = subs[current_sub];
+if (s.items.length() > 0)
+    speak(s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+        continue;
+    }
+    if (enable_wrapping)
+    {
+        int prev = sm.current_item;
+        sm.current_item = (sm.current_item + 1) % sm.items.length();
+        if (sm.current_item == 0 && prev == int(sm.items.length()) - 1)
+            play(wrap_sound);
+        else
+            play(click_sound);
+    }
+    else
+    {
+        if (sm.current_item < int(sm.items.length()) - 1)
+        {
+            sm.current_item++;
+            play(click_sound);
+        }
+        else
+        {
+            play(edge_sound);
+        }
+    }
+submenu@ s = subs[current_sub];
+if (s.items.length() > 0)
+    speak(s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+}
+else if (key_repeating(KEY_UP))
+{
+    if (!sub_focused)
+        continue;
+    submenu@ sm = subs[current_sub];
+    if (sm.items.length() == 0)
+    {
+        play(edge_sound);
+        continue;
+    }
+    if (!item_focused)
+    {
+        item_focused = true;
+        has_focus = true;
+        last_letter_pressed = "";
+        play(click_sound);
+submenu@ s = subs[current_sub];
+if (s.items.length() > 0)
+    speak(s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+        continue;
+    }
+    if (enable_wrapping)
+    {
+        int prev = sm.current_item;
+        sm.current_item = (sm.current_item - 1 + sm.items.length()) % sm.items.length();
+        if (sm.current_item == int(sm.items.length()) - 1 && prev == 0)
+            play(wrap_sound);
+        else
+            play(click_sound);
+    }
+    else
+    {
+        if (sm.current_item > 0)
+        {
+            sm.current_item--;
+            play(click_sound);
+        }
+        else
+        {
+            play(edge_sound);
+        }
+    }
+submenu@ s = subs[current_sub];
+if (s.items.length() > 0)
+    speak(s.items[s.current_item].name + (speak_item_position ? ". " + string(s.current_item + 1) + " of " + string(s.items.length()) : ""));
+}
+        else if (key_repeating(KEY_RETURN))
+        {
+            if (!item_focused) continue;
+            play(enter_sound);
+            last_sub_index  = current_sub;
+            last_item_index = subs[current_sub].current_item;
+            return last_item_index + 1;
+        }
+        else if (key_repeating(KEY_ESCAPE))
+        {
+            play(close_sound);
+            return -1;
+        }
+    }
+    return -1;
+}
+}
