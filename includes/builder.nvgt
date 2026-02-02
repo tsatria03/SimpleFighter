@@ -4509,30 +4509,20 @@ game();
 if(buildtype == "tts_enemie")
 {
 form.reset();
-form.create_window("tts_enemy", false);
-int mx=form.create_input_box("Enter the x of this tts_enemy", sel_left_set ? sel_left : "");
-int my=form.create_input_box("Enter the y of this tts_enemy", sel_bottom_set ? sel_bottom : "");
-int hp=form.create_input_box("Enter the health of this tts_enemy");
-int sp=form.create_input_box("Enter the speed of this tts_enemy");
-int ttsenetext=form.create_input_box("Enter the taunt text of this tts_enemy");
-int rt=form.create_input_box("Enter the taunt rate of this tts_enemy");
-int vl=form.create_input_box("Enter the taunt volume of this tts_enemy");
-int pt=form.create_input_box("Enter the taunt pitch of this tts_enemy");
-int ttsenetext2=form.create_input_box("Enter the death text of this tts_enemy");
-int rt2=form.create_input_box("Enter the death rate of this tts_enemy");
-int vl2=form.create_input_box("Enter the death volume of this tts_enemy");
-int pt2=form.create_input_box("Enter the death pitch of this tts_enemy");
+form.create_window("tts_enemie", false);
+int mx=form.create_input_box("Enter the x of this tts_enemie", sel_left_set ? sel_left : "");
+int my=form.create_input_box("Enter the y of this tts_enemie", sel_bottom_set ? sel_bottom : "");
+int hp=form.create_input_box("Enter the health of this tts_enemie");
+int sp=form.create_input_box("Enter the speed of this tts_enemie");
+int ttsenetext=form.create_input_box("Enter the text of this tts_enemie: seperated by quotes");
+int rt  = form.create_slider("rate: ", 0, -10, 10);
+int vl  = form.create_slider("volume: ", 100, 0, 100);
+int pt  = form.create_slider("pitch: ", 0, -10, 10);
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(rt, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(vl, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(pt, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(rt2, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(vl2, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(pt2, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay",true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -4547,13 +4537,9 @@ y=string_to_number(form.get_text(my));
 minhp=string_to_number(form.get_text(hp));
 speedtime=string_to_number(form.get_text(sp));
 txt=form.get_text(ttsenetext);
-rate=string_to_number(form.get_text(rt));
-volume=string_to_number(form.get_text(vl));
-pitch=string_to_number(form.get_text(pt));
-txt2=form.get_text(ttsenetext2);
-rate2=string_to_number(form.get_text(rt2));
-volume2=string_to_number(form.get_text(vl2));
-pitch2=string_to_number(form.get_text(pt2));
+rate = form.get_slider(rt);
+volume = form.get_slider(vl);
+pitch = form.get_slider(pt);
 if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
@@ -4594,50 +4580,8 @@ spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
 }
 else if(form.get_text(ttsenetext)=="")
 {
-speak("Taunt text is required.");
-form.focus(sp);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-}
-else if(form.get_text(rt)=="")
-{
-speak("Taunt rate is required.");
-form.focus(sp);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-}
-else if(form.get_text(vl)=="")
-{
-speak("Taunt volume is required.");
-form.focus(sp);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-}
-else if(form.get_text(pt)=="")
-{
-speak("Taunt pitch is required.");
-form.focus(sp);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-}
-else if(form.get_text(ttsenetext2)=="")
-{
-speak("Death text is required.");
-form.focus(sp);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-}
-else if(form.get_text(rt2)=="")
-{
-speak("Death rate is required.");
-form.focus(sp);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-}
-else if(form.get_text(vl2)=="")
-{
-speak("Death volume is required.");
-form.focus(sp);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-}
-else if(form.get_text(pt2)=="")
-{
-speak("Death pitch is required.");
-form.focus(sp);
+speak("Text is required.");
+form.focus(ttsenetext);
 spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
 }
 else
@@ -4645,9 +4589,9 @@ else
 resume_pools();
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"ttsenemie "+x+" "+y+" "+minhp+" "+speedtime+" "+txt+" "+rate+" "+volume+" "+pitch+" "+txt2+" "+rate2+" "+volume2+" "+pitch2);
+mapper.write("\r\n"+"ttsenemie "+x+" "+y+" "+minhp+" "+speedtime+" "+txt+" "+rate+" "+volume+" "+pitch);
 mapper.close();
-spawn_ttsenemie(x, y, minhp, minhp, speedtime, txt, rate, volume, pitch, txt2, rate2, volume2, pitch2);
+spawn_ttsenemie(x, y, minhp, minhp, speedtime, txt, rate, volume, pitch);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");

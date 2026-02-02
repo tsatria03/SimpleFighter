@@ -1771,48 +1771,32 @@ robpool.destroy_sound(robots[i].robsound);
 robots.resize(0);
 }
 
-ttsenemie@[]ttsenemies(0);
+ttsenemie@[] ttsenemies(0);
 class ttsenemie
 {
-int defsound, ttsemsound, stepsound, tilesound;
-double ttsenehealth;
-double ttsenemaxhealth;
-int ttsemx;
-int ttsemy;
-int ttsrate;
-int ttsvolume;
-int ttspitch;
-int ttsrate2;
-int ttsvolume2;
-int ttspitch2;
-int ttsenemietime;
-string taunt_file;
-string def_file;
-string ttsemtext;
-string ttsemtext2;
-timer ttsenemietimer;
-ttsenemie(int ttsex,int ttsey,double hp,double maxhp,int sp,string ttstext,int ttsr,int ttsv,int ttsp,string ttstext2,int ttsr2,int ttsv2,int ttsp2)
-{
-ttsemx=ttsex;
-ttsemy=ttsey;
-ttsenehealth=hp;
-ttsenemaxhealth=maxhp;
-ttsenemietime=sp;
-ttsemtext=ttstext;
-ttsrate=ttsr;
-ttsvolume=ttsv;
-ttspitch=ttsp;
-ttsemtext2=ttstext2;
-ttsrate2=ttsr2;
-ttsvolume2=ttsv2;
-ttspitch2=ttsp2;
-taunt_file = "\\taunt_" + format_int(ttsenemies.length(), 3) + ".ogg";
-def_file = "\\death_" + format_int(ttsenemies.length(), 3) + ".ogg";
-string tauntpath = DIRECTORY_TEMP + taunt_file;
-if (!file_exists(tauntpath))
-    generate_tts(tauntpath, ttsemtext, "", ttsrate, ttsvolume, ttspitch);
-ttsemsound = ttsempool.play_extended_2d(tauntpath, me.x, me.y, ttsemx, ttsemy, 0, 0, 0, 0, true, 0, 0, painvolume, painpitch, false);
-}
+    int ttsemsound;
+    int defsound;
+    int stepsound, tilesound;
+    double ttsenehealth;
+    double ttsenemaxhealth;
+    int ttsemx;
+    int ttsemy;
+    int ttsenemietime;
+    string taunt_file;
+    string def_file;
+    timer ttsenemietimer;
+    ttsenemie(int x, int y, double hp, double maxhp, int sp, string taunt_path, string death_path)
+    {
+        ttsemx = x;
+        ttsemy = y;
+        ttsenehealth = hp;
+        ttsenemaxhealth = maxhp;
+        ttsenemietime = sp;
+        taunt_file = taunt_path;
+        def_file   = death_path;
+ttsempool.destroy_sound(ttsemsound);
+        ttsemsound = ttsempool.play_extended_2d(taunt_file, me.x, me.y, ttsemx, ttsemy, 0, 0, 0, 0, true, 0,0, painvolume, painpitch, false);
+    }
 }
 void ttseneloop()
 {
@@ -1847,31 +1831,35 @@ ttsenemies[i].stepsound=1;
 if(ttsenemies[i].ttsenehealth<=0)
 {
 ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
-string defpath = DIRECTORY_TEMP + ttsenemies[i].def_file;
-if (!file_exists(defpath))
-    generate_tts(defpath, ttsenemies[i].ttsemtext2, "", ttsenemies[i].ttsrate2, ttsenemies[i].ttsvolume2, ttsenemies[i].ttspitch2);
-ttsenemies[i].defsound = ttsempool.play_extended_2d(defpath, me.x, me.y, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+ttsenemies[i].defsound = ttsempool.play_extended_2d(ttsenemies[i].def_file, me.x, me.y, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
 int falldelay = round(ttsempool.get_sound_length(ttsenemies[i].defsound), 0);
 spawn_bodyfall(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, (falldelay <= 0 ? random(500, 1000) : falldelay));
-if (file_exists(DIRECTORY_TEMP + ttsenemies[i].taunt_file)) file_delete(DIRECTORY_TEMP + ttsenemies[i].taunt_file);
-if (file_exists(DIRECTORY_TEMP + ttsenemies[i].def_file)) file_delete(DIRECTORY_TEMP + ttsenemies[i].def_file);
+            if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
+            if (file_exists(ttsenemies[i].def_file))   file_delete(ttsenemies[i].def_file);
 ttsenemies.remove_at(i);
 return;
 }
 }
 }
-void spawn_ttsenemie(int x,int y,double hp,double maxhp,int ttsenemietime,string ttsemtext,int ttsrate,int ttsvolume,int ttspitch,string ttsemtext2,int ttsrate2,int ttsvolume2,int ttspitch2)
+void spawn_ttsenemie(int x, int y, double hp, double maxhp, int sp, string text, int rate, int volume, int pitch)
 {
-ttsenemie ttsenem1(x,y,hp,maxhp,ttsenemietime,ttsemtext,ttsrate,ttsvolume,ttspitch,ttsemtext2,ttsrate2,ttsvolume2,ttspitch2);
-ttsenemies.insert_last(ttsenem1);
+    string id = format_int(ttsenemies.length(), 3);
+    string taunt_path = DIRECTORY_TEMP + "\\taunt_" + id + ".ogg";
+    string death_path = DIRECTORY_TEMP + "\\death_" + id + ".ogg";
+    if (file_exists(taunt_path)) file_delete(taunt_path);
+    if (file_exists(death_path)) file_delete(death_path);
+    generate_tts(taunt_path, text, "", rate, volume, pitch);
+    generate_tts(death_path, "Ouch! You killed me!", "", rate, volume, pitch);
+    ttsenemie ttsen1(x, y, hp, maxhp, sp, taunt_path, death_path);
+    ttsenemies.insert_last(ttsen1);
 }
 void destroy_all_ttsenemies()
 {
 for(uint i=0; i<ttsenemies.length(); i++)
 {
 ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
-if (file_exists(DIRECTORY_TEMP + ttsenemies[i].taunt_file)) file_delete(DIRECTORY_TEMP + ttsenemies[i].taunt_file);
-if (file_exists(DIRECTORY_TEMP + ttsenemies[i].def_file)) file_delete(DIRECTORY_TEMP + ttsenemies[i].def_file);
+        if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
+        if (file_exists(ttsenemies[i].def_file)) file_delete(ttsenemies[i].def_file);
 }
 ttsenemies.resize(0);
 }

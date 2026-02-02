@@ -1214,21 +1214,30 @@ bool mb2=string_to_bool(sd[17]);
 bool dpm=string_to_bool(sd[18]);
 spawn_robot(x, y, roborange, roborange2, roborange3, roborange4, hp, hp, card, dmg, ft, sp, lv, xp, rotype, fb, mb, mb2, dpm);
 }
-else if(sd[0]=="ttsenemie" && sd.length()==13)
+else if (sd[0] == "ttsenemie")
 {
-int x=stn(sd[1]);
-int y=stn(sd[2]);
-double hp=stn(sd[3]);
-int sp=stn(sd[4]);
-string ttsenetext=sd[5];
-int rt=stn(sd[6]);
-int vl=stn(sd[7]);
-int pt=stn(sd[8]);
-string ttsenetext2=sd[9];
-int rt2=stn(sd[10]);
-int vl2=stn(sd[11]);
-int pt2=stn(sd[12]);
-spawn_ttsenemie(x, y, hp, hp, sp, ttsenetext, rt, vl, pt, ttsenetext2, rt2, vl2, pt2);
+    int x = stn(sd[1]);
+    int y = stn(sd[2]);
+    double hp = stn(sd[3]);
+    int sp = stn(sd[4]);
+
+    string combined = join_string_array(sd, 5, sd.length());
+
+    int first_quote = combined.find_first_of("\"");
+    int second_quote = combined.find_first_of("\"", first_quote + 1);
+    if (first_quote == -1 || second_quote == -1) return;
+
+    string ttsenetext = combined.substr(first_quote + 1, second_quote - first_quote - 1);
+    string after_text = combined.substr(second_quote + 1);
+
+    array<string> parts = string_split(trim(after_text), " ");
+    if (parts.length() < 3) return;
+
+    int rt = stn(parts[0]);
+    int vl = stn(parts[1]);
+    int pt = stn(parts[2]);
+
+    spawn_ttsenemie(x, y, hp, hp, sp, ttsenetext, rt, vl, pt);
 }
 else if(sd[0]=="turret" && sd.length()==17)
 {

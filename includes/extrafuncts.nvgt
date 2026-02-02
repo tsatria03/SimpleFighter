@@ -691,6 +691,38 @@ string get_downloads_folder()
         return "";
 }
 
+string extract_quoted_segment(string line, int start_index)
+{
+    int first_quote = find_nth_quote(line, 1, start_index);
+    int second_quote = find_nth_quote(line, 2, start_index);
+    if (first_quote == -1 || second_quote == -1) return "";
+    return line.substr(first_quote + 1, second_quote - first_quote - 1);
+}
+int get_quoted_segment_end_index(string line, int start_index)
+{
+    string temp = line.substr(0, find_nth_quote(line, 2, start_index) + 1);
+    array<string> parts = string_split(temp, " ");
+    return parts.length() - 1;
+}
+int find_nth_quote(string line, int n, int skip_words = 0)
+{
+    int qcount = 0;
+    int idx = 0;
+    int spacecount = 0;
+    while (idx < int(line.length()))
+    {
+        if (line[idx] == ' ') spacecount++;
+        if (line[idx] == '"' && spacecount >= skip_words)
+        {
+            qcount++;
+            if (qcount == n)
+                return idx;
+        }
+        idx++;
+    }
+    return -1;
+}
+
 string join_string_array(string[] arr, uint start, uint end)
 {
 string result = "";
