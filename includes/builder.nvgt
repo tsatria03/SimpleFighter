@@ -4514,7 +4514,7 @@ int mx=form.create_input_box("Enter the x of this tts_enemie", sel_left_set ? se
 int my=form.create_input_box("Enter the y of this tts_enemie", sel_bottom_set ? sel_bottom : "");
 int hp=form.create_input_box("Enter the health of this tts_enemie");
 int sp=form.create_input_box("Enter the speed of this tts_enemie");
-int ttsenetext=form.create_input_box("Enter the text of this tts_enemie: seperated by quotes");
+int ttsenetext=form.create_input_box("Enter the text of this tts_enemie");
 int rt  = form.create_slider("rate: ", 0, -10, 10);
 int vl  = form.create_slider("volume: ", 100, 0, 100);
 int pt  = form.create_slider("pitch: ", 0, -10, 10);
@@ -4589,9 +4589,16 @@ else
 resume_pools();
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"ttsenemie "+x+" "+y+" "+minhp+" "+speedtime+" "+txt+" "+rate+" "+volume+" "+pitch);
+mapper.write("\r\n"+"ttsenemie "+x+" "+y+" "+minhp+" "+speedtime+" \""+txt+"\" "+rate+" "+volume+" "+pitch);
 mapper.close();
-spawn_ttsenemie(x, y, minhp, minhp, speedtime, txt, rate, volume, pitch);
+string id = format_int(ttsenemies.length(), 3);
+string taunt_path = DIRECTORY_TEMP + "\\taunt_" + id + ".ogg";
+string death_path = DIRECTORY_TEMP + "\\death_" + id + ".ogg";
+if (file_exists(taunt_path)) file_delete(taunt_path);
+if (file_exists(death_path)) file_delete(death_path);
+generate_tts(taunt_path, txt, "", rate, volume, pitch);
+generate_tts(death_path, "Ouch! You killed me!", "", rate, volume, pitch);
+spawn_ttsenemie(x, y, minhp, minhp, speedtime, taunt_path, death_path);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");
