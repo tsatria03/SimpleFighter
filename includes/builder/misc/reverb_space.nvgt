@@ -1,0 +1,62 @@
+reverb_space@[] reverb_spaces(0);
+class reverb_space
+{
+double minx, maxx, miny, maxy;
+float dry_mix;
+float wet_mix;
+float room_size;
+float dampping;
+float width;
+string reverb_id;
+reverb_space(double mx, double mx2, double my, double my2, string rd,float dm, float wm, float rs, float dp, float wt)
+{
+minx = mx;
+maxx = mx2;
+miny = my;
+maxy = my2;
+reverb_id = rd;
+dry_mix = dm;
+wet_mix = wm;
+room_size = rs;
+dampping = dp;
+width = wt;
+}
+}
+string get_reverb_at(double x, double y)
+{
+for (uint i = 0; i < reverb_spaces.length(); i++)
+{
+if (reverb_spaces[i].minx <= x && reverb_spaces[i].maxx >= x && reverb_spaces[i].miny <= y && reverb_spaces[i].maxy >= y)
+{
+return reverb_spaces[i].reverb_id;
+}
+}
+return "";
+}
+void apply_reverb_space(double x, double y, sound_pool@ pool)
+{
+string reverb_id = get_reverb_at(x, y);
+if (reverb_id == "")
+{
+pool.mixer.set_fx("$");
+return;
+}
+for (uint i = 0; i < reverb_spaces.length(); i++)
+{
+if (reverb_spaces[i].reverb_id == reverb_id)
+{
+string fxtype = "$" + reverb_id + ":freeverb:" + reverb_spaces[i].dry_mix + ":" + reverb_spaces[i].wet_mix + ":" + reverb_spaces[i].room_size + ":" + reverb_spaces[i].dampping + ":" + reverb_spaces[i].width;
+pool.mixer.set_fx(fxtype);
+return;
+}
+}
+}
+void spawn_reverb_space(double x1, double x2, double y1, double y2,string reverb_id, float dry_mix, float wet_mix,float room_size, float dampping, float width)
+{
+reverb_space rs1(x1, x2, y1, y2, reverb_id, dry_mix, wet_mix, room_size, dampping, width);
+reverb_spaces.insert_last(rs1);
+}
+void destroy_all_reverb_spaces()
+{
+reverb_spaces.resize(0);
+}

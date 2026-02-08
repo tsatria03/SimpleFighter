@@ -1,0 +1,44 @@
+calander@[]calanders(0);
+class calander
+{
+bool destroyable;
+int calandersound, hurtsound, pressound;
+int calanderx;
+int calandery;
+string cdtext;
+string calandertype;
+calander(int cnx,int cny,string cntext,string cntype,bool dbl)
+{
+calanderx=cnx;
+calandery=cny;
+cdtext=cntext;
+calandertype=cntype;
+destroyable=dbl;
+calandersound=calpool.play_2d(get_map_sound("objects/calendars/"+calandertype+"/*loop*"),me.x,me.y,calanderx,calandery,true);
+}
+}
+void calandercheck()
+{
+for(uint i=0; i<calanders.length(); i++)
+{
+if(me.x==calanders[i].calanderx and me.y==calanders[i].calandery and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+calanders[i].pressound=calpool.play_stationary(get_map_sound("objects/calendars/"+calanders[i].calandertype+"/*press*"),false);
+speak(calanders[i].cdtext+get_date(false, false));
+}
+}
+}
+void spawn_calendar(int x,int y,string text,string calandertype,bool destroyable)
+{
+calander cn1(x,y,text,calandertype,destroyable);
+calanders.insert_last(cn1);
+}
+void destroy_all_calendars()
+{
+for(uint i=0; i<calanders.length(); i++)
+{
+calpool.destroy_sound(calanders[i].calandersound);
+}
+calanders.resize(0);
+}
+

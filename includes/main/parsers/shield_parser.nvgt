@@ -1,0 +1,147 @@
+void shieldparse()
+{
+if(file_exists("data/layouts/shields/"+shieldtype+"/info.sif"))
+{
+bool success=info.open("data/layouts/shields/"+shieldtype+"/info.sif", "rb");
+if(!success)
+{
+mainmenu();
+}
+string content=info.read();
+string[] lines=string_split(content,"\r\n",true);
+for(uint i=0; i<lines.length(); i++)
+{
+string[] data=string_split(lines[i],"=",true);
+if (data.length()<2)
+{
+alert("Error","Error reading line "+(i+1)+".");
+mainmenu();
+}
+if (data[0]=="name")
+{
+name=data[1];
+}
+if (data[0]=="defence")
+{
+shielddefence=parse_int(data[1]);
+}
+if (data[0]=="mode")
+{
+shieldmode=parse_int(data[1]);
+}
+if (data[0]=="weight")
+{
+shieldweight=parse_int(data[1]);
+}
+if (data[0]=="shield strength")
+{
+shieldstrength=parse_double(data[1]);
+maxshieldstrength=parse_double(data[1]);
+}
+if (data[0]=="unlock level")
+{
+shieldlevel=parse_double(data[1]);
+}
+if(data[0]=="break sound")
+{
+shieldbreaksound=parse_int(data[1]);
+}
+if(data[0]=="draw sound")
+{
+shielddrawsound=parse_int(data[1]);
+}
+if(data[0]=="hit sound")
+{
+shieldhitsound=parse_int(data[1]);
+}
+if(data[0]=="loop sound")
+{
+shieldloopsound=parse_int(data[1]);
+}
+if(data[0]=="remove sound")
+{
+shieldremovesound=parse_int(data[1]);
+}
+if(data[0]=="wear sound")
+{
+shieldwearsound=parse_int(data[1]);
+}
+}
+add_shield(shielddefence, shieldmode, shieldweight, shieldstrength, shieldstrength, shieldlevel, shieldbreaksound, shielddrawsound, shieldhitsound, shieldloopsound, shieldremovesound, shieldwearsound);
+}
+}
+
+void update_shield_max_strength(double new_max_strength)
+{
+    if (info.open("data/layouts/shields/"+shieldtype+"/info.sif", "r")) {
+        string content = info.read();
+        info.close();
+        int max_strength_pos = string_contains(content, "max shield strength=", 1);
+        if (max_strength_pos != -1) {
+            int value_start = max_strength_pos + 20;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_max_strength = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "max shield strength=" + current_max_strength;
+            string new_value = "max shield strength=" + string(new_max_strength);
+            content = string_replace(content, old_value, new_value, true);
+            int strength_pos = string_contains(content, "shield strength=", 1);
+            if (strength_pos != -1) {
+                value_start = strength_pos + 16;
+                value_end = string_contains(content.substr(value_start), "\r\n", 1);
+                if (value_end == -1) value_end = content.length() - value_start;
+                string current_strength = string_trim_sides(content.substr(value_start, value_end));
+                old_value = "shield strength=" + current_strength;
+                new_value = "shield strength=" + string(new_max_strength);
+                content = string_replace(content, old_value, new_value, true);
+            }
+            if (info.open("data/layouts/shields/"+shieldtype+"/info.sif", "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Max shield strength and shield strength stats updated successfully.");
+                } else {
+                    speak("Failed to write updated shield strength stats to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Max shield strength stat not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
+}
+void update_shield_defence(double new_shield_defence)
+{
+    if (info.open("data/layouts/shields/"+shieldtype+"/info.sif", "r")) {
+        string content = info.read();
+        info.close();
+        int shield_defence_pos = string_contains(content, "defence=", 1);
+        if (shield_defence_pos != -1) {
+            int value_start = shield_defence_pos + 8;
+            int value_end = string_contains(content.substr(value_start), "\r\n", 1);
+            if (value_end == -1) value_end = content.length() - value_start;
+            string current_shield_defence = string_trim_sides(content.substr(value_start, value_end));
+            string old_value = "defence=" + current_shield_defence;
+            string new_value = "defence=" + string(new_shield_defence);
+            content = string_replace(content, old_value, new_value, true);
+            if (info.open("data/layouts/shields/"+shieldtype+"/info.sif", "w")) {
+                uint bytes_written = info.write(content);
+                info.close();
+                if (bytes_written == content.length()) {
+                    speak("Shield defence updated successfully.");
+                } else {
+                    speak("Failed to write updated shield defence to file.");
+                }
+            } else {
+                speak("Failed to open file for writing.");
+            }
+        } else {
+            speak("Shield defence not found in file.");
+        }
+    } else {
+        speak("Failed to open file for reading.");
+    }
+}

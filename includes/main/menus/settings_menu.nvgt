@@ -1,0 +1,366 @@
+void settingsmenu()
+{
+form.reset();
+form.create_window("preferences", false);
+int slt, slk, slm, spk;
+if (chartype == "")
+slt = form.create_button("Select c&haracter type for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slt = form.create_button("Select c&haracter type for the " + soundpack + " sound pack. Currently set to " + chartype);
+if (keyboardtheme == "")
+slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to " + keyboardtheme);
+if (menutype == "")
+slm = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slm = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to " + menutype);
+if (soundpack == "")
+spk = form.create_button("Select sound &pack. Currently set to nothing");
+else
+spk = form.create_button("Select sound &pack. Currently set to " + soundpack);
+int sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
+int skipm = form.create_button("Set up and down skip amoun&t in menus. Currently set to " + mskipnum + " items per press");
+int hideme = form.create_button("Show or h&ide main menu items");
+int autup = form.create_checkbox("Enable checking for game updates at startup", auto_check_updates);
+int runmode = form.create_checkbox("Enable auto running in maps", autorun);
+int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
+int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
+int hms = form.create_checkbox("Enable heart monitor for all characters", int_to_bool(heartsound));
+int bml = form.create_checkbox("Enable bumping into walls repeatedly", wallbump);
+int trm = form.create_checkbox("Enable turning on the spot for all characters", int_to_bool(turnmode));
+int mlb = form.create_checkbox("Enable auditory beeps when loading maps", int_to_bool(maploadbeeps));
+int mls = form.create_checkbox("Enable indicator sounds when loading maps", int_to_bool(maploadsounds));
+int psm = form.create_checkbox("Enable pause menu for all game modes", int_to_bool(pausem));
+int shd = form.create_checkbox("Enable holding space in menus", int_to_bool(spacehold));
+int glh = form.create_checkbox("Enable global HRTF support", hrtf);
+int mt = form.create_checkbox("Enable menus resetting", int_to_bool(mreset));
+int pd = form.create_checkbox("Enable up and down in menus", int_to_bool(up_down));
+int lr = form.create_checkbox("Enable left and right in menus", int_to_bool(left_right));
+int hd = form.create_checkbox("Enable home and end in menus", int_to_bool(home_end));
+int rg = form.create_checkbox("Enable wrapping in menus", int_to_bool(wrap));
+int rms = form.create_checkbox("Enable repeating items in menus", int_to_bool(repeat_items));
+int fls = form.create_checkbox("Enable first letter navigation in menus", int_to_bool(first_letter));
+int nbs = form.create_checkbox("Enable number row navigation in menus", int_to_bool(numbers));
+int psn = form.create_checkbox("Enable position information in menus", int_to_bool(position_info));
+int psl = form.create_checkbox("Enable side scrolling in menus", int_to_bool(side_scroll));
+int esc=form.create_checkbox("Ask to exit when pressing escape",int_to_bool(gamxit));
+int rest = form.create_button("&reset settings");
+int preffsok = form.create_button("&save settings", true);
+int preffscn = form.create_button("&cancel");
+form.focus(slt);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+form.monitor();
+wait(5);
+auto_check_updates=form.is_checked(autup);
+autorun = form.is_checked(runmode);
+autojump = bool_to_int(form.is_checked(sjn));
+fademode = bool_to_int(form.is_checked(fdv));
+heartsound = bool_to_int(form.is_checked(hms));
+wallbump = form.is_checked(bml);
+turnmode = bool_to_int(form.is_checked(trm));
+maploadbeeps = bool_to_int(form.is_checked(mlb));
+maploadsounds = bool_to_int(form.is_checked(mls));
+pausem = bool_to_int(form.is_checked(psm));
+spacehold = bool_to_int(form.is_checked(shd));
+hrtf = form.is_checked(glh);
+sound_global_hrtf = form.is_checked(glh);
+mreset = bool_to_int(form.is_checked(mt));
+m.reset(form.is_checked(mt));
+up_down = bool_to_int(form.is_checked(pd));
+m.enable_up_and_down = form.is_checked(pd);
+left_right = bool_to_int(form.is_checked(lr));
+m.enable_left_and_right = form.is_checked(lr);
+home_end = bool_to_int(form.is_checked(hd));
+m.enable_home_and_end = form.is_checked(hd);
+wrap = bool_to_int(form.is_checked(rg));
+m.wrap = form.is_checked(rg);
+repeat_items = bool_to_int(form.is_checked(rms));
+m.repeat_items_at_edges = form.is_checked(rms);
+numbers = bool_to_int(form.is_checked(nbs));
+m.enable_numbers = form.is_checked(nbs);
+first_letter = bool_to_int(form.is_checked(fls));
+m.enable_first_letter_navigation = form.is_checked(fls);
+position_info = bool_to_int(form.is_checked(psn));
+m.speak_position_information = form.is_checked(psn);
+side_scroll = bool_to_int(form.is_checked(psl));
+m.enable_side_scrolling = form.is_checked(psl);
+gamxit = bool_to_int(form.is_checked(esc));
+if(key_pressed(KEY_ESCAPE))
+{
+mainmenu();
+}
+if(form.is_pressed(hideme))
+{
+hidemenu();
+}
+if(form.is_pressed(skipm))
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string skmount=vd.input_box("","Enter the maximum up and down skip amount you'd like to set.");
+if(mskipnum=="")
+return;
+mskipnum=string_to_number(skmount);
+dlg("Up and down skip amount set. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+if(form.is_pressed(slt))
+{
+string[] chars=get_pack_sound_folders("characters/*");
+if(chars.length()==0)
+{
+dlg_snd("Error. There are no characters available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+destroy_all_charas();
+charparse();
+string res=charsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+chartype=res;
+}
+}
+}
+if(form.is_pressed(slk))
+{
+string[] themetype=get_pack_sound_folders("keyboards/*");
+if(themetype.length()==0)
+{
+dlg_snd("Error. There are no keyboard themes available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+string res=keyboardchoosers();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+keyboardtheme=res;
+}
+}
+}
+if(form.is_pressed(slm))
+{
+string[] menu=get_pack_sound_folders("menus/*");
+if(menu.length()==0)
+{
+dlg_snd("Error. There are no menus available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+string res=menuchoosers();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+menutype=res;
+}
+}
+}
+if(form.is_pressed(spk))
+{
+string[] soundpacktyp=find_directories("sounds/*");
+if(soundpacktyp.length()==0)
+{
+dlg_snd("Error. There are no sound packs available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+string[] soundpacks=find_directories("sounds/*");
+setupmenu();
+for(uint i=0; i<soundpacks.length(); i++)
+{
+uint64 size = get_directory_size("sounds/" + soundpacks[i]);
+string readable_size = measure_file_size(size);
+m.add_item_tts(soundpacks[i]+". Total size: "+readable_size,soundpacks[i]);
+}
+int mres=m.run("Choose the sound pack you would like to use throughout the intire game.", true);
+if(mres==0)
+{
+form.reset();
+settingsmenu();
+}
+if (mres==0 and mres>=soundpacks.length())
+{
+chartype="";
+keyboardtheme="";
+menutype="";
+soundpack=soundpacks[mres-1];
+}
+if (mres>0 and mres<=soundpacks.length())
+{
+chartype="";
+keyboardtheme="";
+menutype="";
+soundpack=soundpacks[mres-1];
+dlg("Sound pack set. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+}
+}
+if(form.is_pressed(sdm))
+{
+string[]@ devices=get_sound_output_devices();
+devices.remove_at(0);
+setupmenu();
+for(uint i=0; i<devices.length(); i++)
+{
+m.add_item_tts(devices[i],devices[i],"",true);
+}
+int mres=m.run("Choose a sound device you would like to use in the game.",true);
+if(mres==0)
+{
+form.reset();
+settingsmenu();
+}
+if(mres>0 and mres<=devices.length())
+{
+soundcard=devices[mres-1];
+sound_output_device = mres;
+dlg("Sound device set to "+soundcard+". Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+}
+if(form.is_pressed(rest))
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to reset all of your settings?",true);
+if(mres==0)
+{
+form.reset();
+settingsmenu();
+}
+if(mres==1)
+{
+if(file_exists(DIRECTORY_APPDATA+"tsatria03/SimpleFighter/saves/settings.spf")) file_delete(DIRECTORY_APPDATA+"tsatria03/SimpleFighter/saves/settings.spf");
+dlg("Settings reset. Press enter to continue.");
+resetpreffs();
+speak("restarting");
+wait(500);
+restart("sf.exe");
+}
+if(mres==2)
+{
+form.reset();
+settingsmenu();
+}
+}
+if(form.is_pressed(preffscn))
+{
+mainmenu();
+}
+if(form.is_pressed(preffsok))
+{
+writepreffs();
+dlg("Settings saved. Press enter to continue.");
+mainmenu();
+}
+}
+}
+void settingsmenu2()
+{
+form.reset();
+form.create_window("preferences", false);
+int autup = form.create_checkbox("Enable checking for game updates at startup", auto_check_updates);
+int runmode = form.create_checkbox("Enable auto running in maps", autorun);
+int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
+int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
+int hms = form.create_checkbox("Enable heart monitor for all characters", int_to_bool(heartsound));
+int bml = form.create_checkbox("Enable bumping into walls repeatedly", wallbump);
+int trm = form.create_checkbox("Enable turning on the spot for all characters", int_to_bool(turnmode));
+int mlb = form.create_checkbox("Enable auditory beeps when loading maps", int_to_bool(maploadbeeps));
+int mls = form.create_checkbox("Enable indicator sounds when loading maps", int_to_bool(maploadsounds));
+int psm = form.create_checkbox("Enable pause menu for all game modes", int_to_bool(pausem));
+int shd = form.create_checkbox("Enable holding space in menus", int_to_bool(spacehold));
+int glh = form.create_checkbox("Enable global HRTF support", hrtf);
+int mt = form.create_checkbox("Enable menus resetting", int_to_bool(mreset));
+int pd = form.create_checkbox("Enable up and down in menus", int_to_bool(up_down));
+int lr = form.create_checkbox("Enable left and right in menus", int_to_bool(left_right));
+int hd = form.create_checkbox("Enable home and end in menus", int_to_bool(home_end));
+int rg = form.create_checkbox("Enable wrapping in menus", int_to_bool(wrap));
+int rms = form.create_checkbox("Enable repeating items in menus", int_to_bool(repeat_items));
+int fls = form.create_checkbox("Enable first letter navigation in menus", int_to_bool(first_letter));
+int nbs = form.create_checkbox("Enable number row navigation in menus", int_to_bool(numbers));
+int psn = form.create_checkbox("Enable position information in menus", int_to_bool(position_info));
+int psl = form.create_checkbox("Enable side scrolling in menus", int_to_bool(side_scroll));
+int esc=form.create_checkbox("Ask to exit when pressing escape",int_to_bool(gamxit));
+int preffsok = form.create_button("&save settings", true);
+int preffscn = form.create_button("&cancel");
+form.focus(autup);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+form.monitor();
+wait(5);
+auto_check_updates=form.is_checked(autup);
+autorun = form.is_checked(runmode);
+autojump = bool_to_int(form.is_checked(sjn));
+fademode = bool_to_int(form.is_checked(fdv));
+heartsound = bool_to_int(form.is_checked(hms));
+wallbump = form.is_checked(bml);
+turnmode = bool_to_int(form.is_checked(trm));
+maploadbeeps = bool_to_int(form.is_checked(mlb));
+maploadsounds = bool_to_int(form.is_checked(mls));
+pausem = bool_to_int(form.is_checked(psm));
+spacehold = bool_to_int(form.is_checked(shd));
+hrtf = form.is_checked(glh);
+sound_global_hrtf = form.is_checked(glh);
+mreset = bool_to_int(form.is_checked(mt));
+m.reset(form.is_checked(mt));
+up_down = bool_to_int(form.is_checked(pd));
+m.enable_up_and_down = form.is_checked(pd);
+left_right = bool_to_int(form.is_checked(lr));
+m.enable_left_and_right = form.is_checked(lr);
+home_end = bool_to_int(form.is_checked(hd));
+m.enable_home_and_end = form.is_checked(hd);
+wrap = bool_to_int(form.is_checked(rg));
+m.wrap = form.is_checked(rg);
+repeat_items = bool_to_int(form.is_checked(rms));
+m.repeat_items_at_edges = form.is_checked(rms);
+numbers = bool_to_int(form.is_checked(nbs));
+m.enable_numbers = form.is_checked(nbs);
+first_letter = bool_to_int(form.is_checked(fls));
+m.enable_first_letter_navigation = form.is_checked(fls);
+position_info = bool_to_int(form.is_checked(psn));
+m.speak_position_information = form.is_checked(psn);
+side_scroll = bool_to_int(form.is_checked(psl));
+m.enable_side_scrolling = form.is_checked(psl);
+gamxit = bool_to_int(form.is_checked(esc));
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+game();
+}
+if(form.is_pressed(preffscn))
+{
+resume_pools();
+game();
+}
+if(form.is_pressed(preffsok))
+{
+writepreffs();
+dlg("Settings saved. Press enter to continue.");
+resume_pools();
+game();
+}
+}
+}

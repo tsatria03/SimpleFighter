@@ -1,0 +1,185 @@
+bool check_for_updates(string old_version, string projectname, bool precheck = false)
+{
+    if (precheck)
+{
+        speak("Checking for updates...");
+        wait(1000);
+    }
+    string version_url = "https://tsatria03.github.io/projects/games/" + projectname + "/version.txt";
+    string new_version = url_get(version_url);
+    if (new_version == "" || string_contains(new_version, "<!DOCTYPE", 1) > -1)
+{
+        alert("Error", "Could not check for updates at this time.");
+        return false;
+    }
+    if (!is_newer_version(old_version, new_version))
+{
+        if (precheck)
+            alert("No updates available", "You already have the latest version of the game!");
+        return false;
+    }
+    int response = question("Update Available", "A new version of " + projectname + " is available. Your version: " + old_version + ". Latest version: " + new_version + ". Would you like to download it now?");
+    if (response != 1)
+{
+        return false;
+    }
+    wait(500);
+    string url = get_download_url(projectname, new_version);
+    string filename = get_disk_filename(url);
+    string bare_name = strip_extension(strip_directory(filename));
+if (system_is_unix)
+{
+    clipboard_set_text(url);
+alert("Manual Download Required", "This update must be installed manually for this platform. The download link has been copied to your clipboard. Please paste it into your browser to download the update.");
+    return false;
+}
+if (!file_exists(filename))
+{
+    string test_file = filename + ".test";
+    if (!put_file_contents(test_file, "test"))
+{
+wait(500);
+        int choice = question("Permission Denied", "This update can't be downloaded to this directory because it's write-protected. Would you like to download this file to your Downloads folder instead?");
+        if (choice != 1)
+{
+            speak("Update canceled.");
+            return false;
+        }
+        string downloads_folder = get_downloads_folder();
+        filename = downloads_folder + strip_directory(filename);
+    }
+else
+{
+        file_delete(test_file);
+    }
+wait(500);
+    string result = dl_file(url, filename);
+    if (result != "finished")
+{
+        if (result == "canceled" && file_exists(filename)) file_delete(filename);
+        alert("Download Failed", "The update could not be downloaded.");
+        return false;
+    }
+}
+else
+{
+    wait(500);
+    alert("Notice", "The update file already exists. Skipping download.");
+}
+    wait(500);
+    string ext = filename.substr(filename.rfind(".") + 1);
+    setupmenu(false);
+    if (ext == "exe")
+{
+        m.add_item_tts("Run Installer", "run");
+    }
+else if (ext == "7z" || ext == "zip")
+{
+        m.add_item_tts("Extract file", "extract");
+    }
+    m.add_item_tts("Cancel", "cancel");
+    int mres = m.run("The update has been downloaded. What would you like to do with " + bare_name + "?", true);
+    string choice = m.get_item_name(mres);
+    if (mres == 0 || choice == "cancel")
+{
+        speak("Canceled");
+        return false;
+    }
+    if (choice == "run")
+{
+wait(500);
+        if (!run(filename, "", false, false))
+{
+            alert("Error", "Could not launch the installer.");
+        }
+        exit();
+        return false;
+    }
+    if (choice == "extract")
+{
+wait(500);
+        speak("Extracting update...");
+        wait(1000);
+        bool success = run("lib/tools/compression/7zr.exe", "x \"" + filename + "\" -pSpfBuilder -aoa -y", true, true);
+        if (success)
+{
+            if (file_exists(filename)) file_delete(filename);
+            alert("Update Complete", "The update has been successfully extracted to the sf folder. Please run the new version of the game to continue.");
+            exit();
+        }
+else
+{
+            alert("Extraction Failed", "Failed to extract the archive.");
+        }
+    }
+    return true;
+}
+
+string get_download_url(string projectname, string new_version)
+{
+    bool is_mac = system_is_unix;
+    string base = "https://github.com/tsatria03/" + projectname + "/releases/download/V" + new_version+"0";
+    if (is_mac)
+    {
+        return base + "/SimpleFighter_mac_portable_password_is_SpfBuilder.zip";
+    }
+    else
+    {
+        setupmenu(false);
+        m.add_item_tts("Windows Installer", "installer");
+        m.add_item_tts("Windows Portable", "portable");
+m.add_item_tts("cancel", "cancel");
+        int mres = m.run("Which version of the game would you like to download?", true);
+        string version_choice = m.get_item_name(mres);
+        if (mres == 0 || version_choice == "cancel") mainmenu();
+        if (version_choice == "portable")
+            return base + "/SimpleFighter_windows_portable_password_is_SpfBuilder.7z";
+        else
+            return base + "/SimpleFighter_windows_installer_password_is_SpfBuilder.exe";
+    }
+}
+
+void downloadsounds()
+{
+quest=question("Error", "There are no sounds detected in the game! Would you like to download them now?");
+if (quest==1)
+{
+if (file_exists("sounds.7z"))
+{
+alert("file found", "This file already exists. The downloader will now skip to the extraction process.");
+}
+else
+{
+string result=dl_file("https://github.com/tsatria03/SimpleFighter/releases/download/V7.90/sounds.7z", "sounds.7z");
+if (result != "finished")
+{
+alert("download error", "Download failed or was canceled.");
+if(file_exists("sounds.7z")) file_delete("sounds.7z");
+mainmenu();
+}
+alert("finished", "Download completed successfully.");
+}
+alert("extracting", "Extracting files.");
+progs.load_url("https://tsatria03.github.io/projects/games/SimpleFighter/sounds/pi2.ogg");
+progs.play_looped();
+if(!directory_exists("sounds")) directory_create("sounds");
+bool result=run("lib/tools/compression/7zr.exe", "x sounds.7z -o\"sounds\" -y", true, true);
+if (result==true)
+{
+progs.stop();
+alert("extraction_complete", "Extraction finished successfully.");
+if(file_exists("sounds.7z")) file_delete("sounds.7z");
+alert("restarting", "The game will now restart to apply changes.");
+restart("sf.exe");
+}
+else
+{
+alert("extraction_error", "Error occurred during extraction.");
+mainmenu();
+}
+}
+else
+{
+mainmenu();
+}
+}

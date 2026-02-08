@@ -1,0 +1,827 @@
+bool is_admin()
+{
+library l;
+l.load("shell32.dll");
+dictionary@ d = l.call("bool IsUserAnAdmin()");
+return bool(d["0"]);
+}
+bool array_contains(const string[]& arr, const string& value)
+{
+for (uint i = 0; i < arr.length(); i++)
+{
+if (arr[i] == value)
+{
+return true;
+}
+}
+return false;
+}
+bool alt_is_down()
+{
+if(key_down(KEY_LMENU) or key_down(KEY_RMENU))
+{
+return true;
+}
+return false;
+}
+bool control_is_down()
+{
+if(key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL))
+{
+return true;
+}
+return false;
+}
+bool shift_is_down()
+{
+if(key_down(KEY_LSHIFT) or key_down(KEY_RSHIFT))
+{
+return true;
+}
+return false;
+}
+bool int_to_bool(int i)
+{
+return i==1? true:false;
+}
+bool string_file_encrypt(string input_file, string output_file, string key)
+{
+bool success;
+file f;
+success=f.open(input_file, "rb");
+if(!success) return false;
+string text=f.read();
+text=string_encrypt(text, key);
+if(text=="") return false;
+success=f.open(output_file, "wb");
+if(!success) return false;
+f.write(text);
+success=f.close();
+return success;
+}
+bool string_file_decrypt(const string& input_file, const string& output_file, const string& encryption_key)
+{
+file input;
+if (!input.open(input_file, "rb"))
+return false;
+string encrypted_content = input.read();
+input.close();
+string decrypted_content = string_decrypt(encrypted_content, encryption_key);
+file output;
+if (!output.open(output_file, "wb"))
+return false;
+output.write(decrypted_content);
+output.close();
+return true;
+}
+
+double percent(double n1, double n2)
+{
+return (n1/n2)*100;
+}
+double average(double[] vals, int roundval=2)
+{
+double res=0;
+for(uint i=0; i<vals.length(); i++)
+{
+res=res+vals[i];
+}
+res=res/vals.length();
+res=round(res,roundval);
+return res;
+}
+
+double clamp(double value, double min, double max)
+{
+value=value<min? min:value;
+value=value>max? max:value;
+return value;
+}
+
+double distance(int x1, int y1, int x2, int y2)
+{
+    double dx = double(x2 - x1);
+    double dy = double(y2 - y1);
+    return sqrt(dx * dx + dy * dy);
+}
+
+double min(double a, double b)
+{
+return (a < b) ? a : b;
+}
+double max(double a, double b)
+{
+return (a > b) ? a : b;
+}
+double buy_item(double item, double base_cost, double cost_multiplier)
+{
+return 1+(item*0.1)*base_cost*cost_multiplier;
+}
+
+double convert_to_pan(double length, double index, double range1, double range2)
+{
+try
+{
+double range = range2 - range1;
+double percent = index / (length - 1);
+double value = range1 + range * percent;
+return value;
+}
+catch
+{
+return 0;
+}
+}
+double convert_to_volume(double length,double index,double min_volume=-100,double max_volume=0)
+{
+try
+{
+double range=max_volume-min_volume;
+double percent=index/(length-1);
+double value=min_volume+range*percent;
+return value;
+}
+catch
+{
+return 0;
+}
+}
+double convert_to_pitch(double length,double index,double min_pitch=0,double max_pitch=200)
+{
+try
+{
+double range=max_pitch-min_pitch;
+double percent=index/(length-1);
+double value=min_pitch+range*percent;
+return value;
+}
+catch
+{
+return 100;
+}
+}
+
+double string_to_double(string str)
+{
+    double result = 0.0;
+    double fraction = 0.0;
+    double divisor = 10.0;
+    bool isNegative = false;
+    bool inFraction = false;
+    if (str.length() == 0) return 0.0;
+    if (str.substr(0, 1) == "-")
+    {
+        isNegative = true;
+        str = str.substr(1);
+    }
+    for (uint i = 0; i < str.length(); i++)
+    {
+        string c = str.substr(i, 1);
+        if (c == ".")
+        {
+            if (inFraction) break;
+            inFraction = true;
+            continue;
+        }
+        int digit = 0;
+        if (c == "0") digit = 0;
+        else if (c == "1") digit = 1;
+        else if (c == "2") digit = 2;
+        else if (c == "3") digit = 3;
+        else if (c == "4") digit = 4;
+        else if (c == "5") digit = 5;
+        else if (c == "6") digit = 6;
+        else if (c == "7") digit = 7;
+        else if (c == "8") digit = 8;
+        else if (c == "9") digit = 9;
+        else break;
+        if (!inFraction)
+        {
+            result = result * 10.0 + digit;
+        }
+        else
+        {
+            fraction += digit / divisor;
+            divisor *= 10.0;
+        }
+    }
+    result += fraction;
+    return isNegative ? -result : result;
+}
+
+float random_float(float min, float max)
+{
+    int steps = 1000;
+    int scaled_min = int(min * steps);
+    int scaled_max = int(max * steps);
+    if (scaled_max <= scaled_min)
+        return min;
+    int rnd = random(scaled_min, scaled_max);
+    return float(rnd) / steps;
+}
+
+string file_encrypt(const string& encrypted_content, const string& encryption_key)
+{
+return string_encrypt(encrypted_content, encryption_key);
+}
+string file_decrypt(const string& encrypted_content, const string& encryption_key)
+{
+return string_decrypt(encrypted_content, encryption_key);
+}
+string string2file(string thing)
+{
+thing=string_replace(thing,"\\","/",true);
+thing=string_replace(thing,"/"," ",true);
+return thing;
+}
+string script_get_path()
+{
+string scriptpath;
+if(SCRIPT_COMPILED==false)
+{
+scriptpath=SCRIPT_CURRENT_FILE;
+}
+else
+{
+scriptpath=SCRIPT_EXECUTABLE;
+}
+return scriptpath;
+}
+string script_get_folder()
+{
+string path=script_get_path();
+string[] spl=string_split(path, "\\", true);
+spl.resize(spl.length()-1);
+string folder;
+for(uint i=0; i<spl.length(); i++)
+{
+folder+=spl[i];
+if(i<spl.length()-1) folder+="\\";
+}
+return folder;
+}
+
+string convert_to_currency(double number, string currency_symbol = "$")
+{
+if (number < 0) return "";
+int64 num = int64(number + 0.5);
+int64 dollars = num / 100;
+int64 cents = num % 100;
+if (dollars == 0)
+return cents + " cent" + (cents == 1 ? "" : "s");
+string cents_str = "" + cents;
+if (string_len(cents_str) == 1) cents_str = "0" + cents_str;
+return currency_symbol + dollars + "." + cents_str;
+}
+string format_list(string[] items)
+{
+if(items.length() == 1) return items[0];
+if(items.length() == 2) return items[0] + " and " + items[1];
+string result = "";
+for(uint i = 0; i < items.length() - 1; i++)
+result += items[i] + ", ";
+return result + "and " + items[items.length() - 1];
+}
+
+int get_distance(int a, int b)
+{
+return absolute(a - b);
+}
+int string_to_int(string str)
+{
+    int result = 0;
+    bool isNegative = false;
+    if (str.length() == 0)
+        return 0;
+    if (str.substr(0, 1) == "-")
+    {
+        isNegative = true;
+        str = str.substr(1);
+    }
+    for (uint i = 0; i < str.length(); i++)
+    {
+        string digitStr = str.substr(i, 1);
+        int digit = 0;
+        if (digitStr == "0") digit = 0;
+        else if (digitStr == "1") digit = 1;
+        else if (digitStr == "2") digit = 2;
+        else if (digitStr == "3") digit = 3;
+        else if (digitStr == "4") digit = 4;
+        else if (digitStr == "5") digit = 5;
+        else if (digitStr == "6") digit = 6;
+        else if (digitStr == "7") digit = 7;
+        else if (digitStr == "8") digit = 8;
+        else if (digitStr == "9") digit = 9;
+        else return 0;
+        result = result * 10 + digit;
+    }
+    return isNegative ? -result : result;
+}
+int string_find(const string&in text, const string&in term)
+{
+    return text.find(term);
+}
+
+string int_to_string(int value)
+{
+    if (value == 0)
+        return "0";
+    bool isNegative = false;
+    if (value < 0)
+    {
+        isNegative = true;
+        value = -value;
+    }
+    string result = "";
+    while (value > 0)
+    {
+        int digit = value % 10;
+        string digitStr = "";
+        if (digit == 0) digitStr = "0";
+        else if (digit == 1) digitStr = "1";
+        else if (digit == 2) digitStr = "2";
+        else if (digit == 3) digitStr = "3";
+        else if (digit == 4) digitStr = "4";
+        else if (digit == 5) digitStr = "5";
+        else if (digit == 6) digitStr = "6";
+        else if (digit == 7) digitStr = "7";
+        else if (digit == 8) digitStr = "8";
+        else if (digit == 9) digitStr = "9";
+        result = digitStr + result;
+        value /= 10;
+    }
+    if (isNegative)
+        result = "-" + result;
+    return result;
+}
+int bool_to_int(bool b)
+{
+return b? 1:0;
+}
+
+string find_sound_in_disk(string soundname)
+{
+string[] snd=find_files(soundname);
+if (snd.length()>0)
+{
+string[] a_path=string_split(soundname,"/",true);
+string path=string_replace(soundname,a_path[a_path.length()-1],"",true);
+return path+snd[random(0,snd.length()-1)];
+}
+else
+return "";
+}
+
+string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
+{
+    if (p is null)
+        return "";
+    string[] files = p.list_files();
+    string[] matches;
+    string pattern = soundname;
+    pattern = string_replace(pattern, ".", "\\.", true);
+    pattern = string_replace(pattern, "*", ".*", true);
+    pattern = "^" + pattern + "$";
+    regexp re(pattern, RE_CASELESS);
+    for (uint i = 0; i < files.length(); i++)
+    {
+        if (re.match(files[i]))
+            matches.insert_last(files[i]);
+    }
+    if (matches.length() > 0)
+        return matches[random(0, matches.length() - 1)];
+    return "";
+}
+
+string[] get_pack_sound_folders(const string&in path)
+{
+    string[] result;
+    string global_path = "sounds/" + soundpack + "/" + path;
+    result = find_directories(global_path);
+    sort_naturally(result);
+    return result;
+}
+
+string get_pack_sound(const string&in path)
+{
+string fullpath = "sounds/" + soundpack + "/" + path;
+return find_sound_in_disk(fullpath);
+}
+
+    string[] clean_lines(string filepath)
+{
+        file f;
+        string[] result;
+        if (f.open(filepath, "r"))
+{
+            string raw = f.read();
+            string[] lines = string_split(raw, "\r\n", true);
+            for (uint i = 0; i < lines.length(); i++)
+{
+                string line = string_trim_sides(lines[i]);
+                if (line != "") result.insert_last(line);
+            }
+            f.close();
+        }
+        return result;
+    }
+string random_string(string[] array)
+{
+string retval=array[random(0,array.length()-1)];
+return retval;
+}
+
+string strip_extension(string filename)
+{
+    int dotIndex = filename.rfind(".");
+    if (dotIndex != -1)
+    {
+        return filename.substr(0, dotIndex);
+    }
+    return filename;
+}
+string strip_directory(string path)
+{
+    int lastSlash = path.rfind("/");
+    if (lastSlash == -1)
+        lastSlash = path.rfind("\\");
+    if (lastSlash != -1)
+        return path.substr(lastSlash + 1);
+    return path;
+}
+
+uint8 active_sr()
+{
+uint8 ret=0;
+for(uint8 i=0; i<=4; i++)
+{
+if(screen_reader_is_running(i))
+{
+ret=i;
+break;
+}
+}
+return ret;
+}
+
+uint64 get_directory_size(const string&in dir)
+{
+uint64 result=0;
+string[]@ subdirs = find_directories(dir + "/*");
+for (uint i = 0; i < subdirs.length(); i++)
+{
+result += get_directory_size(dir + "/" + subdirs[i]);
+}
+string[]@ files = find_files(dir + "/*");
+for (uint i = 0; i < files.length(); i++)
+{
+result += file_get_size(dir + "/" + files[i]);
+}
+return result;
+}
+
+string measure_file_size(int64 bytes)
+{
+if(bytes<1024)
+{
+return bytes+"bytes";
+}
+else if(bytes<1024*1024)
+{
+return round(double(bytes)/1024,2)+"KB";
+}
+else if(bytes<1024*1024*1024)
+{
+return round(double(bytes)/(1024*1024),2)+"MB";
+}
+else 
+{
+return round(double(bytes)/(1024*1024*1024),2)+"GB";
+}
+}
+string measure_time_units(int64 milliseconds)
+{
+int64 seconds = milliseconds / 1000;
+if(seconds < 1)
+{
+return milliseconds + " ms";
+}
+else if(seconds < 60)
+{
+int whole_seconds = int(seconds);
+int ms = int(milliseconds % 1000);
+return whole_seconds + " seconds, " + ms + " ms";
+}
+else if(seconds < 3600)
+{
+int minutes = int(seconds / 60);
+int remaining_seconds = int(seconds % 60);
+int ms = int(milliseconds % 1000);
+return minutes + " minutes, " + remaining_seconds + " seconds, " + ms + " ms";
+}
+else
+{
+int hours = int(seconds / 3600);
+int minutes = int((seconds % 3600) / 60);
+int remaining_seconds = int(seconds % 60);
+int ms = int(milliseconds % 1000);
+return hours + " hours, " + minutes + " minutes, " + remaining_seconds + " seconds, " + ms + " ms";
+}
+}
+
+string trim(const string&in str)
+{
+string result = str;
+while (result.length() > 0 && (string_left(result, 1) == " " || string_left(result, 1) == "\n" || string_left(result, 1) == "\r"))
+{
+result = string_trim_left(result, 1);
+}
+while (result.length() > 0 && (string_right(result, 1) == " " || string_right(result, 1) == "\n" || string_right(result, 1) == "\r"))
+{
+result = string_trim_right(result, 1);
+}
+return result;
+}
+string string_trim_sides(const string& in str)
+{
+string result=str;
+while (result.length()>0 && (result[0]==" "||result[0]=="\t"||result[0]=="\r"||result[0]=="\n"))
+{
+result=string_trim_left(result,1);
+}
+while (result.length()>0 && (result[result.length()-1]==" "||result[result.length()-1]=="\t"||result[result.length()-1]=="\r"||result[result.length()-1]=="\n"))
+{
+result=string_trim_right(result,1);
+}
+return result;
+}
+
+string string_join(const string[]& in arr, const string& in delimiter)
+{
+string result="";
+for (uint i=0; i<arr.length(); i++)
+{
+if(i>0)
+result += delimiter;
+result += arr[i];
+}
+return result;
+}
+
+string string_join(string[]@ arr, string delimiter=" ", int start_index = 0)
+{
+	if(arr.length()<=0 or delimiter.is_empty()) return "";
+	string val;
+	for(int i=start_index; i<arr.length()-1; i++)
+	{
+		val += arr[i]+delimiter;
+	}
+	val += arr[arr.length()-1];
+	return val;
+}
+
+void create_subfolders(string filepath)
+{
+    string[] parts = string_split(filepath, "/", true);
+    if (parts.length() <= 1) return;
+    parts.resize(parts.length() - 1);
+    string path;
+    for (uint i = 0; i < parts.length(); i++)
+    {
+        path += parts[i];
+        if (i < parts.length() - 1) path += "/";
+        if (!directory_exists(path)) directory_create(path);
+    }
+}
+void extract_file(pack@ pf, const string&in filename, const string&in outfile)
+{
+    uint size = pf.get_file_size(filename);
+    string content = pf.read_file(filename, 0, size);
+    file f;
+    f.open(outfile, "wb");
+    f.write(content);
+    f.close();
+}
+void find_stuff(string base, string path)
+{
+    string[] dirs = find_directories(path + "\\*");
+    string[] files = find_files(path + "\\*.*");
+    for (uint i = 0; i < files.length(); i++)
+        file_list.insert_last(path + "/" + files[i]);
+    for (uint j = 0; j < dirs.length(); j++)
+        find_stuff(base, path + "/" + dirs[j]);
+}
+
+void sort_naturally(array<string>& inout arr)
+{
+arr.sort(natural_number_sort);
+}
+
+void stun_target(string entity, string id, int st)
+{
+stundir=st;
+if(entity=="me")
+{
+stuntimer.restart();
+stunned=true;
+cammable=false;
+fireable=false;
+jumpable=false;
+moveable=false;
+speedable=false;
+spiable=false;
+sittable=false;
+turnable=false;
+telable=false;
+wepref=false;
+}
+else if(entity=="animal")
+{
+for(uint i=0; i<animals.length(); i++)
+{
+if(animals[i].animaltype==id)
+{
+stuntimer.restart();
+stunned=true;
+animals[i].fireable=false;
+animals[i].moveable=false;
+animals[i].moveable2=false;
+}
+}
+}
+else if(entity=="human")
+{
+for(uint i=0; i<humans.length(); i++)
+{
+if(humans[i].humantype==id)
+{
+stuntimer.restart();
+stunned=true;
+humans[i].fireable=false;
+humans[i].moveable=false;
+humans[i].moveable2=false;
+}
+}
+}
+else if(entity=="boss")
+{
+for(uint i=0; i<bosses.length(); i++)
+{
+if(bosses[i].bosstype==id)
+{
+stuntimer.restart();
+stunned=true;
+bosses[i].fireable=false;
+bosses[i].moveable=false;
+bosses[i].moveable2=false;
+bosses[i].regenhp=false;
+bosses[i].telleble=false;
+bosses[i].telleble2=false;
+}
+}
+}
+else if(entity=="projectile")
+{
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(projectiles[i].projtype==id)
+{
+stuntimer.restart();
+stunned=true;
+projectiles[i].fireable=false;
+projectiles[i].moveable=false;
+}
+}
+}
+else if(entity=="robot")
+{
+for(uint i=0; i<robots.length(); i++)
+{
+if(robots[i].robottype==id)
+{
+stuntimer.restart();
+stunned=true;
+robots[i].fireable=false;
+robots[i].moveable=false;
+robots[i].moveable2=false;
+}
+}
+}
+else if(entity=="turret")
+{
+for(uint i=0; i<turrets.length(); i++)
+{
+if(turrets[i].turtype==id)
+{
+stuntimer.restart();
+stunned=true;
+turrets[i].fireable=false;
+turrets[i].moveable=false;
+turrets[i].moveable2=false;
+}
+}
+}
+else if(entity=="zombie")
+{
+for(uint i=0; i<zombies.length(); i++)
+{
+if(zombies[i].zombietype==id)
+{
+stuntimer.restart();
+stunned=true;
+zombies[i].fireable=false;
+zombies[i].moveable=false;
+zombies[i].moveable2=false;
+}
+}
+}
+}
+void stuncheck()
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned = false;
+cammable = true;
+fireable = true;
+jumpable = true;
+moveable = true;
+speedable = true;
+spiable = true;
+sittable = true;
+turnable = true;
+telable = true;
+wepref=true;
+}
+for(uint i=0; i<animals.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+animals[i].fireable=true;
+animals[i].moveable=true;
+animals[i].moveable2=true;
+}
+}
+for(uint i=0; i<humans.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+humans[i].fireable=true;
+humans[i].moveable=true;
+humans[i].moveable2=true;
+}
+}
+for(uint i=0; i<bosses.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+bosses[i].fireable=true;
+bosses[i].moveable=true;
+bosses[i].moveable2=true;
+bosses[i].regenhp=true;
+bosses[i].telleble=true;
+bosses[i].telleble2=true;
+}
+}
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+projectiles[i].fireable=true;
+projectiles[i].moveable=true;
+}
+}
+for(uint i=0; i<robots.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+robots[i].fireable=true;
+robots[i].moveable=true;
+robots[i].moveable2=true;
+}
+}
+for(uint i=0; i<turrets.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+turrets[i].fireable=true;
+turrets[i].moveable=true;
+turrets[i].moveable2=true;
+}
+}
+for(uint i=0; i<zombies.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+zombies[i].fireable=true;
+zombies[i].moveable=true;
+zombies[i].moveable2=true;
+}
+}
+}

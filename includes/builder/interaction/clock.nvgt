@@ -1,0 +1,43 @@
+clock@[]clocks(0);
+class clock
+{
+bool destroyable;
+int hurtsound, clocksound, pressound;
+int clockx;
+int clocky;
+string cktext;
+string clocktype;
+clock(int clx,int cly,string cltext,string cltype,bool dbl)
+{
+clockx=clx;
+clocky=cly;
+cktext=cltext;
+clocktype=cltype;
+destroyable=dbl;
+clocksound=clockpool.play_2d(get_map_sound("objects/clocks/"+clocktype+"/*loop*"),me.x,me.y,clockx,clocky,true);
+}
+}
+void clockcheck()
+{
+for(uint i=0; i<clocks.length(); i++)
+{
+if(me.x==clocks[i].clockx and me.y==clocks[i].clocky and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+clocks[i].pressound=clockpool.play_stationary(get_map_sound("objects/clocks/"+clocks[i].clocktype+"/*press*"),false);
+speak(clocks[i].cktext+get_time(true, false));
+}
+}
+}
+void spawn_clock(int x,int y,string text,string clocktype,bool destroyable)
+{
+clock ck1(x,y,text,clocktype,destroyable);
+clocks.insert_last(ck1);
+}
+void destroy_all_clocks()
+{
+for(uint i=0; i<clocks.length(); i++)
+{
+clockpool.destroy_sound(clocks[i].clocksound);
+}
+clocks.resize(0);
+}

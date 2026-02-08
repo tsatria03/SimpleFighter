@@ -1,0 +1,186 @@
+weapon@[]weapons(0);
+class weapon
+{
+int wepdamage;
+int wephold;
+int weprange;
+int weprange2;
+int wepspeed;
+int weapontime;
+int weapontime2;
+int wepweight;
+double ammo;
+double loadedammo;
+double maxammo;
+double weplevel;
+int wepdrawsound;
+int wepemptysound;
+int wepfiresound;
+int wephitsound;
+int weploopsound;
+int weprecsound;
+int wepreloadsound;;
+int wepshellsound;
+weapon(int wepdamage,int wephold,int weprange,int weprange2,int wepspeed,int weapontime,int weapontime2,int wepweight,double ammo,double loadedammo,double maxammo,double weplevel,int wepdrawsound,int wepemptysound,int wepfiresound,int wephitsound,int weploopsound,int weprecsound,int wepreloadsound,int wepshellsound)
+{
+this.wepdamage=wepdamage;
+this.wephold=wephold;
+this.weprange=weprange;
+this.weprange2=weprange2;
+this.wepspeed=wepspeed;
+this.weapontime=weapontime;
+this.weapontime2=weapontime2;
+this.wepweight=wepweight;
+this.ammo=ammo;
+this.loadedammo=loadedammo;
+this.maxammo=maxammo;
+this.weplevel=weplevel;
+this.wepdrawsound=wepdrawsound;
+this.wepemptysound=wepemptysound;
+this.wepfiresound=wepfiresound;
+this.wephitsound=wephitsound;
+this.weploopsound=weploopsound;
+this.weprecsound=weprecsound;
+this.wepreloadsound=wepreloadsound;
+this.wepshellsound=wepshellsound;
+}
+}
+void add_weapon(int wepdamage,int wephold,int weprange,int weprange2,int wepspeed,int weapontime,int weapontime2,int wepweight,double ammo,double loadedammo,double maxammo,double weplevel,int wepdrawsound,int wepemptysound,int wepfiresound,int wephitsound,int weploopsound,int weprecsound,int wepreloadsound,int wepshellsound)
+{
+weapon wp1(wepdamage,wephold,weprange,weprange2,wepspeed,weapontime,weapontime2,wepweight,ammo,loadedammo,maxammo,weplevel,wepdrawsound,wepemptysound,wepfiresound,wephitsound,weploopsound,weprecsound,wepreloadsound,wepshellsound);
+weapons.insert_last(wp1);
+}
+void destroy_all_weapons()
+{
+weapons.resize(0);
+}
+
+void draw_weapon(string weapon_name,string weapon_name2,int wep_range,int wep_range2,int wep_damage,int wep_speed,int wep_maxammo,bool is_melee)
+{
+isReloading = false;
+pending_ammo = 0;
+reload_duration = 0;
+weapontype=weapon_name;
+weapontype2=weapon_name2;
+weprange=wep_range;
+weprange2=wep_range2;
+wepdamage=wep_damage;
+wepspeed=wep_speed;
+if(is_melee==false)
+{
+maxammo=wep_maxammo;
+melee=false;
+}
+if(is_melee==true)
+{
+melee=true;
+}
+speak(weapon_name2+";"+"equipped");
+if(wep_maxammo<loadedammo)
+{
+loadedammo=wep_maxammo;
+}
+if(wepdrawsound==1) weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapon_name+"/"+weapon_name2+"/*draw*"),false,0,0,weaponvolume,weaponpitch,false);
+}
+void check_weapon_reload()
+{
+    if (isReloading && reloadTimer.elapsed >= reload_duration)
+    {
+        loadedammo += pending_ammo;
+        ammo -= pending_ammo;
+        pending_ammo = 0;
+        isReloading = false;
+if(wepreloadsound==1) weaponslot = p.play_stationary_extended(get_pack_sound("equipments/weapons/" + weapontype + "/" + weapontype2 + "/*ping*"), false, 0, 0, weaponvolume, weaponpitch, false);
+    }
+}
+void reload_weapon()
+{
+    if (isReloading)
+    {
+        speak("This weapon is still reloading.");
+        return;
+    }
+    if (ammo <= 0)
+    {
+        bonecheck();
+        if (wepemptysound == 1)
+        {
+            weaponslot = p.play_stationary_extended(get_pack_sound("equipments/weapons/" + weapontype + "/" + weapontype2 + "/*empty*"), false, 0, 0, weaponvolume, weaponpitch, false);
+        }
+        speak("No ammo.");
+    }
+    else
+    {
+        int am;
+        if (ammo < maxammo)
+        {
+            am = ammo;
+        }
+        else
+        {
+            am = maxammo;
+            if (loadedammo < maxammo && loadedammo > 0)
+            {
+                am = maxammo - loadedammo;
+            }
+        }
+        if (wepreloadsound == 1)
+        {
+            weaponslot = p.play_stationary_extended(get_pack_sound("equipments/weapons/" + weapontype + "/" + weapontype2 + "/*reload*"), false, 0, 0, weaponvolume, weaponpitch, false);
+            reload_duration = p.get_sound_length(weaponslot);
+        }
+        else
+        {
+            reload_duration = 0;
+        }
+        isReloading = true;
+        reloadTimer.restart();
+        pending_ammo = am;
+    }
+}
+
+void auto_fire_weapon()
+{
+if(weapontype2==""==false and wephold==1 and weapontimer.elapsed>=weapontime and fireable==true)
+{
+weapontimer.restart();
+if(loadedammo==0 and melee==false)
+{
+bonecheck();
+if(wepemptysound==1) weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*empty*"),false,0,0,weaponvolume,weaponpitch,false);
+}
+else
+{
+bonecheck();
+if(wepfiresound==1) weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,weaponvolume,weaponpitch,false);
+spawn_bltdir(bullmode);
+if(melee==false)
+{
+loadedammo-=1;
+}
+}
+}
+}
+void manule_fire_weapon()
+{
+if(weapontype2==""==false and wephold==0 and weapontimer2.elapsed>=weapontime2 and fireable==true)
+{
+weapontimer2.restart();
+if(loadedammo==0 and melee==false)
+{
+bonecheck();
+if(wepemptysound==1) weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*empty*"),false,0,0,weaponvolume,weaponpitch,false);
+}
+else
+{
+bonecheck();
+if(charswingsound==1 and weapontype=="melee") weaponslot=p.play_stationary_extended(get_pack_sound("characters/"+chartype+"/*swing*"),false,0,0,weaponvolume,weaponpitch,false);
+if(wepfiresound==1) weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,weaponvolume,weaponpitch,false);
+spawn_bltdir(bullmode);
+if(melee==false)
+{
+loadedammo-=1;
+}
+}
+}
+}

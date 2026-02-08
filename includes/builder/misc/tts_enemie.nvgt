@@ -1,0 +1,99 @@
+ttsenemie@[] ttsenemies(0);
+class ttsenemie
+{
+    int ttsemsound;
+    int defsound;
+    int stepsound, tilesound;
+    double ttsenehealth;
+    double ttsenemaxhealth;
+    int ttsemx;
+    int ttsemy;
+    int ttsenemietime;
+    string taunt_file;
+    string def_file;
+    timer ttsenemietimer;
+    ttsenemie(int x, int y, double hp, double maxhp, int sp, string taunt_path, string death_path)
+    {
+        ttsemx = x;
+        ttsemy = y;
+        ttsenehealth = hp;
+        ttsenemaxhealth = maxhp;
+        ttsenemietime = sp;
+        taunt_file = taunt_path;
+        def_file   = death_path;
+ttsempool.destroy_sound(ttsemsound);
+        ttsemsound = ttsempool.play_extended_2d(taunt_file, me.x, me.y, ttsemx, ttsemy, 0, 0, 0, 0, true, 0,0, painvolume, painpitch, false);
+    }
+}
+void ttseneloop()
+{
+for(uint i=0; i<ttsenemies.length(); i++)
+{
+if(ttsenemies[i].ttsenemietimer.elapsed>=ttsenemies[i].ttsenemietime)
+{
+if(ttsenemies[i].stepsound==1 and paused==0) ttsenemies[i].tilesound=p.play_extended_2d(get_map_sound("objects/platforms/"+gmt(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy)+"/*step*"),me.x,me.y,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
+ttsempool.update_sound_2d(ttsenemies[i].ttsemsound,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy);
+ttsenemies[i].ttsenemietimer.restart();
+if(ttsenemies[i].ttsemx<me.x and paused==0)
+{
+ttsenemies[i].ttsemx++;
+ttsenemies[i].stepsound=1;
+}
+if(ttsenemies[i].ttsemx>me.x and paused==0)
+{
+ttsenemies[i].ttsemx--;
+ttsenemies[i].stepsound=1;
+}
+if(ttsenemies[i].ttsemy<me.y and paused==0)
+{
+ttsenemies[i].ttsemy++;
+ttsenemies[i].stepsound=1;
+}
+if(ttsenemies[i].ttsemy>me.y and paused==0)
+{
+ttsenemies[i].ttsemy--;
+ttsenemies[i].stepsound=1;
+}
+}
+if(ttsenemies[i].ttsenehealth<=0)
+{
+ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
+ttsenemies[i].defsound = ttsempool.play_extended_2d(ttsenemies[i].def_file, me.x, me.y, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+int falldelay = round(ttsempool.get_sound_length(ttsenemies[i].defsound), 0);
+spawn_bodyfall(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, (falldelay <= 0 ? random(500, 1000) : falldelay));
+            if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
+            if (file_exists(ttsenemies[i].def_file))   file_delete(ttsenemies[i].def_file);
+ttsenemies.remove_at(i);
+return;
+}
+}
+}
+void spawn_ttsenemie(int x, int y, double hp, double maxhp, int sp, string taunt_path, string death_path)
+{
+    ttsenemie ttsen1(x, y, hp, maxhp, sp, taunt_path, death_path);
+    ttsenemies.insert_last(ttsen1);
+}
+void destroy_all_ttsenemies()
+{
+for(uint i=0; i<ttsenemies.length(); i++)
+{
+ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
+        if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
+        if (file_exists(ttsenemies[i].def_file)) file_delete(ttsenemies[i].def_file);
+}
+ttsenemies.resize(0);
+}
+
+bool generate_tts(string path, string text, string voice_name = "", int rate = 0, int volume = 100, int pitch = 0)
+{
+    string quoted_text = "\"" + text + "\"";
+    string quoted_voice = "\"" + voice_name + "\"";
+    string quoted_path = "\"" + path + "\"";
+    string args = "-t " + quoted_text + " -w " + quoted_path;
+    if (voice_name != "")
+        args += " -n " + quoted_voice;
+    args += " -s " + rate;
+    args += " -v " + volume;
+    args += " -p " + pitch;
+    return run("lib/tools/tts/balcon.exe", args, true, true);
+}

@@ -1,5 +1,22 @@
 #include"includes/includes.nvgt"
 
+bool preglobals()
+{
+if (!SCREEN_READER_AVAILABLE)
+{
+alert("error", "cannot load screen reader components");
+}
+else if (!SOUND_AVAILABLE)
+{
+alert("error", "cannot load soundsystem");
+}
+else
+{
+return true;
+}
+return false;
+}
+
 void main()
 {
 keyhook.install();
@@ -82,85 +99,6 @@ version=dockver.read();
 dockver.close();
 }
 
-void setupgame()
-{
-update_ambsources(me.x,me.y);
-update_musicambs(me.x,me.y);
-update_sound_pools();
-check_weapon_reload();
-
-checkdeath();
-checkloc();
-checkpassages();
-checkpspassages();
-calandercheck();
-clockcheck();
-dest_platcheck();
-dest_stairscheck();
-dest_wallcheck();
-doorcheck();
-elvcheck();
-fallcheck();
-hazardcheck();
-mhazardcheck();
-mplatcheck();
-psdoorcheck();
-signcheck();
-spawncheck();
-stairscheck();
-stuncheck();
-textcheck();
-travelcheck();
-vhazardcheck();
-
-animalloop();
-animalzoneloop();
-beltloop();
-bikeloop();
-bossloop();
-bfloop();
-bulletloop();
-bombloop();
-bombzoneloop();
-camloop();
-cploop();
-dlgloop();
-doorloop();
-elvloop();
-forceloop();
-healzoneloop();
-helperloop();
-humiloop();
-humanzoneloop();
-liftloop();
-mineloop();
-menuzoneloop();
-objloop();
-objzoneloop();
-psdoorloop();
-plainloop();
-projloop();
-projzoneloop();
-robloop();
-robotzoneloop();
-spikeloop();
-switchloop();
-telloop();
-timebombloop();
-timedmrcloop();
-timedsrcloop();
-timedtxtloop();
-ttseneloop();
-turretloop();
-vplatloop();
-vehloop();
-zombloop();
-zombiezoneloop();
-
-apply_reverb_pools();
-game_input();
-}
-
 void dockread(const string&in filename)
 {
 if(!file_exists(filename))
@@ -200,119 +138,6 @@ else
 break;
 wait (delay);
 }
-}
-
-void fade_multi_pool(int fade_mode)
-{
-sound_pool@[] pools = {p, animalpool, beltpool, bikepool, bodypool, bombpool, bosspool, breakerpool, bulletpool, calpool, campool, clockpool, checkpool, doorpool, psdoorpool, elvpool, forcepool, humanpool, hazardpool, healpool, helperpool, itempool, liftpool, minepool, muspool, musambpool, plainpool, platpool, passagepool, pspassagepool, projpool, robpool, safepool, signpool, sourcepool, sourceambpool, spikepool, sucampool, switchpool, telpool, timemuspool, timesourcepool, turpool, ttsempool, vehpool, vanpool, zombpool};
-if(fade_mode==0)
-{
-fade_pitch_pool(pools);
-}
-if(fade_mode==1)
-{
-fade_volume_pool(pools);
-}
-}
-void fade_pitch_pool(sound_pool@[] handles, double time=20, double minpitch=20, double amount=2)
-{
-bool all_faded = false;    
-while(!all_faded)
-{
-all_faded = true;
-for(uint h=0; h<handles.length(); h++)
-{
-for(uint i=0; i<handles[h].items.length(); i++)
-{
-if(@handles[h].items[i].handle!=null && handles[h].items[i].handle.playing)
-{
-double current_pitch = handles[h].items[i].handle.pitch;
-if(current_pitch > minpitch)
-{
-double new_pitch = current_pitch - amount;
-if(new_pitch < minpitch)
-new_pitch = minpitch;
-handles[h].items[i].handle.pitch = new_pitch;
-all_faded = false;
-}
-}
-}
-}
-wait(time);
-}    
-for(uint h=0; h<handles.length(); h++)
-{
-handles[h].destroy_all();
-}
-}
-void fade_volume_pool(sound_pool@[] handles, double time=0.25, double minvol=-50)
-{
-for(double current=0; current>minvol; current-=time)
-{
-for(uint h=0; h<handles.length(); h++)
-{
-for(uint x=0; x<handles[h].items.length(); x++)
-{
-if(@handles[h].items[x].handle==null)
-continue;
-if(handles[h].items[x].handle.playing==false)
-continue;
-handles[h].items[x].handle.volume = handles[h].items[x].handle.volume-time;
-}
-}
-wait(5);
-}
-for(uint h=0; h<handles.length(); h++)
-{
-handles[h].destroy_all();
-}
-}
-
-void initialize_sound_pools()
-{
-sound_pool@[] pools = {p, animalpool, beltpool, bikepool, bodypool, bombpool, bosspool, breakerpool, bulletpool, calpool, campool, clockpool, checkpool, doorpool, psdoorpool, elvpool, forcepool, humanpool, hazardpool, healpool, helperpool, itempool, liftpool, minepool, muspool, musambpool, plainpool, platpool, passagepool, pspassagepool, projpool, robpool, safepool, signpool, sourcepool, sourceambpool, spikepool, sucampool, switchpool, telpool, timemuspool, timesourcepool, turpool, ttsempool, vehpool, vanpool, zombpool};
-for (uint i = 0; i < pools.length(); i++)
-{
-@pools[i].mixer = mixer();
-pools[i].max_distance = 0;
-pools[i].pan_step = 2.5;
-pools[i].volume_step = 2.5;
-}
-}
-void update_sound_pools()
-{
-sound_pool@[] pools = {p, animalpool, beltpool, bikepool, bodypool, bombpool, bosspool, breakerpool, bulletpool, calpool, campool, clockpool, checkpool, doorpool, psdoorpool, elvpool, forcepool, humanpool, hazardpool, healpool, helperpool, itempool, liftpool, minepool, muspool, musambpool, plainpool, platpool, passagepool, pspassagepool, projpool, robpool, safepool, signpool, sourcepool, sourceambpool, spikepool, sucampool, switchpool, telpool, timemuspool, timesourcepool, turpool, ttsempool, vehpool, vanpool, zombpool};
-for (uint i = 0; i < pools.length(); i++)
-{
-pools[i].update_listener_2d(me.x, me.y);
-}
-}
-
-void pause_pools()
-{
-sound_pool@[] pools = {animalpool, beltpool, bikepool, bodypool, bombpool, bosspool, breakerpool, bulletpool, calpool, campool, clockpool, checkpool, doorpool, psdoorpool, elvpool, forcepool, humanpool, hazardpool, healpool, helperpool, itempool, liftpool, minepool, muspool, musambpool, plainpool, platpool, passagepool, pspassagepool, projpool, robpool, safepool, signpool, sourcepool, sourceambpool, spikepool, sucampool, switchpool, telpool, timemuspool, timesourcepool, turpool, ttsempool, vehpool, vanpool, zombpool};
-    for(uint h = 0; h < pools.length(); h++)
-    {
-        for(uint i = 0; i < pools[h].items.length(); i++)
-        {
-            if(@pools[h].items[i].handle == null)
-                continue;
-            if(pools[h].items[i].handle.playing == false)
-                continue;
-            pools[h].pause_sound(i);
-        }
-    }
-}
-void resume_pools()
-{
-sound_pool@[] pools = {animalpool, beltpool, bikepool, bodypool, bombpool, bosspool, breakerpool, bulletpool, calpool, campool, clockpool, checkpool, doorpool, psdoorpool, elvpool, forcepool, humanpool, hazardpool, healpool, helperpool, itempool, liftpool, minepool, muspool, musambpool, plainpool, platpool, passagepool, pspassagepool, projpool, robpool, safepool, signpool, sourcepool, sourceambpool, spikepool, sucampool, switchpool, telpool, timemuspool, timesourcepool, turpool, ttsempool, vehpool, vanpool, zombpool};
-    for(uint h = 0; h < pools.length(); h++)
-    {
-        for(uint i = 0; i < pools[h].items.length(); i++)
-        {
-            pools[h].resume_sound(i);
-        }
-    }
 }
 
 void pause_game()

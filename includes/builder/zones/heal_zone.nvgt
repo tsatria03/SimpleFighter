@@ -1,0 +1,69 @@
+healzone@[]healzones(0);
+class healzone
+{
+bool in_zone;
+int hitsound, healsound, takesound;
+double minx, maxx, miny, maxy;
+int healmode;
+int healhp;
+int healtime;
+string healtype;
+timer healtimer;
+healzone(double mx,double mx2,double my,double my2,int hm,int hp,int ht,string hlt)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+healmode=hm;
+healhp=hp;
+healtime=ht;
+healtype=hlt;
+}
+}
+void healzoneloop()
+{
+for(uint i=0; i<healzones.length(); i++)
+{
+if(healzones[i].minx<=me.x and healzones[i].maxx>=me.x and healzones[i].miny<=me.y and healzones[i].maxy>=me.y and healzones[i].healtimer.elapsed>=healzones[i].healtime)
+{
+healzones[i].healtimer.restart();
+if(healzones[i].healmode==0 and invehicle==false)
+{
+if(shieldon==1)
+{
+shieldstrength-=healzones[i].healhp;
+}
+else if(shieldon==0)
+{
+healzones[i].hitsound=healpool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/*bleed*"),false,0,0,painvolume,painpitch,false);
+health-=healzones[i].healhp;
+hearttime-=healzones[i].healhp;
+stamina-=healzones[i].healhp;
+}
+}
+if(healzones[i].healmode==1 and invehicle==false)
+{
+if(shieldon==1)
+{
+shieldstrength+=healzones[i].healhp;
+}
+else if(shieldon==0)
+{
+health+=healzones[i].healhp;
+hearttime+=healzones[i].healhp;
+stamina+=healzones[i].healhp;
+}
+}
+}
+}
+}
+void spawn_healzone(double x1,double x2,double y1,double y2,int hm,int hp,int ht,string hlt)
+{
+healzone hz1(x1,x2,y1,y2,hm,hp,ht,hlt);
+healzones.insert_last(hz1);
+}
+void destroy_all_healzones()
+{
+healzones.resize(0);
+}

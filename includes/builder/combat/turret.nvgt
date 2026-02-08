@@ -1,0 +1,228 @@
+turret@[]turrets(0);
+class turret
+{
+bool fireable, moveable, moveable2;
+int defsound, firesound, hurtsound, tursound, wepsound;
+double turlevel;
+double turxp;
+int turcard;
+int turehealth;
+double turhealth;
+double turmaxhealth;
+int turx;
+int tury;
+int damage;
+int firetime;
+int launchtime;
+int turtime;
+string turtype;
+string turtype2;
+string turtype3;
+timer firetimer, launchtimer, turtimer;
+turret(int tx,int ty,double hp,double maxhp,int tc,int dm,int ft,int lt,int sp,double tlv,double txp,string tt,string ts,string ts2,bool tf,bool tm,bool tm2)
+{
+this.turehealth=hp;
+turx=tx;
+tury=ty;
+turhealth=hp;
+turmaxhealth=maxhp;
+turcard=tc;
+damage=dm;
+firetime=ft;
+launchtime=lt;
+turtime=sp;
+turlevel=tlv;
+turxp=txp;
+turtype=tt;
+turtype2=ts;
+turtype3=ts2;
+fireable=tf;
+moveable=tm;
+moveable2=tm2;
+tursound=turpool.play_extended_2d(get_map_sound("npc/turrets/"+turtype+"/*loop*"),me.x,me.y,turx,tury,0,0,0,0,true,0,0,painvolume,painpitch,false);
+}
+}
+void turretloop()
+{
+for(uint i=0; i<turrets.length(); i++)
+{
+if(turrets[i].launchtimer.elapsed>=turrets[i].launchtime)
+{
+if(facing=="left" or facing=="right") turrets[i].firesound=turpool.play_extended_2d(get_map_sound("npc/turrets/"+turrets[i].turtype+"/*launch*"),me.x,me.y,turrets[i].turx,turrets[i].tury,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+if(turrets[i].turtype2=="animal" and facing=="left") spawn_animal(turrets[i].turx-1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+if(turrets[i].turtype2=="animal" and facing=="right") spawn_animal(turrets[i].turx+1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+if(turrets[i].turtype2=="human" and facing=="left") spawn_human(turrets[i].turx-1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, 0, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+if(turrets[i].turtype2=="human" and facing=="right") spawn_human(turrets[i].turx+1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, 0, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+if(turrets[i].turtype2=="projectile" and facing=="left") spawn_projectile(turrets[i].turx-1, turrets[i].tury, 0, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true);
+if(turrets[i].turtype2=="projectile" and facing=="right") spawn_projectile(turrets[i].turx+1, turrets[i].tury, 1, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(50, 500), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true);
+if(turrets[i].turtype2=="robot" and facing=="left") spawn_robot(turrets[i].turx-1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+if(turrets[i].turtype2=="robot" and facing=="right") spawn_robot(turrets[i].turx+1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+if(turrets[i].turtype2=="zombie" and facing=="left") spawn_zombie(turrets[i].turx-1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+if(turrets[i].turtype2=="zombie" and facing=="right") spawn_zombie(turrets[i].turx+1, turrets[i].tury, 0, 0, maxx, maxy, 1*xp+1, 1*xp+1, 1, 1*xp+1, random(100, 1000), random(100, 1000), turrets[i].turlevel, 1*level, turrets[i].turtype3, true, true, random_bool(), random_bool());
+turpool.update_sound_2d(turrets[i].firesound,turrets[i].turx,turrets[i].tury);
+turrets[i].launchtimer.restart();
+}
+if(turrets[i].turtimer.elapsed>=turrets[i].turtime)
+{
+turpool.update_sound_2d(turrets[i].tursound,turrets[i].turx,turrets[i].tury);
+turrets[i].turtimer.restart();
+if(turrets[i].turx<me.x and turrets[i].moveable==true and paused==0)
+{
+turrets[i].turx++;
+}
+if(turrets[i].turx>me.x and turrets[i].moveable==true and paused==0)
+{
+turrets[i].turx--;
+}
+if(turrets[i].tury<me.y and turrets[i].moveable2==true and paused==0)
+{
+turrets[i].tury++;
+}
+if(turrets[i].tury>me.y and turrets[i].moveable2==true and paused==0)
+{
+turrets[i].tury--;
+}
+}
+if(me.x==turrets[i].turx and me.y==turrets[i].tury and turrets[i].firetimer.elapsed>=turrets[i].firetime and turrets[i].fireable==true and inplain==false and invehicle==false and paused==0)
+{
+if(melee==true and weapontype=="melee" and wepdef==1)
+{
+int refchance = random(0, 100);
+int refprob = 80;
+if(refchance < refprob)
+{
+weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"),false,0,0,weaponvolume,weaponpitch,false);
+}
+else
+{
+if(shieldon==1)
+{
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+int sdm = max(1, ((turrets[i].damage * 0.5) * turrets[i].turlevel) - (shielddefence * 3));
+shieldstrength -= sdm;
+kombatlog.insert_last(turrets[i].turtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+}
+else
+{
+turrets[i].wepsound=turpool.play_stationary_extended(get_map_sound("npc/turrets/"+turrets[i].turtype+"/*hit*"),false,0,0,weaponvolume,weaponpitch,false);
+int dmg = max(1, ((turrets[i].damage * 0.5) * turrets[i].turlevel) - (defence * 3));
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(turrets[i].turtype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+}
+}
+}
+else if (shieldon == 1)
+{
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+int sdm = max(1, (turrets[i].damage * turrets[i].turlevel) - (shielddefence * 3));
+shieldstrength -= sdm;
+kombatlog.insert_last(turrets[i].turtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+}
+else
+{
+turrets[i].wepsound=turpool.play_stationary_extended(get_map_sound("npc/turrets/"+turrets[i].turtype+"/*hit*"),false,0,0,weaponvolume,weaponpitch,false);
+int dmg = max(1, (turrets[i].damage * turrets[i].turlevel) - (defence * 3));
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(turrets[i].turtype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+}
+turrets[i].firetimer.restart();
+}
+for(uint i1=0; i1<objs.length(); i1++)
+{
+if(objs[i1].itx==turrets[i].turx and objs[i1].ity==turrets[i].tury and turrets[i].firetimer.elapsed>=turrets[i].firetime and turrets[i].fireable==true)
+{
+turrets[i].wepsound=turpool.play_extended_2d(get_map_sound("npc/turrets/"+turrets[i].turtype+"/*hit*"),me.x,me.y,turrets[i].turx,turrets[i].tury,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+itempool.destroy_sound(objs[i1].objsound);
+objs[i1].hurtsound=itempool.play_extended_2d(get_map_sound("objects/items/"+objs[i1].objtype+"/"+objs[i1].objtype2+"/*break*"),me.x,me.y,objs[i1].itx,objs[i1].ity,0,0,0,0,false,0,0,itemvolume,itempitch,false);
+turrets[i].firetimer.restart();
+objs.remove_at(i1);
+return;
+}
+}
+for(uint i2=0; i2<vehicles.length(); i2++)
+{
+if(vehicles[i2].vehx==turrets[i].turx and vehicles[i2].vehy==turrets[i].tury and turrets[i].firetimer.elapsed>=turrets[i].firetime and turrets[i].fireable==true and invehicle==true)
+{
+vehicles[i2].hurtsound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i2].vehtype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
+vehicles[i2].vehhealth-=turrets[i].damage;
+turrets[i].firetimer.restart();
+}
+}
+if(turrets[i].turhealth<=0)
+{
+if(turrets[i].turcard>=2 and paused==0)
+{
+turpool.play_2d(get_map_sound("npc/turrets/"+turrets[i].turtype+"/*life*"),me.x,me.y,turrets[i].turx,turrets[i].tury,false);
+turrets[i].turhealth=turrets[i].turehealth;
+turrets[i].turcard-=1;
+}
+else if(turrets[i].turcard<=1 and paused==0)
+{
+turpool.destroy_sound(turrets[i].hurtsound);
+turpool.destroy_sound(turrets[i].tursound);
+turrets[i].defsound=turpool.play_extended_2d(get_map_sound("npc/turrets/"+turrets[i].turtype+"/*death*"),me.x,me.y,turrets[i].turx,turrets[i].tury,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if (xpmod >= 1)
+{
+double gained_xp = turrets[i].turxp * turrets[i].turlevel * xpmod;
+xp += gained_xp;
+kombatlog.insert_last(gained_xp + " experience gained. Defeated " + turrets[i].turtype + " level " + turrets[i].turlevel + ".");
+}
+kills+=1;
+if(charkillsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*kill*"),false);
+turrets.remove_at(i);
+return;
+}
+}
+}
+}
+void spawn_turret(int x,int y,double hp,double maxhp,int tc,int dm,int firetime,int launchtime,int turtime,double turlevel,double xp,string turtype,string turtype2,string turtype3,bool fireable,bool moveable,bool moveable2)
+{
+turret t1(x,y,hp,maxhp,tc,dm,firetime,launchtime,turtime,turlevel,xp,turtype,turtype2,turtype3,fireable,moveable,moveable2);
+turrets.insert_last(t1);
+}
+void destroy_all_turrets()
+{
+for(uint i=0; i<turrets.length(); i++)
+{
+turpool.destroy_sound(turrets[i].tursound);
+}
+turrets.resize(0);
+}

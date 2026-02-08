@@ -1,0 +1,282 @@
+robot@[]robots(0);
+class robot
+{
+bool dropitem, fireable, moveable, moveable2, spotted;
+int robsound, defsound, hurtsound, stepsound, spawnsound, tilesound, wepsound;
+int robotcard;
+int robhealth;
+double roblevel;
+double robxp;
+double robothealth;
+double robotmaxhealth;
+int robx;
+int roby;
+int roborange;
+int roborange2;
+int roborange3;
+int roborange4;
+int damage;
+int robottime;
+int firetime;
+int taunttime;
+string robottype;
+timer robottimer, firetimer, taunttimer;
+robot(int rx,int ry,int rbrange,int rbrange2,int rbrange3,int rbrange4,double hp,double maxhp,int rc,int dm,int ft,int sp,double roblv,double rxp,string rt,bool robf,bool robt,bool robt2,bool dpm)
+{
+this.robhealth=hp;
+robx=rx;
+roby=ry;
+roborange=rbrange;
+roborange2=rbrange2;
+roborange3=rbrange3;
+roborange4=rbrange4;
+robothealth=hp;
+robotmaxhealth=maxhp;
+robotcard=rc;
+damage=dm;
+firetime=ft;
+robottime=sp;
+roblevel=roblv;
+robxp=rxp;
+robottype=rt;
+fireable=robf;
+moveable=robt;
+moveable2=robt2;
+dropitem=dpm;
+spawnsound=robpool.play_extended_2d(get_map_sound("npc/robots/"+robottype+"/*spawn*"),me.x,me.y,robx,roby,0,0,0,0,false,0,0,painvolume,painpitch,false);
+}
+}
+void robloop()
+{
+for(uint i=0; i<robots.length(); i++)
+{
+if(robots[i].robottimer.elapsed>=robots[i].robottime)
+{
+bool within_horizontal_range = absolute(me.x - robots[i].robx) <= robots[i].roborange3;
+bool within_vertical_range = absolute(me.y - robots[i].roby) <= robots[i].roborange4;
+robots[i].spotted = within_horizontal_range && within_vertical_range;
+if(robots[i].spotted)
+{
+bool moved = false;
+if(robots[i].robx<me.x && robots[i].moveable==true && paused==0)
+{
+if (string_contains(gmt(robots[i].robx+1, robots[i].roby), "wall", 1) > -1 or is_in_safe(robots[i].robx+1, robots[i].roby))
+{
+robots[i].robx--;
+moved = true;
+}
+else
+{
+robots[i].robx++;
+moved = true;
+}
+}
+else if(robots[i].robx>me.x && robots[i].moveable==true && paused==0)
+{
+if (string_contains(gmt(robots[i].robx-1, robots[i].roby), "wall", 1) > -1 or is_in_safe(robots[i].robx-1, robots[i].roby))
+{
+robots[i].robx++;
+moved = true;
+}
+else
+{
+robots[i].robx--;
+moved = true;
+}
+}
+if(robots[i].roby<me.y && robots[i].moveable2==true && paused==0)
+{
+if (string_contains(gmt(robots[i].robx, robots[i].roby+1), "wall", 1) > -1 or is_in_safe(robots[i].robx, robots[i].roby+1))
+{
+robots[i].roby--;
+moved = true;
+}
+else
+{
+robots[i].roby++;
+moved = true;
+}
+}
+else if(robots[i].roby>me.y && robots[i].moveable2==true && paused==0)
+{
+if (string_contains(gmt(robots[i].robx, robots[i].roby-1), "wall", 1) > -1 or is_in_safe(robots[i].robx, robots[i].roby-1))
+{
+robots[i].roby++;
+moved = true;
+}
+else
+{
+robots[i].roby--;
+moved = true;
+}
+}
+if (moved)
+{
+robots[i].tilesound = robpool.play_extended_2d(get_map_sound("npc/robots/" + robots[i].robottype + "/*step*"),me.x, me.y, robots[i].robx, robots[i].roby, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+robots[i].stepsound = 1;
+}
+else
+{
+robots[i].stepsound = 0;
+}
+robpool.update_sound_2d(robots[i].robsound, robots[i].robx, robots[i].roby);
+robots[i].robottimer.restart();
+}
+}
+if (robots[i].taunttimer.elapsed >= robots[i].taunttime)
+{
+robots[i].robsound = robpool.play_extended_2d(get_map_sound("npc/robots/" + robots[i].robottype + "/*taunt*"), me.x, me.y, robots[i].robx, robots[i].roby, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+int robdelay = round(robpool.get_sound_length(robots[i].robsound), 0);
+robots[i].taunttime = (robdelay <= 0 ? random(500, 1000) : robdelay);
+robots[i].taunttimer.restart();
+}
+if(absolute(me.x-robots[i].robx)<=robots[i].roborange and absolute(me.y-robots[i].roby)<=robots[i].roborange2 and robots[i].firetimer.elapsed>=robots[i].firetime and robots[i].fireable==true and inplain==false and invehicle==false and paused==0)
+{
+robots[i].stepsound=0;
+if(melee==true and weapontype=="melee" and wepdef==1)
+{
+int refchance = random(0, 100);
+int refprob = 80;
+if(refchance < refprob)
+{
+weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"),false,0,0,weaponvolume,weaponpitch,false);
+}
+else
+{
+if(shieldon==1)
+{
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+int sdm = max(1, ((robots[i].damage * 0.5) * robots[i].roblevel) - (shielddefence * 3));
+shieldstrength -= sdm;
+kombatlog.insert_last(robots[i].robottype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+}
+else
+{
+robots[i].wepsound=robpool.play_stationary_extended(get_map_sound("npc/robots/"+robots[i].robottype+"/*hit*"),false,0,0,weaponvolume,weaponpitch,false);
+int dmg = max(1, ((robots[i].damage * 0.5) * robots[i].roblevel) - (defence * 3));
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(robots[i].robottype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+}
+}
+}
+else if (shieldon == 1)
+{
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+int sdm = max(1, (robots[i].damage * robots[i].roblevel) - (shielddefence * 3));
+shieldstrength -= sdm;
+kombatlog.insert_last(robots[i].robottype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+}
+else
+{
+robots[i].wepsound=robpool.play_stationary_extended(get_map_sound("npc/robots/"+robots[i].robottype+"/*hit*"),false,0,0,weaponvolume,weaponpitch,false);
+int dmg = max(1, (robots[i].damage * robots[i].roblevel) - (defence * 3));
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(robots[i].robottype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+}
+robots[i].firetimer.restart();
+}
+for(uint i1=0; i1<objs.length(); i1++)
+{
+if(objs[i1].itx==robots[i].robx and objs[i1].ity==robots[i].roby and robots[i].firetimer.elapsed>=robots[i].firetime and robots[i].fireable==true)
+{
+robots[i].wepsound=robpool.play_extended_2d(get_map_sound("npc/robots/"+robots[i].robottype+"/*hit*"),me.x,me.y,robots[i].robx,robots[i].roby,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+itempool.destroy_sound(objs[i1].objsound);
+objs[i1].hurtsound=itempool.play_extended_2d(get_map_sound("objects/items/"+objs[i1].objtype+"/"+objs[i1].objtype2+"/*break*"),me.x,me.y,objs[i1].itx,objs[i1].ity,0,0,0,0,false,0,0,itemvolume,itempitch,false);
+robots[i].firetimer.restart();
+objs.remove_at(i1);
+return;
+}
+}
+for(uint i2=0; i2<vehicles.length(); i2++)
+{
+if(vehicles[i2].vehx==robots[i].robx and vehicles[i2].vehy==robots[i].roby and robots[i].firetimer.elapsed>=robots[i].firetime and robots[i].fireable==true and invehicle==true)
+{
+vehicles[i2].hurtsound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i2].vehtype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
+vehicles[i2].vehhealth-=robots[i].damage;
+robots[i].firetimer.restart();
+}
+}
+if(robots[i].robothealth<=0)
+{
+if(robots[i].robotcard>=2 and paused==0)
+{
+robpool.play_2d(get_map_sound("npc/robots/"+robots[i].robottype+"/*life*"),me.x,me.y,robots[i].robx,robots[i].roby,false);
+robots[i].robothealth=robots[i].robhealth;
+robots[i].robotcard-=1;
+}
+else if(robots[i].robotcard<=1 and paused==0)
+{
+robpool.destroy_sound(robots[i].hurtsound);
+robpool.destroy_sound(robots[i].robsound);
+robots[i].defsound=robpool.play_extended_2d(get_map_sound("npc/robots/"+robots[i].robottype+"/*death*"),me.x,me.y,robots[i].robx,robots[i].roby,0,0,0,0,false,0,0,painvolume,painpitch,false);
+if (xpmod >= 1)
+{
+double gained_xp = robots[i].robxp * robots[i].roblevel * xpmod;
+xp += gained_xp;
+kombatlog.insert_last(gained_xp + " experience gained. Defeated " + robots[i].robottype + " level " + robots[i].roblevel + ".");
+}
+kills+=1;
+int falldelay = round(robpool.get_sound_length(robots[i].defsound), 0);
+spawn_bodyfall(robots[i].robx, robots[i].roby, (falldelay <= 0 ? random(500, 1000) : falldelay));
+string[] heal_folders={"health", "stamina"};
+string chosen_folder = random_string(heal_folders);
+string[] healtypes = get_map_sound_folders("objects/items/" + chosen_folder + "/*");
+if(healtypes.length()!=0 and robots[i].dropitem==true) spawn_obj(robots[i].robx, robots[i].roby, 500, chosen_folder, random_string(healtypes), true);
+if(charkillsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*kill*"),false);
+robots.remove_at(i);
+return;
+}
+}
+}
+}
+void spawn_robot(int x,int y,int robotrange,int robotrange2,int robotrange3,int robotrange4,double hp,double maxhp,int rc,int dm,int firetime,int robottime,double roblevel,double xp,string robottype,bool fireable,bool moveable,bool moveable2,bool dropitem)
+{
+robot rb1(x,y,robotrange,robotrange2,robotrange3,robotrange4,hp,maxhp,rc,dm,firetime,robottime,roblevel,xp,robottype,fireable,moveable,moveable2,dropitem);
+robots.insert_last(rb1);
+}
+void destroy_all_robots()
+{
+for(uint i=0; i<robots.length(); i++)
+{
+robpool.destroy_sound(robots[i].robsound);
+}
+robots.resize(0);
+}

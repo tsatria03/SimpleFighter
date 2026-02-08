@@ -1,15 +1,13 @@
 Welcome to simple fighter, my own spinnoff to games such as scrolling battels and other offline shooters.
 Intruduction.
-Simple fighter is just your usual hack and slash shooter, but with a plesent twist to make it seem more enjoyable for others to play. In this game, you're objective is to survive endless hords of enemies and other surprises that may come your way the heigher you progress. I figured since there were a milion other titles out there, I thought, why not make my own version of it for the hell of it? Don't ask me why I called it the way it is. I couldn't come up with a better name for what to call this thing, so hear we are.
+In this game, you're objective is to survive endless hords of enemies and other surprises that may come your way the heigher you progress. I figured since there were a milion other titles out there, I thought, why not make my own version of it for the hell of it? Don't ask me why I called it the way it is. I couldn't come up with a better name for what to call this thing, so hear we are.
 
 Game features.
-This game has the folowing features.
-The ability to play different game modes.
 The ability to level up and gain experience.
 The ability to upgrade your stats with level up points.
 The ability to make maps of varying difficulty.
 The ability to add environmental effects such as HRTF and reverb to your map to further unleash your creativity and design.
-Last but not least, the ability to make your own sounds to add to the game. These include, but are not limited to, characters, equipments such as items, shields, weapons etc, footsteps including walls, NPC such as animals, enemies, projectiles etc, objects such as doors, hazards, spikes, teleporters, vehicles etc, and UI sounds such as menus, typing themes, miscellaneous SFX etc.
+Last but not least, the ability to make your own sounds to add to the game. These include, but are not limited to: characters, equipments such as shields, and weapons, footsteps including walls, NPC such as animals, enemies, projectiles etc, objects such as doors, hazards, spikes, teleporters, vehicles etc, and UI sounds such as menus, typing themes, miscellaneous SFX etc.
 
 The folder structure.
 This game comes with a high level folder structure that makes it easier to find and organize things when needed.

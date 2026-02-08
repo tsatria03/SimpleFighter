@@ -1,0 +1,47 @@
+vanishing_hazard@[]vanishing_hazards(0);
+class vanishing_hazard
+{
+bool vanished;
+int hazard_id;
+double minx, maxx, miny, maxy;
+int vhazardtime;
+string vhazardtype;
+timer vhazardtimer;
+vanishing_hazard(double mx,double mx2,double my,double my2,string vhtype,int vhtime)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+vhazardtype=vhtype;
+vhazardtime=vhtime;
+hazard_id = spawn_hazard(minx, maxx, miny, maxy, vhazardtype, false);
+}
+}
+void vhazardcheck()
+{
+for(uint i=0; i<vanishing_hazards.length(); i++)
+{
+if(vanishing_hazards[i].vanished==false and vanishing_hazards[i].vhazardtimer.elapsed>=vanishing_hazards[i].vhazardtime)
+{
+remove_hazard(vanishing_hazards[i].hazard_id);
+vanishing_hazards[i].vanished=true;
+vanishing_hazards[i].vhazardtimer.restart();
+}
+else if(vanishing_hazards[i].vanished==true and vanishing_hazards[i].vhazardtimer.elapsed>=vanishing_hazards[i].vhazardtime)
+{
+vanishing_hazards[i].hazard_id = spawn_hazard(vanishing_hazards[i].minx, vanishing_hazards[i].maxx, vanishing_hazards[i].miny, vanishing_hazards[i].maxy, vanishing_hazards[i].vhazardtype, false);
+vanishing_hazards[i].vanished=false;
+vanishing_hazards[i].vhazardtimer.restart();
+}
+}
+}
+void spawn_vanishing_hazard(double x1,double x2,double y1,double y2,string vhazardtype,int vhazardtime)
+{
+vanishing_hazard vh1(x1,x2,y1,y2,vhazardtype,vhazardtime);
+vanishing_hazards.insert_last(vh1);
+}
+void destroy_all_vanishing_hazards()
+{
+vanishing_hazards.resize(0);
+}

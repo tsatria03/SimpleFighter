@@ -1,0 +1,117 @@
+bool doormove;
+door@[]doors(0);
+class door
+{
+bool automatic, destroyable, is_moving=false;
+int closesound, defsound, destsound, doorsound, hurtsound, movesound, opensound;
+int startx, starty;
+int endx, endy;
+double doorhealth;
+double doormaxhealth;
+int speed;
+string closetype;
+string desttype;
+string looptype;
+string movetype;
+string opentype;
+timer doortimer;
+door(int sx,int sy,int ex,int ey,double hp,double maxhp,int sp,string lsound,string mvsound,string osound,string clsound,string dsound,bool dcl,bool dtb)
+{
+startx=sx;
+starty=sy;
+endx=ex;
+endy=ey;
+doorhealth=hp;
+doormaxhealth=maxhp;
+speed=sp;
+looptype=lsound;
+movetype=mvsound;
+opentype=osound;
+closetype=clsound;
+desttype=dsound;
+automatic=dcl;
+destroyable=dtb;
+doorsound=doorpool.play_extended_2d(get_map_sound("objects/doors/loop/"+looptype+"/*loop*"),me.x,me.y,startx,starty,0,0,0,0,true,0,0,doorvolume,doorpitch,false);
+}
+}
+void doorcheck()
+{
+for(uint i=0; i<doors.length(); i++)
+{
+if(doors[i].startx==me.x and doors[i].starty==me.y and doors[i].automatic==true)
+{
+doormove=true;
+doors[i].is_moving=true;
+doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("objects/doors/open/"+doors[i].opentype+"/*open*"),false,0,0,doorvolume,doorpitch,false);
+doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/doors/move/"+doors[i].movetype+"/*move*"),true,0,0,doorvolume,doorpitch,false);
+}
+if(doors[i].startx==me.x and doors[i].starty==me.y and doors[i].automatic==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+{
+doormove=true;
+doors[i].is_moving=true;
+doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("objects/doors/open/"+doors[i].opentype+"/*open*"),false,0,0,doorvolume,doorpitch,false);
+doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/doors/move/"+doors[i].movetype+"/*move*"),true,0,0,doorvolume,doorpitch,false);
+}
+if(doors[i].doorhealth<=0)
+{
+doorpool.destroy_sound(doors[i].hurtsound);
+doorpool.destroy_sound(doors[i].doorsound);
+doors[i].defsound=doorpool.play_extended_2d(get_map_sound("objects/doors/dest/"+doors[i].desttype+"/*death*"),me.x,me.y,doors[i].startx,doors[i].starty,0,0,0,0,false,0,0,doorvolume,doorpitch,false);
+doors.remove_at(i);
+return;
+}
+}
+}
+void doorloop()
+{
+for(uint i=0; i<doors.length(); i++)
+{
+if(doors[i].doortimer.elapsed>=doors[i].speed and doors[i].is_moving)
+{
+doors[i].doortimer.restart();
+if(doors[i].speed==-1)
+{
+me.x=doors[i].endx;
+me.y=doors[i].endy;
+}
+if(me.x<doors[i].endx)
+{
+me.x++;
+}
+if(me.x>doors[i].endx)
+{
+me.x--;
+}
+if(me.y<doors[i].endy)
+{
+me.y++;
+}
+if(me.y>doors[i].endy)
+{
+me.y--;
+}
+if(me.x==doors[i].endx and me.y==doors[i].endy)
+{
+doorpool.destroy_sound(doors[i].movesound);
+doors[i].closesound=doorpool.play_extended_2d(get_map_sound("objects/doors/close/"+doors[i].closetype+"/*close*"), me.x, me.y, doors[i].endx, doors[i].endy, 0, 0, 0, 0, false,0,0,doorvolume,doorpitch,false);
+doormove=false;
+doors[i].is_moving=false;
+}
+}
+}
+}
+void spawn_door(int x,int y,int x2,int y2,double hp,double maxhp,int speed,string looptype,string movetype,string opentype,string closetype,string desttype,bool automatic,bool destroyable)
+{
+door dr1(x,y,x2,y2,hp,maxhp,speed,looptype,movetype,opentype,closetype,desttype,automatic,destroyable);
+doors.insert_last(dr1);
+}
+void destroy_all_doors()
+{
+for(uint i=0; i<doors.length(); i++)
+{
+doorpool.destroy_sound(doors[i].doorsound);
+doorpool.destroy_sound(doors[i].movesound);
+}
+doors.resize(0);
+doormove=false;
+}

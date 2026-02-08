@@ -1,0 +1,151 @@
+bool elvmove;
+elevator@[] elevators(0);
+class elevator
+{
+bool is_moving = false;
+bool floorspeak;
+int beepsound, closesound, loopsound, movesound, opensound;
+int startx, starty;
+int endx, endy;
+int speed;
+string elvtext;
+string closetype;
+string looptype;
+string movetype;
+string opentype;
+string beeptype;
+timer elevatortimer;
+int last_floor_index = -1;
+elevator(int sx, int sy, int sp, string eltxt, string lsound, string mvsound, string osound, string clsound, string besound, bool fls)
+{
+startx = sx;
+starty = sy;
+speed = sp;
+elvtext=eltxt;
+looptype = lsound;
+movetype = mvsound;
+opentype = osound;
+closetype = clsound;
+beeptype = besound;
+floorspeak = fls;
+endx = sx;
+endy = sy;
+loopsound = elvpool.play_extended_2d(get_map_sound("objects/elevators/loop/" + looptype + "/*loop*"), me.x, me.y, startx, starty, 0, 0, 0, 0, true, 0, 0, elevatorvolume, elevatorpitch, false);
+}
+}
+void elvcheck()
+{
+for (uint i = 0; i < elevators.length(); i++)
+{
+if (elevators[i].startx == me.x && elevators[i].starty == me.y && key_up(KEY_LSHIFT) && key_up(KEY_RSHIFT) && key_repeating(KEY_RETURN))
+{
+if (el_floors.length() == 0)
+{
+speak("There are no floors available on this map.");
+return;
+}
+elvpool.pause_sound(elevators[i].loopsound);
+setupmenu();
+for (uint i2 = 0; i2 < el_floors.length(); i2++)
+{
+m.add_item_tts(el_floors[i2].text, el_floors[i2].text, "", true);
+}
+string current_floor_text = "an unknown floor";
+for (uint i3 = 0; i3 < el_floors.length(); i3++)
+{
+	if (me.y == el_floors[i3].floory && me.x >= el_floors[i3].minx && me.x <= el_floors[i3].maxx)
+	{
+		current_floor_text = el_floors[i3].text;
+		break;
+	}
+}
+int mres = m.run(elevators[i].elvtext + " You're currently on " + current_floor_text + ".", true);
+if(mres==0)
+{
+elvpool.resume_sound(elevators[i].loopsound);
+speak("canceled");
+return;
+}
+if (mres > 0 && mres <= int(el_floors.length()))
+{
+elevator@ elv = elevators[i];
+el_floor@ target = el_floors[mres - 1];
+if (me.y == target.floory && me.x >= target.minx && me.x <= target.maxx)
+{
+elvpool.resume_sound(elevators[i].loopsound);
+speak("You're already on " + target.text + ".");
+return;
+}
+if (me.x >= target.minx && me.x <= target.maxx)
+{
+elv.endx = me.x;
+}
+else
+{
+elv.endx = int(target.minx);
+}
+elv.endy = target.floory;
+elv.is_moving = true;
+elv.last_floor_index = -1;
+elvpool.resume_sound(elevators[i].loopsound);
+elv.opensound = elvpool.play_stationary_extended(get_map_sound("objects/elevators/open/" + elv.opentype + "/*open*"), false, 0, 0, elevatorvolume, elevatorpitch, false);
+elv.movesound = elvpool.play_stationary_extended(get_map_sound("objects/elevators/move/" + elv.movetype + "/*move*"), true, 0, 0, elevatorvolume, elevatorpitch, false);
+elvmove = true;
+}
+}
+}
+}
+void elvloop()
+{
+for (uint i = 0; i < elevators.length(); i++)
+{
+elevator@ elv = elevators[i];
+if (elv.elevatortimer.elapsed >= elv.speed && elv.is_moving)
+{
+elv.elevatortimer.restart();
+if (me.x < elv.endx) me.x++;
+else if (me.x > elv.endx) me.x--;
+if (me.y < elv.endy) me.y++;
+else if (me.y > elv.endy) me.y--;
+for (uint i2 = 0; i2 < el_floors.length(); i2++)
+{
+if (me.x >= el_floors[i2].minx && me.x <= el_floors[i2].maxx && me.y == el_floors[i2].floory)
+{
+if (int(i2) != elv.last_floor_index)
+{
+elv.last_floor_index = i2;
+if (elv.floorspeak) speak(el_floors[i2].text);
+elv.beepsound=elvpool.play_stationary_extended(get_map_sound("objects/elevators/beep/" + elv.beeptype + "/*beep*"), false, 0, 0, elevatorvolume, elevatorpitch, false);
+}
+break;
+}
+}
+if (me.x == elv.endx && me.y == elv.endy)
+{
+elvpool.destroy_sound(elv.beepsound);
+elvpool.destroy_sound(elv.movesound);
+elv.beepsound=elvpool.play_extended_2d(get_map_sound("objects/elevators/beep/" + elv.beeptype + "/*beep*"), me.x, me.y, elv.endx, elv.endy, 0, 0, 0, 0, false, 0, 0, elevatorvolume, elevatorpitch, false);
+elv.closesound = elvpool.play_extended_2d(get_map_sound("objects/elevators/close/" + elv.closetype + "/*close*"), me.x, me.y, elv.endx, elv.endy, 0, 0, 0, 0, false, 0, 0, elevatorvolume, elevatorpitch, false);
+elv.is_moving = false;
+elvmove = false;
+elv.last_floor_index = -1;
+}
+}
+}
+}
+void spawn_elevator(int x, int y, int speed, string elvtext, string looptype, string movetype, string opentype, string closetype, string beeptype, bool floorspeak)
+{
+elevator elv1(x, y, speed, elvtext, looptype, movetype, opentype, closetype, beeptype, floorspeak);
+elevators.insert_last(elv1);
+}
+void destroy_all_elevators()
+{
+for (uint i = 0; i < elevators.length(); i++)
+{
+elvpool.destroy_sound(elevators[i].loopsound);
+elvpool.destroy_sound(elevators[i].beepsound);
+elvpool.destroy_sound(elevators[i].movesound);
+}
+elevators.resize(0);
+elvmove = false;
+}

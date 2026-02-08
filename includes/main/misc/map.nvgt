@@ -1,0 +1,2074 @@
+void clear_camera_markers()
+{
+    if (!sel_left_set && !sel_right_set && !sel_top_set && !sel_bottom_set)
+    {
+        speak("No selection points.");
+        return;
+    }
+    sel_left_set = false;
+    sel_right_set = false;
+    sel_top_set = false;
+    sel_bottom_set = false;
+    p.play_stationary(get_pack_sound("misc/selectclear.ogg"), false);
+    speak("Selection points cleared.");
+}
+void speak_camera_markers()
+{
+    if (!sel_left_set && !sel_right_set && !sel_top_set && !sel_bottom_set)
+    {
+        speak("No selection points.");
+        return;
+    }
+    string msg = "Selection points:";
+    if (sel_left_set)
+        msg += " left: " + sel_left + ",";
+    if (sel_right_set)
+        msg += " right: " + sel_right + ",";
+    if (sel_bottom_set)
+        msg += " bottom: " + sel_bottom + ",";
+    if (sel_top_set)
+        msg += " top: " + sel_top + ",";
+    if (msg.ends_with(","))
+        msg = msg.substr(0, msg.length() - 1);
+    speak(msg);
+}
+void clearmap()
+{
+destroy_all_ambsources();
+destroy_all_blockages();
+destroy_all_dest_plats();
+destroy_all_dest_staircases();
+destroy_all_dest_walls();
+destroy_all_musicambs();
+destroy_all_musicsources();
+destroy_all_platforms();
+destroy_all_reverb_spaces();
+destroy_all_soundsources();
+destroy_all_spawnpoints();
+destroy_all_staircases();
+destroy_all_walls();
+destroy_all_zones();
+}
+void destroymap()
+{
+destroy_all_aircrafts();
+destroy_all_airbeacons();
+destroy_all_animals();
+destroy_all_animalzones();
+destroy_all_belts();
+destroy_all_bikes();
+destroy_all_bombs();
+destroy_all_bombzones();
+destroy_all_bosses();
+destroy_all_bullets();
+destroy_all_calendars();
+destroy_all_cameras();
+destroy_all_checkpoints();
+destroy_all_clocks();
+destroy_all_cblockers();
+destroy_all_dialogs();
+destroy_all_doors();
+destroy_all_el_floors();
+destroy_all_elevators();
+destroy_all_humans();
+destroy_all_humanzones();
+destroy_all_floorbreakers();
+destroy_all_forcefields();
+destroy_all_hazards();
+destroy_all_healzones();
+destroy_all_helpers();
+destroy_all_lifts();
+destroy_all_mines();
+destroy_all_menuzones();
+destroy_all_moving_hazards();
+destroy_all_moving_platforms();
+destroy_all_objs();
+destroy_all_objzones();
+destroy_all_psdoors();
+destroy_all_passages();
+destroy_all_pspassages();
+destroy_all_projectiles();
+destroy_all_projzones();
+destroy_all_robots();
+destroy_all_robotzones();
+destroy_all_safezones();
+destroy_all_signs();
+destroy_all_spikes();
+destroy_all_switchers();
+destroy_all_teleporters();
+destroy_all_text_squares();
+destroy_all_timebombs();
+destroy_all_timedmusics();
+destroy_all_timedsources();
+destroy_all_timedtexts();
+destroy_all_travelpoints();
+destroy_all_ttsenemies();
+destroy_all_turrets();
+destroy_all_vanishing_hazards();
+destroy_all_vanishing_platforms();
+destroy_all_vehicles();
+destroy_all_zombies();
+destroy_all_zombiezones();
+}
+
+void gop(string entity,string id,double x,double y)
+{
+if(x<minx or x>maxx or y<miny or y>maxy)
+{
+dlg_snd("Error! You can't move yourself or an entity out of map boundries! Please try again! Press enter to continue.");
+return;
+}
+if (entity == "me")
+{
+me.x=x;
+me.y=y;
+fallcounter=0;
+jumping=0;
+falling=false;
+if(fallcounter>=0) p.destroy_sound(fallslot);
+if(charmovesound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*move*"),false);
+speak("Player moved to "+me.x+", "+me.y+".");
+}
+else if(entity=="animal")
+{
+for(uint i=0; i<animals.length(); i++)
+{
+if(animals[i].animaltype==id)
+{
+animals[i].amx=int(x);
+animals[i].amy=int(y);
+animalpool.update_sound_2d(animals[i].amsound, animals[i].amx, animals[i].amy);
+animals[i].animaltimer.restart();
+speak("animal moved to "+animals[i].amx+", "+animals[i].amy+".");
+return;
+}
+}
+}
+else if(entity=="human")
+{
+for(uint i=0; i<humans.length(); i++)
+{
+if(humans[i].humantype==id)
+{
+humans[i].humx=int(x);
+humans[i].humy=int(y);
+humanpool.update_sound_2d(humans[i].humsound, humans[i].humx, humans[i].humy);
+humans[i].humantimer.restart();
+speak("human moved to "+humans[i].humx+", "+humans[i].humy+".");
+return;
+}
+}
+}
+else if(entity=="boss")
+{
+for(uint i=0; i<bosses.length(); i++)
+{
+if(bosses[i].bosstype==id)
+{
+bosses[i].bossx=int(x);
+bosses[i].bossy=int(y);
+bosspool.update_sound_2d(bosses[i].bossesound, bosses[i].bossx, bosses[i].bossy);
+bosses[i].bosstimer.restart();
+speak("boss moved to "+bosses[i].bossx+", "+bosses[i].bossy+".");
+return;
+}
+}
+}
+else if(entity=="helper")
+{
+for(uint i=0; i<helpers.length(); i++)
+{
+if(helpers[i].helpertype==id)
+{
+helpers[i].helpx=int(x);
+helpers[i].helpy=int(y);
+helperpool.update_sound_2d(helpers[i].helpersound, helpers[i].helpx, helpers[i].helpy);
+helpers[i].helpertimer.restart();
+speak("helper moved to "+helpers[i].helpx+", "+helpers[i].helpy+".");
+return;
+}
+}
+}
+else if(entity=="projectile")
+{
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(projectiles[i].projtype==id)
+{
+projectiles[i].prox=int(x);
+projectiles[i].proy=int(y);
+projpool.update_sound_2d(projectiles[i].projsound, projectiles[i].prox, projectiles[i].proy);
+projectiles[i].projtimer.restart();
+speak("projectile moved to "+projectiles[i].prox+", "+projectiles[i].proy+".");
+return;
+}
+}
+}
+else if(entity=="robot")
+{
+for(uint i=0; i<robots.length(); i++)
+{
+if(robots[i].robottype==id)
+{
+robots[i].robx=int(x);
+robots[i].roby=int(y);
+robpool.update_sound_2d(robots[i].robsound, robots[i].robx, robots[i].roby);
+robots[i].robottimer.restart();
+speak("robot moved to "+robots[i].robx+", "+robots[i].roby+".");
+return;
+}
+}
+}
+else if(entity=="turret")
+{
+for(uint i=0; i<turrets.length(); i++)
+{
+if(turrets[i].turtype==id)
+{
+turrets[i].turx=int(x);
+turrets[i].tury=int(y);
+turpool.update_sound_2d(turrets[i].tursound, turrets[i].turx, turrets[i].tury);
+turrets[i].turtimer.restart();
+speak("turret moved to "+turrets[i].turx+", "+turrets[i].tury+".");
+return;
+}
+}
+}
+else if(entity=="zombie")
+{
+for(uint i=0; i<zombies.length(); i++)
+{
+if(zombies[i].zombietype==id)
+{
+zombies[i].zombx=int(x);
+zombies[i].zomby=int(y);
+zombpool.update_sound_2d(zombies[i].zombsound, zombies[i].zombx, zombies[i].zomby);
+zombies[i].zombietimer.restart();
+speak("zombie moved to "+zombies[i].zombx+", "+zombies[i].zomby+".");
+return;
+}
+}
+}
+else if(entity=="item")
+{
+for(uint i=0; i<objs.length(); i++)
+{
+if(objs[i].objtype2==id)
+{
+objs[i].itx=int(x);
+objs[i].ity=int(y);
+itempool.update_sound_2d(objs[i].objsound, objs[i].itx, objs[i].ity);
+objs[i].objtimer.restart();
+speak("item moved to "+objs[i].itx+", "+objs[i].ity+".");
+return;
+}
+}
+}
+else if(entity=="mine")
+{
+for(uint i=0; i<mines.length(); i++)
+{
+if(mines[i].minetype==id)
+{
+mines[i].minex=int(x);
+mines[i].miney=int(y);
+minepool.update_sound_2d(mines[i].minesound, mines[i].minex, mines[i].miney);
+speak("mine moved to "+mines[i].minex+", "+mines[i].miney+".");
+return;
+}
+}
+}
+else if(entity=="sign")
+{
+for(uint i=0; i<signs.length(); i++)
+{
+if(signs[i].signtype==id)
+{
+signs[i].signx=int(x);
+signs[i].signy=int(y);
+signpool.update_sound_2d(signs[i].signsound, signs[i].signx, signs[i].signy);
+speak("sign moved to "+signs[i].signx+", "+signs[i].signy+".");
+return;
+}
+}
+}
+else if(entity=="bike")
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+if(bikes[i].biketype==id)
+{
+bikes[i].bikex=int(x);
+bikes[i].bikey=int(y);
+bikepool.update_sound_2d(bikes[i].bikesound, bikes[i].bikex, bikes[i].bikey);
+speak("bike moved to "+bikes[i].bikex+", "+bikes[i].bikey+".");
+return;
+}
+}
+}
+else if(entity=="vehicle")
+{
+for(uint i=0; i<vehicles.length(); i++)
+{
+if(vehicles[i].vehtype==id)
+{
+vehicles[i].vehx=int(x);
+vehicles[i].vehy=int(y);
+vehpool.update_sound_2d(vehicles[i].vehsound, vehicles[i].vehx, vehicles[i].vehy);
+speak("vehicle moved to "+vehicles[i].vehx+", "+vehicles[i].vehy+".");
+return;
+}
+}
+}
+else
+{
+dlg_snd("Error! Unknown entity type "+id+".");
+return;
+}
+}
+
+void speakcoordinates()
+{
+if(locspeech==1 and gmt(me.x,me.y)=="")
+{
+speak("In the air. "+"Facing "+facing+".");
+}
+else if(locspeech==1)
+{
+speak("On "+gmt(me.x,me.y)+". "+"Facing "+facing+".");
+}
+if(locspeech==2 )
+{
+speak(me.x+", "+me.y+". "+"Facing "+facing+".");
+}
+if(locspeech==3 and gmt(me.x,me.y)=="")
+{
+speak(me.x+", "+me.y+" "+"in the air. "+"Facing "+facing+".");
+}
+else if(locspeech==3)
+{
+speak(me.x+", "+me.y+" "+"on "+gmt(me.x,me.y)+". "+"Facing "+facing+".");
+}
+if(locspeech==4 and gmt(me.x,me.y)=="")
+{
+speak("current location, "+me.x+", "+me.y+". "+"You're currently in the air. "+"Facing "+facing+".");
+}
+else if(locspeech==4)
+{
+speak("current location, "+me.x+", "+me.y+". "+"You're walking on "+gmt(me.x,me.y)+". "+"Facing "+facing+".");
+}
+}
+
+void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false, bool force_spawned=false)
+{
+    mapname = name;
+    mapowner = owner;
+    maploadbeeps = loadbeeps;
+    maploadsounds = loadsounds;
+    clearmap();
+    destroymap();
+    if (string_ends_with(mapname, ".sif"))
+        mapname = string_replace(mapname, ".sif", "", true);
+    if (string_ends_with(mapname, ".map"))
+        mapname = string_replace(mapname, ".map", "", true);
+    string decompiled_info_path = "data/maps/decompiled/" + mapname + "/info.sif";
+    string compiled_path = "data/maps/compiled/" + mapname + ".map";
+    string mapdata = "";
+    bool loaded = false;
+    map_is_compiled = false;
+    if (!force_compiled && file_exists(decompiled_info_path))
+    {
+        set_sound_storage("");
+        set_sound_decryption_key("", true);
+        map_pack_loaded = false;
+        mapper.open(decompiled_info_path, "rb");
+        mapdata = mapper.read();
+        mapper.close();
+        loaded = true;
+        map_is_compiled = false;
+    }
+    else if (file_exists(compiled_path))
+    {
+        if (!load_map_pack(mapname, ""))
+        {
+            dlg_snd("Error: Map failed to load.");
+            mapmenu();
+        }
+        if (map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+        {
+            if (map_pack.file_exists("info.sif"))
+            {
+                uint size = map_pack.get_file_size("info.sif");
+                mapdata = map_pack.read_file("info.sif", 0, size);
+                loaded = true;
+                map_is_compiled = true;
+            }
+            map_pack.close();
+        }
+    }
+    if (!loaded)
+    {
+        dlg_snd("Error: Map not found or missing info.sif.");
+        mapmenu();
+    }
+sound mapload;
+timer maploadtimer;
+if(anounce_mapload==true) speak("loading map");
+if(loadsounds==1) mpool.play_stationary(get_pack_sound("misc/maploadstart.ogg"),false);
+if(loadsounds==1) mapload.load(get_pack_sound("misc/maploading.ogg"));
+if(loadsounds==1) mapload.play_looped();
+string[] lines=delinear(mapdata);
+double percent=0;
+double last_beep_percent=-1;
+for (uint i=0; i<lines.length(); i++)
+{
+if(loadbeeps == 1)
+{
+double l=lines.length(), ind=i;
+int current_percent=int(ind/l*100);
+if(current_percent>last_beep_percent && maploadtimer.elapsed>=loadtime)
+{
+if(speak_percentage==true) speak(current_percent+" percent");
+beep_percentage(current_percent);
+last_beep_percent=current_percent;
+maploadtimer.restart();
+}
+}        
+if(!instent_update)
+{
+wait(5);
+}
+string[] sd=string_split(lines[i], " ", true);
+if(sd[0]=="minx" && sd.length()==2)
+{
+minx=stn(sd[1]);
+}
+else if(sd[0]=="maxx" && sd.length()==2)
+{
+maxx=stn(sd[1]);
+}
+else if(sd[0]=="miny" && sd.length()==2)
+{
+miny=stn(sd[1]);
+}
+else if(sd[0]=="maxy" && sd.length()==2)
+{
+maxy=stn(sd[1]);
+}
+else if(sd[0]=="owner" && sd.length()==2)
+{
+mapowner=sd[1];
+}
+else if(sd[0]=="platform" && sd.length()==7)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+string tiletype=sd[4];
+double tilevol=stn(sd[5]);
+double tilepitch=stn(sd[6]);
+spawn_platform(mx, mx2, my, my, tiletype, tilevol, tilepitch);
+}
+else if(sd[0]=="staircase" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string tiletype=sd[5];
+double stairsvol=stn(sd[6]);
+double stairspitch=stn(sd[7]);
+spawn_staircase(mx, mx2, my, my2, tiletype, stairsvol, stairspitch);
+}
+else if(sd[0]=="vanishing_hazard" && sd.length()==7)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string hazardtype=sd[5];
+int sp=stn(sd[6]);
+spawn_vanishing_hazard(mx, mx2, my, my2, hazardtype, sp);
+}
+else if(sd[0]=="vanishing_platform" && sd.length()==11)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+string tiletype=sd[4];
+double tilevol=stn(sd[5]);
+double tilepitch=stn(sd[6]);
+string vplattype=sd[7];
+double vplatvol=stn(sd[8]);
+double vplatpitch=stn(sd[9]);
+int sp=stn(sd[10]);
+spawn_vanishing_platform(mx, mx2, my, my, tiletype, tilevol, tilepitch, vplattype, vplatvol, vplatpitch, sp);
+}
+else if(sd[0]=="dest_plat" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double hp=stn(sd[4]);
+string dest_plattype=sd[5];
+double platvol=stn(sd[6]);
+double platpitch=stn(sd[7]);
+spawn_dest_plat(mx, mx2, my, my, hp, hp, dest_plattype, platvol, platpitch);
+}
+else if(sd[0]=="dest_staircase" && sd.length()==9)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double hp=stn(sd[5]);
+string dest_plattype=sd[6];
+double stairsvol=stn(sd[7]);
+double stairspitch=stn(sd[8]);
+spawn_dest_staircase(mx, mx2, my, my2, hp, hp, dest_plattype, stairsvol, stairspitch);
+}
+else if(sd[0]=="dest_wall" && sd.length()==9)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double hp=stn(sd[5]);
+string dest_walltype=sd[6];
+double wallvol=stn(sd[7]);
+double wallpitch=stn(sd[8]);
+spawn_dest_wall(mx, mx2, my, my2, hp, hp, dest_walltype, wallvol, wallpitch);
+}
+else if(sd[0]=="wall" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string walltype=sd[5];
+double wallvol=stn(sd[6]);
+double wallpitch=stn(sd[7]);
+spawn_wall(mx, mx2, my, my2, walltype, wallvol, wallpitch);
+}
+else if(sd[0]=="blockage" && sd.length()>=6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string txt=join_string_array(sd, 5, sd.length());
+spawn_blockage(mx, mx2, my, my2, txt);
+}
+else if(sd[0]=="door" && sd.length()==14)
+{
+int sx=stn(sd[1]);
+int sy=stn(sd[2]);
+int sx2=stn(sd[3]);
+int sy2=stn(sd[4]);
+double hp=stn(sd[5]);
+int sp=stn(sd[6]);
+string lotype=sd[7];
+string motype=sd[8];
+string optype=sd[9];
+string cotype=sd[10];
+string dotype=sd[11];
+bool amt=string_to_bool(sd[12]);
+bool dbl=string_to_bool(sd[13]);
+spawn_door(sx, sy, sx2, sy2, hp, hp, sp, lotype, motype, optype, cotype, dotype, amt, dbl);
+}
+else if(sd[0]=="psdoor" && sd.length()==15)
+{
+int sx=stn(sd[1]);
+int sy=stn(sd[2]);
+int sx2=stn(sd[3]);
+int sy2=stn(sd[4]);
+double hp=stn(sd[5]);
+int sp=stn(sd[6]);
+string drpass=sd[7];
+string lotype=sd[8];
+string motype=sd[9];
+string optype=sd[10];
+string cotype=sd[11];
+string dotype=sd[12];
+bool amt=string_to_bool(sd[13]);
+bool dbl=string_to_bool(sd[14]);
+spawn_psdoor(sx, sy, sx2, sy2, hp, hp, sp, drpass, lotype, motype, optype, cotype, dotype, amt, dbl);
+}
+else if(sd[0]=="elevator" && sd.length()>=11)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int sp=stn(sd[3]);
+string txt=join_string_array(sd, 4, sd.length()-6);
+string ellotype=sd[sd.length()-6];
+string elmotype=sd[sd.length()-5];
+string eloptype=sd[sd.length()-4];
+string elcotype=sd[sd.length()-3];
+string elbetype=sd[sd.length()-2];
+bool fsp=string_to_bool(sd[sd.length()-1]);
+spawn_elevator(x, y, sp, txt, ellotype, elmotype, eloptype, elcotype, elbetype, fsp);
+}
+else if(sd[0]=="el_floor" && sd.length()>=5)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+string txt=join_string_array(sd, 4, sd.length());
+spawn_el_floor(mx, mx2, y, txt);
+}
+else if(sd[0]=="passage" && sd.length()==11)
+{
+int sx=stn(sd[1]);
+int sy=stn(sd[2]);
+int dir=stn(sd[3]);
+int lt=stn(sd[4]);
+string tiletype=sd[5];
+string lotype=sd[6];
+string optype=sd[7];
+string cotype=sd[8];
+int sp=stn(sd[9]);
+int sp2=stn(sd[10]);
+spawn_passage(sx, sy, dir, lt, tiletype, lotype, optype, cotype, sp, sp2);
+}
+else if(sd[0]=="pspassage" && sd.length()==12)
+{
+int sx=stn(sd[1]);
+int sy=stn(sd[2]);
+int dir=stn(sd[3]);
+int lt=stn(sd[4]);
+string tiletype=sd[5];
+string lotype=sd[6];
+string optype=sd[7];
+string cotype=sd[8];
+string pspass=sd[9];
+int sp=stn(sd[10]);
+int sp2=stn(sd[11]);
+spawn_pspassage(sx, sy, dir, lt, tiletype, lotype, optype, cotype, pspass, sp, sp2);
+}
+else if(sd[0]=="menu_zone" && sd.length()==5)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+spawn_menuzone(mx, mx2, my, my2);
+}
+else if(sd[0]=="safe_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string safetype=sd[5];
+spawn_safezone(mx, mx2, my, my2, safetype);
+}
+else if(sd[0]=="zone" && sd.length()>=6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string txt=join_string_array(sd, 5, sd.length());
+spawn_zone(mx, mx2, my, my2, txt);
+}
+else if(sd[0]=="reverb" && sd.length()==11)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string id=sd[5];
+float dry=stn(sd[6]);
+float wet=stn(sd[7]);
+float size=stn(sd[8]);
+float damp=stn(sd[9]);
+float width=stn(sd[10]);
+spawn_reverb_space(mx, mx2, my, my2, id, dry, wet, size, damp, width);
+}
+else if(sd[0]=="text_square" && sd.length()>=4)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+string txt=join_string_array(sd, 3, sd.length());
+spawn_text_square(x, y, txt);
+}
+else if(sd[0]=="clock" && sd.length()>=6)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+string txt=join_string_array(sd, 3, sd.length()-2);
+string clocktype=sd[sd.length()-2];
+bool dbl=string_to_bool(sd[sd.length()-1]);
+spawn_clock(x, y, txt, clocktype, dbl);
+}
+else if(sd[0]=="calendar" && sd.length()>=6)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+string txt=join_string_array(sd, 3, sd.length()-2);
+string calandertype=sd[sd.length()-2];
+bool dbl=string_to_bool(sd[sd.length()-1]);
+spawn_calendar(x, y, txt, calandertype, dbl);
+}
+else if(sd[0]=="cblocker" && sd.length()>=7)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string[] coms = string_split(join_string_array(sd, 5, sd.length() - 1), ", ", true);
+bool wtl = string_to_bool(sd[sd.length() - 1]);
+spawn_cblocker(mx, mx2, my, my2, coms, wtl);
+}
+else if(sd[0]=="music_ambience" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string musictype=sd[5];
+double musicvol=stn(sd[6]);
+double musicpitch=stn(sd[7]);
+spawn_musicamb(mx, mx2, my, my2, musictype, musicvol, musicpitch);
+}
+else if(sd[0]=="music_source" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string musictype=sd[5];
+double musvol=stn(sd[6]);
+double muspitch=stn(sd[7]);
+spawn_musicsource(mx, mx2, my, my2, musictype, musvol, muspitch);
+}
+else if(sd[0]=="sound_ambience" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string sorcetype=sd[5];
+double soundvol=stn(sd[6]);
+double soundpitch=stn(sd[7]);
+spawn_ambsource(mx, mx2, my, my2, sorcetype, soundvol, soundpitch);
+}
+else if(sd[0]=="sound_source" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string sourcetype=sd[5];
+double soundvol=stn(sd[6]);
+double soundpitch=stn(sd[7]);
+spawn_soundsource(mx, mx2, my, my2, sourcetype, soundvol, soundpitch);
+}
+else if(sd[0]=="timebomb" && sd.length()==6)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int dmg=stn(sd[3]);
+int sp=stn(sd[4]);
+string timbotype=sd[5];
+spawn_timebomb(x, y, dmg, sp, timbotype);
+}
+else if(sd[0]=="timed_music" && sd.length()==9)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string musictype=sd[5];
+double musvol=stn(sd[6]);
+double muspitch=stn(sd[7]);
+int musictime=stn(sd[8]);
+spawn_timedmusic(mx, mx2, my, my2, musvol, muspitch, musictime, musictype);
+}
+else if(sd[0]=="timed_source" && sd.length()==9)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string sourcetype=sd[5];
+double soundvol=stn(sd[6]);
+double soundpitch=stn(sd[7]);
+int sourcetime=stn(sd[8]);
+spawn_timedsource(mx, mx2, my, my2, soundvol, soundpitch, sourcetime, sourcetype);
+}
+else if(sd[0]=="timed_text" && sd.length()>=7)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+int texttime=stn(sd[5]);
+string txt=join_string_array(sd, 6, sd.length());
+spawn_timedtext(mx, mx2, my, my2, texttime, txt);
+}
+else if(sd[0]=="heal_zone" && sd.length()==9)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+int hm=stn(sd[5]);
+int hp=stn(sd[6]);
+int ht=stn(sd[7]);
+string hlt=sd[8];
+spawn_healzone(mx, mx2, my, my2, hm, hp, ht,hlt);
+}
+else if(sd[0]=="hazard" && sd.length()==7)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string hazardtype=sd[5];
+bool lgp=string_to_bool(sd[6]);
+spawn_hazard(mx, mx2, my, my2, hazardtype, lgp);
+}
+else if(sd[0]=="lift" && sd.length()==13)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+int dir=stn(sd[5]);
+int sp=stn(sd[6]);
+string tiletype=sd[7];
+double tilevol=stn(sd[8]);
+double tilepitch=stn(sd[9]);
+string lifttype=sd[10];
+double liftvol=stn(sd[11]);
+double liftpitch=stn(sd[12]);
+spawn_lift(mx, mx2, my, my2, dir, sp, tiletype, tilevol, tilepitch, lifttype, liftvol, liftpitch);
+}
+else if(sd[0]=="mine" && sd.length()==6)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int dmg=stn(sd[3]);
+string minetype=sd[4];
+bool tg=string_to_bool(sd[5]);
+spawn_mine(x, y, dmg, minetype, tg);
+}
+else if(sd[0]=="mhazard" && sd.length()==11)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double sx=stn(sd[5]);
+double sy=stn(sd[6]);
+int dir=stn(sd[7]);
+int dir2=stn(sd[8]);
+int sp=stn(sd[9]);
+string hazardtype=sd[10];
+spawn_moving_hazard(mx, mx2, my, my2, sx, sy, dir, dir2, sp, hazardtype);
+}
+else if(sd[0]=="mplatform" && sd.length()==16)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double sx=stn(sd[5]);
+int dir=stn(sd[6]);
+int dir2=stn(sd[7]);
+int sp=stn(sd[8]);
+string tiletype=sd[9];
+double tilevol=stn(sd[10]);
+double tilepitch=stn(sd[11]);
+string mplattype=sd[12];
+double mplatvol=stn(sd[13]);
+double mplatpitch=stn(sd[14]);
+int vs=stn(sd[15]);
+spawn_moving_platform(mx, mx2, my, my2, sx, dir, dir2, sp, tiletype, tilevol, tilepitch, mplattype, mplatvol, mplatpitch, vs);
+}
+else if(sd[0]=="sign" && sd.length()>=7)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+string txt=join_string_array(sd, 3, sd.length()-3);
+string signtype=sd[sd.length()-3];
+bool dbl=string_to_bool(sd[sd.length()-2]);
+bool lps=string_to_bool(sd[sd.length()-1]);
+spawn_sign(x, y, txt, signtype, dbl, lps);
+}
+else if(sd[0]=="checkpoint" && sd.length()==5)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int checktime=stn(sd[3]);
+string checktype=sd[4];
+spawn_checkpoint(x, y, checktime, checktype);
+}
+else if(sd[0]=="dialog" && sd.length()>=8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string txt=join_string_array(sd, 5, sd.length()-2);
+string dlgtype=sd[sd.length()-2];
+dlgtyp=dlgtype;
+bool dlm=string_to_bool(sd[sd.length()-1]);
+spawn_dialog(mx, mx2, my, my2, txt, dlgtype, dlm);
+}
+else if(sd[0]=="item" && sd.length()==7)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int objtime=stn(sd[3]);
+string objtype=sd[4];
+string objtype2=sd[5];
+bool automatic=string_to_bool(sd[6]);
+spawn_obj(x, y, objtime, objtype, objtype2, automatic);
+}
+else if(sd[0]=="item_zone" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+int sp=stn(sd[5]);
+string objtype=sd[6];
+string objtype2=sd[7];
+spawn_objzone(mx, mx2, my, my2, sp, objtype, objtype2);
+}
+else if(sd[0]=="spike" && sd.length()==10)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double hp=stn(sd[5]);
+int dmg=stn(sd[6]);
+int sp=stn(sd[7]);
+string spiketype=sd[8];
+bool dbl=string_to_bool(sd[9]);
+spawn_spike(mx, mx2, my, my2, hp, hp, dmg, sp, spiketype, dbl);
+}
+else if(sd[0]=="spawnpoint" && sd.length()==3)
+{
+int spx=stn(sd[1]);
+int spy=stn(sd[2]);
+create_spawnpoint(spx, spy);
+}
+else if(sd[0]=="travelpoint" && sd.length()>=9)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+string destmap=sd[5];
+int destx=stn(sd[6]);
+int desty=stn(sd[7]);
+string endtext=sd[8];
+spawn_travelpoint(mx, mx2, my, my2, destmap, destx, desty, endtext);
+}
+else if(sd[0]=="aircraft" && sd.length()==5)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+double hp=stn(sd[3]);
+string airtype=sd[4];
+plaintyp=airtype;
+spawn_aircraft(x, y, hp, hp, airtype);
+}
+else if(sd[0]=="airbeacon" && sd.length()==3)
+{
+int x=stn(sd[1]);
+int w=stn(sd[2]);
+spawn_airbeacon(x, 0, w);
+}
+else if(sd[0]=="animal" && sd.length()==19)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int anirange=stn(sd[3]);
+int anirange2=stn(sd[4]);
+int anirange3=stn(sd[5]);
+int anirange4=stn(sd[6]);
+double hp=stn(sd[7]);
+int card=stn(sd[8]);
+int dmg=stn(sd[9]);
+int ft=stn(sd[10]);
+int sp=stn(sd[11]);
+double lv=stn(sd[12]);
+double xp=stn(sd[13]);
+string amtype=sd[14];
+bool fb=string_to_bool(sd[15]);
+bool mb=string_to_bool(sd[16]);
+bool mb2=string_to_bool(sd[17]);
+bool dpm=string_to_bool(sd[18]);
+spawn_animal(x, y, anirange, anirange2, anirange3, anirange4, hp, hp, card, dmg, ft, sp, lv, xp, amtype, fb, mb, mb2, dpm);
+}
+else if(sd[0]=="camera" && sd.length()==11)
+{
+int camx=stn(sd[1]);
+int cammy=stn(sd[2]);
+int cammer=stn(sd[3]);
+int cammer2=stn(sd[4]);
+int camdir=stn(sd[5]);
+int camtime=stn(sd[6]);
+double camhp=stn(sd[7]);
+double camlev=stn(sd[8]);
+double camxp=stn(sd[9]);
+string camtype=sd[10];
+spawn_camera(camx, cammy, cammer, cammer2, camdir, camtime, camhp, camhp, camlev, camxp, camtype);
+}
+else if(sd[0]=="human" && sd.length()==20)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int humrange=stn(sd[3]);
+int humrange2=stn(sd[4]);
+int humrange3=stn(sd[5]);
+int humrange4=stn(sd[6]);
+double hp=stn(sd[7]);
+int card=stn(sd[8]);
+int dmg=stn(sd[9]);
+int dc=stn(sd[10]);
+int ft=stn(sd[11]);
+int sp=stn(sd[12]);
+double lv=stn(sd[13]);
+double xp=stn(sd[14]);
+string humtype=sd[15];
+bool fb=string_to_bool(sd[16]);
+bool mb=string_to_bool(sd[17]);
+bool mb2=string_to_bool(sd[18]);
+bool dpm=string_to_bool(sd[19]);
+spawn_human(x, y, humrange, humrange2, humrange3, humrange4, hp, hp, card, dmg, dc, ft, sp, lv, xp, humtype, fb, mb, mb2, dpm);
+}
+else if(sd[0]=="floor_breaker" && sd.length()==4)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+string floorbtype=sd[3];
+spawn_floorbreaker(x, y, floorbtype);
+}
+else if(sd[0]=="forcefield" && sd.length()==8)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+int dmg=stn(sd[5]);
+int sp=stn(sd[6]);
+string forcetype=sd[7];
+spawn_forcefield(mx, mx2, my, my2, dmg, sp, forcetype);
+}
+else if(sd[0]=="helper" && sd.length()==10)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+double hp=stn(sd[3]);
+int card=stn(sd[4]);
+int dmg=stn(sd[5]);
+int ft=stn(sd[6]);
+int sp=stn(sd[7]);
+double lv=stn(sd[8]);
+string helptyp=sd[9];
+spawn_helper(x, y, hp, hp, card, dmg, ft, sp, lv, helptyp);
+}
+else if(sd[0]=="projectile" && sd.length()==13)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int dir=stn(sd[3]);
+double hp=stn(sd[4]);
+int card=stn(sd[5]);
+int dmg=stn(sd[6]);
+int sp=stn(sd[7]);
+double lv=stn(sd[8]);
+double xp=stn(sd[9]);
+string potype=sd[10];
+bool fb=string_to_bool(sd[11]);
+bool mb=string_to_bool(sd[12]);
+spawn_projectile(x, y, dir, hp, hp, card, dmg, sp, lv, xp, potype, fb, mb);
+}
+else if(sd[0]=="robot" && sd.length()==19)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int roborange=stn(sd[3]);
+int roborange2=stn(sd[4]);
+int roborange3=stn(sd[5]);
+int roborange4=stn(sd[6]);
+double hp=stn(sd[7]);
+int card=stn(sd[8]);
+int dmg=stn(sd[9]);
+int ft=stn(sd[10]);
+int sp=stn(sd[11]);
+double lv=stn(sd[12]);
+double xp=stn(sd[13]);
+string rotype=sd[14];
+bool fb=string_to_bool(sd[15]);
+bool mb=string_to_bool(sd[16]);
+bool mb2=string_to_bool(sd[17]);
+bool dpm=string_to_bool(sd[18]);
+spawn_robot(x, y, roborange, roborange2, roborange3, roborange4, hp, hp, card, dmg, ft, sp, lv, xp, rotype, fb, mb, mb2, dpm);
+}
+else if (sd[0] == "ttsenemie")
+{
+    int x = stn(sd[1]);
+    int y = stn(sd[2]);
+    double hp = stn(sd[3]);
+    int sp = stn(sd[4]);
+    string combined = join_string_array(sd, 5, sd.length());
+    int first_quote = combined.find_first_of("\"");
+    int second_quote = combined.find_first_of("\"", first_quote + 1);
+    if (first_quote == -1 || second_quote == -1) return;
+    string ttsenetext = combined.substr(first_quote + 1, second_quote - first_quote - 1);
+    string after_text = combined.substr(second_quote + 1);
+    array<string> parts = string_split(trim(after_text), " ");
+    if (parts.length() < 3) return;
+    int rt = stn(parts[0]);
+    int vl = stn(parts[1]);
+    int pt = stn(parts[2]);
+    string id = format_int(ttsenemies.length(), 3);
+    string taunt_path = DIRECTORY_TEMP + "\\taunt_" + id + ".ogg";
+    string death_path = DIRECTORY_TEMP + "\\death_" + id + ".ogg";
+    if (file_exists(taunt_path)) file_delete(taunt_path);
+    if (file_exists(death_path)) file_delete(death_path);
+    generate_tts(taunt_path, ttsenetext, "", rt, vl, pt);
+    generate_tts(death_path, "Ouch! You killed me!", "", rt, vl, pt);
+spawn_ttsenemie(x, y, hp, hp, sp, taunt_path, death_path);
+}
+else if(sd[0]=="turret" && sd.length()==17)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+double hp=stn(sd[3]);
+int card=stn(sd[4]);
+int dmg=stn(sd[5]);
+int ft=stn(sd[6]);
+int lt=stn(sd[7]);
+int sp=stn(sd[8]);
+double lv=stn(sd[9]);
+double xp=stn(sd[10]);
+string tutype=sd[11];
+string tutype2=sd[12];
+string tutype3=sd[13];
+bool fb=string_to_bool(sd[14]);
+bool mb=string_to_bool(sd[15]);
+bool mb2=string_to_bool(sd[16]);
+spawn_turret(x, y, hp, hp, card, dmg, ft, lt, sp, lv, xp, tutype, tutype2, tutype3, fb, mb, mb2);
+}
+else if(sd[0]=="zombie" && sd.length()==19)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int zombirange=stn(sd[3]);
+int zombirange2=stn(sd[4]);
+int zombirange3=stn(sd[5]);
+int zombirange4=stn(sd[6]);
+double hp=stn(sd[7]);
+int card=stn(sd[8]);
+int dmg=stn(sd[9]);
+int ft=stn(sd[10]);
+int sp=stn(sd[11]);
+double lv=stn(sd[12]);
+double xp=stn(sd[13]);
+string zotype=sd[14];
+bool fb=string_to_bool(sd[15]);
+bool mb=string_to_bool(sd[16]);
+bool mb2=string_to_bool(sd[17]);
+bool dpm=string_to_bool(sd[18]);
+spawn_zombie(x, y, zombirange, zombirange2, zombirange3, zombirange4, hp, hp, card, dmg, ft, sp, lv, xp, zotype, fb, mb, mb2, dpm);
+}
+else if(sd[0]=="animal_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+int sp=stn(sd[4]);
+string amtype=sd[5];
+spawn_animalzone(mx, mx2, y, sp, amtype);
+}
+else if(sd[0]=="bike" && sd.length()==6)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+double hp=stn(sd[3]);
+int sp=stn(sd[4]);
+string biktyp=sd[5];
+spawn_bike(x, y, hp, hp, sp, biktyp);
+}
+else if(sd[0]=="bomb" && sd.length()==6)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int dmg=stn(sd[3]);
+int sp=stn(sd[4]);
+string botype=sd[5];
+spawn_bomb(x, y, dmg, sp, botype);
+}
+else if(sd[0]=="bomb_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+int sp=stn(sd[4]);
+string botype=sd[5];
+spawn_bombzone(mx, mx2, y, sp, botype);
+}
+else if(sd[0]=="boss" && sd.length()==27)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int boserange=stn(sd[3]);
+int boserange2=stn(sd[4]);
+int boserange3=stn(sd[5]);
+int boserange4=stn(sd[6]);
+double hp=stn(sd[7]);
+int card=stn(sd[8]);
+int dmg=stn(sd[9]);
+int ft=stn(sd[10]);
+int lt=stn(sd[11]);
+int sp=stn(sd[12]);
+int tt=stn(sd[13]);
+int ht=stn(sd[14]);
+double lv=stn(sd[15]);
+double xp=stn(sd[16]);
+string bosstyp=sd[17];
+string bosstyp2=sd[18];
+string bosstyp3=sd[19];
+bool fb=string_to_bool(sd[20]);
+bool mb=string_to_bool(sd[21]);
+bool mb2=string_to_bool(sd[22]);
+bool tb=string_to_bool(sd[23]);
+bool tb2=string_to_bool(sd[24]);
+bool hb=string_to_bool(sd[25]);
+bool dpm=string_to_bool(sd[26]);
+spawn_boss(x, y, boserange, boserange2, boserange3, boserange4, hp, hp, card, dmg, ft, lt, sp, tt, ht, lv, xp, bosstyp, bosstyp2, bosstyp3, fb, mb, mb2, tb, tb2, hb, dpm);
+}
+else if(sd[0]=="belt" && sd.length()==9)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+int dir=stn(sd[5]);
+int sp=stn(sd[6]);
+string tiletype=sd[7];
+string belttyp=sd[8];
+spawn_belt(mx, mx2, my, my2, dir, sp, tiletype, belttyp);
+}
+else if(sd[0]=="human_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+int sp=stn(sd[4]);
+string emtype=sd[5];
+spawn_humanzone(mx, mx2, y, sp, emtype);
+}
+else if(sd[0]=="projectile_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+int sp=stn(sd[4]);
+string potype=sd[5];
+spawn_projzone(mx, mx2, y, sp, potype);
+}
+else if(sd[0]=="robot_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+int sp=stn(sd[4]);
+string rotype=sd[5];
+spawn_robotzone(mx, mx2, y, sp, rotype);
+}
+else if(sd[0]=="switch" && sd.length()==6)
+{
+int scx=stn(sd[1]);
+int scy=stn(sd[2]);
+string sct=sd[3];
+bool tg=string_to_bool(sd[4]);
+bool scl=string_to_bool(sd[5]);
+spawn_switcher(scx, scy, sct, tg, scl);
+}
+else if(sd[0]=="teleporter" && sd.length()==12)
+{
+int sx=stn(sd[1]);
+int sy=stn(sd[2]);
+int sx2=stn(sd[3]);
+int sy2=stn(sd[4]);
+int telrange=stn(sd[5]);
+int telrange2=stn(sd[6]);
+int sp=stn(sd[7]);
+string teltype=sd[8];
+bool mb=string_to_bool(sd[9]);
+bool mb2=string_to_bool(sd[10]);
+bool ss=string_to_bool(sd[11]);
+spawn_teleporter(sx, sy, sx2, sy2, telrange, telrange2, sp, teltype, mb, mb2, ss);
+}
+else if(sd[0]=="vehicle" && sd.length()==10)
+{
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+double hp=stn(sd[3]);
+int dmg=stn(sd[4]);
+int sp=stn(sd[5]);
+int sp2=stn(sd[6]);
+int sp3=stn(sd[7]);
+string vehtyp=sd[8];
+bool fb=string_to_bool(sd[9]);
+spawn_vehicle(x, y, hp, hp, dmg, sp, sp2, sp3, vehtyp, fb);
+}
+else if(sd[0]=="zombie_zone" && sd.length()==6)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+int y=stn(sd[3]);
+int sp=stn(sd[4]);
+string zotype=sd[5];
+spawn_zombiezone(mx, mx2, y, sp, zotype);
+}
+if (force_spawned)
+{
+    if (last_spawnpoint !is null)
+    {
+        me.x = last_spawnpoint.spawnx;
+        me.y = last_spawnpoint.spawny;
+    }
+    else if (spawnpoints.length() > 0)
+    {
+        me.x = spawnpoints[0].spawnx;
+        me.y = spawnpoints[0].spawny;
+    }
+}
+cammable = true;
+jumpable = true;
+moveable = true;
+speedable = true;
+sittable = true;
+sitting = false;
+turnable = true;
+telable = true;
+}
+if(loadsounds==1) mapload.stop();
+if(loadsounds==1) mpool.play_stationary(get_pack_sound("misc/maploadstop.ogg"),false);
+if(loadbeeps == 1 && last_beep_percent<100)
+{
+if(speak_percentage==true) speak("100 "+"percent");
+if(loadbeeps == 1) beep_percentage(100);
+}
+if(anounce_mapload==true) speak("map loded.");
+}
+void create_map(string name, string owner, double mx, double mx2, double my, double my2)
+{
+mapname=name;
+mapowner=owner;
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+string[] mapdirs = {"data/maps/decompiled/" + mapname, "data/maps/decompiled/" + mapname + "/assets", "data/maps/decompiled/" + mapname + "/assets/dialogs", "data/maps/decompiled/" + mapname + "/assets/musics", "data/maps/decompiled/" + mapname + "/assets/npc", "data/maps/decompiled/" + mapname + "/assets/objects", "data/maps/decompiled/" + mapname + "/assets/sources"};
+for (uint i = 0; i < mapdirs.length(); i++)
+{
+    directory_create(mapdirs[i]);
+}
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","wb");
+mapdata=mapper.read();
+mapper.write("name "+name+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2+"\r\n"+"owner "+owner);
+mapper.close();
+me.x=0;
+me.y=0;
+dlg("The map template has been created successfully. Press enter to continue.");
+}
+
+void cam_left()
+{
+if(cam.x-1>=minx and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="left";
+cam.x-=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_right()
+{
+if(cam.x+1<=maxx and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="right";
+cam.x+=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_down()
+{
+if(cam.y-1>=miny and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="down";
+cam.y-=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_up()
+{
+if(cam.y+1<=maxx and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="up";
+cam.y+=1;
+playcam();
+camtimer.restart();
+}
+}
+
+void face_left()
+{
+if(facing=="left"==false and turnable==true)
+{
+facing="left";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="left") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x-1,me.y,me.x-1,me.y,false);
+}
+}
+void face_right()
+{
+if(facing=="right"==false and turnable==true)
+{
+facing="right";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="right") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x+1,me.y,me.x+1,me.y,false);
+}
+}
+void face_down()
+{
+if(facing=="down"==false and turnable==true)
+{
+facing="down";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="down") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x,me.y-1,me.x,me.y-1,false);
+}
+}
+void face_up()
+{
+if(facing=="up"==false and turnable==true)
+{
+facing="up";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="up") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x,me.y+1,me.x,me.y+1,false);
+}
+}
+
+void step_left()
+{
+if(facing=="left"==false and turnmode==1)
+{
+facing="left";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="left") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x-1,me.y,me.x-1,me.y,false);
+}
+else if (me.x-1>=minx)
+{
+if(turnmode==0) facing="left";
+me.x--;
+bonecheck();
+playstep();
+}
+}
+void step_right()
+{
+if(facing=="right"==false and turnmode==1)
+{
+facing="right";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="right") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x+1,me.y,me.x+1,me.y,false);
+}
+else if (me.x+1<=maxx)
+{
+if(turnmode==0) facing="right";
+me.x++;
+bonecheck();
+playstep();
+}
+}
+void step_down()
+{
+if(facing=="down"==false and turnmode==1)
+{
+facing="down";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="down") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x,me.y-1,me.x,me.y-1,false);
+}
+else if (!gmt(me.x,me.y-1).is_empty())
+{
+if(turnmode==0) facing="down";
+me.y--;
+bonecheck();
+playstep();
+}
+}
+void step_up()
+{
+if(facing=="up"==false and turnmode==1)
+{
+facing="up";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(charturnsound==1 and facing=="up") p.play_2d(get_pack_sound("characters/"+chartype+"/*turn*"),me.x,me.y+1,me.x,me.y+1,false);
+}
+else if (!gmt(me.x,me.y+1).is_empty())
+{
+if(turnmode==0) facing="up";
+me.y++;
+bonecheck();
+playstep();
+}
+}
+
+void sit_down()
+{
+if(sittable==true and stuntimer.elapsed>=stuntime)
+{
+if(moveable==true and sitting==false)
+{
+if(charsitsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*sit*"),false);
+stuntimer.restart();
+playfall();
+jumpable=false;
+onstaircase=false;
+moveable=false;
+sitting=true;
+stuntimer.restart();
+}
+}
+}
+void stand_up()
+{
+if(sittable==true and stuntimer.elapsed>=stuntime)
+{
+if(charstandsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*stand*"),false);
+jumpable=true;
+onstaircase=true;
+moveable=true;
+sitting=false;
+stuntimer.restart();
+}
+else if(keyrowhold==0)
+{
+if(moveable==true and sitting==false)
+{
+if(charsitsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*sit*"),false);
+stuntimer.restart();
+playfall();
+jumpable=false;
+onstaircase=false;
+moveable=false;
+sitting=true;
+stuntimer.restart();
+}
+else
+{
+if(charstandsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*stand*"),false);
+jumpable=true;
+onstaircase=true;
+moveable=true;
+sitting=false;
+stuntimer.restart();
+}
+}
+}
+
+void playcam()
+{
+for (uint i = 0; i < hazards.length(); i++)
+{
+if(cam.x>=hazards[i].minx && cam.x<=hazards[i].maxx && cam.y>=hazards[i].miny && cam.y<=hazards[i].maxy)
+{
+if(charcamsound2==1 and mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/*camerahazard*"),false,0,0,cameravolume,100,false);
+if(charcamsound2==1 and mfc==false) camslot=campool.play_extended_2d(get_pack_sound("characters/"+chartype+"/*camerahazard*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,100,false);
+}
+}
+for (uint i = 0; i < safezones.length(); i++)
+{
+bool camera_in_zone =safezones[i].minx <= cam.x && safezones[i].maxx >= cam.x && safezones[i].miny <= cam.y && safezones[i].maxy >= cam.y;
+if (camera_in_zone && !safezones[i].cam_in_zone)
+{
+if(mfc==true) safezones[i].safesound=safepool.play_stationary_extended(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),false,0,0,cameravolume,100,false);
+if(mfc==false) safezones[i].safesound=campool.play_extended_2d(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
+safezones[i].cam_in_zone=true;
+}
+else if (!camera_in_zone && safezones[i].cam_in_zone)
+{
+if(mfc==true) safezones[i].safesound=safepool.play_stationary_extended(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),false,0,0,cameravolume,100,false);
+if(mfc==false) safezones[i].safesound=campool.play_extended_2d(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
+safezones[i].cam_in_zone=false;
+}
+}
+for(uint i=0; i<dest_walls.length(); i++)
+{
+if(dest_walls[i].minx<=cam.x and dest_walls[i].maxx>=cam.x and dest_walls[i].miny<=cam.y and dest_walls[i].maxy>=cam.y)
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),false,0,0,cameravolume,100);
+if(mfc==false) camslot=campool.play_extended_2d(get_map_sound("objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
+cbounce();
+return;
+}
+}
+if (string_contains(gct(cam.x,cam.y),"wall",1)>-1)
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("objects/walls/"+gct(cam.x,cam.y)+"/*wall*"),false,0,0,cameravolume,100);
+if(mfc==false) camslot=campool.play_extended_2d(get_map_sound("objects/walls/"+gct(cam.x,cam.y)+"/*wall*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
+cbounce();
+return;
+}
+if(me.x==cam.x and me.y==cam.y)
+{
+if(charcamsound3==1 and mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/*cameraplayer*"),false,0,0,cameravolume,100,false);
+if(charcamsound3==1 and mfc==false) camslot=campool.play_extended_2d(get_pack_sound("characters/"+chartype+"/*cameraplayer*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch,false);
+}
+if(gct(cam.x, cam.y)=="" || gct(cam.x, cam.y)=="air")
+{
+if(charcamsound==1 and mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/*cameraair*"),false,0,0,cameravolume,100,false);
+if(charcamsound==1 and mfc==false) camslot=campool.play_extended_2d(get_pack_sound("characters/"+chartype+"/*cameraair*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,100,false);
+}
+else
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("objects/platforms/"+gct(cam.x,cam.y)+"/*step*"),false,0,0,cameravolume,100);
+if(mfc==false) camslot=campool.play_extended_2d(get_map_sound("objects/platforms/"+gct(cam.x,cam.y)+"/*step*"),me.x,me.y,cam.x,cam.y,0,0,0,0,false,0,0,cameravolume,camerapitch);
+}
+}
+void playstep()
+{
+string current_text;
+if(is_in_blockage(current_text))
+{
+speak(current_text);
+pbounce();
+return;
+}
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone =healzones[i].minx <= me.x && healzones[i].maxx >= me.x && healzones[i].miny <= me.y && healzones[i].maxy >= me.y;
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
+for(uint i=0; i<safezones.length(); i++)
+{
+bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
+if (currently_in_zone && !safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),false);
+safezones[i].player_in_zone = true;
+}
+else if (!currently_in_zone && safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),false);
+safezones[i].player_in_zone = false;
+}
+}
+for(uint i=0; i<signs.length(); i++)
+{
+if(jumping==0)
+{
+if(signs[i].looping==false) signs[i].signsound=signpool.play_2d(get_map_sound("objects/signs/"+signs[i].signtype+"/*step*"),me.x,me.y,signs[i].signx,signs[i].signy,false);
+}
+}
+for(uint i=0; i<forcefields.length(); i++)
+{
+if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcefields[i].maxx>=me.x && forcefields[i].miny<=me.y && forcefields[i].maxy>=me.y && shieldon==1 && shieldstrength<=maxshieldstrength && paused==0)
+{
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+int sdm = max(1, (forcefields[i].damage) - (shielddefence * 3));
+shieldstrength -= sdm;
+kombatlog.insert_last(forcefields[i].forcetype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+pbounce(5);
+return;
+}
+else if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcefields[i].maxx>=me.x && forcefields[i].miny<=me.y && forcefields[i].maxy>=me.y && shieldon==0 && paused==0)
+{
+forcefields[i].wepsound=forcepool.play_stationary_extended(get_map_sound("objects/force fields/"+forcefields[i].forcetype+"/*hit*"),false,0,0,painvolume,painpitch,false);
+int dmg = max(1, (forcefields[i].damage) - (defence * 3));
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(forcefields[i].forcetype + "'s attack took you " + dmg + " damage.");
+if (charhurtsound == 1)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+pbounce(5);
+return;
+}
+}
+for(uint i=0; i<hazards.length(); i++)
+{
+if(me.x >= hazards[i].minx && me.x <= hazards[i].maxx && me.y >= hazards[i].miny && me.y <= hazards[i].maxy and !inplain)
+{
+if(lifecard>=2)
+{
+if(charlifesound==1) hazardpool.play_stationary(get_pack_sound("characters/"+chartype+"/*life*"),false);
+lifecard-=1;
+health=maxhealth;
+hearttime=maxhealth;
+pbounce(5);
+return;
+}
+}
+}
+for (uint i = 0; i < dest_walls.length(); i++)
+{
+if (dest_walls[i].minx <= me.x && dest_walls[i].maxx >= me.x && dest_walls[i].miny <= me.y && dest_walls[i].maxy >= me.y)
+{
+wallvolume = dest_walls[i].volume;
+wallpitch = dest_walls[i].pitch;
+if (wallbump)
+{
+wallslot = p.play_extended_2d(get_map_sound("objects/walls/" + dest_walls[i].dest_wall + "/*wall*"),me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+}
+else
+{
+if (!wall_hit_once)
+{
+wallslot = p.play_extended_2d(get_map_sound("objects/walls/" + dest_walls[i].dest_wall + "/*wall*"), me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+wall_hit_once = true;
+}
+}
+pbounce();
+return;
+}
+}
+if (string_contains(gmt(me.x, me.y), "wall", 1) > -1)
+{
+if (wallbump)
+{
+wallslot = p.play_extended_2d(get_map_sound("objects/walls/" + gmt(me.x, me.y) + "/*wall*"), me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+}
+else
+{
+if (!wall_hit_once)
+{
+wallslot = p.play_extended_2d(get_map_sound("objects/walls/" + gmt(me.x, me.y) + "/*wall*"), me.x, me.y, me.x, me.y, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+wall_hit_once = true;
+}
+}
+pbounce();
+return;
+}
+if(jumping==0)
+{
+tileslot=p.play_stationary_extended(get_map_sound("objects/platforms/"+gmt(me.x,me.y)+"/*step*"),false,0,0,tilevolume,tilepitch);
+wall_hit_once = false;
+}
+}
+void playfall()
+{
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone =healzones[i].minx <= me.x && healzones[i].maxx >= me.x && healzones[i].miny <= me.y && healzones[i].maxy >= me.y;
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
+for(uint i=0; i<safezones.length(); i++)
+{
+bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
+if (currently_in_zone && !safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),false);
+safezones[i].player_in_zone = true;
+}
+else if (!currently_in_zone && safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),false);
+safezones[i].player_in_zone = false;
+}
+}
+for(uint i=0; i<dest_walls.length(); i++)
+{
+if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
+{
+wallvolume=dest_walls[i].volume;
+wallpitch=dest_walls[i].pitch;
+wallslot=p.play_extended_2d(get_map_sound("objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+pbounce();
+return;
+}
+}
+if(string_contains(gmt(me.x,me.y),"wall",1)>-1)
+{
+wallslot=p.play_extended_2d(get_map_sound("objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+pbounce();
+return;
+}
+tileslot=p.play_stationary_extended(get_map_sound("objects/platforms/"+gmt(me.x,me.y)+"/*fall*"),false,0,0,tilevolume,tilepitch);
+}
+void playland()
+{
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone =healzones[i].minx <= me.x && healzones[i].maxx >= me.x && healzones[i].miny <= me.y && healzones[i].maxy >= me.y;
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
+for(uint i=0; i<safezones.length(); i++)
+{
+bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
+if (currently_in_zone && !safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),false);
+safezones[i].player_in_zone = true;
+}
+else if (!currently_in_zone && safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),false);
+safezones[i].player_in_zone = false;
+}
+}
+for(uint i=0; i<dest_walls.length(); i++)
+{
+if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
+{
+wallvolume=dest_walls[i].volume;
+wallpitch=dest_walls[i].pitch;
+wallslot=p.play_extended_2d(get_map_sound("objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+pbounce();
+return;
+}
+}
+if (string_contains(gmt(me.x,me.y),"wall",1)>-1)
+{
+wallslot=p.play_extended_2d(get_map_sound("objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+pbounce();
+return;
+}
+if(charlandsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*land*"),false);
+tileslot=p.play_stationary_extended(get_map_sound("objects/platforms/"+gmt(me.x,me.y)+"/*land*"),false,0,0,tilevolume,tilepitch);
+}
+
+void cbounce()
+{
+if(camdir=="right")
+cam.x--;
+else if(camdir=="left")
+cam.x++;
+else if(camdir=="up")
+cam.y--;
+else if(camdir=="down")
+cam.y++;
+}
+void pbounce(int steps = 1)
+{
+if (facing == "right")
+me.x -= steps;
+else if (facing == "left")
+me.x += steps;
+else if (facing == "up")
+me.y -= steps;
+else if (facing == "down")
+me.y += steps;
+}
+void checkforplatforms()
+{
+    string tile = gmt(me.x, me.y);
+    if (tile != "")
+    {
+        playland();
+        jumping = 0;
+        falling = false;
+    }
+}
+void checkforwalls()
+{
+for(uint i=0; i<dest_walls.length(); i++)
+{
+if(dest_walls[i].minx<=me.x and dest_walls[i].maxx>=me.x and dest_walls[i].miny<=me.y and dest_walls[i].maxy>=me.y)
+{
+wallvolume=dest_walls[i].volume;
+wallpitch=dest_walls[i].pitch;
+wallslot=p.play_extended_2d(get_map_sound("objects/walls/"+dest_walls[i].dest_wall+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+ascending=false;
+jumptimer.restart();
+atapex=true;
+}
+}
+if(gmt(me.x,me.y)!="" and string_contains(gmt(me.x,me.y),"wall",1)>-1)
+{
+wallslot=p.play_extended_2d(get_map_sound("objects/walls/"+gmt(me.x,me.y)+"/*wall*"),me.x,me.y,me.x,me.y,0,0,0,0,false,0,0,wallvolume,wallpitch);
+ascending=false;
+jumptimer.restart();
+atapex=true;
+}
+}
+void fallcheck()
+{
+if(jumping == 0 && falling == false && (gmt(me.x, me.y) == "" || gmt(me.x, me.y) == "air") && doormove == false && psdoormove == false && elvmove == false && invehicle == false && inplain == false && me.y > miny)
+{
+falling=true;
+if((charfallsound==1 && !onbike) && (me.y > 7 || me.y <= 0)) fallslot = p.play_stationary(get_pack_sound("characters/"+chartype+"/*fall*"), false);
+if((charfallsound2==1 && !onbike) && (me.y > 7 || me.y <= 0)) fallslot = p.play_stationary(get_pack_sound("characters/"+chartype+"/*plummet*"), false);
+}
+if(falling)
+{
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone =healzones[i].minx <= me.x && healzones[i].maxx >= me.x && healzones[i].miny <= me.y && healzones[i].maxy >= me.y;
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
+for(uint i=0; i<safezones.length(); i++)
+{
+bool currently_in_zone =safezones[i].minx <= me.x && safezones[i].maxx >= me.x && safezones[i].miny <= me.y && safezones[i].maxy >= me.y;
+if (currently_in_zone && !safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),false);
+safezones[i].player_in_zone = true;
+}
+else if (!currently_in_zone && safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),false);
+safezones[i].player_in_zone = false;
+}
+}
+if(falltimer.elapsed>=falltime and me.y>miny)
+{
+falltimer.restart();
+me.y--;
+fallcounter++;
+}
+if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
+{
+if(fallcounter>=0) p.destroy_sound(fallslot);
+if(shieldhitsound==1 and fallcounter>=8 and shieldon==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch);
+if(fallcounter<=7)
+{
+playland();
+}
+else if(fallcounter>7)
+{
+playfall();
+int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
+if(fallcounter>=8 and shieldon==1)
+{
+jumpable=false;
+onstaircase=false;
+moveable=false;
+sitting=true;
+shieldstrength-=sdm;
+kombatlog.insert_last(sdm+ " damage to "+shieldtype+", falling down.");
+stun_target("me", "", 10 * fallcounter);
+if(shieldstrength<=0)
+{
+jumpable=false;
+onstaircase=false;
+moveable=false;
+sitting=true;
+health -= sdm;
+hearttime -= sdm;
+kombatlog.insert_last(sdm+ " damage to player, falling down.");
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, sdm, 10 * fallcounter, count);
+}
+}
+int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
+if(fallcounter>=8 and shieldon==0)
+{
+jumpable=false;
+onstaircase=false;
+moveable=false;
+sitting=true;
+health -= dmg;
+hearttime -= dmg;
+kombatlog.insert_last(dmg+ " damage to player, falling down.");
+if (charhurtsound == 1 and fallcounter>=8 and shieldon==0)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("characters/" + chartype + "/*crit*");
+}
+else
+{
+painfile = get_pack_sound("characters/" + chartype + "/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, dmg, 10 * fallcounter, count);
+}
+}
+falling=false;
+fallcounter=0;
+for(uint i=0; i<checkpoints.length(); i++)
+{
+if(me.x==checkpoints[i].checkx and me.y==checkpoints[i].checky)
+{
+checkpoints[i].getsound=checkpool.play_stationary_extended(get_map_sound("objects/checkpoints/"+checkpoints[i].checktype+"/*get*"),false,0,0,itemvolume,itempitch,false);
+@last_checkpoint=checkpoints[i];
+checkpoints.remove_at(i);
+return;
+}
+}
+}
+}
+}

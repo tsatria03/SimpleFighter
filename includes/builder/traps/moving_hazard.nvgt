@@ -1,0 +1,140 @@
+moving_hazard@[]moving_hazards(0);
+class moving_hazard
+{
+int hazard_id;
+double minx,maxx,miny,maxy;
+double currentx,currenty;
+double sizex,sizey;
+string hazardtype;
+int move_mode;
+int snap_mode;
+double speed;
+bool moving_forward;
+double move_accumulator_x,move_accumulator_y;
+moving_hazard(double left_x,double right_x,double bottom_y,double top_y,double x_length,double y_length,int direction,int snap,int speed_in,string ht)
+{
+minx=left_x;
+maxx=right_x;
+miny=bottom_y;
+maxy=top_y;
+sizex=x_length;
+sizey=y_length;
+currentx=minx;
+currenty=miny;
+move_mode=direction;
+snap_mode=snap;
+if (speed_in <= 0) speed_in = 1;
+speed = 1.0 / speed_in;
+hazardtype=ht;
+moving_forward=true;
+move_accumulator_x=0;
+move_accumulator_y=0;
+hazard_id = spawn_hazard(currentx, currentx + sizex, currenty, currenty + sizey, hazardtype, false);
+}
+void update_hazard_position()
+{
+update_hazard(hazard_id, currentx, currentx + sizex, currenty, currenty + sizey);
+}
+void move()
+{
+double dx=0,dy=0;
+bool reached_endpoint =false;
+switch(move_mode)
+{
+case 0:
+case 4:
+dx=(move_mode==0?1:-1)*(moving_forward?speed:-speed);
+reached_endpoint =(moving_forward && currentx>=maxx)||(!moving_forward && currentx<=minx);
+break;
+case 1:
+case 5:
+dy=(move_mode==1?1:-1)*(moving_forward?speed:-speed);
+reached_endpoint =(moving_forward && currenty>=maxy)||(!moving_forward && currenty<=miny);
+break;
+case 2:
+case 6:
+dx=(move_mode==2?1:-1)*(moving_forward?speed:-speed);
+dy=(move_mode==2?1:-1)*(moving_forward?speed:-speed);
+reached_endpoint =(moving_forward && (currentx>=maxx||currenty>=maxy))||(!moving_forward && (currentx<=minx||currenty<=miny));
+break;
+case 3:
+case 7:
+dx=(move_mode==3?-1:1)*(moving_forward?speed:-speed);
+dy=(move_mode==3?1:-1)*(moving_forward?speed:-speed);
+reached_endpoint =(moving_forward && (currentx<=minx||currenty>=maxy))||(!moving_forward && (currentx>=maxx||currenty<=miny));
+break;
+}
+move_accumulator_x+=dx;
+move_accumulator_y+=dy;
+if(abs(move_accumulator_x)>=1)
+{
+int steps=int (move_accumulator_x);
+currentx+=steps;
+move_accumulator_x-=steps;
+}
+if(abs(move_accumulator_y)>=1)
+{
+int steps=int (move_accumulator_y);
+currenty+=steps;
+move_accumulator_y-=steps;
+}
+if(reached_endpoint )
+{
+switch(snap_mode)
+{
+case 0:
+moving_forward=!moving_forward;
+break;
+case 1:
+if(moving_forward)
+{
+currentx=minx;
+currenty=miny;
+}
+break;
+case 2:
+if(!moving_forward)
+{
+currentx=maxx;
+currenty=maxy;
+}
+break;
+case 3:
+if(moving_forward)
+{
+currentx=maxx;
+currenty=maxy;
+}
+else
+{
+currentx=minx;
+currenty=miny;
+}
+break;
+}
+}
+currentx=clamp(currentx,minx,maxx);
+currenty=clamp(currenty,miny,maxy);
+update_hazard_position();
+}
+}
+void mhazardcheck()
+{
+for(uint  i=0; i<moving_hazards.length(); i++)
+{
+moving_hazards[i].move();
+}
+}
+void spawn_moving_hazard(double left_x,double right_x,double bottom_y,double top_y,double x_length,double y_length,int direction,int snap,int speed,string hazardtype)
+{
+moving_hazard mh1(left_x,right_x,bottom_y,top_y,x_length,y_length,direction,snap,speed,hazardtype);
+moving_hazards.insert_last(mh1);
+}
+void destroy_all_moving_hazards()
+{
+for(uint  i=0; i<moving_hazards.length(); i++)
+{
+remove_hazard(moving_hazards[i].hazard_id);
+}
+moving_hazards.resize(0);
+}
