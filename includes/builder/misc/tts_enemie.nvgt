@@ -1,3 +1,24 @@
+bool generate_tts(string path, string text, string voice_name = "", int rate = 0, int volume = 100, int pitch = 0)
+{
+    tts_voice tts;
+    if (voice_name != "")
+    {
+        array<string>@ voices = tts.list_voices();
+        for (uint i = 0; i < voices.length(); i++)
+        {
+            if (voices[i] == voice_name)
+            {
+                tts.set_voice(i);
+                break;
+            }
+        }
+    }
+    tts.rate   = rate;
+    tts.volume = volume;
+    tts.pitch  = pitch;
+    return tts.speak_to_file(path, text);
+}
+
 ttsenemie@[] ttsenemies(0);
 class ttsenemie
 {
@@ -9,18 +30,28 @@ class ttsenemie
     int ttsemx;
     int ttsemy;
     int ttsenemietime;
-    string taunt_file;
-    string def_file;
+int rate;
+int volume;
+int pitch;
+string ttsemtext;
+    string ttsid = format_int(ttsenemies.length(), 3);
+    string taunt_file = DIRECTORY_TEMP + "\\taunt_" + ttsid + ".ogg";
+string ttsid2 = format_int(ttsenemies.length(), 3);
+    string death_file = DIRECTORY_TEMP + "\\death_" + ttsid2 + ".ogg";
     timer ttsenemietimer;
-    ttsenemie(int x, int y, double hp, double maxhp, int sp, string taunt_path, string death_path)
+    ttsenemie(int x, int y, double hp, double maxhp, int sp, string txt, int rt, int vl, int pt)
     {
         ttsemx = x;
         ttsemy = y;
         ttsenehealth = hp;
         ttsenemaxhealth = maxhp;
         ttsenemietime = sp;
-        taunt_file = taunt_path;
-        def_file   = death_path;
+ttsemtext=txt;
+rate=rt;
+volume=vl;
+pitch=pt;
+    if (file_exists(taunt_file)) file_delete(taunt_file);
+    generate_tts(taunt_file, ttsemtext, "Microsoft David", rate, volume, pitch);
 ttsempool.destroy_sound(ttsemsound);
         ttsemsound = ttsempool.play_extended_2d(taunt_file, me.x, me.y, ttsemx, ttsemy, 0, 0, 0, 0, true, 0,0, painvolume, painpitch, false);
     }
@@ -57,20 +88,22 @@ ttsenemies[i].stepsound=1;
 }
 if(ttsenemies[i].ttsenehealth<=0)
 {
+    if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file);
+    generate_tts(ttsenemies[i].death_file, "Ouch! You killed me!", "", ttsenemies[i].rate, ttsenemies[i].volume, ttsenemies[i].pitch);
 ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
-ttsenemies[i].defsound = ttsempool.play_extended_2d(ttsenemies[i].def_file, me.x, me.y, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+ttsenemies[i].defsound = ttsempool.play_extended_2d(ttsenemies[i].death_file, me.x, me.y, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
 int falldelay = round(ttsempool.get_sound_length(ttsenemies[i].defsound), 0);
 spawn_bodyfall(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, (falldelay <= 0 ? random(500, 1000) : falldelay));
             if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
-            if (file_exists(ttsenemies[i].def_file))   file_delete(ttsenemies[i].def_file);
+            if (file_exists(ttsenemies[i].death_file))   file_delete(ttsenemies[i].death_file);
 ttsenemies.remove_at(i);
 return;
 }
 }
 }
-void spawn_ttsenemie(int x, int y, double hp, double maxhp, int sp, string taunt_path, string death_path)
+void spawn_ttsenemie(int x, int y, double hp, double maxhp, int sp, string ttsemtext, int rate, int volume, int pitch)
 {
-    ttsenemie ttsen1(x, y, hp, maxhp, sp, taunt_path, death_path);
+    ttsenemie ttsen1(x, y, hp, maxhp, sp, ttsemtext, rate, volume, pitch);
     ttsenemies.insert_last(ttsen1);
 }
 void destroy_all_ttsenemies()
@@ -79,21 +112,7 @@ for(uint i=0; i<ttsenemies.length(); i++)
 {
 ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
         if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
-        if (file_exists(ttsenemies[i].def_file)) file_delete(ttsenemies[i].def_file);
+        if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file);
 }
 ttsenemies.resize(0);
-}
-
-bool generate_tts(string path, string text, string voice_name = "", int rate = 0, int volume = 100, int pitch = 0)
-{
-    string quoted_text = "\"" + text + "\"";
-    string quoted_voice = "\"" + voice_name + "\"";
-    string quoted_path = "\"" + path + "\"";
-    string args = "-t " + quoted_text + " -w " + quoted_path;
-    if (voice_name != "")
-        args += " -n " + quoted_voice;
-    args += " -s " + rate;
-    args += " -v " + volume;
-    args += " -p " + pitch;
-    return run("lib/tools/tts/balcon.exe", args, true, true);
 }

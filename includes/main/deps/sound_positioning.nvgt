@@ -1,0 +1,30 @@
+/*
+Sound Positioning Functions
+
+This file contains a collection of functions that will make dealing with sound positioning in an environment considerably easier. The functions have support for 1 dimentional environments such as those seen in side scrolling games, as well as 2 dimentional ones where the user moves along both an x and a y axis.
+*/
+
+void position_sound_1d(sound@ handle, int listener_x, int source_x, float pan_step, float volume_step) {
+	position_sound_custom_1d(handle, listener_x, source_x, pan_step, volume_step, 0.0, 0.0);
+}
+
+void position_sound_custom_1d(sound@ handle, int listener_x, int source_x, float pan_step, float volume_step, float start_pan, float start_volume) {
+	handle.volume = start_volume;
+	handle.set_position(listener_x, 0, 0, source_x, 0, 0, 0, pan_step, volume_step);
+}
+
+void position_sound_2d(sound@ handle, int listener_x, int listener_y, int source_x, int source_y, float pan_step, float volume_step, float behind_pitch_decrease) {
+	position_sound_custom_2d(handle, listener_x, listener_y, source_x, source_y, pan_step, volume_step, behind_pitch_decrease, 0.0, 0.0, 100.0);
+}
+
+void position_sound_custom_2d(sound@ handle, int listener_x, int listener_y, int source_x, int source_y, float pan_step, float volume_step, float behind_pitch_decrease, float start_pan, float start_volume, float start_pitch, bool y_as_elevation = true) {
+	handle.volume = start_volume;
+	if (source_y < listener_y)
+		handle.pitch = start_pitch - abs(behind_pitch_decrease);
+	else
+		handle.pitch = start_pitch;
+	if (y_as_elevation)
+		handle.set_position(listener_x, 0, listener_y, source_x, 0, source_y, 0, pan_step, volume_step);
+	else
+		handle.set_position(listener_x, listener_y, 0, source_x, source_y, 0, 0, pan_step, volume_step);
+}
