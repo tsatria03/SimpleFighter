@@ -2510,6 +2510,49 @@ prevslot=t.play_stationary(get_map_sound("objects/teleporters/"+teletype+"/*loop
 }
 return 0;
 }
+string firesmenu()
+{
+string[] firetyp=get_map_sound_folders("objects/fires/*");
+setupmenu();
+m.set_callback(@fires_callback,"");
+for (uint i=0; i<firetyp.length(); i++)
+{
+m.add_item_tts(firetyp[i],firetyp[i],"",true);
+}
+int mres=m.run("fires menu", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres>0 and mres<=firetyp.length())
+{
+firetype=firetyp[mres-1];
+}
+return m.get_item_name(mres);
+}
+int fires_callback(dynamic_menu_pro@ m, string data)
+{
+string firetyp;
+if(m.menu_position>0)
+firetyp=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/fires/"+firetyp+"/*hit*"), false);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/fires/"+firetyp+"/*hit*"), false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_map_sound("objects/fires/"+firetyp+"/*loop*"), false);
+}
+return 0;
+}
 string forcesmenu()
 {
 string[] forcetype=get_map_sound_folders("objects/force fields/*");

@@ -1,0 +1,133 @@
+fire@[]fires(0);
+class fire
+{
+bool moveable, moveable2, spotted;
+int firesound, wepsound;
+int firex;
+int firey;
+int firerange;
+int firerange2;
+int firetime;
+string firetype;
+timer firetimer;
+fire(int fx,int fy,int frange,int frange2,int sp,string ft,bool fm,bool fm2)
+{
+firex=fx;
+firey=fy;
+firerange=frange;
+firerange2=frange2;
+firetime=sp;
+firetype=ft;
+moveable=fm;
+moveable2=fm2;
+spotted=false;
+firesound=firepool.play_extended_2d(get_map_sound("objects/fires/"+firetype+"/*loop*"),me.x,me.y,firex,firey,0,0,0,0,true,0,0,painvolume,painpitch,false);
+}
+}
+void fireloop()
+{
+for(uint i=0; i<fires.length(); i++)
+{
+if(fires[i].firetimer.elapsed>=fires[i].firetime)
+{
+if(absolute(me.x-fires[i].firex)<=fires[i].firerange and absolute(me.y-fires[i].firey)<=fires[i].firerange2)
+{
+fires[i].spotted=true;
+}
+if(fires[i].spotted)
+{
+firepool.update_sound_2d(fires[i].firesound,fires[i].firex,fires[i].firey);
+fires[i].firetimer.restart();
+if(fires[i].firex<me.x and fires[i].moveable==true and paused==0)
+{
+fires[i].firex++;
+}
+if(fires[i].firex>me.x and fires[i].moveable==true and paused==0)
+{
+fires[i].firex--;
+}
+if(fires[i].firey<me.y and fires[i].moveable2==true and paused==0)
+{
+fires[i].firey++;
+}
+if(fires[i].firey>me.y and fires[i].moveable2==true and paused==0)
+{
+fires[i].firey--;
+}
+}
+}
+if(me.x==fires[i].firex and me.y==fires[i].firey and paused==0)
+{
+firepool.destroy_sound(fires[i].firesound);
+dlgplay(get_map_sound("objects/fires/"+fires[i].firetype+"/*hit*"));
+fires.remove_at(i);
+destroymap();
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("You have died. Would you like to try again?",true);
+if(mres==0)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+bonehealth=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+}
+if(mres==1)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+}
+if(mres==2)
+{
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+me.x=0;
+me.y=0;
+clearmap();
+destroymap();
+mainmenu();
+}
+}
+}
+}
+void spawn_fire(int x,int y,int firerange,int firerange2,int firetime,string firetype,bool moveable,bool moveable2)
+{
+fire fr1(x,y,firerange,firerange2,firetime,firetype,moveable,moveable2);
+fires.insert_last(fr1);
+}
+void destroy_all_fires()
+{
+for(uint i=0; i<fires.length(); i++)
+{
+firepool.destroy_sound(fires[i].firesound);
+}
+fires.resize(0);
+}
