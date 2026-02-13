@@ -1,0 +1,204 @@
+bool bonebreak=false;
+array<string> broken_bone_order;
+dictionary broken_bones;
+dictionary bone_damage;
+
+void break_charbones(int chance, int dmg, int st, int count = 1)
+{
+int breaks = 0;
+array<string> messages;
+for (int i = 0; i < count; i++)
+{
+int oldsize = broken_bones.get_size();
+array<string>@ keys = broken_bones.get_keys();
+string oldkeys = string_join(keys, ",");
+stundir = st;
+attacktype = clean_lines("data/layouts/characters/" + chartype + "/attacks.sif");
+bodypart = clean_lines("data/layouts/characters/" + chartype + "/bodyparts.sif");
+randomattacktype = random_string(attacktype);
+randombodypart = random_string(bodypart);
+string spoken_bodypart = randombodypart.replace("_", " ");
+if (random(0, 100) < chance)
+{
+broken_bones.set(randombodypart, randomattacktype);
+bool already_exists = false;
+for (uint i = 0; i < broken_bone_order.length(); i++)
+{
+if (broken_bone_order[i] == randombodypart)
+{
+already_exists = true;
+break;
+}
+}
+if (!already_exists)
+{
+broken_bone_order.insert_last(randombodypart);
+}
+int thisbreak = random(5, 10);
+bonehealth += thisbreak;
+int existing = 0;
+if (bone_damage.exists(randombodypart))
+{
+any val = bone_damage[randombodypart];
+val.retrieve(existing);
+}
+bone_damage.set(randombodypart, existing+ thisbreak);
+bonebreak = true;
+if (charbreaksound == 1) p.play_stationary(get_pack_sound("characters/" + chartype + "/*break*"), false);
+stun_target("me", "", st);
+bonetimer.restart();
+messages.insert_last(randomattacktype + " your " + spoken_bodypart);
+breaks++;
+}
+}
+if (breaks == 0)
+{
+return;
+}
+else
+{
+string message = "Ouch! You just ";
+if (messages.length() == 1)
+{
+message += messages[0] + ".";
+}
+else
+{
+for (uint i = 0; i < messages.length(); i++)
+{
+message += messages[i];
+if (i == messages.length() - 2)
+message += ", and ";
+else if (i < messages.length() - 2)
+message += ", ";
+else
+message += ".";
+}
+}
+speak(message);
+}
+}
+void bonecheck(int bt = random(2000, 4000))
+{
+if (bonetimer.elapsed >= bt && broken_bones.get_size() > 0)
+{
+array<string> keys = broken_bones.get_keys();
+if (keys.length() == 0)
+return;
+string hurting_bone = keys[random(0, keys.length() - 1)];
+string spoken_bodypart = hurting_bone.replace("_", " ");
+stun_target("me", "", random(1000, 2000));
+if (charhurtsound == 1) p.play_stationary(get_pack_sound("characters/" + chartype + "/*pain*"), false);
+speak("Ouch! Your " + spoken_bodypart + " hurts!");
+bonehealth+=random(5,10);
+bonetimer.restart();
+if(bonehealth>=maxbonehealth)
+{
+if(lifecard>=2)
+{
+if(charbreaksound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*fail*"),false);
+if(charlifesound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*life*"),false);
+lifecard-=1;
+health=maxhealth;
+hearttime=maxhealth;
+bonehealth=0;
+broken_bones.delete_all();
+}
+else if(lifecard<=1)
+{
+p.destroy_sound(painslot);
+if(charbreaksound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*fail*"),false);
+if(chardeathsound==1) dlgplay(get_pack_sound("characters/"+chartype+"/*death*"), true, true, 30);
+dlgplay(get_map_sound("objects/platforms/"+gmt(me.x,me.y)+"/*fall*"));
+destroymap();
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("You have died. Would you like to try again?",true);
+if(mres==0)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+bonehealth=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+}
+if(mres==1)
+{
+wait(500);
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+}
+if(mres==2)
+{
+p.destroy_sound(refslot);
+jumpable=false;
+moveable=false;
+sitting=true;
+wepdef=0;
+broken_bones.delete_all();
+clear_inv();
+kombatlog.resize(0);
+destroy_all_charas();
+charparse();
+me.x=0;
+me.y=0;
+mainmenu();
+}
+}
+}
+}
+}
+void heal_bones(int amount, double remove_threshold = 0)
+{
+if (broken_bones.get_size() == 0 || broken_bone_order.length() == 0)
+return;
+string target = broken_bone_order[broken_bone_order.length() - 1];
+string spoken_bodypart = target.replace("_", " ");
+int before_health = bonehealth;
+bonehealth -= amount;
+int after_health = bonehealth;
+if (after_health <= remove_threshold)
+{
+broken_bones.delete(target);
+bone_damage.delete(target);
+broken_bone_order.remove_at(broken_bone_order.length() - 1);
+wait(random(500, 1000));
+itemslot = p.play_stationary_extended(get_map_sound("objects/items/other/healing_cast/*healstop*"), false, 0, 0, itemvolume, itempitch, false);
+give("healing_cast", -1);
+speak("Your " + spoken_bodypart + " is fully healed. The healing_cast will now be recycled.");
+}
+else
+{
+wait(random(500, 1000));
+speak("The healing cast reduced your " + spoken_bodypart + " damage from " + before_health + " to " + after_health + ".");
+}
+}
+void init_bone_damage()
+{
+array<string> parts = clean_lines("data/layouts/characters/" + chartype + "/bodyparts.sif");
+for (uint i = 0; i < parts.length(); i++)
+{
+string part = parts[i];
+bone_damage.set(part, 10);
+}
+}
