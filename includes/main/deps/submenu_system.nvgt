@@ -78,7 +78,7 @@ void add_item(string sub_name, string item_name, string item_id = "")
     if (s == -1) return;
     subs[s].items.insert_last(submenu_item(item_name, item_id));
 }
-void first_letter_nav()
+void first_letter_nav(bool &inout sub_focused, bool &inout item_focused)
 {
     if (!enable_first_letter_navigation) return;
     string chars = get_characters();
@@ -117,9 +117,11 @@ if (s.items.length() > 0)
         if (subs[i].title.lower().starts_with(letter))
         {
             current_sub = i;
+sub_focused = true;
+item_focused = false;
+has_focus = false;
             play(sub_sound);
             subs[current_sub].current_item = 0;
-            has_focus = false;
 speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
             return;
         }
@@ -247,7 +249,7 @@ if (s.items.length() > 0)
     {
         wait(5);
         if (enable_first_letter_navigation)
-            first_letter_nav();
+    first_letter_nav(sub_focused, item_focused);
         if (key_pressed(KEY_F3))
             find_item();
 if (key_repeating(KEY_TAB))
