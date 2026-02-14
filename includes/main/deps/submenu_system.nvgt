@@ -126,6 +126,7 @@ speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu
         i = (i + 1) % subs.length();
     }
     while (i != start);
+return;
 }
 void find_item()
 {
@@ -338,69 +339,71 @@ play(sub_sound);
             subs[current_sub].current_item = 0;
 speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
         }
-        else if (key_repeating(KEY_HOME))
-        {
-            if (!sub_focused)
-            {
-                sub_focused = true;
+else if (key_repeating(KEY_HOME))
+{
+    if (!sub_focused)
+    {
+        sub_focused = true;
+        play(sub_sound);
+        speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()) : ""));
+        item_focused = false;
+        has_focus = false;
+        continue;
+    }
+    if (item_focused)
+    {
+        submenu@ sm = subs[current_sub];
+        if (sm.items.length() == 0)
+            continue;
+        sm.current_item = 0;
+        play(click_sound);
+        speak(sm.items[sm.current_item].name + (speak_item_position ? ". " + string(sm.current_item + 1) + " of " + string(sm.items.length()) : ""));
+        continue;
+    }
+    if (current_sub != 0)
+    {
+        current_sub = 0;
+        last_letter_pressed = "";
+    }
+    item_focused = false;
+    has_focus = false;
+    subs[current_sub].current_item = 0;
 play(sub_sound);
-speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
-                item_focused = false;
-                has_focus = false;
-                continue;
-            }
-            if (current_sub != 0)
-            {
-                current_sub = 0;
-last_letter_pressed = "";
+    speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()) : ""));
+}
+else if (key_repeating(KEY_END))
+{
+    if (!sub_focused)
+    {
+        sub_focused = true;
+        play(sub_sound);
+        speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()) : ""));
+        item_focused = false;
+        has_focus = false;
+        continue;
+    }
+    if (item_focused)
+    {
+        submenu@ sm = subs[current_sub];
+        if (sm.items.length() == 0)
+            continue;
+        sm.current_item = sm.items.length() - 1;
+        play(click_sound);
+        speak(sm.items[sm.current_item].name + (speak_item_position ? ". " + string(sm.current_item + 1) + " of " + string(sm.items.length()) : ""));
+        continue;
+    }
+    int last = subs.length() - 1;
+    if (current_sub != last)
+    {
+        current_sub = last;
+        last_letter_pressed = "";
+    }
+    item_focused = false;
+    has_focus = false;
+    subs[current_sub].current_item = 0;
 play(sub_sound);
-                item_focused = false;
-                has_focus = false;
-                subs[current_sub].current_item = 0;
-speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
-            }
-            else
-            {
-last_letter_pressed = "";
-play(sub_sound);
-                item_focused = false;
-                has_focus = false;
-                subs[current_sub].current_item = 0;
-speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
-            }
-        }
-        else if (key_repeating(KEY_END))
-        {
-            if (!sub_focused)
-            {
-                sub_focused = true;
-play(sub_sound);
-speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
-                item_focused = false;
-                has_focus = false;
-                continue;
-            }
-            int last = subs.length() - 1;
-            if (current_sub != last)
-            {
-                current_sub = last;
-last_letter_pressed = "";
-play(sub_sound);
-                item_focused = false;
-                has_focus = false;
-                subs[current_sub].current_item = 0;
-speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
-            }
-            else
-            {
-last_letter_pressed = "";
-play(sub_sound);
-                item_focused = false;
-                has_focus = false;
-                subs[current_sub].current_item = 0;
-speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()): ""));
-            }
-        }
+    speak(subs[current_sub].title + (say_sub_menu ? " submenu" : "") + (say_sub_menu && speak_sub_position ? ". " + string(current_sub + 1) + " of " + string(subs.length()) : ""));
+}
 else if (key_repeating(KEY_DOWN))
 {
     if (!sub_focused)
