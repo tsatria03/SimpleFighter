@@ -33,7 +33,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Name: "startmenuicon"; Description: "Create a Start Menu shortcut"; GroupDescription: "Additional icons:"
 
 [Files]
-Source: "C:\Users\tsatr\OneDrive\Documents\GitHub\SimpleFighter\releases\windows\SimpleFighter_windows_portable_password_is_SpfBuilder\sf\*"; \
+Source: "C:\Users\tonys\OneDrive\Documents\GitHub\SimpleFighter\releases\windows\SimpleFighter_windows_portable_password_is_SpfBuilder\sf\*"; \
   DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
