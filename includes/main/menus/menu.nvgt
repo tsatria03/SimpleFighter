@@ -577,6 +577,9 @@ settingsmenu();
 void buildmenu()
 {
 setupmenu3();
+string sub0 = "all";
+sb.add_submenu(sub0);
+
 string sub1  = "audio";
 sb.add_submenu(sub1);
 sb.add_item(sub1, "music ambience", "music_ambience");
@@ -678,6 +681,30 @@ sb.add_item(sub10, "robot zone", "robot_zone");
 sb.add_item(sub10, "safe zone", "safe_zone");
 sb.add_item(sub10, "zombie zone", "zombie_zone");
 sb.add_item(sub10, "zone", "zone");
+
+int all_index = sb.get_sub_index("all");
+array<string> names;
+dictionary id_lookup;
+for (int i = 0; i < int(sb.subs.length()); i++)
+{
+    if (i == all_index)
+        continue;
+    submenu@ s = sb.subs[i];
+    for (int j = 0; j < int(s.items.length()); j++)
+    {
+        names.insert_last(s.items[j].name);
+        id_lookup[s.items[j].name] = s.items[j].id;
+    }
+}
+names.sort_ascending();
+sb.subs[all_index].items.resize(0);
+for (int i = 0; i < int(names.length()); i++)
+{
+    string name = names[i];
+    string id;
+    id_lookup.get(name, id);
+    sb.subs[all_index].items.insert_last(submenu_item(name, id));
+}
 
 int res = sb.run("Build menu");
 if (res < 0)
