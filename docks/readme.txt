@@ -60,7 +60,6 @@ Shift plus down arrow: Moves the spire down to find objects on the botum side of
 
 Miscellaneous keys.
 Letter, C: Check your current location and the tile being walked on, if pressed.
-Letter, T: Sit or stand at your current location, if pressed.
 Letter, A: Decreases your overall movement speed, if pressed.
 Letter, D: Increases your overall movement speed, if pressed.
 Letter, F: Resets your overall movement speed back to default, if pressed.
