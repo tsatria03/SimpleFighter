@@ -103,7 +103,6 @@ destroy_all_timedmusics();
 destroy_all_timedsources();
 destroy_all_timedtexts();
 destroy_all_travelpoints();
-destroy_all_ttsenemies();
 destroy_all_turrets();
 destroy_all_vanishing_hazards();
 destroy_all_vanishing_platforms();
@@ -368,11 +367,16 @@ minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
-string[] mapdirs = {"data/maps/decompiled/" + mapname, "data/maps/decompiled/" + mapname + "/assets", "data/maps/decompiled/" + mapname + "/assets/dialogs", "data/maps/decompiled/" + mapname + "/assets/musics", "data/maps/decompiled/" + mapname + "/assets/npc", "data/maps/decompiled/" + mapname + "/assets/objects", "data/maps/decompiled/" + mapname + "/assets/sources"};
+
+string base = "data/maps/decompiled/" + mapname;
+string[] mapdirs ={"/assets", "/assets/npc", "/assets/npc/animals", "/assets/npc/bosses", "/assets/npc/helpers", "/assets/npc/humans", "/assets/npc/projectiles", "/assets/npc/robots", "/assets/npc/turrets", "/assets/npc/zombies", "/assets/objects", "/assets/objects/aircrafts", "/assets/objects/belts", "/assets/objects/bikes", "/assets/objects/bombs", "/assets/objects/calendars", "/assets/objects/cameras", "/assets/objects/checkpoints", "/assets/objects/clocks", "/assets/objects/dialogs", "/assets/objects/doors", "/assets/objects/doors/close", "/assets/objects/doors/dest", "/assets/objects/doors/loop", "/assets/objects/doors/move", "/assets/objects/doors/open", "/assets/objects/elevators", "/assets/objects/elevators/beep", "/assets/objects/elevators/close", "/assets/objects/elevators/loop", "/assets/objects/elevators/move", "/assets/objects/elevators/open", "/assets/objects/fires", "/assets/objects/floor breakers", "/assets/objects/force fields", "/assets/objects/hazards", "/assets/objects/heal zones", "/assets/objects/items", "/assets/objects/items/health", "/assets/objects/items/other", "/assets/objects/items/stamina", "/assets/objects/lifts", "/assets/objects/mines", "/assets/objects/moving platforms", "/assets/objects/platforms", "/assets/objects/safe zones", "/assets/objects/signs", "/assets/objects/spikes", "/assets/objects/switches", "/assets/objects/teleporters", "/assets/objects/time bombs", "/assets/objects/vanishing platforms", "/assets/objects/vehicles", "/assets/objects/walls", "/assets/soundtracks", "/assets/soundtracks/musics", "/assets/soundtracks/sources"};
 for (uint i = 0; i < mapdirs.length(); i++)
 {
-    directory_create(mapdirs[i]);
+    string fullpath = base + mapdirs[i];
+    if (!directory_exists(fullpath))
+        directory_create(fullpath);
 }
+
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","wb");
 mapdata=mapper.read();
 mapper.write("minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2+"\r\n"+"owner "+owner);
@@ -530,59 +534,6 @@ if(turnmode==0) facing="up";
 me.y++;
 bonecheck();
 playstep();
-}
-}
-
-void sit_down()
-{
-if(sittable==true and stuntimer.elapsed>=stuntime)
-{
-if(moveable==true and sitting==false)
-{
-if(charsitsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*sit*"),false);
-stuntimer.restart();
-playfall();
-jumpable=false;
-onstaircase=false;
-moveable=false;
-sitting=true;
-stuntimer.restart();
-}
-}
-}
-void stand_up()
-{
-if(sittable==true and stuntimer.elapsed>=stuntime)
-{
-if(charstandsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*stand*"),false);
-jumpable=true;
-onstaircase=true;
-moveable=true;
-sitting=false;
-stuntimer.restart();
-}
-else if(keyrowhold==0)
-{
-if(moveable==true and sitting==false)
-{
-if(charsitsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*sit*"),false);
-stuntimer.restart();
-playfall();
-jumpable=false;
-onstaircase=false;
-moveable=false;
-sitting=true;
-stuntimer.restart();
-}
-else
-{
-if(charstandsound==1) p.play_stationary(get_pack_sound("characters/"+chartype+"/*stand*"),false);
-jumpable=true;
-onstaircase=true;
-moveable=true;
-sitting=false;
-stuntimer.restart();
-}
 }
 }
 
@@ -1007,19 +958,11 @@ playfall();
 int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
 if(fallcounter>=8 and shieldon==1)
 {
-jumpable=false;
-onstaircase=false;
-moveable=false;
-sitting=true;
 shieldstrength-=sdm;
 kombatlog.insert_last(sdm+ " damage to "+shieldtype+", falling down.");
 stun_target("me", "", 10 * fallcounter);
 if(shieldstrength<=0)
 {
-jumpable=false;
-onstaircase=false;
-moveable=false;
-sitting=true;
 health -= sdm;
 hearttime -= sdm;
 kombatlog.insert_last(sdm+ " damage to player, falling down.");
@@ -1031,10 +974,6 @@ break_charbones(ct, sdm, 10 * fallcounter, count);
 int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
 if(fallcounter>=8 and shieldon==0)
 {
-jumpable=false;
-onstaircase=false;
-moveable=false;
-sitting=true;
 health -= dmg;
 hearttime -= dmg;
 kombatlog.insert_last(dmg+ " damage to player, falling down.");
