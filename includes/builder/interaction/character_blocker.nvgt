@@ -1,0 +1,68 @@
+chblocker@[]chblockers(0);
+class chblocker
+{
+bool whitelist;
+double minx, maxx, miny, maxy;
+string[] charsets;
+chblocker(double mx,double mx2,double my,double my2,string[] chsets,bool wtl)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+charsets=chsets;
+whitelist=wtl;
+}
+}
+bool is_chsetting_blocked(string chsetname)
+{
+for (uint i = 0; i < chblockers.length(); i++)
+{
+chblocker@ cb = chblockers[i];
+if (me.x >= cb.minx && me.x <= cb.maxx && me.y >= cb.miny && me.y <= cb.maxy)
+{
+if (cb.whitelist)
+{
+bool found = false;
+for (uint j = 0; j < cb.charsets.length(); j++)
+{
+if (cb.charsets[j] == chsetname)
+{
+found = true;
+break;
+}
+}
+if (!found) return true;
+}
+else
+{
+for (uint j = 0; j < cb.charsets.length(); j++)
+{
+if (cb.charsets[j] == chsetname) return true;
+}
+}
+}
+}
+return false;
+}
+void update_character_settings()
+{
+    cammable = !is_chsetting_blocked("nocam");
+    fireable = !is_chsetting_blocked("nofire");
+    healable = !is_chsetting_blocked("noheal");
+    jumpable = !is_chsetting_blocked("nojump");
+    quittable = !is_chsetting_blocked("noquit");
+    speedable = !is_chsetting_blocked("nospeed");
+    spiable = !is_chsetting_blocked("nospy");
+    telable = !is_chsetting_blocked("notel");
+    turnable = !is_chsetting_blocked("noturn");
+}
+void spawn_chblocker(double x1,double x2,double y1,double y2,string[] charsets,bool wtl)
+{
+chblocker chblocker1(x1,x2,y1,y2,charsets,wtl);
+chblockers.insert_last(chblocker1);
+}
+void destroy_all_chblockers()
+{
+chblockers.resize(0);
+}

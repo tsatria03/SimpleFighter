@@ -5052,6 +5052,107 @@ load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");
 }
+if(buildtype == "character_blocker")
+{
+form.reset();
+form.create_window("character blocker", false);
+int mx=form.create_input_box("Enter the minimum x of this character blocker", sel_left_set ? sel_left : "");
+int mx2=form.create_input_box("Enter the maximum x of this character blocker", sel_right_set ? sel_right : "");
+int my=form.create_input_box("Enter the minimum y of this character blocker", sel_bottom_set ? sel_bottom : "");
+int my2=form.create_input_box("Enter the maximum y of this character blocker", sel_top_set ? sel_top : "");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+    int charset_list_id = form.create_list("Select the character settings to block or allow", 0, true);
+string[] allcharsets={"nocam", "nofire", "noheal", "nojump", "noquit", "nospy", "nospeed", "notel", "noturn"};
+for (uint i = 0; i < allcharsets.length(); i++)
+{
+        form.add_list_item(charset_list_id, allcharsets[i], "", -1, false);
+}
+int cw = form.create_checkbox("Enable whitelist", false);
+int charsetok = form.create_button("&okay",true);
+int charsetcn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+key_echocheck(form);
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+ctl = form.is_checked(cw);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(charsetcn))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(charsetok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else
+{
+            string[] selected_charsets;
+            int[] selected = form.get_checked_list_items(charset_list_id);
+            for(uint i=0; i<selected.length(); i++)
+            {
+                string cst = form.get_list_item(charset_list_id, selected[i]);
+                selected_charsets.insert_last(cst);
+            }
+            if(selected_charsets.length()==0)
+            {
+                speak("You must select at least one character setting.");
+                form.focus(charset_list_id);
+                continue;
+            }
+resume_pools();
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"chblocker "+x+" "+paxx+" "+y+" "+paxy+" "+string_join(selected_charsets, ", ")+" "+ctl);
+mapper.close();
+spawn_chblocker(x, paxx, y, paxy, selected_charsets, ctl);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+speak("Map updated.");
+game();
+}
+}
+}
+}
 if(buildtype == "command_blocker")
 {
 form.reset();
