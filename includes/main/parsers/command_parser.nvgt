@@ -584,6 +584,7 @@ else if (base_command == "hp" || base_command == "help")
             if (!in_commandstack) game();
             return;
         }
+pause_pools();
         setupmenu(false);
         for (uint i = 0; i < helpfiles.length(); i++)
         {
@@ -592,9 +593,10 @@ else if (base_command == "hp" || base_command == "help")
             name = string_replace(name, ".txt", "", true);
             m.add_item_tts(name, name);
         }
-        int mres = m.run("Help menu.", true);
+        int mres = m.run("Help menu. Total topics "+helpfiles.length()+".", true);
         if (mres == 0)
         {
+resume_pools();
             speak("canceled");
             if (!in_commandstack) game();
             return;
@@ -615,7 +617,7 @@ else if (base_command == "hp" || base_command == "help")
     file helpfile;
     if (!helpfile.open(filepath, "rb"))
     {
-        speak("No help topic found named " + topic + ".");
+        speak("This help topic does not exist.");
         if (!in_commandstack) game();
         return;
     }
@@ -645,9 +647,15 @@ else if (base_command == "hp" || base_command == "help")
     int mres = m.run("Displaying help for " + topic + ".", true);
     if (mres == 0)
     {
+resume_pools();
         speak("canceled");
         if (!in_commandstack) game();
     }
+if(mres>=0)
+{
+resume_pools();
+        if (!in_commandstack) game();
+}
 }
 else if (base_command == "gl" || base_command == "getall")
 {
@@ -870,6 +878,7 @@ else if (base_command == "sk" || base_command == "scriptpack")
             if (!in_commandstack) game();
             return;
         }
+pause_pools();
         setupmenu(false);
         for (uint i = 0; i < scriptpacks.length(); i++)
         {
@@ -878,10 +887,12 @@ else if (base_command == "sk" || base_command == "scriptpack")
         int mres = m.run("Macro packs Menu.", true);
         if (mres == 0)
         {
+resume_pools();
             speak("canceled");
             if (!in_commandstack) game();
             return;
         }
+resume_pools();
         selected_pack = m.get_item_name(mres);
     }
     else if (parsed.length() == 2)
@@ -897,7 +908,7 @@ speak("Invalid command syntax. Usage: /scriptpack, or /scriptpack packname.");
     string packpath = basepath + selected_pack;
     if (!directory_exists(packpath))
     {
-        speak("Macro pack " + selected_pack + " does not exist.");
+        speak("This macro pack does not exist.");
         if (!in_commandstack) game();
         return;
     }
