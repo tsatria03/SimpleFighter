@@ -573,49 +573,79 @@ if(!in_commandstack) game();
 }
 else if (base_command == "hp" || base_command == "help")
 {
+    string basepath = "data/references/";
+    string topic = "";    
     if (parsed.length() == 1)
     {
-        if (coms.open("data/references/commands.txt", "rb"))
+        string[] helpfiles = find_files(basepath + "*.txt");
+        if (helpfiles.length() == 0)
         {
-            comsplit = coms.read();
-            coms.close();
-            string content = string_replace(comsplit, "\r\n", "\n", true);
-            array<string> raw = content.split("\n");
-            array<string> lines;
-            for (uint i = 0; i < raw.length(); i++)
-            {
-                string l = string_trim_sides(raw[i]);
-                if (l != "")
-                    lines.insert_last(l);
-            }
-            if (lines.length() == 0)
-            {
-                speak("There are no commands available to view.");
-                if (!in_commandstack) game();
-            }
-            setupmenu(false);
-            m.add_item_tts("These are the available commands you can use in the game.");
-            for (uint i = 0; i < lines.length(); i++)
-            {
-                m.add_item_tts(lines[i], lines[i]);
-            }
-            m.add_item_tts("Total commands: " + lines.length() + ".");
-            int mres = m.run("Help menu.", true);
-            if (mres == 0)
-            {
-                speak("canceled");
-                if (!in_commandstack) game();
-            }
-        }
-        else
-        {
-            speak("Failed to open data/references/commands.txt.");
+            speak("There are no help topics available.");
             if (!in_commandstack) game();
+            return;
         }
+        setupmenu(false);
+        for (uint i = 0; i < helpfiles.length(); i++)
+        {
+            string name = helpfiles[i];
+            name = string_replace(name, basepath, "", true);
+            name = string_replace(name, ".txt", "", true);
+            m.add_item_tts(name, name);
+        }
+        int mres = m.run("Help menu.", true);
+        if (mres == 0)
+        {
+            speak("canceled");
+            if (!in_commandstack) game();
+            return;
+        }
+        topic = m.get_item_name(mres);
+    }
+    else if (parsed.length() == 2)
+    {
+        topic = parsed[1].lower();
     }
     else
     {
-        speak("Invalid command syntax. Usage: /help, or /hp.");
+        speak("Invalid command syntax. Usage: /help, or /help topic.");
+        if (!in_commandstack) game();
+        return;
+    }
+    string filepath = basepath + topic + ".txt";
+    file helpfile;
+    if (!helpfile.open(filepath, "rb"))
+    {
+        speak("No help topic found named " + topic + ".");
+        if (!in_commandstack) game();
+        return;
+    }
+    string content = helpfile.read();
+    helpfile.close();
+    content = string_replace(content, "\r\n", "\n", true);
+    array<string> raw = content.split("\n");
+    array<string> lines;
+    for (uint i = 0; i < raw.length(); i++)
+    {
+        string l = string_trim_sides(raw[i]);
+        if (l != "")
+            lines.insert_last(l);
+    }
+    if (lines.length() == 0)
+    {
+        speak("There is no content available to view for this topic.");
+        if (!in_commandstack) game();
+        return;
+    }
+    setupmenu(false);
+    for (uint i = 0; i < lines.length(); i++)
+    {
+        m.add_item_tts(lines[i], lines[i]);
+    }
+    m.add_item_tts("Total entries: " + lines.length() + ".");
+    int mres = m.run("Displaying help for " + topic + ".", true);
+    if (mres == 0)
+    {
+        speak("canceled");
         if (!in_commandstack) game();
     }
 }
@@ -827,6 +857,55 @@ speak("Invalid command syntax. Usage: /play sound, or /pl sound.");
 if(!in_commandstack) game();
 }
 }
+else if (base_command == "sk" || base_command == "scriptpack")
+{
+    string basepath = "data/layouts/macros/";
+    string selected_pack = "";
+    if (parsed.length() == 1)
+    {
+        string[] scriptpacks = find_directories(basepath + "*");
+        if (scriptpacks.length() == 0)
+        {
+            speak("There are no macro packs available.");
+            if (!in_commandstack) game();
+            return;
+        }
+        setupmenu(false);
+        for (uint i = 0; i < scriptpacks.length(); i++)
+        {
+            m.add_item_tts(scriptpacks[i], scriptpacks[i]);
+        }
+        int mres = m.run("Macro packs Menu.", true);
+        if (mres == 0)
+        {
+            speak("canceled");
+            if (!in_commandstack) game();
+            return;
+        }
+        selected_pack = m.get_item_name(mres);
+    }
+    else if (parsed.length() == 2)
+    {
+        selected_pack = parsed[1].lower();
+    }
+    else
+    {
+speak("Invalid command syntax. Usage: /scriptpack, or /scriptpack packname.");
+        if (!in_commandstack) game();
+        return;
+    }
+    string packpath = basepath + selected_pack;
+    if (!directory_exists(packpath))
+    {
+        speak("Macro pack " + selected_pack + " does not exist.");
+        if (!in_commandstack) game();
+        return;
+    }
+    scriptpack = selected_pack;
+    load_scriptkeys();
+    speak("Macro pack changed to " + selected_pack + ".");
+    if (!in_commandstack) game();
+}
 else if (base_command == "sp" || base_command == "speek")
 {
 if (parsed.length() >= 2)
@@ -923,7 +1002,7 @@ else if (base_command == "rt" || base_command == "relscripts")
 if (parsed.length() == 1)
 {
 load_scriptkeys();
-speak("script keys reloaded");
+speak("macros reloaded");
 }
 else
 {
@@ -953,13 +1032,13 @@ if(scriptmode==false)
 {
 scriptmode=true;
 if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchon.ogg"),false);
-speak("Script keys enabled.");
+speak("Macros enabled.");
 }
 else if(scriptmode==true)
 {
 scriptmode=false;
 if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchoff.ogg"),false);
-speak("Script keys disabled.");
+speak("Macros disabled.");
 }
 }
 else
@@ -1274,122 +1353,4 @@ else
 speak("Unknown command: /"+base_command);
 if(!in_commandstack) game();
 }
-}
-void comstack(string input)
-{
-    string[] parts = string_split(input, ";", true);
-    for (uint i = 0; i < parts.length(); i++)
-    {
-        string part = string_trim_sides(parts[i]);
-        if (part == "")
-            continue;
-        uint pos = 0;
-        while (pos < part.length() && part.substr(pos, 1) >= "0" && part.substr(pos, 1) <= "9")
-        {
-            pos++;
-        }
-        if (pos > 0)
-        {
-            int delay = stn(part.substr(0, pos));
-            if (delay > 0)
-            {
-                int start_time = stacktimer.elapsed;
-                while(stacktimer.elapsed - start_time < delay)
-                {
-continue;
-                }
-            }
-            part = string_trim_sides(part.substr(pos));
-        }
-        if (part == "")
-            continue;
-        if (part.substr(0, 1) != "/")
-            part = "/" + part;
-        in_commandstack = true;
-        comparse(part);
-        in_commandstack = false;
-    }
-}
-void load_scriptkeys()
-{
-    string[] old_cmds = scriptkeys;
-    int[] old_lastused = scriptkey_lastused;
-    scriptkeys.resize(0);
-    scriptkey_cooldown.resize(0);
-    scriptkey_lastused.resize(0);
-    scriptkey_speak.resize(0);
-    if (!file_exists("data/references/scriptkeys.txt"))
-        return;
-    string[] lines = clean_lines("data/references/scriptkeys.txt");
-    for (uint i = 0; i < lines.length(); i++)
-    {
-        string line = string_trim_sides(lines[i]);
-        if (line == "")
-            continue;
-        string[] parts = string_split(line, " ", true);
-        int cd = 0;
-        bool speakflag = false;
-        string cmd;
-        uint idx = 0;
-        if (parts.length() > idx && string_is_digits(parts[idx]))
-        {
-            cd = stn(parts[idx]);
-            idx++;
-        }
-        if (parts.length() > idx && (parts[idx] == "true" || parts[idx] == "false"))
-        {
-            speakflag = (parts[idx] == "true");
-            idx++;
-        }
-        cmd = join_string_array(parts, idx, parts.length());
-        cmd = string_trim_sides(cmd);
-        if (cmd == "")
-            continue;
-        scriptkeys.insert_last(cmd);
-        scriptkey_cooldown.insert_last(cd);
-        scriptkey_speak.insert_last(speakflag);
-        if (i < old_lastused.length())
-            scriptkey_lastused.insert_last(old_lastused[i]);
-        else
-            scriptkey_lastused.insert_last(0);
-    }
-    scriptkeys_loaded = true;
-}
-void use_scriptkey(uint index)
-{
-    if (!scriptkeys_loaded)
-        load_scriptkeys();
-    if (scriptkeys.length() == 0)
-    {
-        speak("No scriptkeys are defined.");
-        return;
-    }
-    if (index >= scriptkeys.length())
-    {
-        speak("Scriptkey " + (index + 1) + " not found.");
-        return;
-    }
-    int sctime = comtimer.elapsed;
-    int last = scriptkey_lastused[index];
-    int cooldown = scriptkey_cooldown[index];
-    if (cooldown > 0 && sctime - last < cooldown)
-    {
-        if (scriptkey_speak[index])
-            speak("This command cannot be used yet.");
-        return;
-    }
-    string cmd = string_trim_sides(scriptkeys[index]);
-    if (cmd == "")
-    {
-        speak("Scriptkey " + (index + 1) + " not found.");
-        return;
-    }
-    scriptkey_lastused[index] = sctime;
-    use_command(cmd);
-}
-void use_command(string cmd)
-{
-if (cmd == "")
-return;
-comparse(cmd);
 }
