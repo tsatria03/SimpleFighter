@@ -586,14 +586,30 @@ else if (base_command == "hp" || base_command == "help")
         }
 pause_pools();
         setupmenu(false);
-        for (uint i = 0; i < helpfiles.length(); i++)
+for (uint i = 0; i < helpfiles.length(); i++)
+{
+string filename = helpfiles[i];
+string filepath = basepath + filename;
+    string name = filepath;
+    name = string_replace(name, basepath, "", true);
+    name = string_replace(name, ".txt", "", true);
+    int entry_count = 0;
+    file f;
+    if (f.open(filepath, "rb"))
+    {
+        string content = f.read();
+        f.close();
+        content = string_replace(content, "\r\n", "\n", true);
+        array<string> raw = content.split("\n");
+        for (uint j = 0; j < raw.length(); j++)
         {
-            string name = helpfiles[i];
-            name = string_replace(name, basepath, "", true);
-            name = string_replace(name, ".txt", "", true);
-            m.add_item_tts(name, name);
+            if (string_trim_sides(raw[j]) != "")
+                entry_count++;
         }
-        int mres = m.run("Help menu. Total topics "+helpfiles.length()+".", true);
+    }
+    m.add_item_tts(name + ". This topic contains a total of " + entry_count + " written lines.", name);
+}
+        int mres = m.run("Help menu. Total number of topics: "+helpfiles.length()+".", true);
         if (mres == 0)
         {
 resume_pools();
@@ -606,12 +622,6 @@ resume_pools();
     else if (parsed.length() == 2)
     {
         topic = parsed[1].lower();
-    }
-    else
-    {
-        speak("Invalid command syntax. Usage: /help, or /help topic.");
-        if (!in_commandstack) game();
-        return;
     }
     string filepath = basepath + topic + ".txt";
     file helpfile;
@@ -643,7 +653,6 @@ resume_pools();
     {
         m.add_item_tts(lines[i], lines[i]);
     }
-    m.add_item_tts("Total entries: " + lines.length() + ".");
     int mres = m.run("Displaying help for " + topic + ".", true);
     if (mres == 0)
     {
@@ -868,53 +877,74 @@ if(!in_commandstack) game();
 else if (base_command == "sk" || base_command == "scriptpack")
 {
     string basepath = "data/layouts/macros/";
-    string selected_pack = "";
+    string packtype = "";
+    string packtype2 = "";
     if (parsed.length() == 1)
     {
-        string[] scriptpacks = find_directories(basepath + "*");
-        if (scriptpacks.length() == 0)
+        string[] packtypes = find_directories(basepath + "*");
+        if (packtypes.length() == 0)
         {
-            speak("There are no macro packs available.");
+            speak("There are no macro packs available to view.");
             if (!in_commandstack) game();
             return;
         }
-pause_pools();
+        pause_pools();
         setupmenu(false);
-        for (uint i = 0; i < scriptpacks.length(); i++)
+        for (uint i = 0; i < packtypes.length(); i++)
+            m.add_item_tts(packtypes[i], packtypes[i]);
+        int res = m.run("Macro packs menu.", true);
+        if (res == 0)
         {
-            m.add_item_tts(scriptpacks[i], scriptpacks[i]);
-        }
-        int mres = m.run("Macro packs Menu.", true);
-        if (mres == 0)
-        {
-resume_pools();
+        resume_pools();
             speak("canceled");
             if (!in_commandstack) game();
             return;
         }
-resume_pools();
-        selected_pack = m.get_item_name(mres);
-    }
-    else if (parsed.length() == 2)
-    {
-        selected_pack = parsed[1].lower();
+        packtype = m.get_item_name(res);
     }
     else
     {
-speak("Invalid command syntax. Usage: /scriptpack, or /scriptpack packname.");
-        if (!in_commandstack) game();
-        return;
+        packtype = parsed[1].lower();
     }
-    string packpath = basepath + selected_pack;
-    if (!directory_exists(packpath))
+    if (parsed.length() < 3)
+    {
+        string[] packtypes2 = find_directories(basepath + packtype + "/*");
+        if (packtypes2.length() == 0)
+        {
+            speak("This macro pack does not exist.");
+            if (!in_commandstack) game();
+            return;
+        }
+        pause_pools();
+        setupmenu(false);
+        for (uint i = 0; i < packtypes2.length(); i++)
+            m.add_item_tts(packtypes2[i], packtypes2[i]);
+        int res2 = m.run(packtype + " menu.", true);
+        if (res2 == 0)
+        {
+        resume_pools();
+            speak("canceled");
+            if (!in_commandstack) game();
+            return;
+        }
+        resume_pools();
+        packtype2 = m.get_item_name(res2);
+    }
+    else
+    {
+        packtype2 = parsed[2].lower();
+    }
+    string finalpath = basepath + packtype + "/" + packtype2;
+    if (!directory_exists(finalpath))
     {
         speak("This macro pack does not exist.");
         if (!in_commandstack) game();
         return;
     }
-    scriptpack = selected_pack;
-    load_scriptkeys();
-    speak("Macro pack changed to " + selected_pack + ".");
+    mactype = packtype;
+    mactype2 = packtype2;
+    load_macros();
+    speak("Macro pack changed to " + packtype2 + ".");
     if (!in_commandstack) game();
 }
 else if (base_command == "sp" || base_command == "speek")
@@ -1012,7 +1042,7 @@ else if (base_command == "rt" || base_command == "relscripts")
 {
 if (parsed.length() == 1)
 {
-load_scriptkeys();
+load_macros();
 speak("macros reloaded");
 }
 else
