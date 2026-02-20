@@ -1,11 +1,12 @@
+#define MyAppId "{B5718EDD-4F38-45A6-AD84-68BC34D57407}"
 #define MyAppName "SimpleFighter"
-#define MyAppVersion "8.2"
+#define MyAppVersion "8.3"
 #define MyAppPublisher "tsatria03"
 #define MyAppURL "https://tsatria03.itch.io/SimpleFighter"
 #define MyAppExeName "sf.exe"
 
 [Setup]
-AppId={{64477427-9EAA-4A52-905B-269D21D008DA}}
+AppId={#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -18,6 +19,8 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
+UninstallDisplayName={#MyAppName} {#MyAppVersion}
+AppMutex={#MyAppName}_Mutex
 OutputDir=.
 OutputBaseFilename=SimpleFighter_windows_installer_password_is_SpfBuilder
 Password=SpfBuilder
