@@ -1,0 +1,72 @@
+ex_ambsource@[] ex_ambsources(0);
+class ex_ambsource
+{
+    double minx, maxx, miny, maxy;
+    int sorcesound;
+    double volume;
+    double pitch;
+    string sourcetype;
+    double ex_minx;
+    double ex_maxx;
+    double ex_miny;
+    double ex_maxy;
+    bool has_zone;
+    bool is_playing;
+    ex_ambsource(double mx, double mx2, double my, double my2, string srt, double vol, double semitone, double zx1, double zx2, double zy1, double zy2)
+    {
+        minx = mx;
+maxx = mx2;
+        miny = my;
+maxy = my2;
+        sourcetype = srt;
+        volume = vol;
+        pitch = semitone;
+        ex_minx = zx1;
+        ex_maxx = zx2;
+        ex_miny = zy1;
+        ex_maxy = zy2;
+        has_zone = true;
+        is_playing = false;
+        sorcesound = sourceambpool.play_extended_2d(get_map_sound("soundtracks/sources/" + sourcetype + "/*loop*"), me.x, me.y, minx, miny, 0, 0, 0, 0, true, 0, 0, volume, pitch, false);
+        sourceambpool.update_sound_2d(sorcesound, minx, miny);
+        sourceambpool.update_sound_range_2d(sorcesound, 0, maxx-minx, 0, maxy-miny);
+    }
+    void update_ex_ambsource(double listener_x, double listener_y)
+    {
+        bool in_main =(listener_x >= minx && listener_x <= maxx && listener_y >= miny && listener_y <= maxy);
+        bool in_exclude = false;
+        if (has_zone)
+        {
+            in_exclude =(listener_x >= ex_minx && listener_x <= ex_maxx && listener_y >= ex_miny && listener_y <= ex_maxy);
+        }
+        bool should_play = (in_main && !in_exclude);
+        if (should_play && !is_playing)
+        {
+            sourceambpool.resume_sound(sorcesound);
+            is_playing = true;
+        }
+        else if (!should_play && is_playing)
+        {
+            sourceambpool.pause_sound(sorcesound);
+            is_playing = false;
+        }
+    }
+}
+void update_ex_ambsources(double listener_x, double listener_y)
+{
+    for (uint i = 0; i < ex_ambsources.length(); i++)
+        ex_ambsources[i].update_ex_ambsource(listener_x, listener_y);
+}
+void spawn_ex_ambsource(double x1, double x2, double y1, double y2, string sourcetype, double soundvol, double soundpitch, double zx1, double zx2, double zy1, double zy2)
+{
+    ex_ambsource exsound1(x1, x2, y1, y2, sourcetype, soundvol, soundpitch, zx1, zx2, zy1, zy2);
+    ex_ambsources.insert_last(exsound1);
+}
+void destroy_all_ex_ambsources()
+{
+    for (uint i = 0; i < ex_ambsources.length(); i++)
+{
+sourceambpool.destroy_sound(ex_ambsources[i].sorcesound);
+}
+    ex_ambsources.resize(0);
+}
