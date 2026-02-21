@@ -3202,11 +3202,13 @@ vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@
 string mx=vd.input_box("", "Enter the minimum x of this platform.", sel_left_set ? sel_left : "");
 string mx2=vd.input_box("", "Enter the maximum x of this platform.", sel_right_set ? sel_right : "");
 string my=vd.input_box("", "Enter the y of this platform.", sel_bottom_set ? sel_bottom : "");
-if(x=="" and paxx=="" and y=="")
+string hp=vd.input_box("", "Enter the health of this platform. Press enter to use the default health.", "1");
+if(x=="" and paxx=="" and y=="" and minhp=="")
 return;
 x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
+minhp=string_to_number(hp);
 string[] platform=get_map_sound_folders("objects/platforms/*");
 if(platform.length()==0)
 {
@@ -3223,7 +3225,6 @@ t.destroy_sound(prevslot);
 tiletype=res;
 prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
 }
-}
 create_slider();
 s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
 s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
@@ -3239,11 +3240,33 @@ t.destroy_sound(prevslot);
 resume_pools();
 volume=s.get_item_value(0);
 pitch=s.get_item_value(1);
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this platform to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"platform "+x+" "+paxx+" "+y+" "+tiletype+" "+volume+" "+pitch);
+mapper.write("\r\n"+"platform "+x+" "+paxx+" "+y+" "+minhp+" "+tiletype+" "+volume+" "+pitch+" "+dmd);
 mapper.close();
-spawn_platform(x, paxx, y, y, tiletype, volume, pitch);
+spawn_platform(x, paxx, y, y, minhp, minhp, tiletype, volume, pitch, dmd);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");
@@ -4083,12 +4106,14 @@ string mx=vd.input_box("", "Enter the minimum x of this staircase.", sel_left_se
 string mx2=vd.input_box("", "Enter the maximum x of this staircase.", sel_right_set ? sel_right : "");
 string my=vd.input_box("", "Enter the minimum y of this staircase.", sel_bottom_set ? sel_bottom : "");
 string my2=vd.input_box("", "Enter the maximum y of this staircase.", sel_top_set ? sel_top : "");
-if(x=="" and paxx=="" and y=="" and paxy=="")
+string hp=vd.input_box("", "Enter the health of this staircase. Press enter to use the default health.", "1");
+if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
 return;
 x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
+minhp=string_to_number(hp);
 string[] platform=get_map_sound_folders("objects/platforms/*");
 if(platform.length()==0)
 {
@@ -4105,7 +4130,6 @@ t.destroy_sound(prevslot);
 tiletype=res;
 prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
 }
-}
 create_slider();
 s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
 s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
@@ -4121,15 +4145,38 @@ t.destroy_sound(prevslot);
 resume_pools();
 volume=s.get_item_value(0);
 pitch=s.get_item_value(1);
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this staircase to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"staircase "+x+" "+paxx+" "+y+" "+paxy+" "+tiletype+" "+volume+" "+pitch);
+mapper.write("\r\n"+"staircase "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+tiletype+" "+volume+" "+pitch+" "+dmd);
 mapper.close();
-spawn_staircase(x, paxx, y, paxy, tiletype, volume, pitch);
+spawn_staircase(x, paxx, y, paxy, minhp, minhp, tiletype, volume, pitch, dmd);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");
 }
+
 if(buildtype == "switch")
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
@@ -5384,172 +5431,6 @@ game();
 }
 }
 }
-if(buildtype == "destroyable_platform")
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this destroyable platform.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this destroyable platform.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the y of this destroyable platform.", sel_bottom_set ? sel_bottom : "");
-string hp=vd.input_box("", "Enter the health of this destroyable platform. Press enter to use the default health.", "1");
-if(x=="" and paxx=="" and y=="" and minhp=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-minhp=string_to_number(hp);
-string[] destplat=get_map_sound_folders("objects/platforms/*");
-if(destplat.length()==0)
-{
-dlg_snd("Error. There are no destroyable platforms available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-string res=destplatsmenu();
-if(res!="")
-{
-t.destroy_sound(prevslot);
-destplattype=res;
-prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + destplattype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
-}
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
-{
-t.destroy_sound(prevslot);
-resume_pools();
-speak("Canceled");
-return;
-}
-t.destroy_sound(prevslot);
-resume_pools();
-volume=s.get_item_value(0);
-pitch=s.get_item_value(1);
-}
-mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
-mapdata=mapper.read();
-mapper.write("\r\n"+"dest_plat "+x+" "+paxx+" "+y+" "+minhp+" "+destplattype+" "+volume+" "+pitch);
-mapper.close();
-spawn_dest_plat(x, paxx, y, y, minhp, minhp, destplattype, volume, pitch);
-load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
-speak("Map updated.");
-}
-if(buildtype == "destroyable_staircase")
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this destroyable staircase.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this destroyable staircase.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this destroyable staircase.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this destroyable staircase.", sel_top_set ? sel_top : "");
-string hp=vd.input_box("", "Enter the health of this destroyable staircase. Press enter to use the default health.", "1");
-if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-minhp=string_to_number(hp);
-string[] destplat=get_map_sound_folders("objects/platforms/*");
-if(destplat.length()==0)
-{
-dlg_snd("Error. There are no destroyable platforms available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-string res=destplatsmenu();
-if(res!="")
-{
-t.destroy_sound(prevslot);
-destplattype=res;
-prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + destplattype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
-}
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
-{
-t.destroy_sound(prevslot);
-resume_pools();
-speak("Canceled");
-return;
-}
-t.destroy_sound(prevslot);
-resume_pools();
-volume=s.get_item_value(0);
-pitch=s.get_item_value(1);
-}
-mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
-mapdata=mapper.read();
-mapper.write("\r\n"+"dest_staircase "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+destplattype+" "+volume+" "+pitch);
-mapper.close();
-spawn_dest_staircase(x, paxx, y, paxy, minhp, minhp, destplattype, volume, pitch);
-load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
-speak("Map updated.");
-}
-if(buildtype == "destroyable_wall")
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this destroyable wall.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this destroyable wall.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this destroyable wall.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this destroyable wall.", sel_top_set ? sel_top : "");
-string hp=vd.input_box("", "Enter the health of this destroyable wall. Press enter to use the default health.", "1");
-if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-minhp=string_to_number(hp);
-string[] border=get_map_sound_folders("objects/walls/*");
-if(border.length()==0)
-{
-dlg_snd("Error. There are no destroyable walls available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-string res=destwallsmenu();
-if(res!="")
-{
-t.destroy_sound(prevslot);
-destwalltype=res;
-prevslot = t.play_stationary_extended(get_map_sound("objects/walls/" + destwalltype + "/*wall*"), true, 0, 0, 0.0, 100.0, false);
-}
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
-{
-t.destroy_sound(prevslot);
-resume_pools();
-speak("Canceled");
-return;
-}
-t.destroy_sound(prevslot);
-resume_pools();
-volume=s.get_item_value(0);
-pitch=s.get_item_value(1);
-}
-mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
-mapdata=mapper.read();
-mapper.write("\r\n"+"dest_wall "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+destwalltype+" "+volume+" "+pitch);
-mapper.close();
-spawn_dest_wall(x, paxx, y, paxy, minhp, minhp, destwalltype, volume, pitch);
-load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
-speak("Map updated.");
-}
 if(buildtype == "wall")
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
@@ -5557,12 +5438,14 @@ string mx=vd.input_box("", "Enter the minimum x of this wall.", sel_left_set ? s
 string mx2=vd.input_box("", "Enter the maximum x of this wall.", sel_right_set ? sel_right : "");
 string my=vd.input_box("", "Enter the minimum y of this wall.", sel_bottom_set ? sel_bottom : "");
 string my2=vd.input_box("", "Enter the maximum y of this wall.", sel_top_set ? sel_top : "");
-if(x=="" and paxx=="" and y=="" and paxy=="")
+string hp=vd.input_box("", "Enter the health of this wall. Press enter to use the default health.", "1");
+if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
 return;
 x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
+minhp=string_to_number(hp);
 string[] border=get_map_sound_folders("objects/walls/*");
 if(border.length()==0)
 {
@@ -5595,11 +5478,32 @@ resume_pools();
 volume=s.get_item_value(0);
 pitch=s.get_item_value(1);
 }
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this wall to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"wall "+x+" "+paxx+" "+y+" "+paxy+" "+walltype+" "+volume+" "+pitch);
+mapper.write("\r\n"+"wall "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+walltype+" "+volume+" "+pitch+" "+dmd);
 mapper.close();
-spawn_wall(x, paxx, y, paxy, walltype, volume, pitch);
+spawn_wall(x, paxx, y, paxy, minhp, minhp, walltype, volume, pitch, dmd);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
 speak("Map updated.");

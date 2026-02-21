@@ -1,24 +1,45 @@
 platform@[]platforms(0);
 class platform
 {
+bool destroyable;
+int defsound,hurtsound;
 double minx, maxx, miny, maxy;
+double plathealth, platmaxhealth;
 double volume;
 double pitch;
 string tile;
-platform(double mx,double mx2,double my,double my2,string ty,double vol,double semitone)
+platform(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+plathealth=hp;
+platmaxhealth=maxhp;
 tile=ty;
 volume=vol;
 pitch=semitone;
+destroyable=dtb;
 }
 }
-int spawn_platform(double x1, double x2, double y1, double y2, string tile, double tilevol, double tilepitch)
+void platcheck()
 {
-    platform pl1(x1, x2, y1, y2, tile, tilevol, tilepitch);
+for(uint i=0; i<platforms.length(); i++)
+{
+if(platforms[i].plathealth<=0)
+{
+p.destroy_sound(platforms[i].hurtsound);
+platforms[i].defsound=p.play_extended_2d(get_map_sound("objects/platforms/"+platforms[i].tile+"/*death*"),me.x,me.y,platforms[i].minx,platforms[i].miny,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
+p.update_sound_2d(platforms[i].defsound,platforms[i].minx,platforms[i].miny);
+p.update_sound_range_2d(platforms[i].defsound,0,platforms[i].maxx-platforms[i].minx,0,platforms[i].maxy-platforms[i].miny);
+platforms.remove_at(i);
+return;
+}
+}
+}
+int spawn_platform(double x1, double x2, double y1, double y2, double hp, double maxhp, string tile, double tilevol, double tilepitch, bool destroyable)
+{
+    platform pl1(x1, x2, y1, y2, hp, maxhp, tile, tilevol, tilepitch, destroyable);
     platforms.insert_last(pl1);
     return platforms.length() - 1;
 }

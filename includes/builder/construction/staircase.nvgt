@@ -3,28 +3,42 @@ bool onstaircase;
 staircase@[] staircases(0);
 class staircase
 {
-bool abletojump;
+bool abletojump, destroyable;
+int defsound,hurtsound;
 double minx, maxx, miny, maxy;
+double stairshealth, stairsmaxhealth;
 double stairsvolume;
 double stairspitch;
 string tile;
-staircase(double mx,double mx2,double my,double my2,string ty,double vol,double semitone)
+staircase(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+stairshealth=hp;
+stairsmaxhealth=maxhp;
 tile=ty;
 stairsvolume=vol;
 stairspitch=semitone;
-spawn_platform(minx, maxx, miny, maxy, tile, stairsvolume, stairspitch);
+destroyable=dtb;
+spawn_platform(minx, maxx, miny, maxy, stairshealth, stairsmaxhealth, tile, stairsvolume, stairspitch, destroyable);
 }
 }
 void stairscheck()
 {
 for (uint i=0; i<staircases.length(); i++)
 {
-if (me.x>=staircases[i].minx&&me.x<=staircases[i].maxx&&me.y>=staircases[i].miny&&me.y<=staircases[i].maxy)
+if(staircases[i].stairshealth<=0)
+{
+p.destroy_sound(staircases[i].hurtsound);
+staircases[i].defsound=p.play_extended_2d(get_map_sound("objects/platforms/"+staircases[i].tile+"/*death*"),me.x,me.y,staircases[i].minx,staircases[i].miny,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
+p.update_sound_2d(staircases[i].defsound,staircases[i].minx,staircases[i].miny);
+p.update_sound_range_2d(staircases[i].defsound,0,staircases[i].maxx-staircases[i].minx,0,staircases[i].maxy-staircases[i].miny);
+staircases.remove_at(i);
+return;
+}
+if (me.x>=staircases[i].minx && me.x<=staircases[i].maxx && me.y>=staircases[i].miny && me.y<=staircases[i].maxy)
 {
 onstaircase=true;
 if (me.y==staircases[i].maxy) staircases[i].abletojump=true;
@@ -37,9 +51,9 @@ staircases[i].abletojump=true;
 }
 }
 }
-void spawn_staircase(double x1,double x2,double y1,double y2,string plattile,double stairsvol,double stairspitch)
+void spawn_staircase(double x1,double x2,double y1,double y2,double stairshealth,double stairsmaxhealth,string stairstile,double stairsvol,double stairspitch,bool destroyable)
 {
-staircase sc1(x1,x2,y1,y2,plattile,stairsvol,stairspitch);
+staircase sc1(x1,x2,y1,y2,stairshealth,stairsmaxhealth,stairstile,stairsvol,stairspitch,destroyable);
 staircases.insert_last(sc1);
 }
 void destroy_all_staircases()
