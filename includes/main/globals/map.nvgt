@@ -38,8 +38,6 @@ destroy_all_ambsources();
 destroy_all_blockages();
 destroy_all_ex_ambsources();
 destroy_all_ex_soundsources();
-destroy_all_musicambs();
-destroy_all_musicsources();
 destroy_all_platforms();
 destroy_all_reverb_spaces();
 destroy_all_soundsources();
@@ -99,7 +97,7 @@ destroy_all_switchers();
 destroy_all_teleporters();
 destroy_all_text_squares();
 destroy_all_timebombs();
-destroy_all_timedmusics();
+destroy_all_timedambs();
 destroy_all_timedsources();
 destroy_all_timedtexts();
 destroy_all_travelpoints();
@@ -369,7 +367,7 @@ miny=my;
 maxy=my2;
 
 string base = "data/maps/decompiled/" + mapname;
-string[] mapdirs ={"/assets", "/assets/npc", "/assets/npc/animals", "/assets/npc/bosses", "/assets/npc/helpers", "/assets/npc/humans", "/assets/npc/projectiles", "/assets/npc/robots", "/assets/npc/turrets", "/assets/npc/zombies", "/assets/objects", "/assets/objects/aircrafts", "/assets/objects/belts", "/assets/objects/bikes", "/assets/objects/bombs", "/assets/objects/calendars", "/assets/objects/cameras", "/assets/objects/checkpoints", "/assets/objects/clocks", "/assets/objects/dialogs", "/assets/objects/doors", "/assets/objects/doors/close", "/assets/objects/doors/dest", "/assets/objects/doors/loop", "/assets/objects/doors/move", "/assets/objects/doors/open", "/assets/objects/elevators", "/assets/objects/elevators/beep", "/assets/objects/elevators/close", "/assets/objects/elevators/loop", "/assets/objects/elevators/move", "/assets/objects/elevators/open", "/assets/objects/fires", "/assets/objects/floor breakers", "/assets/objects/force fields", "/assets/objects/hazards", "/assets/objects/heal zones", "/assets/objects/items", "/assets/objects/items/health", "/assets/objects/items/other", "/assets/objects/items/stamina", "/assets/objects/lifts", "/assets/objects/mines", "/assets/objects/moving platforms", "/assets/objects/platforms", "/assets/objects/safe zones", "/assets/objects/signs", "/assets/objects/spikes", "/assets/objects/switches", "/assets/objects/teleporters", "/assets/objects/time bombs", "/assets/objects/vanishing platforms", "/assets/objects/vehicles", "/assets/objects/walls", "/assets/soundtracks", "/assets/soundtracks/musics", "/assets/soundtracks/sources"};
+string[] mapdirs ={"/assets", "/assets/npc", "/assets/npc/animals", "/assets/npc/bosses", "/assets/npc/helpers", "/assets/npc/humans", "/assets/npc/projectiles", "/assets/npc/robots", "/assets/npc/turrets", "/assets/npc/zombies", "/assets/objects", "/assets/objects/aircrafts", "/assets/objects/belts", "/assets/objects/bikes", "/assets/objects/bombs", "/assets/objects/calendars", "/assets/objects/cameras", "/assets/objects/checkpoints", "/assets/objects/clocks", "/assets/objects/dialogs", "/assets/objects/doors", "/assets/objects/doors/close", "/assets/objects/doors/dest", "/assets/objects/doors/loop", "/assets/objects/doors/move", "/assets/objects/doors/open", "/assets/objects/elevators", "/assets/objects/elevators/beep", "/assets/objects/elevators/close", "/assets/objects/elevators/loop", "/assets/objects/elevators/move", "/assets/objects/elevators/open", "/assets/objects/fires", "/assets/objects/floor breakers", "/assets/objects/force fields", "/assets/objects/hazards", "/assets/objects/heal zones", "/assets/objects/items", "/assets/objects/items/health", "/assets/objects/items/other", "/assets/objects/items/stamina", "/assets/objects/lifts", "/assets/objects/mines", "/assets/objects/moving platforms", "/assets/objects/platforms", "/assets/objects/safe zones", "/assets/objects/signs", "/assets/objects/spikes", "/assets/objects/switches", "/assets/objects/teleporters", "/assets/objects/time bombs", "/assets/objects/vanishing platforms", "/assets/objects/vehicles", "/assets/objects/walls", "/assets/sources"};
 for (uint i = 0; i < mapdirs.length(); i++)
 {
     string fullpath = base + mapdirs[i];
@@ -887,6 +885,49 @@ playland();
 else if(fallcounter>7)
 {
 playfall();
+if (fallcounter >= 8)
+{
+int impact_dmg = max(1, (fallcounter * fallmod));
+    for (uint i = 0; i < walls.length(); i++)
+    {
+        if (!walls[i].destroyable) continue;
+        bool in_wall =(me.x >= walls[i].minx && me.x <= walls[i].maxx && me.y >= walls[i].miny && me.y <= walls[i].maxy);
+        if (!in_wall) continue;
+        walls[i].wallhealth -= impact_dmg;
+if(impact_dmg>0) walls[i].hurtsound=p.play_stationary_extended(get_map_sound("objects/walls/"+walls[i].wall+"/*hurt*"),false,0,0,tilevolume,tilepitch,false);
+        int pid = walls[i].platform_id;
+        if (pid >= 0 && pid < platforms.length())
+        {
+            platforms[pid].plathealth = walls[i].wallhealth;
+            platforms[pid].platmaxhealth = walls[i].wallmaxhealth;
+        }
+        break;
+    }
+for (uint i = 0; i < staircases.length(); i++)
+{
+    if (!staircases[i].destroyable) continue;
+    bool in_stairs =(me.x >= staircases[i].minx && me.x <= staircases[i].maxx && me.y >= staircases[i].miny && me.y <= staircases[i].maxy);
+    if (!in_stairs) continue;
+    staircases[i].stairshealth -= impact_dmg;
+    if (impact_dmg > 0) staircases[i].hurtsound =p.play_stationary_extended(get_map_sound("objects/platforms/" + staircases[i].tile + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
+    int pid = staircases[i].platform_id;
+    if (pid >= 0 && pid < platforms.length())
+    {
+        platforms[pid].plathealth = staircases[i].stairshealth;
+        platforms[pid].platmaxhealth = staircases[i].stairsmaxhealth;
+    }
+    break;
+}
+    for (uint i = 0; i < platforms.length(); i++)
+    {
+        if (!platforms[i].destroyable) continue;
+        bool in_plat =(me.x >= platforms[i].minx && me.x <= platforms[i].maxx && me.y >= platforms[i].miny && me.y <= platforms[i].maxy);
+        if (!in_plat) continue;
+        platforms[i].plathealth -= impact_dmg;
+if(impact_dmg>0) platforms[i].hurtsound=p.play_stationary_extended(get_map_sound("objects/platforms/"+platforms[i].tile+"/*hurt*"),false,0,0,tilevolume,tilepitch,false);
+        break;
+    }
+}
 int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
 if(fallcounter>=8 and shieldon==1)
 {
