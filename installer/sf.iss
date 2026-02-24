@@ -1,4 +1,4 @@
-#define MyAppId "{B5718EDD-4F38-45A6-AD84-68BC34D57407}"
+#define MyAppId "{{B5718EDD-4F38-45A6-AD84-68BC34D57407}}"
 #define MyAppName "SimpleFighter"
 #define MyAppVersion "8.4"
 #define MyAppPublisher "tsatria03"
@@ -13,7 +13,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autopf}\{#MyAppPublisher}\{#MyAppName}\sf
 DefaultGroupName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 ArchitecturesAllowed=x64compatible
