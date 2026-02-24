@@ -574,7 +574,7 @@ if(!in_commandstack) game();
 else if (base_command == "hp" || base_command == "help")
 {
     string basepath = "data/references/";
-    string topic = "";    
+    string topic = "";
     if (parsed.length() == 1)
     {
         string[] helpfiles = find_files(basepath + "*.txt");
@@ -584,10 +584,10 @@ else if (base_command == "hp" || base_command == "help")
             if (!in_commandstack) game();
             return;
         }
-pause_pools();
+        pause_pools();
         setupmenu(false);
-for (uint i = 0; i < helpfiles.length(); i++)
-{
+        for (uint i = 0; i < helpfiles.length(); i++)
+        {
 string filename = helpfiles[i];
 string filepath = basepath + filename;
     string name = filepath;
@@ -608,63 +608,30 @@ string filepath = basepath + filename;
         }
     }
     m.add_item_tts(name + ". This topic contains a total of " + entry_count + " written lines.", name);
-}
-        int mres = m.run("Help menu. Total number of topics: "+helpfiles.length()+".", true);
+        }
+        int mres = m.run("Help menu. Total number of topics: " + helpfiles.length() + ".", true);
         if (mres == 0)
         {
-resume_pools();
-            speak("canceled");
+        resume_pools();
+            speak("Canceled.");
             if (!in_commandstack) game();
             return;
         }
         topic = m.get_item_name(mres);
     }
-    else if (parsed.length() == 2)
+    else if (parsed.length() >= 2)
     {
         topic = parsed[1].lower();
     }
     string filepath = basepath + topic + ".txt";
-    file helpfile;
-    if (!helpfile.open(filepath, "rb"))
+    if (!file_exists(filepath))
     {
         speak("This help topic does not exist.");
         if (!in_commandstack) game();
         return;
     }
-    string content = helpfile.read();
-    helpfile.close();
-    content = string_replace(content, "\r\n", "\n", true);
-    array<string> raw = content.split("\n");
-    array<string> lines;
-    for (uint i = 0; i < raw.length(); i++)
-    {
-        string l = string_trim_sides(raw[i]);
-        if (l != "")
-            lines.insert_last(l);
-    }
-    if (lines.length() == 0)
-    {
-        speak("There is no content available to view for this topic.");
-        if (!in_commandstack) game();
-        return;
-    }
-    setupmenu(false);
-    for (uint i = 0; i < lines.length(); i++)
-    {
-        m.add_item_tts(lines[i], lines[i]);
-    }
-    int mres = m.run("Displaying help for " + topic + ".", true);
-    if (mres == 0)
-    {
-resume_pools();
-        speak("canceled");
-        if (!in_commandstack) game();
-    }
-if(mres>=0)
-{
-resume_pools();
-        if (!in_commandstack) game();
-}
+    helpread(filepath);
+    if (!in_commandstack) game();
 }
 else if (base_command == "gl" || base_command == "getall")
 {
