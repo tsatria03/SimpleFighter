@@ -2,19 +2,23 @@ void settingsmenu()
 {
 form.reset();
 form.create_window("preferences", false);
-int slt, slk, slm, spk;
+int slt, slk, slm, sln, spk;
 if (chartype == "")
-slt = form.create_button("Select c&haracter type for the " + soundpack + " sound pack. Currently set to nothing");
+slt = form.create_button("Select c&haracter theme for the " + soundpack + " sound pack. Currently set to nothing");
 else
-slt = form.create_button("Select c&haracter type for the " + soundpack + " sound pack. Currently set to " + chartype);
+slt = form.create_button("Select c&haracter theme for the " + soundpack + " sound pack. Currently set to " + chartype);
 if (keyboardtheme == "")
 slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to nothing");
 else
 slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to " + keyboardtheme);
-if (menutype == "")
-slm = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to nothing");
+if (maptype == "")
+slm = form.create_button("Select m&ap theme for the " + soundpack + " sound pack. Currently set to nothing");
 else
-slm = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to " + menutype);
+slm = form.create_button("Select m&ap theme for the " + soundpack + " sound pack. Currently set to " + maptype);
+if (menutype == "")
+sln = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+sln = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to " + menutype);
 if (soundpack == "")
 spk = form.create_button("Select sound &pack. Currently set to nothing");
 else
@@ -121,7 +125,7 @@ if(form.is_pressed(slt))
 string[] chars=get_pack_sound_folders("characters/*");
 if(chars.length()==0)
 {
-dlg_snd("Error. There are no characters available to view. Press enter to continue.");
+dlg_snd("Error. There are no character themes available to view. Press enter to continue.");
 form.reset();
 settingsmenu();
 }
@@ -157,6 +161,25 @@ keyboardtheme=res;
 }
 }
 if(form.is_pressed(slm))
+{
+string[] maptyps=get_pack_sound_folders("map/*");
+if(maptyps.length()==0)
+{
+dlg_snd("Error. There are no map themes available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+string res=mapchoosers();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+maptype=res;
+}
+}
+}
+if(form.is_pressed(sln))
 {
 string[] menu=get_pack_sound_folders("menus/*");
 if(menu.length()==0)
@@ -194,7 +217,7 @@ uint64 size = get_directory_size("sounds/" + soundpacks[i]);
 string readable_size = measure_file_size(size);
 m.add_item_tts(soundpacks[i]+". Total size: "+readable_size,soundpacks[i]);
 }
-int mres=m.run("Choose the sound pack you would like to use throughout the intire game.", true);
+int mres=m.run("Choose the sound pack you'd like to use throughout the entire game.", true);
 if(mres==0)
 {
 form.reset();
@@ -204,6 +227,7 @@ if (mres==0 and mres>=soundpacks.length())
 {
 chartype="";
 keyboardtheme="";
+maptype="";
 menutype="";
 soundpack=soundpacks[mres-1];
 }
@@ -228,7 +252,7 @@ for(uint i=0; i<devices.length(); i++)
 {
 m.add_item_tts(devices[i],devices[i],"",true);
 }
-int mres=m.run("Choose a sound device you would like to use in the game.",true);
+int mres=m.run("Choose a sound device you'd like to use in the game.",true);
 if(mres==0)
 {
 form.reset();

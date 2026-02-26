@@ -34,7 +34,7 @@ mapper.write("\r\n"+"aircraft "+x+" "+y+" "+minhp+" "+plaintyp);
 mapper.close();
 spawn_aircraft(x, y, minhp, minhp, plaintyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "aircraft_beacon")
@@ -91,7 +91,7 @@ mapper.write("\r\n"+"airbeacon "+x+" "+width);
 mapper.close();
 spawn_airbeacon(x, 0, width);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -111,10 +111,43 @@ x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
-string[] soundamb=get_map_sound_folders("sources/*");
-if(soundamb.length()==0)
+setupmenu();
+m.add_item_tts("musics", "mus");
+m.add_item_tts("sources", "src");
+int mres=m.run("Soundtracks menu",true);
+string strm=m.get_item_name(mres);
+if(mres==0)
 {
-dlg_snd("Error. There are no sound ambiences available to view. Press enter to continue.");
+speak("canceled");
+return;
+}
+if(strm=="mus")
+{
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
+if(musics.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+sorcetyp="musics";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+if(strm=="src")
+{
+string[] sources=get_map_sound_folders("soundtracks/sources/*");
+if(sources.length()==0)
+{
+dlg_snd("Error. There are no sources available to view. Press enter to continue.");
 resume_pools();
 return;
 }
@@ -123,9 +156,11 @@ else
 string res=sorcesmenu();
 if(res!="")
 {
+sorcetyp="sources";
 t.destroy_sound(prevslot);
-sorcetyp=res;
-prevslot = t.play_stationary_extended(get_map_sound("sources/" + sorcetyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
 }
 }
 create_slider();
@@ -145,11 +180,11 @@ volume=s.get_item_value(0);
 pitch=s.get_item_value(1);
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"sound_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch);
+mapper.write("\r\n"+"sound_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+sorcetyp2+" "+volume+" "+pitch);
 mapper.close();
-spawn_ambsource(x, paxx, y, paxy, sorcetyp, volume, pitch);
+spawn_ambsource(x, paxx, y, paxy, sorcetyp, sorcetyp2, volume, pitch);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "excludable_ambience")
@@ -165,10 +200,43 @@ x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
-string[] soundamb=get_map_sound_folders("sources/*");
-if(soundamb.length()==0)
+setupmenu();
+m.add_item_tts("musics", "mus");
+m.add_item_tts("sources", "src");
+int mres=m.run("Soundtracks menu",true);
+string strm=m.get_item_name(mres);
+if(mres==0)
 {
-dlg_snd("Error. There are no sound ambiences available to view. Press enter to continue.");
+speak("canceled");
+return;
+}
+if(strm=="mus")
+{
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
+if(musics.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+sorcetyp="musics";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+if(strm=="src")
+{
+string[] sources=get_map_sound_folders("soundtracks/sources/*");
+if(sources.length()==0)
+{
+dlg_snd("Error. There are no sources available to view. Press enter to continue.");
 resume_pools();
 return;
 }
@@ -177,9 +245,11 @@ else
 string res=sorcesmenu();
 if(res!="")
 {
+sorcetyp="sources";
 t.destroy_sound(prevslot);
-sorcetyp=res;
-prevslot = t.play_stationary_extended(get_map_sound("sources/" + sorcetyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
 }
 }
 create_slider();
@@ -210,11 +280,11 @@ y2=string_to_number(my3);
 paxy2=string_to_number(my4);
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"ex_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+amtype+" "+volume+" "+pitch+" "+x2+" "+paxx2+" "+y2+" "+paxy2);
+mapper.write("\r\n"+"ex_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+sorcetyp2+" "+volume+" "+pitch+" "+x2+" "+paxx2+" "+y2+" "+paxy2);
 mapper.close();
-spawn_ex_ambsource(x, paxx, y, paxy, amtype, volume, pitch, x2, paxx2, y2, paxy2);
+spawn_ex_ambsource(x, paxx, y, paxy, sorcetyp, sorcetyp2, volume, pitch, x2, paxx2, y2, paxy2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "excludable_source")
@@ -230,8 +300,41 @@ x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
-string[] source=get_map_sound_folders("sources/*");
-if(source.length()==0)
+setupmenu();
+m.add_item_tts("musics", "mus");
+m.add_item_tts("sources", "src");
+int mres=m.run("Soundtracks menu",true);
+string strm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(strm=="mus")
+{
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
+if(musics.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+sorcetyp="musics";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+if(strm=="src")
+{
+string[] sources=get_map_sound_folders("soundtracks/sources/*");
+if(sources.length()==0)
 {
 dlg_snd("Error. There are no sources available to view. Press enter to continue.");
 resume_pools();
@@ -242,9 +345,11 @@ else
 string res=sorcesmenu();
 if(res!="")
 {
+sorcetyp="sources";
 t.destroy_sound(prevslot);
-sorcetyp=res;
-prevslot = t.play_stationary_extended(get_map_sound("sources/" + sorcetyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
 }
 }
 create_slider();
@@ -275,11 +380,11 @@ y2=string_to_number(my3);
 paxy2=string_to_number(my4);
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"ex_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch+" "+x2+" "+paxx2+" "+y2+" "+paxy2);
+mapper.write("\r\n"+"ex_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+sorcetyp2+" "+volume+" "+pitch+" "+x2+" "+paxx2+" "+y2+" "+paxy2);
 mapper.close();
-spawn_ex_soundsource(x, paxx, y, paxy, sorcetyp, volume, pitch, x2, paxx2, y2, paxy2);
+spawn_ex_soundsource(x, paxx, y, paxy, sorcetyp, sorcetyp2, volume, pitch, x2, paxx2, y2, paxy2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "animal")
@@ -420,7 +525,7 @@ mapper.write("\r\n"+"animal "+x+" "+y+" "+amrange+" "+amrange2+" "+amrange3+" "+
 mapper.close();
 spawn_animal(x, y, amrange, amrange2, amrange3, amrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, amtype, fb, mb, mb2, itms);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "animal_zone")
@@ -459,7 +564,7 @@ mapper.write("\r\n"+"animal_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+amtype);
 mapper.close();
 spawn_animalzone(x, paxx, y, speedtime, amtype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "blockage")
@@ -542,7 +647,7 @@ mapper.write("\r\n"+"blockage "+x+" "+paxx+" "+y+" "+paxy+" "+txt);
 mapper.close();
 spawn_blockage(x, paxx, y, paxy, txt);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -585,7 +690,7 @@ mapper.write("\r\n"+"bike "+x+" "+y+" "+minhp+" "+speedtime+" "+biktyp);
 mapper.close();
 spawn_bike(x, y, minhp, minhp, speedtime, biktyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "bomb")
@@ -624,7 +729,7 @@ mapper.write("\r\n"+"bomb "+x+" "+y+" "+damage+" "+speedtime+" "+botype);
 mapper.close();
 spawn_bomb(x, y, damage, speedtime, botype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "bomb_zone")
@@ -663,7 +768,7 @@ mapper.write("\r\n"+"bomb_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+botype);
 mapper.close();
 spawn_bombzone(x, paxx, y, speedtime, botype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "boss")
@@ -986,7 +1091,7 @@ mapper.write("\r\n"+"boss "+x+" "+y+" "+bossrange+" "+bossrange2+" "+bossrange3+
 mapper.close();
 spawn_boss(x, y, bossrange, bossrange2, bossrange3, bossrange4, minhp, minhp, card, damage, firetime, launchtime, speedtime, teltime, healtime, lv, xn, bosstyp, bosstyp2, bosstyp3, fb, mb, mb2, tb, tb2, hb, itms);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "calendar")
@@ -1045,7 +1150,7 @@ mapper.write("\r\n"+"calendar "+x+" "+y+" "+txt+" "+calandertyp+" "+dmd);
 mapper.close();
 spawn_calendar(x, y, txt, calandertyp, dmd);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "clock")
@@ -1104,7 +1209,7 @@ mapper.write("\r\n"+"clock "+x+" "+y+" "+txt+" "+clocktyp+" "+dmd);
 mapper.close();
 spawn_clock(x, y, txt, clocktyp, dmd);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "conveyor_belt")
@@ -1163,7 +1268,7 @@ mapper.write("\r\n"+"belt "+x+" "+paxx+" "+y+" "+paxy+" "+direction+" "+speedtim
 mapper.close();
 spawn_belt(x, paxx, y, paxy, direction, speedtime, tiletype, belttyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "dialog")
@@ -1226,7 +1331,7 @@ mapper.write("\r\n"+"dialog "+x+" "+paxx+" "+y+" "+paxy+" "+txt+" "+dlgtyp+" "+d
 mapper.close();
 spawn_dialog(x, paxx, y, paxy, txt, dlgtyp, dlt);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "door")
@@ -1397,7 +1502,7 @@ mapper.close();
 spawn_door(x2, y2, x, y, minhp, minhp, speedtime, looptyp, movtyp, opentyp, clostyp, desttyp, dmt, dmd);
 }
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "elevator")
@@ -1521,7 +1626,7 @@ mapper.write("\r\n"+"elevator "+x+" "+y+" "+speedtime+" "+txt+" "+ellooptyp+" "+
 mapper.close();
 spawn_elevator(x, y, speedtime, txt, ellooptyp, elmovtyp, elopentyp, elclostyp, elbeeptyp, fls);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "elevator_floor")
@@ -1595,7 +1700,7 @@ mapper.write("\r\n"+"el_floor "+x+" "+paxx+" "+y+" "+txt);
 mapper.close();
 spawn_el_floor(x, paxx, y, txt);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -1773,7 +1878,7 @@ mapper.close();
 spawn_psdoor(x2, y2, x, y, minhp, minhp, speedtime, drpassword, looptyp, movtyp, opentyp, clostyp, desttyp, dmt, dmd);
 }
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "passage")
@@ -1867,7 +1972,7 @@ mapper.write("\r\n"+"passage "+x+" "+y+" "+direction+" "+ln+" "+tiletype+" "+loo
 mapper.close();
 spawn_passage(x, y, direction, ln, tiletype, looptyp, opentyp, clostyp, speedtime, speedtime2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "lockable_passage")
@@ -1964,7 +2069,7 @@ mapper.write("\r\n"+"pspassage "+x+" "+y+" "+direction+" "+ln+" "+tiletype+" "+l
 mapper.close();
 spawn_pspassage(x, y, direction, ln, tiletype, looptyp, opentyp, clostyp, pspassword, speedtime, speedtime2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "human")
@@ -2107,7 +2212,7 @@ mapper.write("\r\n"+"human "+x+" "+y+" "+emrange+" "+emrange2+" "+emrange3+" "+e
 mapper.close();
 spawn_human(x, y, emrange, emrange2, emrange3, emrange4, minhp, minhp, card, damage, dfc, firetime, speedtime, lv, xn, humtype, fb, mb, mb2, itms);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "human_zone")
@@ -2146,7 +2251,7 @@ mapper.write("\r\n"+"human_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+humtype);
 mapper.close();
 spawn_humanzone(x, paxx, y, speedtime, humtype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "floor_breaker")
@@ -2181,7 +2286,7 @@ mapper.write("\r\n"+"floor_breaker "+x+" "+y+" "+floortyp);
 mapper.close();
 spawn_floorbreaker(x, y, floortyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "fire")
@@ -2264,7 +2369,7 @@ mapper.write("\r\n"+"fire "+x+" "+y+" "+firerange+" "+firerange2+" "+speedtime+"
 mapper.close();
 spawn_fire(x, y, firerange, firerange2, speedtime, firetype, mb, mb2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "force_field")
@@ -2307,7 +2412,7 @@ mapper.write("\r\n"+"forcefield "+x+" "+paxx+" "+y+" "+paxy+" "+damage+" "+speed
 mapper.close();
 spawn_forcefield(x, paxx, y, paxy, damage, speedtime, forcetyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "hazard")
@@ -2367,7 +2472,7 @@ mapper.write("\r\n"+"hazard "+x+" "+paxx+" "+y+" "+paxy+" "+hazztype+" "+lp);
 mapper.close();
 spawn_hazard(x, paxx, y, paxy, hazztype, lp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "helper")
@@ -2414,7 +2519,7 @@ mapper.write("\r\n"+"helper "+x+" "+y+" "+minhp+" "+card+" "+damage+" "+firetime
 mapper.close();
 spawn_helper(x, y, minhp, minhp, card, damage, firetime, speedtime, lv, helptyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "heal_zone")
@@ -2459,7 +2564,7 @@ mapper.write("\r\n"+"heal_zone "+x+" "+paxx+" "+y+" "+paxy+" "+healthmode+" "+da
 mapper.close();
 spawn_healzone(x, paxx, y, paxy, healthmode, damage, speedtime, healtype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "mine")
@@ -2517,7 +2622,7 @@ mapper.write("\r\n"+"mine "+x+" "+y+" "+damage+" "+minetyp+" "+trg);
 mapper.close();
 spawn_mine(x, y, damage, minetyp, trg);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "moving_hazard")
@@ -2566,7 +2671,7 @@ mapper.write("\r\n"+"mhazard "+x+" "+paxx+" "+y+" "+paxy+" "+x2+" "+y2+" "+direc
 mapper.close();
 spawn_moving_hazard(x, paxx, y, paxy, x2, y2, direction, direction2, speedtime, hazztype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "moving_platform")
@@ -2666,7 +2771,7 @@ mapper.write("\r\n"+"mplatform "+x+" "+paxx+" "+y+" "+paxy+" "+x2+" "+direction+
 mapper.close();
 spawn_moving_platform(x, paxx, y, paxy, x2, direction, direction2, speedtime, tiletype, volume, pitch, mplattyp, volume2, pitch2, volset);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "menu_zone")
@@ -2741,7 +2846,7 @@ mapper.write("\r\n"+"menu_zone "+x+" "+paxx+" "+y+" "+paxy);
 mapper.close();
 spawn_menuzone(x, paxx, y, paxy);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -2782,7 +2887,7 @@ mapper.write("\r\n"+"checkpoint "+x+" "+y+" "+speedtime+" "+checktyp);
 mapper.close();
 spawn_checkpoint(x, y, speedtime, checktyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "item")
@@ -2895,7 +3000,7 @@ mapper.write("\r\n"+"item "+x+" "+y+" "+speedtime+" "+itemtype+" "+itemtype2+" "
 mapper.close();
 spawn_obj(x, y, speedtime, itemtype, itemtype2, itm);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "item_zone")
@@ -2991,7 +3096,7 @@ mapper.write("\r\n"+"item_zone "+x+" "+paxx+" "+y+" "+paxy+" "+speedtime+" "+ite
 mapper.close();
 spawn_objzone(x, paxx, y, paxy, speedtime, itemtype, itemtype2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "lift")
@@ -3081,7 +3186,7 @@ mapper.write("\r\n"+"lift "+x+" "+paxx+" "+y+" "+paxy+" "+direction+" "+speedtim
 mapper.close();
 spawn_lift(x, paxx, y, paxy, direction, speedtime, tiletype, volume, pitch, lifttyp, volume2, pitch2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "platform")
@@ -3156,7 +3261,7 @@ mapper.write("\r\n"+"platform "+x+" "+paxx+" "+y+" "+minhp+" "+tiletype+" "+volu
 mapper.close();
 spawn_platform(x, paxx, y, y, minhp, minhp, tiletype, volume, pitch, dmd);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "projectile")
@@ -3247,7 +3352,7 @@ mapper.write("\r\n"+"projectile "+x+" "+y+" "+direction+" "+minhp+" "+card+" "+d
 mapper.close();
 spawn_projectile(x, y, direction, minhp, minhp, card, damage, speedtime, lv, xn, potype, fb, mb);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "projectile_zone")
@@ -3286,7 +3391,7 @@ mapper.write("\r\n"+"projectile_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+potype
 mapper.close();
 spawn_projzone(x, paxx, y, speedtime, potype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "reverb_space")
@@ -3449,7 +3554,7 @@ mapper.write("\r\n"+"reverb "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" "+round(re
 mapper.close();
 spawn_reverb_space(x, paxx, y, paxy, reverid, revdry, revwet, revsize, revdamp, revwidth);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -3594,7 +3699,7 @@ mapper.write("\r\n"+"robot "+x+" "+y+" "+robrange+" "+robrange2+" "+robrange3+" 
 mapper.close();
 spawn_robot(x, y, robrange, robrange2, robrange3, robrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, rotype, fb, mb, mb2, itms);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "robot_zone")
@@ -3633,7 +3738,7 @@ mapper.write("\r\n"+"robot_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+rotype);
 mapper.close();
 spawn_robotzone(x, paxx, y, speedtime, rotype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "safe_zone")
@@ -3672,7 +3777,7 @@ mapper.write("\r\n"+"safe_zone "+x+" "+paxx+" "+y+" "+paxy+" "+saftyp);
 mapper.close();
 spawn_safezone(x, paxx, y, paxy, saftyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "security_camera")
@@ -3721,7 +3826,7 @@ mapper.write("\r\n"+"camera "+x+" "+y+" "+camrange+" "+camrange2+" "+direction+"
 mapper.close();
 spawn_camera(x, y, camrange, camrange2, direction, speedtime, minhp, minhp, lv, xn, camtyp);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "sign")
@@ -3801,7 +3906,7 @@ mapper.write("\r\n"+"sign "+x+" "+y+" "+txt+" "+signtyp+" "+dmd+" "+lpg);
 mapper.close();
 spawn_sign(x, y, txt, signtyp, dmd, lpg);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "sound_source")
@@ -3817,8 +3922,41 @@ x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
-string[] source=get_map_sound_folders("sources/*");
-if(source.length()==0)
+setupmenu();
+m.add_item_tts("musics", "mus");
+m.add_item_tts("sources", "src");
+int mres=m.run("Soundtracks menu",true);
+string strm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(strm=="mus")
+{
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
+if(musics.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+sorcetyp="musics";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+if(strm=="src")
+{
+string[] sources=get_map_sound_folders("soundtracks/sources/*");
+if(sources.length()==0)
 {
 dlg_snd("Error. There are no sources available to view. Press enter to continue.");
 resume_pools();
@@ -3829,9 +3967,11 @@ else
 string res=sorcesmenu();
 if(res!="")
 {
+sorcetyp="sources";
 t.destroy_sound(prevslot);
-sorcetyp=res;
-prevslot = t.play_stationary_extended(get_map_sound("sources/" + sorcetyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
 }
 }
 create_slider();
@@ -3851,11 +3991,11 @@ volume=s.get_item_value(0);
 pitch=s.get_item_value(1);
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"sound_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch);
+mapper.write("\r\n"+"sound_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+sorcetyp2+" "+volume+" "+pitch);
 mapper.close();
-spawn_soundsource(x, paxx, y, paxy, sorcetyp, volume, pitch);
+spawn_soundsource(x, paxx, y, paxy, sorcetyp, sorcetyp2, volume, pitch);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "spike")
@@ -3921,7 +4061,7 @@ mapper.write("\r\n"+"spike "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+damage+" "+
 mapper.close();
 spawn_spike(x, paxx, y, paxy, minhp, minhp, damage, speedtime, spiktype, dmd);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "spawnpoint")
@@ -3978,7 +4118,7 @@ mapper.write("\r\n"+"spawnpoint "+x+" "+y);
 mapper.close();
 create_spawnpoint(x, y);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -4059,7 +4199,7 @@ mapper.write("\r\n"+"staircase "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+tiletyp
 mapper.close();
 spawn_staircase(x, paxx, y, paxy, minhp, minhp, tiletype, volume, pitch, dmd);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 
@@ -4137,7 +4277,7 @@ mapper.write("\r\n"+"switch "+x+" "+y+" "+switchtyp+" "+trg+" "+sse);
 mapper.close();
 spawn_switcher(x, y, switchtyp, trg, sse);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "teleporter")
@@ -4245,7 +4385,7 @@ mapper.write("\r\n"+"teleporter "+x+" "+y+" "+x2+" "+y2+" "+telrange+" "+telrang
 mapper.close();
 spawn_teleporter(x, y, x2, y2, telrange, telrange2, speedtime, teltype, mb, mb2, sse);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "text_square")
@@ -4310,7 +4450,7 @@ mapper.write("\r\n"+"text_square "+x+" "+y+" "+txt);
 mapper.close();
 spawn_text_square(x, y, txt);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -4353,7 +4493,7 @@ mapper.write("\r\n"+"timebomb "+x+" "+y+" "+damage+" "+speedtime+" "+timbotype);
 mapper.close();
 spawn_timebomb(x, y, damage, speedtime, timbotype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "timed_ambience")
@@ -4369,10 +4509,43 @@ x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
-string[] ambience=get_map_sound_folders("sources/*");
-if(ambience.length()==0)
+setupmenu();
+m.add_item_tts("musics", "mus");
+m.add_item_tts("sources", "src");
+int mres=m.run("Soundtracks menu",true);
+string strm=m.get_item_name(mres);
+if(mres==0)
 {
-dlg_snd("Error. There are no ambiences available to view. Press enter to continue.");
+speak("canceled");
+return;
+}
+if(strm=="mus")
+{
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
+if(musics.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+sorcetyp="musics";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+if(strm=="src")
+{
+string[] sources=get_map_sound_folders("soundtracks/sources/*");
+if(sources.length()==0)
+{
+dlg_snd("Error. There are no sources available to view. Press enter to continue.");
 resume_pools();
 return;
 }
@@ -4381,9 +4554,11 @@ else
 string res=sorcesmenu();
 if(res!="")
 {
+sorcetyp="sources";
 t.destroy_sound(prevslot);
-sorcetyp=res;
-prevslot = t.play_stationary_extended(get_map_sound("ambiences/" + sorcetyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
 }
 }
 create_slider();
@@ -4409,11 +4584,11 @@ speedtime=string_to_number(sp);
 resume_pools();
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"timed_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch+" "+speedtime);
+mapper.write("\r\n"+"timed_ambience "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+sorcetyp2+" "+volume+" "+pitch+" "+speedtime);
 mapper.close();
-spawn_timedamb(x, paxx, y, paxy, volume, pitch, speedtime, sorcetyp);
+spawn_timedamb(x, paxx, y, paxy, volume, pitch, speedtime, sorcetyp, sorcetyp2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "timed_source")
@@ -4429,8 +4604,41 @@ x=string_to_number(mx);
 paxx=string_to_number(mx2);
 y=string_to_number(my);
 paxy=string_to_number(my2);
-string[] source=get_map_sound_folders("sources/*");
-if(source.length()==0)
+setupmenu();
+m.add_item_tts("musics", "mus");
+m.add_item_tts("sources", "src");
+int mres=m.run("Soundtracks menu",true);
+string strm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(strm=="mus")
+{
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
+if(musics.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+sorcetyp="musics";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+if(strm=="src")
+{
+string[] sources=get_map_sound_folders("soundtracks/sources/*");
+if(sources.length()==0)
 {
 dlg_snd("Error. There are no sources available to view. Press enter to continue.");
 resume_pools();
@@ -4441,9 +4649,11 @@ else
 string res=sorcesmenu();
 if(res!="")
 {
+sorcetyp="sources";
 t.destroy_sound(prevslot);
-sorcetyp=res;
-prevslot = t.play_stationary_extended(get_map_sound("sources/" + sorcetyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
 }
 }
 create_slider();
@@ -4469,11 +4679,11 @@ speedtime=string_to_number(sp);
 resume_pools();
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"timed_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+volume+" "+pitch+" "+speedtime);
+mapper.write("\r\n"+"timed_source "+x+" "+paxx+" "+y+" "+paxy+" "+sorcetyp+" "+sorcetyp2+" "+volume+" "+pitch+" "+speedtime);
 mapper.close();
-spawn_timedsource(x, paxx, y, paxy, volume, pitch, speedtime, sorcetyp);
+spawn_timedsource(x, paxx, y, paxy, volume, pitch, speedtime, sorcetyp, sorcetyp2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "timed_text")
@@ -4565,7 +4775,7 @@ mapper.write("\r\n"+"timed_text "+x+" "+paxx+" "+y+" "+paxy+" "+speedtime+" "+tx
 mapper.close();
 spawn_timedtext(x, paxx, y, paxy, speedtime, txt);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -4678,7 +4888,7 @@ mapper.write("\r\n"+"travelpoint "+x+" "+paxx+" "+y+" "+paxy+" "+txt+" "+x2+" "+
 mapper.close();
 spawn_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -4909,7 +5119,7 @@ mapper.write("\r\n"+"turret "+x+" "+y+" "+minhp+" "+card+" "+damage+" "+firetime
 mapper.close();
 spawn_turret(x, y, minhp, minhp, card, damage, firetime, launchtime, speedtime, lv, xn, tutype, tutype2, tutype3, fb, mb, mb2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "vehicle")
@@ -4975,7 +5185,7 @@ mapper.write("\r\n"+"vehicle "+x+" "+y+" "+minhp+" "+damage+" "+speedtime+" "+sp
 mapper.close();
 spawn_vehicle(x, y, minhp, minhp, damage, speedtime, speedtime2, speedtime3, vehtyp, fb);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "vanishing_hazard")
@@ -5019,7 +5229,7 @@ mapper.write("\r\n"+"vanishing_hazard "+x+" "+paxx+" "+y+" "+paxy+" "+hazztype+"
 mapper.close();
 spawn_vanishing_hazard(x, paxx, y, paxy, hazztype, speedtime);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "vanishing_platform")
@@ -5109,7 +5319,7 @@ mapper.write("\r\n"+"vanishing_platform "+x+" "+paxx+" "+y+" "+tiletype+" "+volu
 mapper.close();
 spawn_vanishing_platform(x, paxx, y, y, tiletype, volume, pitch, vplattyp, volume2, pitch2, speedtime);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "character_blocker")
@@ -5205,7 +5415,7 @@ mapper.write("\r\n"+"chblocker "+x+" "+paxx+" "+y+" "+paxy+" "+string_join(selec
 mapper.close();
 spawn_chblocker(x, paxx, y, paxy, selected_charsets, ctl);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -5305,7 +5515,7 @@ mapper.write("\r\n"+"cblocker "+x+" "+paxx+" "+y+" "+paxy+" "+string_join(comsli
 mapper.close();
 spawn_cblocker(x, paxx, y, paxy, comslist, ctl);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }
@@ -5386,7 +5596,7 @@ mapper.write("\r\n"+"wall "+x+" "+paxx+" "+y+" "+paxy+" "+minhp+" "+walltype+" "
 mapper.close();
 spawn_wall(x, paxx, y, paxy, minhp, minhp, walltype, volume, pitch, dmd);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "zombie")
@@ -5527,7 +5737,7 @@ mapper.write("\r\n"+"zombie "+x+" "+y+" "+zombrange+" "+zombrange2+" "+zombrange
 mapper.close();
 spawn_zombie(x, y, zombrange, zombrange2, zombrange3, zombrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, zotype, fb, mb, mb2, itms);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "zombie_zone")
@@ -5566,7 +5776,7 @@ mapper.write("\r\n"+"zombie_zone "+x+" "+paxx+" "+y+" "+speedtime+" "+zotype);
 mapper.close();
 spawn_zombiezone(x, paxx, y, speedtime, zotype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 }
 if(buildtype == "zone")
@@ -5649,7 +5859,7 @@ mapper.write("\r\n"+"zone "+x+" "+paxx+" "+y+" "+paxy+" "+txt);
 mapper.close();
 spawn_zone(x, paxx, y, paxy, txt);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("misc/mapupdate.ogg"),false);
+mpool.play_stationary(get_pack_sound("map/"+maptype+"/player/*update*"),false);
 speak("Map updated.");
 game();
 }

@@ -7,7 +7,7 @@ for (uint i=0; i<chars.length(); i++)
 {
 m.add_item_tts(chars[i],chars[i],"",true);
 }
-int mres=m.run("Characters menu", true);
+int mres=m.run("Character themes menu", true);
 if(mres==0)
 {
 speak("canceled");
@@ -75,7 +75,7 @@ for (uint i=0; i<keyboardchanges.length(); i++)
 {
 m.add_item_tts(keyboardchanges[i],keyboardchanges[i],"",true);
 }
-int mres=m.run("Choose the keyboard theme you would like to use in all input boxes.",true);
+int mres=m.run("Choose the keyboard theme you'd like to use in all input boxes.",true);
 if(mres==0)
 {
 speak("canceled");
@@ -116,6 +116,71 @@ prevslot=t.play_stationary(get_pack_sound("keyboards/"+keyboardchanges+"/*delete
 }
 return 0;
 }
+string mapchoosers()
+{
+string[] mapchanges=get_pack_sound_folders("map/*");
+setupmenu();
+m.set_callback(@mapchanges_callback,"");
+for (uint i=0; i<mapchanges.length(); i++)
+{
+m.add_item_tts(mapchanges[i],mapchanges[i],"",true);
+}
+int mres=m.run("Map themes menu.",true);
+if(mres==0)
+{
+speak("canceled");
+settingsmenu();
+}
+if(mres>0 and mres<=mapchanges.length())
+{
+maptype=mapchanges[mres-1];
+dlg("Map theme set. Press enter to continue.");
+settingsmenu();
+}
+return m.get_item_name(mres);
+}
+int mapchanges_callback(dynamic_menu_pro@ m, string data)
+{
+string mapchanges;
+if(m.menu_position>0)
+mapchanges=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_D) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_D) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*delete*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_F) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_F) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*finish*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*load*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_M) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_M) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*move*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_S) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_S) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*Start*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_P) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_P) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*stop*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_U) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_U) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*update*"),false);
+}
+return 0;
+}
 string menuchoosers()
 {
 string[] menuchanges=get_pack_sound_folders("menus/*");
@@ -125,7 +190,7 @@ for (uint i=0; i<menuchanges.length(); i++)
 {
 m.add_item_tts(menuchanges[i],menuchanges[i],"",true);
 }
-int mres=m.run("Choose the menu theme you would like to use in all menus.",true);
+int mres=m.run("Choose the menu theme you'd like to use in all menus.",true);
 if(mres==0)
 {
 speak("canceled");
@@ -1310,13 +1375,13 @@ return 0;
 }
 string musicsmenu()
 {
-string[] musics=get_map_sound_folders("musics/*");
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
 setupmenu2();
 m.set_callback(@musics_callback,"");
 for (uint i=0; i<musics.length(); i++)
 {
 string letter=string_replace(musics[i],".ogg","",true)[0];
-m.add_item(get_map_sound("musics/"+musics[i]+"/*loop*"), musics[i], letter, true);
+m.add_item(get_map_sound("soundtracks/musics/"+musics[i]+"/*loop*"), musics[i], letter, true);
 }
 int mres=m.run("musics menu.", true);
 if(mres==0)
@@ -1346,13 +1411,13 @@ return 0;
 }
 string sorcesmenu()
 {
-string[] sorces=get_map_sound_folders("sources/*");
+string[] sorces=get_map_sound_folders("soundtracks/sources/*");
 setupmenu2();
 m.set_callback(@sources_callback,"");
 for (uint i=0; i<sorces.length(); i++)
 {
 string letter=string_replace(sorces[i],".ogg","",true)[0];
-m.add_item(get_map_sound("sources/"+sorces[i]+"/*loop*"), sorces[i], letter, true);
+m.add_item(get_map_sound("soundtracks/sources/"+sorces[i]+"/*loop*"), sorces[i], letter, true);
 }
 int mres=m.run("sources menu.", true);
 if(mres==0)
