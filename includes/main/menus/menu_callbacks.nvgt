@@ -21,12 +21,12 @@ destroy_all_charas();
 charparse();
 if(ingame==false)
 {
-dlg("Character set. Press enter to continue.");
+dlg("Character theme set. Press enter to continue.");
 settingsmenu();
 }
 else if(ingame==true)
 {
-speak("Character set to "+chartype+".");
+speak("Character theme set to "+chartype+".");
 writepreffs();
 game();
 }
@@ -66,6 +66,82 @@ prevslot=t.play_stationary(get_pack_sound("characters/"+chars+"/*turn*"), false)
 }
 return 0;
 }
+string mapchoosers(bool ingame=false)
+{
+string[] mapchanges=get_pack_sound_folders("map/*");
+setupmenu();
+m.set_callback(@mapchanges_callback,"");
+for (uint i=0; i<mapchanges.length(); i++)
+{
+m.add_item_tts(mapchanges[i],mapchanges[i],"",true);
+}
+int mres=m.run("Map themes menu.",true);
+if(mres==0)
+{
+speak("canceled");
+if(ingame==false) settingsmenu();
+if(ingame==true) game();
+}
+if(mres>0 and mres<=mapchanges.length())
+{
+maptype=mapchanges[mres-1];
+if(ingame==false)
+{
+dlg("Map theme set. Press enter to continue.");
+settingsmenu();
+}
+else if(ingame==true)
+{
+speak("Map theme set to "+maptype+".");
+writepreffs();
+game();
+}
+}
+return m.get_item_name(mres);
+}
+int mapchanges_callback(dynamic_menu_pro@ m, string data)
+{
+string mapchanges;
+if(m.menu_position>0)
+mapchanges=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_D) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_D) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*delete*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_F) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_F) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*finish*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*load*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_M) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_M) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*move*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_S) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_S) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*Start*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_P) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_P) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*stop*"),false);
+}
+if(key_down(KEY_LCONTROL) and key_repeating(KEY_U) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_U) and m.menu_position>0)
+{
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*update*"),false);
+}
+return 0;
+}
+
 string keyboardchoosers()
 {
 string[] keyboardchanges=get_pack_sound_folders("keyboards/*");
@@ -116,71 +192,6 @@ prevslot=t.play_stationary(get_pack_sound("keyboards/"+keyboardchanges+"/*delete
 }
 return 0;
 }
-string mapchoosers()
-{
-string[] mapchanges=get_pack_sound_folders("map/*");
-setupmenu();
-m.set_callback(@mapchanges_callback,"");
-for (uint i=0; i<mapchanges.length(); i++)
-{
-m.add_item_tts(mapchanges[i],mapchanges[i],"",true);
-}
-int mres=m.run("Map themes menu.",true);
-if(mres==0)
-{
-speak("canceled");
-settingsmenu();
-}
-if(mres>0 and mres<=mapchanges.length())
-{
-maptype=mapchanges[mres-1];
-dlg("Map theme set. Press enter to continue.");
-settingsmenu();
-}
-return m.get_item_name(mres);
-}
-int mapchanges_callback(dynamic_menu_pro@ m, string data)
-{
-string mapchanges;
-if(m.menu_position>0)
-mapchanges=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_D) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_D) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*delete*"),false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_F) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_F) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*finish*"),false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*load*"),false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_M) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_M) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*move*"),false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_S) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_S) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*Start*"),false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_P) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_P) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*stop*"),false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_U) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_U) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("map/"+mapchanges+"/player/*update*"),false);
-}
-return 0;
-}
 string menuchoosers()
 {
 string[] menuchanges=get_pack_sound_folders("menus/*");
@@ -199,7 +210,7 @@ settingsmenu();
 if(mres>0 and mres<=menuchanges.length())
 {
 menutype=menuchanges[mres-1];
-dlg("Menu sounds set. Press enter to continue.");
+dlg("Menu theme set. Press enter to continue.");
 settingsmenu();
 }
 return m.get_item_name(mres);
