@@ -4,10 +4,10 @@ class sonar
     bool follow_player = true;
     bool both_directions = false;
 int sonarsound;
-    int mode = 1;
+    int mode = 0;
     int loop_speed = 500;
 int scan_range = 5;
-    string facedir = "right";
+    string facedir="right";
     timer looptimer;
     void toggle_follow()
     {
@@ -23,7 +23,7 @@ int scan_range = 5;
         if (both_directions)
             speak("Sonar goes in both directions at once.");
         else
-            speak("Sonar single direction mode.");
+speak("Sonar goes in one direction only.");
     }
     void cycle_mode()
     {
@@ -79,61 +79,76 @@ int scan_range = 5;
     }
 void scan_direction(string dir, double pitch_offset)
 {
-    double tx = 0;
-    double ty = 0;
-    if (dir == "left") tx -= 1;
-    if (dir == "right") tx += 1;
-    if (dir == "up") ty -= 1;
-    if (dir == "down") ty += 1;
-    if (string_contains(gmt(tx, ty), "wall", 1) > -1)
+    double dx = 0;
+    double dy = 0;
+    if (dir == "left") dx = -1;
+    if (dir == "right") dx = 1;
+    if (dir == "up") dy = -1;
+    if (dir == "down") dy = 1;
+    double tx = me.x;
+    double ty = me.y;
+    for (int i = 1; i <= scan_range; i++)
     {
-sonarsound=mpool.play_extended_2d(get_pack_sound("map/"+maptype+"/sonar/*wall*"), me.x, me.y, tx, ty, 0, 0, 0, 0, false, 0, 0, 0, 100);
-mpool.update_sound_2d(sonarsound, tx, ty);
-        return;
-    }
-    for (uint i=0; i<hazards.length(); i++)
-    {
-        if (tx>=hazards[i].minx && tx<=hazards[i].maxx && ty>=hazards[i].miny && ty<=hazards[i].maxy)
+        tx = me.x + dx * i;
+        ty = me.y + dy * i;
+        if (string_contains(gmt(tx, ty), "wall", 1) > -1)
         {
-sonarsound=mpool.play_extended_2d(get_pack_sound("map/"+maptype+"/sonar/*hazard*"), me.x, me.y, tx, ty, 0, 0, 0, 0, false, 0, 0, 0, 100);
-mpool.update_sound_2d(sonarsound, tx, ty);
+            play_sonar("wall", tx, ty, pitch_offset);
             return;
         }
-    }
-    for (uint i=0; i<staircases.length(); i++)
-    {
-        if (tx>=staircases[i].minx && tx<=staircases[i].maxx && ty>=staircases[i].miny && ty<=staircases[i].maxy)
+        for (uint h = 0; h < hazards.length(); h++)
         {
-            if (ty < staircases[i].maxy)
+            if (tx >= hazards[h].minx && tx <= hazards[h].maxx && ty >= hazards[h].miny && ty <= hazards[h].maxy)
             {
-sonarsound=mpool.play_extended_2d(get_pack_sound("map/"+maptype+"/sonar/*up*"), me.x, me.y, tx, ty, 0, 0, 0, 0, false, 0, 0, 0, 100);
-mpool.update_sound_2d(sonarsound, tx, ty);
+                play_sonar("hazard", tx, ty, pitch_offset);
+                return;
             }
-            else
-            {
-sonarsound=mpool.play_extended_2d(get_pack_sound("map/"+maptype+"/sonar/*down*"), me.x, me.y, tx, ty, 0, 0, 0, 0, false, 0, 0, 0, 100);
-mpool.update_sound_2d(sonarsound, tx, ty);
-            }
-            return;
         }
-    }
-    for (uint i=0; i<vanishing_platforms.length(); i++)
-    {
-        if (tx>=vanishing_platforms[i].minx && tx<=vanishing_platforms[i].maxx && ty>=vanishing_platforms[i].miny && ty<=vanishing_platforms[i].maxy)
+        for (uint s = 0; s < staircases.length(); s++)
         {
-sonarsound=mpool.play_extended_2d(get_pack_sound("map/"+maptype+"/sonar/*vanish*"), me.x, me.y, tx, ty, 0, 0, 0, 0, false, 0, 0, 0, 100);
-mpool.update_sound_2d(sonarsound, tx, ty);
+            if (tx >= staircases[s].minx && tx <= staircases[s].maxx && ty >= staircases[s].miny && ty <= staircases[s].maxy)
+            {
+                if (ty < staircases[s].maxy)
+                    play_sonar("up", tx, ty, pitch_offset);
+                else
+                    play_sonar("down", tx, ty, pitch_offset);
+                return;
+            }
+        }
+        for (uint v = 0; v < vanishing_platforms.length(); v++)
+        {
+            if (tx >= vanishing_platforms[v].minx && tx <= vanishing_platforms[v].maxx && ty >= vanishing_platforms[v].miny && ty <= vanishing_platforms[v].maxy)
+            {
+                play_sonar("vanish", tx, ty, pitch_offset);
+                return;
+            }
+        }
+        string tile = gmt(tx, ty);
+        if (tile != "")
+        {
+            play_sonar("tile", tx, ty, pitch_offset);
             return;
         }
     }
-    string tile = gmt(tx, ty);
-    if (tile != "")
-    {
-sonarsound=mpool.play_extended_2d(get_pack_sound("map/"+maptype+"/sonar/*tile*"), me.x, me.y, tx, ty, 0, 0, 0, 0, false, 0, 0, 0, 100);
-mpool.update_sound_2d(sonarsound, tx, ty);
-        return;
-    }
-sonarsound=mpool.play_extended_2d(get_pack_sound("map/"+maptype+"/sonar/*air*"), me.x, me.y, tx, ty, 0, 0, 0, 0, false, 0, 0, 0, 100);
-mpool.update_sound_2d(sonarsound, tx, ty);
+    play_sonar("air", me.x + dx * scan_range, me.y + dy * scan_range, pitch_offset);
+}
+void play_sonar(string type, double sx, double sy, double pitch_offset)
+{
+    string sonarfile;
+    if (type == "wall")
+        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*wall*");
+    else if (type == "hazard")
+        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*hazard*");
+    else if (type == "up")
+        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*up*");
+    else if (type == "down")
+        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*down*");
+    else if (type == "vanish")
+        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*vanish*");
+    else if (type == "tile")
+        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*tile*");
+    else
+        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*air*");
+    sonarsound = sonarpool.play_extended_2d(sonarfile, me.x, me.y, sx, sy, 0, 0, 0, 0, false, 0, 0, 0, 100+pitch_offset, false);
 }
 }
