@@ -57,13 +57,13 @@ Letter, G plus Semicolon: Speaks all of the newly created selection points, if p
 Letter, G plus Apostrophe: Clears all of the newly created selection points, if pressed/ held down.
 
 Sonar keys.
-Shift plus F2: Changes the sonar following mode, if pressed.
-Shift plus F3: Changes the sonar tracking mode, if pressed.
-Shift plus F4: Changes the sonar looping speed, if pressed.
-Letter, J: Face the sonar left when it’s not following you, if pressed.
-Letter, L: Face the sonar right when it’s not following you, if pressed.
-Letter, K: Face the sonar down when it’s not following you, if pressed.
-Letter, I: Face the sonar up when it’s not following you, if pressed.
+Shift plus F1: Changes the sonar following mode, if pressed.
+Shift plus F2: Changes the sonar tracking mode, if pressed.
+Shift plus F3: Changes the sonar looping speed, if pressed.
+Shift plus letter J: Face the sonar left when it’s not following you, if pressed.
+Shift plus letter L: Face the sonar right when it’s not following you, if pressed.
+Shift plus letter K: Face the sonar down when it’s not following you, if pressed.
+Shift plus letter I: Face the sonar up when it’s not following you, if pressed.
 
 Spire keys.
 Shift plus left arrow: Moves the spire left to find objects on the left side of the map, if pressed.
