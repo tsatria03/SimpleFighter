@@ -31,7 +31,11 @@ Alt plus left arrow: Moves left at double speed on the X axis, if pressed/held d
 Alt plus right arrow: Moves right at double speed on the X axis, if pressed/held down.
 Alt plus up arrow: Moves up at double speed on the Y axis, if pressed/held down.
 Alt plus down arrow: Moves down at double speed on the Y axis, if pressed/held down.
-Spacebar: Causes your character to jump higher on the Y axes, if pressed/held down.
+Alt plus shift plus left arrow: Facess your character left, if pressed.
+Alt plus shift plus right arrow: Facess your character right, if pressed.
+Alt plus shift plus down arrow: Facess your character down, if pressed.
+Alt plus shift plus up arrow: Facess your character up, if pressed.
+Spacebar: Causes your character to jump on the Y axes, if pressed/held down.
 Letter, J: Moves to a random coordinate on the X axis, if pressed.
 Letter, K: Moves to a random coordinate on the Y axis, if pressed.
 Letter, L: Moves to a random coordinate on both the X and Y axis, if pressed.
@@ -41,16 +45,25 @@ Letter, G plus Left arrow: Moves the camera left on the X axis, if pressed/ held
 Letter, G plus Right arrow: Moves the camera right on the X axis, if pressed/ held down.
 Letter, G plus Up arrow: Moves the camera up on the Y axis, if pressed/ held down.
 Letter, G plus Down arrow: Moves the camera down on the Y axis, if pressed/ held down.
-Letter, G plus letter J: sets a selection point on the left side of the X axis, if pressed.
-Letter, G plus letter L: sets a selection point on the right side of the X axis, if pressed.
-Letter, G plus letter I: sets a selection point on the top side of the Y axis, if pressed.
-Letter, G plus letter K: sets a selection point on the bottom side of the Y axis, if pressed.
+Letter, G plus letter J: Sets a selection point on the left side of the X axis, if pressed.
+Letter, G plus letter L: Sets a selection point on the right side of the X axis, if pressed.
+Letter, G plus letter I: Sets a selection point on the top side of the Y axis, if pressed.
+Letter, G plus letter K: Sets a selection point on the bottom side of the Y axis, if pressed.
 Letter, G plus letter M: Toggles the mfwc mode on or off for the camera, if pressed/ held down.
 Letter, G plus letter Y: Toggles the Dexterity mode on or off for the camera, if pressed/ held down.
 Letter, G plus letter R: Anounces the camera's current Coordinates relative to your position on the map, if pressed/ held down.
 Letter, G plus letter T: Plays the current map tile at the camera's position, if pressed/ held down.
 Letter, G plus Semicolon: Speaks all of the newly created selection points, if pressed/ held down.
 Letter, G plus Apostrophe: Clears all of the newly created selection points, if pressed/ held down.
+
+Sonar keys.
+Shift plus F2: Changes the sonar following mode, if pressed.
+Shift plus F3: Changes the sonar tracking mode, if pressed.
+Shift plus F4: Changes the sonar looping speed, if pressed.
+Letter, J: Face the sonar left when it’s not following you, if pressed.
+Letter, L: Face the sonar right when it’s not following you, if pressed.
+Letter, K: Face the sonar down when it’s not following you, if pressed.
+Letter, I: Face the sonar up when it’s not following you, if pressed.
 
 Spire keys.
 Shift plus left arrow: Moves the spire left to find objects on the left side of the map, if pressed.
