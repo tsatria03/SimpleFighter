@@ -100,17 +100,10 @@ Letter, V: Opens the points menu, if pressed.
 Creating sound packs.
 This game allows you to create customizeable global and map-based sound packs that you can use in various situations.
 
-Character sound listing: 36 total.
+Character sound listing: 25 total.
 bleed.ogg: This sound is played when your character bleeds.
 buy.ogg: This sound is played when your character purchases upgrades.
 break.ogg: This sound is played when a character breaks a certain bone in their body.
-cameraair.ogg: This sound is played when air is detected while using the camera.
-cameracut.ogg: This sound is played when selection points are being cleared while using the camera.
-camerahazard.ogg: This sound is played when a hazard is detected while using the camera.
-cameraplayer.ogg: This sound is played when a player is detected while using the camera.
-camerapoint.ogg: This sound is played when a selection point is being set while using the camera.
-cameratile.ogg: This sound is played when a tile is detected while using the camera.
-camerawall.ogg: This sound is played when a wall is detected while using the camera.
 crit.ogg: This sound is played when your character gets criticly hurt.
 death.ogg: This sound is played when your character dies.
 fail.ogg: This sound is played when a character's broken bone starts  to kill them from too much pain.
@@ -125,13 +118,9 @@ kill.ogg: This sound is played when your character kills an entity.
 land.ogg: This sound is played when your character lands on a platform.
 lev.ogg: This sound is played when your character levels up.
 life.ogg: This sound is played when your character loses a life.
-move.ogg: This sound is played when you use the /go command to move yourself to a different X or Y Coordinate  on a map.
 pain.ogg: This sound is played when a character's broken bone starts to hurt them while moving or performing other tasks.
 plummet.ogg: This sound is played when your character is falling.
-rock.ogg: This sound is played when your character rocks back and forth while sitting.
 rise.ogg: This sound is played when your character is jumping.
-sit.ogg: This sound is played when your character sits on the ground.
-stand.ogg: This sound is played when your character stands up.
 swing.ogg: This sound is played when your character swings a melee weapon.
 telxy.ogg: This sound is played when your character teleports on the x and y axes of a map.
 turn.ogg: This sound is played when your character turns on the spot.
