@@ -3,27 +3,28 @@ class sonar
     bool enabled = true;
     bool follow_player = true;
     bool both_directions = false;
-int sonarsound;
     int mode = 0;
     int loop_speed = 500;
-int scan_range = 5;
-    string facedir="right";
     timer looptimer;
+    string facedir = "right";
+    int scan_max = 101;
+    int near_range = 21;
+    string last_left = "";
+    string last_right = "";
+    string last_up = "";
+    string last_down = "";
+    int sonarsound = -1;
     void toggle_follow()
     {
         follow_player = !follow_player;
-        if (follow_player)
-            speak("Sonar follows you.");
-        else
-            speak("Sonar does not follow you.");
+        if (follow_player) speak("Sonar follows you.");
+        else speak("Sonar does not follow you.");
     }
     void toggle_both()
     {
         both_directions = !both_directions;
-        if (both_directions)
-            speak("Sonar goes in both directions at once.");
-        else
-speak("Sonar goes in one direction only.");
+        if (both_directions) speak("Sonar goes in both directions at once.");
+        else speak("Sonar goes in one direction only.");
     }
     void cycle_mode()
     {
@@ -48,107 +49,151 @@ speak("Sonar goes in one direction only.");
     {
         facedir = dir;
     }
-    void sonarcheck()
+void sonarcheck()
+{
+    if (!enabled || mode == 0)
+        return;
+    if (mode == 2)
     {
-        if (!enabled || mode == 0)
+        if (looptimer.elapsed < loop_speed)
             return;
-        if (mode == 2)
-        {
-            if (looptimer.elapsed < loop_speed)
-                return;
-            looptimer.restart();
-        }
+        looptimer.restart();
+    }
+    if (both_directions)
+    {
+        scan_direction("left", 5, last_left);
+        scan_direction("right", 10, last_right);
+    }
+    else
+    {
         string dir;
         if (follow_player)
-            dir = direction;
+            dir = facing;
         else
             dir = facedir;
-        if (both_directions)
-        {
-            scan_direction("left", 5);
-            scan_direction("right", 10);
-        }
-        else
-        {
-            scan_direction(dir, 0);
-        }
-        if (jumping == 1)
-        {
-            scan_direction("down", 0);
-        }
+        if (dir == "left") scan_direction("left", 0, last_left);
+        else if (dir == "right") scan_direction("right", 0, last_right);
+        else if (dir == "up") scan_direction("up", 0, last_up);
+        else if (dir == "down") scan_direction("down", 0, last_down);
     }
-void scan_direction(string dir, double pitch_offset)
+    if (jumping == 1)
+        scan_direction("down", 0, last_down);
+}
+void scan_direction(const string&in dir, double pitch_offset, string &inout last_state)
 {
     double dx = 0;
     double dy = 0;
     if (dir == "left") dx = -1;
-    if (dir == "right") dx = 1;
-    if (dir == "up") dy = -1;
-    if (dir == "down") dy = 1;
-    double tx = me.x;
-    double ty = me.y;
-    for (int i = 1; i <= scan_range; i++)
+    else if (dir == "right") dx = 1;
+    else if (dir == "up") dy = 1;
+    else if (dir == "down") dy = -1;
+    else return;
+    for (int dist = 1; dist <= scan_max; dist++)
     {
-        tx = me.x + dx * i;
-        ty = me.y + dy * i;
-        if (string_contains(gmt(tx, ty), "wall", 1) > -1)
+        double tx = me.x + dx * dist;
+        double ty = me.y + dy * dist;
+        for (uint i = 0; i < walls.length(); i++)
         {
-            play_sonar("wall", tx, ty, pitch_offset);
-            return;
-        }
-        for (uint h = 0; h < hazards.length(); h++)
-        {
-            if (tx >= hazards[h].minx && tx <= hazards[h].maxx && ty >= hazards[h].miny && ty <= hazards[h].maxy)
+            if (match_endpoint(dir, walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, tx, ty))
             {
-                play_sonar("hazard", tx, ty, pitch_offset);
+                    play_sonar("wall", tx, ty, pitch_offset);
                 return;
             }
         }
-        for (uint s = 0; s < staircases.length(); s++)
+        for (uint i = 0; i < hazards.length(); i++)
         {
-            if (tx >= staircases[s].minx && tx <= staircases[s].maxx && ty >= staircases[s].miny && ty <= staircases[s].maxy)
+            if (match_endpoint(dir, hazards[i].minx, hazards[i].maxx, hazards[i].miny, hazards[i].maxy, tx, ty))
             {
-                if (ty < staircases[s].maxy)
-                    play_sonar("up", tx, ty, pitch_offset);
-                else
-                    play_sonar("down", tx, ty, pitch_offset);
+                    play_sonar("hazard", tx, ty, pitch_offset);
                 return;
             }
         }
-        for (uint v = 0; v < vanishing_platforms.length(); v++)
+        for (uint i = 0; i < staircases.length(); i++)
         {
-            if (tx >= vanishing_platforms[v].minx && tx <= vanishing_platforms[v].maxx && ty >= vanishing_platforms[v].miny && ty <= vanishing_platforms[v].maxy)
+            if (match_endpoint(dir, staircases[i].minx, staircases[i].maxx, staircases[i].miny, staircases[i].maxy, tx, ty))
             {
-                play_sonar("vanish", tx, ty, pitch_offset);
+        string stairtype;
+        if (dir == "up")
+            stairtype = "up";
+        else if (dir == "down")
+            stairtype = "down";
+        else
+        {
+            if (me.y < staircases[i].maxy)
+                stairtype = "up";
+            else
+                stairtype = "down";
+        }
+                    play_sonar(stairtype, tx, ty, pitch_offset);
                 return;
             }
         }
-        string tile = gmt(tx, ty);
-        if (tile != "")
+        for (uint i = 0; i < vanishing_platforms.length(); i++)
         {
-            play_sonar("tile", tx, ty, pitch_offset);
-            return;
+            if (match_endpoint(dir, vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, tx, ty))
+            {
+                    play_sonar("vanish", tx, ty, pitch_offset);
+                return;
+            }
         }
+        for (uint i = 0; i < platforms.length(); i++)
+        {
+            if (match_endpoint(dir, platforms[i].minx, platforms[i].maxx, platforms[i].miny, platforms[i].maxy, tx, ty))
+            {
+                string tile = gmt(tx, ty);
+                if (tile != "" && tile!="air")
+                {
+                        play_sonar("tile", tx, ty, pitch_offset);
+                    return;
+                }
+                if (tile=="" || tile == "air")
+                {
+                        play_sonar("air", tx, ty, pitch_offset);
+                    return;
+                }
+}
+}
     }
-    play_sonar("air", me.x + dx * scan_range, me.y + dy * scan_range, pitch_offset);
 }
-void play_sonar(string type, double sx, double sy, double pitch_offset)
+bool match_endpoint(const string&in dir, double minx, double maxx, double miny, double maxy, double tx, double ty)
 {
-    string sonarfile;
-    if (type == "wall")
-        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*wall*");
-    else if (type == "hazard")
-        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*hazard*");
-    else if (type == "up")
-        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*up*");
-    else if (type == "down")
-        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*down*");
-    else if (type == "vanish")
-        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*vanish*");
-    else if (type == "tile")
-        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*tile*");
-    else
-        sonarfile = get_pack_sound("map/" + maptype + "/sonar/*air*");
-    sonarsound = sonarpool.play_extended_2d(sonarfile, me.x, me.y, sx, sy, 0, 0, 0, 0, false, 0, 0, 0, 100+pitch_offset, false);
+    if (dir == "right")
+        return (tx == minx && ty >= miny && ty <= maxy);
+    if (dir == "left")
+        return (tx == maxx && ty >= miny && ty <= maxy);
+    if (dir == "up")
+        return (ty == maxy && tx >= minx && tx <= maxx);
+    if (dir == "down")
+        return (ty == miny && tx >= minx && tx <= maxx);
+    return false;
 }
+bool object_found(const string&in type, int dist, string &inout last_state)
+{
+    if (dist > near_range)
+        return false;
+    string state = type + ":" + dist;
+    if (state == last_state)
+        return false;
+    last_state = state;
+    return true;
+}
+    void play_sonar(const string&in type, double sx, double sy, double pitch_offset)
+    {
+        string sonarfile;
+        if (type == "wall")
+            sonarfile = get_pack_sound("map/" + maptype + "/sonar/*wall*");
+        else if (type == "hazard")
+            sonarfile = get_pack_sound("map/" + maptype + "/sonar/*hazard*");
+        else if (type == "up")
+            sonarfile = get_pack_sound("map/" + maptype + "/sonar/*up*");
+        else if (type == "down")
+            sonarfile = get_pack_sound("map/" + maptype + "/sonar/*down*");
+        else if (type == "vanish")
+            sonarfile = get_pack_sound("map/" + maptype + "/sonar/*vanish*");
+        else if (type == "tile")
+            sonarfile = get_pack_sound("map/" + maptype + "/sonar/*tile*");
+        else
+            sonarfile = get_pack_sound("map/" + maptype + "/sonar/*air*");
+        sonarsound = sonarpool.play_extended_2d(sonarfile, me.x, me.y, sx, sy, 0, 0, 0, 0, false, 0, 0, 0, 100 + pitch_offset, false);
+    }
 }
