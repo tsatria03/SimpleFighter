@@ -7,6 +7,9 @@ wait(5);
 if (son.cyclemode == 2)
     son.sonarcheck();
 
+hk.update_hook();
+hk.validate_hook();
+
 update_ambsources(me.x,me.y);
 update_ex_ambsources(me.x,me.y);
 
@@ -604,32 +607,66 @@ if(key_pressed(KEY_LEFT) and key_up(KEY_G) and camdext == false and key_up(KEY_L
 {
 if(moveable==true)
 {
+        if(onhook)
+{
+            hk.release_hook();
 step_left();
 movetimer.restart();
+}
+        else
+{
+            step_left();
+movetimer.restart();
+}
 }
 }
 if(key_pressed(KEY_RIGHT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and psdoormove==false and elvmove==false)
 {
 if(moveable==true)
 {
+        if(onhook)
+{
+hk.release_hook();
 step_right();
 movetimer.restart();
+}
+        else
+            {
+step_right();
+movetimer.restart();
+}
 }
 }
 if(key_pressed(KEY_DOWN) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and psdoormove==false and elvmove==false)
 {
 if(moveable==true)
 {
+    if(onhook)
+{
+        hk.move_hook(0,-1);
+movetimer.restart();
+}
+    else
+        {
 step_down();
 movetimer.restart();
+}
 }
 }
 if(key_pressed(KEY_UP) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and psdoormove==false and elvmove==false)
 {
 if(moveable==true)
 {
+    if(onhook)
+{
+        hk.move_hook(0,1);
+movetimer.restart();
+}
+    else
+        {
 step_up();
 movetimer.restart();
+}
 }
 }
 if(movetimer.elapsed>=movetime and doormove==false and psdoormove==false and elvmove==false)
@@ -638,32 +675,66 @@ if(key_down(KEY_LEFT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHI
 {
 if(moveable==true)
 {
+    if(onhook)
+{
+        hk.release_hook();
 step_left();
 movetimer.restart();
+}
+    else
+{
+        step_left();
+movetimer.restart();
+}
 }
 }
 if(key_down(KEY_RIGHT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
 {
 if(moveable==true)
 {
+    if(onhook)
+{
+        hk.release_hook();
 step_right();
 movetimer.restart();
+}
+    else
+        {
+step_right();
+movetimer.restart();
+}
 }
 }
 if(key_down(KEY_DOWN) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
 {
 if(moveable==true)
 {
+    if(onhook)
+{
+        hk.move_hook(0,-1);
+movetimer.restart();
+}
+    else
+        {
 step_down();
 movetimer.restart();
+}
 }
 }
 if(key_down(KEY_UP) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
 {
 if(moveable==true)
 {
+    if(onhook)
+{
+        hk.move_hook(0,1);
+movetimer.restart();
+}
+    else
+        {
 step_up();
 movetimer.restart();
+}
 }
 }
 }
@@ -679,7 +750,19 @@ modspeed-=1;
 p.play_stationary(get_pack_sound("misc/change.ogg"),false);
 speak("speed"+modspeed);
 }
-if(key_pressed(KEY_F) and speedable==true)
+if(shift_is_down() && key_pressed(KEY_F))
+{
+    if(onhook)
+    {
+        hk.release_hook();
+    }
+    else
+    {
+        hk.set_direction(2); // up
+        hk.throw_hook();
+    }
+}
+if(!shift_is_down() && key_pressed(KEY_F) && speedable==true)
 {
 if(modspeed==5)
 {
@@ -808,15 +891,15 @@ else if(map_is_compiled && !shift_is_down() && !key_down(KEY_G) && key_repeating
 {
 speak("You cannot teleport to a random x and y coordinate on this compiled map.");
 }
-if (shift_is_down() && key_pressed(KEY_F1) && son.enabled==true)
+if (shift_is_down() && key_repeating(KEY_F1) && son.enabled==true)
 {
     son.cycle_follow();
 }
-if (shift_is_down() && key_pressed(KEY_F2) && son.enabled==true)
+if (shift_is_down() && key_repeating(KEY_F2) && son.enabled==true)
 {
     son.cycle_mode();
 }
-if (shift_is_down() && key_pressed(KEY_F3) && son.enabled==true)
+if (shift_is_down() && key_repeating(KEY_F3) && son.enabled==true)
 {
     son.cycle_speed();
 }
@@ -922,6 +1005,12 @@ atapex=false;
 }
 if (ascending == false and jumptimer.elapsed >= jumptime2 and atapex == false)
 {
+    if(onhook)
+    {
+        jumping = 0;
+        atapex = false;
+        return;
+    }
 jumptimer.restart();
 me.y -= 1;
 checkforplatforms();
@@ -991,6 +1080,12 @@ atapex=false;
 }
 if (ascending==false and jumptimer.elapsed>=jumptime2 and atapex==false)
 {
+    if(onhook)
+    {
+        jumping = 0;
+        atapex = false;
+        return;
+    }
 jumptimer.restart();
 me.y-=1;
 checkforplatforms();
@@ -1211,7 +1306,19 @@ pause_game();
 pausemenu();
 }
 }
-if(key_pressed(KEY_V))
+if(shift_is_down() && key_pressed(KEY_V))
+{
+    if(onhook)
+    {
+        hk.release_hook();
+    }
+    else
+    {
+        hk.set_direction(3);
+        hk.throw_hook();
+    }
+}
+if(!shift_is_down() && key_pressed(KEY_V))
 {
 pause_pools();
 pointsmenu();
