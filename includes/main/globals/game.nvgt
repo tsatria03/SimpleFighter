@@ -607,8 +607,10 @@ if(key_pressed(KEY_LEFT) and key_up(KEY_G) and camdext == false and key_up(KEY_L
 {
 if(moveable==true)
 {
-        if(onhook)
+        if(onhook && hookable==true)
 {
+facing="left";
+bonecheck();
             hk.release_hook();
 step_left();
 movetimer.restart();
@@ -624,8 +626,10 @@ if(key_pressed(KEY_RIGHT) and key_up(KEY_G) and camdext == false and key_up(KEY_
 {
 if(moveable==true)
 {
-        if(onhook)
+        if(onhook && hookable==true)
 {
+facing="right";
+bonecheck();
 hk.release_hook();
 step_right();
 movetimer.restart();
@@ -641,8 +645,10 @@ if(key_pressed(KEY_DOWN) and key_up(KEY_G) and camdext == false and key_up(KEY_L
 {
 if(moveable==true)
 {
-    if(onhook)
+    if(onhook && hookable==true)
 {
+facing="down";
+bonecheck();
         hk.move_hook(0,-1);
 movetimer.restart();
 }
@@ -657,8 +663,10 @@ if(key_pressed(KEY_UP) and key_up(KEY_G) and camdext == false and key_up(KEY_LSH
 {
 if(moveable==true)
 {
-    if(onhook)
+    if(onhook && hookable==true)
 {
+facing="up";
+bonecheck();
         hk.move_hook(0,1);
 movetimer.restart();
 }
@@ -675,8 +683,10 @@ if(key_down(KEY_LEFT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHI
 {
 if(moveable==true)
 {
-    if(onhook)
+    if(onhook && hookable==true)
 {
+facing="left";
+bonecheck();
         hk.release_hook();
 step_left();
 movetimer.restart();
@@ -692,8 +702,10 @@ if(key_down(KEY_RIGHT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSH
 {
 if(moveable==true)
 {
-    if(onhook)
+    if(onhook && hookable==true)
 {
+facing="right";
+bonecheck();
         hk.release_hook();
 step_right();
 movetimer.restart();
@@ -709,8 +721,10 @@ if(key_down(KEY_DOWN) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHI
 {
 if(moveable==true)
 {
-    if(onhook)
+    if(onhook && hookable==true)
 {
+facing="down";
+bonecheck();
         hk.move_hook(0,-1);
 movetimer.restart();
 }
@@ -725,8 +739,10 @@ if(key_down(KEY_UP) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT
 {
 if(moveable==true)
 {
-    if(onhook)
+    if(onhook && hookable==true)
 {
+facing="up";
+bonecheck();
         hk.move_hook(0,1);
 movetimer.restart();
 }
@@ -750,16 +766,18 @@ modspeed-=1;
 p.play_stationary(get_pack_sound("misc/change.ogg"),false);
 speak("speed"+modspeed);
 }
-if(shift_is_down() && key_pressed(KEY_F))
+if(shift_is_down() && key_repeating(KEY_F) && hookusetimer.elapsed>=hookusetime && hookable==true)
 {
     if(onhook)
     {
         hk.release_hook();
+hookusetimer.restart();
     }
     else
     {
-        hk.set_direction(2); // up
+        hk.set_direction(2);
         hk.throw_hook();
+hookusetimer.restart();
     }
 }
 if(!shift_is_down() && key_pressed(KEY_F) && speedable==true)
@@ -1025,6 +1043,14 @@ if (ascending==true and jumptimer.elapsed>=jumptime)
 jumptimer.restart();
 me.y+=1;
 checkforwalls();
+    if(onhook)
+    {
+        string t = gmt(me.x, me.y);
+        if(t != "" && t != "air")
+        {
+            hk.release_hook();
+        }
+    }
 if (me.y>=ty2)
 {
 ascending=false;
@@ -1100,6 +1126,14 @@ if (ascending==true and jumptimer.elapsed>=jumptime)
 jumptimer.restart();
 me.y+=1;
 checkforwalls();
+    if(onhook)
+    {
+        string t = gmt(me.x, me.y);
+        if(t != "" && t != "air")
+        {
+            hk.release_hook();
+        }
+    }
 if (me.y>=ty2)
 {
 ascending=false;
@@ -1306,16 +1340,18 @@ pause_game();
 pausemenu();
 }
 }
-if(shift_is_down() && key_pressed(KEY_V))
+if(shift_is_down() && key_repeating(KEY_V) && hookusetimer.elapsed>=hookusetime && hookable==true)
 {
     if(onhook)
     {
         hk.release_hook();
+hookusetimer.restart();
     }
     else
     {
         hk.set_direction(3);
         hk.throw_hook();
+hookusetimer.restart();
     }
 }
 if(!shift_is_down() && key_pressed(KEY_V))

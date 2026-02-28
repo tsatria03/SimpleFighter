@@ -1,11 +1,13 @@
+bool hookable=true;
 bool onhook;
 int hookslot;
 
 class hook
 {
-int base_hook_delay = 10;
+int base_hook_delay = 100;
 int current_hook_delay = 0;
-    int hook_max_range = 1000;
+int hook_extencions=50;
+    int hook_max_range = 20;
     int hook_direction = 0;
 double hook_start_x;
 double hook_start_y;
@@ -23,16 +25,6 @@ double hook_start_y;
     void set_direction(int dir)
     {
         hook_direction = dir;
-    }
-    void set_range(int tiles)
-    {
-        if(tiles <= 0) tiles = 1;
-        hook_max_range = tiles;
-    }
-    void set_delay(int ms)
-    {
-        if(ms < 0) ms = 0;
-        base_hook_delay = ms;
     }
     bool tile_valid(double tx, double ty)
     {
@@ -94,8 +86,7 @@ double hook_start_y;
         double cx = me.x;
         double cy = me.y;
         hook_catch = false;
-int distance_found = 0;
-        for(int i=1;i<=hook_max_range;i++)
+        for(int i=1; i<=hook_max_range*hook_extencions; i++)
         {
             double tx = cx + dx*i;
             double ty = cy + dy*i;
@@ -104,20 +95,10 @@ int distance_found = 0;
                 hook_catch = true;
                 pending_x = tx;
                 pending_y = ty;
-        distance_found = i;
                 break;
             }
         }
-int final_delay = 0;
-if(hook_catch)
-{
-    final_delay = base_hook_delay * distance_found;
-}
-else
-{
-    final_delay = base_hook_delay * hook_max_range;
-}
-        if(final_delay == 0)
+        if(base_hook_delay <= 0)
         {
             apply_hook(dx, dy);
         }
@@ -125,7 +106,7 @@ else
         {
             hook_pending = true;
             hooktimer.restart();
-current_hook_delay = final_delay;
+current_hook_delay = base_hook_delay+hook_max_range*hook_extencions;
         }
     }
     void update_hook()
@@ -224,7 +205,7 @@ void move_hook(int dx, int dy)
     }
     me.x = nx;
     me.y = ny;
-    hookslot = hookpool.play_stationary(get_pack_sound("map/"+maptype+"/hook/*step*"), false);
+    if(jumping==0) hookslot = hookpool.play_stationary(get_pack_sound("map/"+maptype+"/hook/*step*"), false);
 }
 void validate_hook()
 {
