@@ -6,7 +6,7 @@ class hook
 {
 int base_hook_delay = 100;
 int current_hook_delay = 0;
-int hook_extencions=50;
+int hook_extencions=98;
     int hook_max_range = 20;
     int hook_direction = 0;
 double hook_start_x;
@@ -86,7 +86,7 @@ double hook_start_y;
         double cx = me.x;
         double cy = me.y;
         hook_catch = false;
-        for(int i=1; i<=hook_max_range*hook_extencions; i++)
+        for(int i=1; i<=hook_max_range+hook_extencions*10; i++)
         {
             double tx = cx + dx*i;
             double ty = cy + dy*i;
@@ -106,7 +106,7 @@ double hook_start_y;
         {
             hook_pending = true;
             hooktimer.restart();
-current_hook_delay = base_hook_delay+hook_max_range*hook_extencions;
+current_hook_delay = base_hook_delay+hook_max_range+hook_extencions;
         }
     }
     void update_hook()
@@ -137,6 +137,10 @@ hook_start_y = me.y;
             me.x += dx;
             me.y += dy;
             onhook = true;
+falling = false;
+fallcounter = 0;
+falltimer.restart();
+p.destroy_sound(fallslot);
             hookslot = hookpool.play_stationary(get_pack_sound("map/"+maptype+"/hook/*catch*"), false);
         }
         else
@@ -148,6 +152,7 @@ hook_start_y = me.y;
     {
         if(!onhook) return;
         onhook = false;
+    falltimer.restart();
         hook_type = 0;
         hook_target_index = -1;
         hookslot = hookpool.play_stationary(get_pack_sound("map/"+maptype+"/hook/*release*"), false);

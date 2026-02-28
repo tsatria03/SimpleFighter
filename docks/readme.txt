@@ -56,6 +56,10 @@ Letter, G plus letter T: Plays the current map tile at the camera's position, if
 Letter, G plus Semicolon: Speaks all of the newly created selection points, if pressed/ held down.
 Letter, G plus Apostrophe: Clears all of the newly created selection points, if pressed/ held down.
 
+Hooking keys.
+Shift plus F: atempts to Hook upward, if pressed/held down.
+Shift plus V: atempts to Hook downward, if pressed/held down.
+
 Sonar keys.
 Shift plus F1: Changes the sonar following mode, if pressed/held down.
 Shift plus F2: Changes the sonar tracking mode, if pressed/held down.
