@@ -2,7 +2,7 @@
 set GAME=SimpleFighter
 set PASSWORD=SpfBuilder
 
-set MAC_SOURCE=..\releases\mac\SimpleFighter_mac_portable_password_is_SpfBuilder\sf.app
+set MAC_SOURCE=..\..\releases\mac\SimpleFighter_mac_portable_password_is_SpfBuilder\sf.app
 
 echo.
 echo Building Mac portable ZIP archive...
