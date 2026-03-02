@@ -117,14 +117,16 @@ Letter, V: Opens the points menu, if pressed.
 Creating sound packs.
 This game allows you to create customizeable global and map-based sound packs that you can use in various situations.
 
-Character sound listing: 25 total.
+Character sound listing: 30 total.
 bleed.ogg: This sound is played when your character bleeds.
 buy.ogg: This sound is played when your character purchases upgrades.
 break.ogg: This sound is played when a character breaks a certain bone in their body.
+change.ogg: This sound is played when your character changes something on a map.
 crit.ogg: This sound is played when your character gets criticly hurt.
 death.ogg: This sound is played when your character dies.
 fail.ogg: This sound is played when a character's broken bone starts  to kill them from too much pain.
 fall.ogg: This sound is played when your character starts falling.
+give.ogg: This sound is played when your character gives themselves an item.
 healing.ogg: This sound is played When your character is healing.
 healstart.ogg: This sound is played when your character starts healing.
 healstop.ogg: This sound is played when your character stops healing.
@@ -136,7 +138,10 @@ land.ogg: This sound is played when your character lands on a platform.
 lev.ogg: This sound is played when your character levels up.
 life.ogg: This sound is played when your character loses a life.
 pain.ogg: This sound is played when a character's broken bone starts to hurt them while moving or performing other tasks.
+pause.ogg: This sound is played when your character pauses the game.
 plummet.ogg: This sound is played when your character is falling.
+resume.ogg: This sound is played when your character resumes the game.
+take.ogg: This sound is played when your character recycles an item from their inventory.
 rise.ogg: This sound is played when your character is jumping.
 swing.ogg: This sound is played when your character swings a melee weapon.
 telxy.ogg: This sound is played when your character teleports on the x and y axes of a map.
