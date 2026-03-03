@@ -1,44 +1,186 @@
 passage@[]passages(0);
 class passage
 {
-bool is_open;
-bool is_sound_paused;
-int closesound,passagesound,opensound;
-int platform_id;
-int startx,starty;
-int direction;
-int passagelength;
-int opentime;
-int closetime;
-string tile;
-string closetype;
-string looptype;
-string opentype;
-timer closetimer,opentimer;
-passage(int sx,int sy,int dr,int psl,string ty,string lsound,string osound,string clsound,int ot,int ct)
-{
-startx=sx;
-starty=sy;
-direction=dr;
-passagelength=psl;
-tile=ty;
-looptype=lsound;
-opentype=osound;
-closetype=clsound;
-opentime=ot;
-closetime=ct;
-is_open=false;
-is_sound_paused=false;
-platform_id=-1;
-passagesound=passagepool.play_extended_2d(get_map_sound("objects/doors/loop/"+looptype+"/*loop*"),me.x,me.y,startx,starty,0,0,0,0,true,0,0,doorvolume,doorpitch,false);
-update_passage_sound();
-}
-bool is_endpoint(int x, int y)
+    bool is_open;
+    bool is_opening;
+    bool is_closing;
+    bool is_sound_paused;
+    int passagesound;
+    int opensound;
+    int closesound;
+    int platform_id;
+    int startx, starty;
+    int direction;
+    int passagelength;
+    int opentime;
+    int closetime;
+    string tile;
+    string closetype;
+    string looptype;
+    string opentype;
+    timer action_timer;
+    passage(int sx, int sy, int dr, int psl, string ty, string lsound, string osound, string clsound, int ot, int ct)
     {
-        int endx = startx + (direction == 1 ? passagelength : 0);
-        int endy = starty + (direction == 2 ? passagelength : 0);
+        startx = sx;
+        starty = sy;
+        direction = dr;
+        passagelength = psl;
+        tile = ty;
+        looptype = lsound;
+        opentype = osound;
+        closetype = clsound;
+        opentime = ot;
+        closetime = ct;
+        is_open = false;
+        is_opening = false;
+        is_closing = false;
+        is_sound_paused = false;
+        platform_id = -1;
+        opensound = -1;
+        closesound = -1;
+        passagesound = passagepool.play_extended_2d(get_map_sound("objects/doors/loop/" + looptype + "/*loop*"), me.x, me.y, startx, starty, 0, 0, 0, 0, true, 0, 0, doorvolume, doorpitch, false);
+        update_passage_sound();
+    }
+    void destroy_sounds()
+    {
+        if (passagesound != -1)
+        {
+            passagepool.destroy_sound(passagesound);
+            passagesound = -1;
+        }
+        if (opensound != -1)
+        {
+            passagepool.destroy_sound(opensound);
+            opensound = -1;
+        }
+        if (closesound != -1)
+        {
+            passagepool.destroy_sound(closesound);
+            closesound = -1;
+        }
+    }
+    void update_passage_sound()
+    {
+        int sx = startx + (direction == 1 ? 1 : 0);
+        int sy = starty + (direction == 2 ? 1 : 0);
+        int ex = startx + (direction == 1 ? passagelength : 0);
+        int ey = starty + (direction == 2 ? passagelength : 0);
+        int rw = ex - sx;
+        int rh = ey - sy;
+        if (passagesound != -1)
+        {
+            passagepool.update_sound_2d(passagesound, sx, sy);
+            passagepool.update_sound_range_2d(passagesound, 0, rw, 0, rh);
+        }
+    }
+    void begin_open()
+    {
+        if (!is_open && !is_opening && !is_closing)
+        {
+            is_opening = true;
+            action_timer.restart();
+            if (passagesound != -1 && !is_sound_paused)
+            {
+                passagepool.pause_sound(passagesound);
+                is_sound_paused = true;
+            }
+            if (closesound != -1)
+            {
+                passagepool.destroy_sound(closesound);
+                closesound = -1;
+            }
+int sx = startx + (direction == 1 ? 1 : 0);
+int sy = starty + (direction == 2 ? 1 : 0);
+int ex = startx + (direction == 1 ? passagelength : 0);
+int ey = starty + (direction == 2 ? passagelength : 0);
+int rw = ex - sx;
+int rh = ey - sy;
+opensound = passagepool.play_extended_2d(get_map_sound("objects/doors/open/" + opentype + "/*open*"), me.x, me.y, sx, sy, 0, rw, 0, rh, false, 0, 0, doorvolume, doorpitch, false);
+        }
+    }
+    void finish_open()
+    {
+        is_open = true;
+        is_opening = false;
+/*if (opensound != -1)
+{
+    passagepool.destroy_sound(opensound);
+    opensound = -1;
+}*/
+        int px1 = startx, py1 = starty;
+        int px2 = startx, py2 = starty;
+        if (direction == 1) { px1 += 1; px2 += passagelength; }
+        else if (direction == 2) { py1 += 1; py2 += passagelength; }
+        platform_id = spawn_platform(px1, px2, py1, py2, 1, 1, tile, 0, 100, false, true);
+    }
+    void begin_close()
+    {
+        if (is_open && !is_closing && !is_opening)
+        {
+            is_closing = true;
+            action_timer.restart();
+            if (passagesound != -1 && is_sound_paused)
+            {
+                passagepool.resume_sound(passagesound);
+                is_sound_paused = false;
+            }
+            if (opensound != -1)
+            {
+                passagepool.destroy_sound(opensound);
+                opensound = -1;
+            }
+int sx = startx + (direction == 1 ? 1 : 0);
+int sy = starty + (direction == 2 ? 1 : 0);
+int ex = startx + (direction == 1 ? passagelength : 0);
+int ey = starty + (direction == 2 ? passagelength : 0);
+int rw = ex - sx;
+int rh = ey - sy;
+closesound = passagepool.play_extended_2d(get_map_sound("objects/doors/close/" + closetype + "/*close*"), me.x, me.y, sx, sy, 0, rw, 0, rh, false, 0, 0, doorvolume, doorpitch, false);
+        }
+    }
+void finish_close()
+{
+    is_open = false;
+    is_closing = false;
+    /*if (closesound != -1)
+    {
+        passagepool.destroy_sound(closesound);
+        closesound = -1;
+    }*/
+    if (platform_id != -1)
+    {
+        if (platform_id < platforms.length())
+        {
+            remove_platform(platform_id);
+        }
+        else
+        {
+            int px1 = startx, py1 = starty;
+            int px2 = startx, py2 = starty;
+            if (direction == 1) { px1 += 1; px2 += passagelength; }
+            else if (direction == 2) { py1 += 1; py2 += passagelength; }
+            for(uint i = 0; i < platforms.length(); i++)
+            {
+                if(platforms[i].minx == px1 && platforms[i].maxx == px2 && platforms[i].miny == py1 && platforms[i].maxy == py2)
+                {
+                    remove_platform(i);
+                    break;
+                }
+            }
+        }
+        platform_id = -1;
+    }
+}
+    bool is_at_endpoint(int x, int y)
+    {
+        int endx = startx + (direction == 1 ? passagelength + 1 : 0);
+        int endy = starty + (direction == 2 ? passagelength + 1 : 0);
         return (x == startx && y == starty) || (x == endx && y == endy);
     }
+    bool is_endpoint(int x, int y)
+{
+return is_at_endpoint(x, y);
+}
     bool is_within_passage(int x, int y)
     {
         if (!is_open) return false;
@@ -46,128 +188,47 @@ bool is_endpoint(int x, int y)
     }
     string get_endpoint_description(int x, int y)
     {
-        if (!is_endpoint(x, y)) return "";   
+        if (!is_at_endpoint(x, y)) return "";
         string status = is_open ? "open" : "";
         return status + " passage endpoint";
     }
-void update_passage_sound()
-{
-int sound_start_x=startx+(direction==1?1:0);
-int sound_start_y=starty+(direction==2?1:0);
-int sound_end_x=startx+(direction==1?passagelength:0);
-int sound_end_y=starty+(direction==2?passagelength:0);
-if(passagesound!=-1 && !is_sound_paused)
-{
-passagepool.update_sound_2d(passagesound,sound_start_x,sound_start_y);
-passagepool.update_sound_range_2d(passagesound,0,sound_end_x-sound_start_x,0,sound_end_y-sound_start_y);
-}
-if(opensound!=-1)
-{
-passagepool.update_sound_2d(opensound,sound_start_x,sound_start_y);
-passagepool.update_sound_range_2d(opensound,0,sound_end_x-sound_start_x,0,sound_end_y-sound_start_y);
-}
-if(closesound!=-1)
-{
-passagepool.update_sound_2d(closesound,sound_start_x,sound_start_y);
-passagepool.update_sound_range_2d(closesound,0,sound_end_x-sound_start_x,0,sound_end_y-sound_start_y);
-}
-}
-void toggle_passage()
-{
-if(is_open)
-close_passage();
-else
-open_passage();
-}
-void open_passage()
-{
-if(!is_open)
-{
-is_open=true;
-opentimer.restart();
-if(passagesound!=-1 && !is_sound_paused)
-{
-passagepool.pause_sound(passagesound);
-is_sound_paused=true;
-}
-opensound=passagepool.play_extended_2d(get_map_sound("objects/doors/open/"+opentype+"/*open*"),me.x,me.y,startx,starty,0,0,0,0,false,0,0,doorvolume,doorpitch,false);
-update_passage_sound();
-int platform_start_x=startx;
-int platform_start_y=starty;
-int platform_end_x=startx;
-int platform_end_y=starty;
-if(direction==1)
-{
-platform_start_x+=1;
-platform_end_x+=passagelength;
-}
-else if(direction==2)
-{
-platform_start_y+=1;
-platform_end_y+=passagelength;
-}
-platform_id=spawn_platform(platform_start_x, platform_end_x, platform_start_y, platform_end_y, 1, 1, tile, 0, 100, false, true);
+    void update_passage()
+    {
+        if (is_opening && action_timer.elapsed >= opentime)
+        {
+            finish_open();
         }
+        if (is_closing && action_timer.elapsed >= closetime)
+        {
+            finish_close();
         }
-void close_passage()
-{
-if(is_open)
-{
-is_open=false;
-closetimer.restart();
-if(passagesound!=-1 && is_sound_paused)
-{
-passagepool.resume_sound(passagesound);
-is_sound_paused=false;
-}
-closesound=passagepool.play_extended_2d(get_map_sound("objects/doors/close/"+closetype+"/*close*"),me.x,me.y,startx,starty,0,0,0,0,false,0,0,doorvolume,doorpitch,false);
-update_passage_sound();
-if(platform_id!=-1)
-{
-remove_platform(platform_id);
-platform_id=-1;
-}
-}
-}
-void update_passage()
-{
-if(is_open && is_at_endpoint (me.x,me.y) && key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN) && opentimer.elapsed>=opentime)
-{
-toggle_passage();
-opentimer.restart();
-}
-else if(!is_open && is_at_endpoint (me.x,me.y) && key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN) && closetimer.elapsed>=closetime)
-{
-toggle_passage();
-closetimer.restart();
-}
-update_passage_sound();
-}
-bool is_at_endpoint (int x,int y)
-{
-int endx=startx+(direction==1?passagelength+1:0);
-int endy=starty+(direction==2?passagelength+1:0);
-return(x==startx && y==starty)||(x==endx && y==endy);
-}
+        if (is_at_endpoint(me.x, me.y) && key_up(KEY_LSHIFT) && key_up(KEY_RSHIFT) && key_pressed(KEY_RETURN))
+        {
+            if (is_open && !is_closing && !is_opening)
+                begin_close();
+            else if (!is_open && !is_opening && !is_closing)
+                begin_open();
+        }
+        update_passage_sound();
+    }
 };
 void checkpassages()
 {
-for(uint i=0; i<passages.length(); i++)
-{
-passages[i].update_passage();
+    for (uint i = 0; i < passages.length(); i++)
+        passages[i].update_passage();
 }
-}
-void spawn_passage(int x,int y,int dir,int plength,string tile,string looptype,string opentype,string closetype,int opentime,int closetime)
+void spawn_passage(int x, int y, int dir, int plength, string tile, string looptype, string opentype, string closetype, int opentime, int closetime)
 {
-passage pg1(x,y,dir,plength,tile,looptype,opentype,closetype,opentime,closetime);
-passages.insert_last(pg1);
+    passage pg1(x, y, dir, plength, tile, looptype, opentype, closetype, opentime, closetime);
+    passages.insert_last(pg1);
 }
 void destroy_all_passages()
 {
-for(uint i=0; i<passages.length(); i++)
-{
-passagepool.destroy_sound(passages[i].passagesound);
-passages[i].close_passage();
-}
-passages.resize(0);
+    for (uint i = 0; i < passages.length(); i++)
+    {
+        passages[i].destroy_sounds();
+        if (passages[i].platform_id != -1)
+            remove_platform(passages[i].platform_id);
+    }
+    passages.resize(0);
 }
