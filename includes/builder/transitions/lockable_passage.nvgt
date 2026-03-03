@@ -18,6 +18,7 @@ class pspassage
     string closetype;
     string looptype;
     string opentype;
+string last_pspass;
 string pspass;
     timer action_timer;
 pspassage(int sx, int sy, int dr, int psl, string ty, string lsound, string osound, string clsound, string pd, int ot, int ct)
@@ -210,8 +211,19 @@ return is_at_endpoint(x, y);
                 begin_close();
             else if (!is_open && !is_opening && !is_closing)
 {
+if (pspassagesound != -1 && !is_sound_paused)
+{
+    pspassagepool.pause_sound(pspassagesound);
+    is_sound_paused = true;
+}
         vd.set_disallowed_chars("", false, "This character is not allowed.");
-        string pass = vd.input_box("", "Enter the password to open this locked passage.");
+        string pass = vd.input_box("", "Enter the password to open this locked passage. Press enter to retype the last password.", last_pspass);
+last_pspass = pass;
+if (!is_open && pspassagesound != -1 && is_sound_paused)
+{
+    pspassagepool.resume_sound(pspassagesound);
+    is_sound_paused = false;
+}
         if (pass == pspass)
         {
             begin_open();
