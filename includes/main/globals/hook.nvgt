@@ -15,6 +15,9 @@ double hook_start_y;
     double hook_target_y;
     int hook_type = 0; 
     int hook_target_index = -1;
+int throw_dx = 0;
+int throw_dy = 0;
+int throw_aim_x = 0;
     bool hook_pending = false;
     bool hook_catch = false;
     double pending_x;
@@ -73,57 +76,63 @@ double hook_start_y;
         }
         return false;
     }
-    void throw_hook()
+void throw_hook()
+{
+    if(onhook || hook_pending) return;
+    hookslot = hookpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*hookthrow*"), false);
+    int dx = 0;
+    int dy = 0;
+    if(hook_direction==0) dx=1;
+    if(hook_direction==1) dx=-1;
+    if(hook_direction==2) dy=1;
+    if(hook_direction==3) dy=-1;
+    int aim_x = 0;
+    if(dx == 0)
     {
-        if(onhook || hook_pending) return;
-        hookslot = hookpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*hookthrow*"), false);
-        int dx = 0;
-        int dy = 0;
-        if(hook_direction==0) dx=1;
-        if(hook_direction==1) dx=-1;
-        if(hook_direction==2) dy=1;
-        if(hook_direction==3) dy=-1;
-        double cx = me.x;
-        double cy = me.y;
-        hook_catch = false;
-        for(int i=1; i<=hook_max_range+hook_extencions*10; i++)
+        if(facing == "right") aim_x = 1;
+        else if(facing == "left") aim_x = -1;
+    }
+    throw_dx = dx;
+    throw_dy = dy;
+    throw_aim_x = aim_x;
+    double cx = me.x;
+    double cy = me.y;
+    hook_catch = false;
+    int maxdist = hook_max_range + hook_extencions * 10;
+    for(int i=1; i<=maxdist; i++)
+    {
+        double tx = cx + dx*i;
+        double ty = cy + dy*i;
+        if(dx == 0)
+            tx = cx + aim_x;
+        if(tile_valid(tx, ty))
         {
-            double tx = cx + dx*i;
-            double ty = cy + dy*i;
-            if(tile_valid(tx,ty))
-            {
-                hook_catch = true;
-                pending_x = tx;
-                pending_y = ty;
-                break;
-            }
-        }
-        if(base_hook_delay <= 0)
-        {
-            apply_hook(dx, dy);
-        }
-        else
-        {
-            hook_pending = true;
-            hooktimer.restart();
-current_hook_delay = base_hook_delay+hook_max_range+hook_extencions;
+            hook_catch = true;
+            pending_x = tx;
+            pending_y = ty;
+            break;
         }
     }
-    void update_hook()
+    if(base_hook_delay <= 0)
     {
-        if(!hook_pending) return;
-        if(hooktimer.elapsed >= current_hook_delay)
-        {
-            hook_pending = false;
-            int dx = 0;
-            int dy = 0;
-            if(hook_direction==0) dx=1;
-            if(hook_direction==1) dx=-1;
-            if(hook_direction==2) dy=1;
-            if(hook_direction==3) dy=-1;
-            apply_hook(dx, dy);
-        }
+        apply_hook(throw_dx, throw_dy);
     }
+    else
+    {
+        hook_pending = true;
+        hooktimer.restart();
+        current_hook_delay = base_hook_delay + hook_max_range + hook_extencions;
+    }
+}
+void update_hook()
+{
+    if(!hook_pending) return;
+    if(hooktimer.elapsed >= current_hook_delay)
+    {
+        hook_pending = false;
+        apply_hook(throw_dx, throw_dy);
+    }
+}
     void apply_hook(int dx, int dy)
     {
         if(hook_catch)
@@ -134,8 +143,12 @@ current_hook_delay = base_hook_delay+hook_max_range+hook_extencions;
             hook_target_index = pending_index;
 hook_start_x = me.x;
 hook_start_y = me.y;
-            me.x += dx;
-            me.y += dy;
+if(dx == 0 && throw_aim_x != 0)
+    me.x += throw_aim_x;
+if(dx != 0)
+    me.x += dx;
+if(dy != 0)
+    me.y += dy;
             onhook = true;
 falling = false;
 fallcounter = 0;
