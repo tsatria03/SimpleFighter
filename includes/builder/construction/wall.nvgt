@@ -2,6 +2,7 @@ wall@[]walls(0);
 class wall
 {
 bool destroyable;
+bool transparent;
 int defsound,hurtsound;
 int platform_id;
 double minx,maxx,miny,maxy;
@@ -10,7 +11,7 @@ double wallmaxhealth;
 double volume;
 double pitch;
 string wall;
-wall(double mx,double mx2,double my,double my2,double hp,double maxhp,string wy,double vol,double semitone,bool dtb)
+wall(double mx,double mx2,double my,double my2,double hp,double maxhp,string wy,double vol,double semitone,bool dtb,bool trp)
 {
 minx=mx;
 maxx=mx2;
@@ -22,6 +23,7 @@ wall=wy;
 volume=vol;
 pitch=semitone;
 destroyable=dtb;
+transparent=trp;
 platform_id=spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, true);
 }
 }
@@ -41,9 +43,20 @@ return;
 }
 }
 }
-int spawn_wall(double x1, double x2, double y1, double y2, double wallhealth, double wallmaxhealth, string wall, double wallvolume, double wallpitch, bool destroyable)
+bool is_transparent_wall(int x, int y)
 {
-    wall wl1(x1, x2, y1, y2, wallhealth, wallmaxhealth, wall, wallvolume, wallpitch, destroyable);
+    for(uint i = 0; i < walls.length(); i++)
+    {
+        if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+        {
+            return walls[i].transparent;
+        }
+    }
+    return false;
+}
+int spawn_wall(double x1, double x2, double y1, double y2, double wallhealth, double wallmaxhealth, string wall, double wallvolume, double wallpitch, bool destroyable, bool transparent)
+{
+    wall wl1(x1, x2, y1, y2, wallhealth, wallmaxhealth, wall, wallvolume, wallpitch, destroyable, transparent);
     walls.insert_last(wl1);
     return walls.length() - 1; 
 }
