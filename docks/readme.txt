@@ -36,9 +36,9 @@ Alt plus shift plus right arrow: Facess your character right, if pressed.
 Alt plus shift plus down arrow: Facess your character down, if pressed.
 Alt plus shift plus up arrow: Facess your character up, if pressed.
 Spacebar: Causes your character to jump on the Y axes, if pressed/held down.
-Letter, J: Moves to a random coordinate on the X axis, if pressed.
-Letter, K: Moves to a random coordinate on the Y axis, if pressed.
-Letter, L: Moves to a random coordinate on both the X and Y axis, if pressed.
+Shift plus letter J: Moves to a random coordinate on the X axis, if pressed.
+Shift plus letter K: Moves to a random coordinate on the Y axis, if pressed.
+Shift plus letter L: Moves to a random coordinate on both the X and Y axis, if pressed.
 
 Camera keys.
 Letter, G plus Left arrow: Moves the camera left on the X axis, if pressed/ held down.
@@ -57,17 +57,17 @@ Letter, G plus Semicolon: Speaks all of the newly created selection points, if p
 Letter, G plus Apostrophe: Clears all of the newly created selection points, if pressed/ held down.
 
 Hooking keys.
-Shift plus F: atempts to Hook upward, if pressed/held down.
-Shift plus V: atempts to Hook downward, if pressed/held down.
+Letter, F: atempts to Hook upward, if pressed/held down.
+Letter, V: atempts to Hook downward, if pressed/held down.
 
 Sonar keys.
-Shift plus F1: Changes the sonar following mode, if pressed/held down.
-Shift plus F2: Changes the sonar tracking mode, if pressed/held down.
-Shift plus F3: Changes the sonar looping speed, if pressed/held down.
-Shift plus letter J: Face the sonar left when it’s not following you, if pressed.
-Shift plus letter L: Face the sonar right when it’s not following you, if pressed.
-Shift plus letter K: Face the sonar down when it’s not following you, if pressed.
-Shift plus letter I: Face the sonar up when it’s not following you, if pressed.
+F1: Changes the sonar following mode, if pressed/held down.
+F2: Changes the sonar tracking mode, if pressed/held down.
+F3: Changes the sonar looping speed, if pressed/held down.
+Letter, J: Face the sonar left when it’s not following you, if pressed.
+Letter, L: Face the sonar right when it’s not following you, if pressed.
+Letter, K: Face the sonar down when it’s not following you, if pressed.
+Letter, I: Face the sonar up when it’s not following you, if pressed.
 
 Spire keys.
 Shift plus left arrow: Moves the spire left to find objects on the left side of the map, if pressed.
@@ -77,9 +77,9 @@ Shift plus down arrow: Moves the spire down to find objects on the botum side of
 
 Miscellaneous keys.
 Letter, C: Check your current location and the tile being walked on, if pressed.
-Letter, A: Decreases your overall movement speed, if pressed.
-Letter, D: Increases your overall movement speed, if pressed.
-Letter, F: Resets your overall movement speed back to default, if pressed.
+Shift plus letter A: Decreases your overall movement speed, if pressed.
+Shift plus letter D: Increases your overall movement speed, if pressed.
+Shift plus letter F: Resets your overall movement speed back to default, if pressed.
 Letter, Q: Anounces the zone you're on, if pressed.
 Letter, Z: Toggles zone anouncements on or off, if pressed.
 Letter, P: Pauses or resumes the currently active game, if pressed.
@@ -93,9 +93,9 @@ Semicolon: Anounces the current maximum jump height, if pressed.
 Apostrophe: Anounces the current overall movement speed, if pressed.
 Comma: Anounces the current maximum X position, if pressed.
 PERIOD: Anounces the current maximum Y position, if pressed.
-F1: Decreases your maximum jump height, if pressed.
-F2: Increases your maximum jump height, if pressed.
-F3: Resets your jump height back to default, if pressed.
+Shift plus F1: Decreases your maximum jump height, if pressed.
+Shift plus F2: Increases your maximum jump height, if pressed.
+Shift plus F3: Resets your jump height back to default, if pressed.
 Control: Fires the currently selected weapon, if pressed/held down.
 Tab: Cycles forward through the available inventory items, if pressed.
 Shift plus tab: Cycles backward through the available inventory items, if pressed.
@@ -106,13 +106,13 @@ Escape: Exits the current game or map and returns you to the last focused menu, 
 
 Menu keys.
 Letter, W: Opens the weapons menu, if pressed.
-Letter, I: Opens the inventory menu, if pressed.
+Shift plus letter I: Opens the inventory menu, if pressed.
 Letter, S: Opens the shields menu, if pressed.
 Letter, E: Opens the object viewer menu, if pressed.
 Shift plus letter E: Opens the combat log viewer menu, if pressed.
 Shift plus letter H: Opens the command help menu, if pressed.
 Letter, B: Opens the Builder menu, if pressed.
-Letter, V: Opens the points menu, if pressed.
+Shift plus letter V: Opens the points menu, if pressed.
 
 Creating sound packs.
 This game allows you to create customizeable global and map-based sound packs that you can use in various situations.
