@@ -2,6 +2,7 @@ platform@[]platforms(0);
 class platform
 {
 bool destroyable;
+bool overlap;
 bool is_backing;
 int defsound,hurtsound;
 double minx, maxx, miny, maxy;
@@ -9,7 +10,7 @@ double plathealth, platmaxhealth;
 double volume;
 double pitch;
 string tile;
-platform(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool bkg)
+platform(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool vlp,bool bkg)
 {
 minx=mx;
 maxx=mx2;
@@ -21,8 +22,32 @@ tile=ty;
 volume=vol;
 pitch=semitone;
 destroyable=dtb;
+overlap=vlp;
 is_backing=bkg;
 }
+}
+void get_all_platform_tiles(double x, double y, array<string>@ tiles, array<double>@ volumes, array<double>@ pitches)
+{
+    int last_replace = -1;
+    for(uint i=0; i<platforms.length(); i++)
+    {
+        if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
+        {
+            if(!platforms[i].overlap)
+                last_replace = i;
+        }
+    }
+    for(uint i=0; i<platforms.length(); i++)
+    {
+        if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
+        {
+            if(last_replace != -1 && i < last_replace)
+                continue;
+            tiles.insert_last(platforms[i].tile);
+            volumes.insert_last(platforms[i].volume);
+            pitches.insert_last(platforms[i].pitch);
+        }
+    }
 }
 void platcheck()
 {
@@ -39,9 +64,9 @@ return;
 }
 }
 }
-int spawn_platform(double x1, double x2, double y1, double y2, double hp, double maxhp, string tile, double tilevol, double tilepitch, bool destroyable, bool backing=false)
+int spawn_platform(double x1, double x2, double y1, double y2, double hp, double maxhp, string tile, double tilevol, double tilepitch, bool destroyable, bool overlap, bool backing=false)
 {
-    platform pl1(x1, x2, y1, y2, hp, maxhp, tile, tilevol, tilepitch, destroyable, backing);
+    platform pl1(x1, x2, y1, y2, hp, maxhp, tile, tilevol, tilepitch, destroyable, overlap, backing);
     platforms.insert_last(pl1);
     return platforms.length() - 1;
 }
