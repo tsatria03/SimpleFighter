@@ -680,12 +680,53 @@ speak("Invalid command syntax. Usage: /invclear, or /ic.");
 if(!in_commandstack) game();
 }
 }
+else if(base_command == "ga" || base_command == "giveall")
+{
+    if(parsed.length() == 2)
+    {
+        int amount = stn(parsed[1]);
+if(amount==0) return;
+        string[] objfolders = {"health", "other", "stamina"};
+        int total = 0;
+        for(uint f = 0; f < objfolders.length(); f++)
+        {
+            string base = "objects/items/" + objfolders[f] + "/*";
+            string[] itemfolders = get_map_sound_folders(base);
+            for(uint i = 0; i < itemfolders.length(); i++)
+            {
+                string folder = string_trim_sides(itemfolders[i]);
+                if(folder == "")
+                    continue;
+                array<string> split1 = folder.split("/");
+                string itemId = split1[split1.length() - 1];
+                itemId = string_trim_sides(itemId);
+                if(itemId == "")
+                    continue;
+                give(itemId, amount);
+                total++;
+            }
+        }
+        if(amount > 0)
+            p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*give*"), false);
+        else
+            p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*take*"), false);
+string itemword = (amount == 1 ? "item" : "items");
+string typeword = (total == 1 ? "item type" : "item types");
+speak("You received " + amount + " " + itemword + " from each category. Total " + typeword + ": " + total + ".");
+    }
+    else
+    {
+        speak("Invalid command syntax. Usage: /giveall amount, or /ga amount.");
+        if(!in_commandstack) game();
+    }
+}
 else if(base_command == "gv" || base_command=="give")
 {
 if(parsed.length()==3)
 {
 string item=parsed[1];
 int amount=stn(parsed[2]);
+if(amount==0) return;
 if(amount>0)
 {
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*give*"),false);
@@ -702,6 +743,7 @@ speak("You recycled " + amount + " " + (amount == 1 ? item : item + "s") + ".");
 else
 {
 speak("Invalid command syntax. Usage: /give item amount, or /gv item amount.");
+if(!in_commandstack) game();
 }
 }
 else if (base_command == "chr" || base_command == "charset")

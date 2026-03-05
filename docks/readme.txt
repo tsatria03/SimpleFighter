@@ -117,7 +117,7 @@ Shift plus letter V: Opens the points menu, if pressed.
 Creating sound packs.
 This game allows you to create customizeable global and map-based sound packs that you can use in various situations.
 
-Character sound listing: 30 total.
+Character sound listing, general: 30 total.
 bleed.ogg: This sound is played when your character bleeds.
 buy.ogg: This sound is played when your character purchases upgrades.
 break.ogg: This sound is played when a character breaks a certain bone in their body.
@@ -210,3 +210,557 @@ spawn.ogg: This sound is played when an entity is being spawned.
 step.ogg: This sound is played when an entity is moving.
 taunt.ogg: This sound is played when an entity is taunting your character.
 tel.ogg: This sound is played when an entity teleports on the x or y axes of a map.
+
+Simple Fighter Soundpack Manual
+
+Introduction
+
+Simple Fighter supports customizable soundpacks that allow players and creators to replace the game's audio with their own sounds. Soundpacks can change how characters, menus, weapons, objects, NPCs, and environments sound during gameplay.
+
+There are two types of soundpacks used in the game:
+
+Global soundpacks
+Map-based soundpacks
+
+Global soundpacks affect the entire game.
+Map soundpacks only affect a specific map.
+
+Understanding both systems allows creators to design immersive audio experiences while maintaining good performance.
+
+Global Soundpacks
+
+Global soundpacks contain the core sounds used throughout the game. These include character sounds, menus, keyboards, equipment, NPCs, objects, and music.
+
+Global soundpacks are stored inside the game's sounds directory.
+
+Example:
+
+sounds/default
+sounds/custom
+sounds/retro_theme
+
+Each soundpack must follow the same folder structure used by the default soundpack. The game searches for sounds using specific paths, so the structure must remain compatible.
+
+Example:
+
+If the default pack contains:
+
+characters/default/general/bleed1.ogg
+
+Then your custom sound must be placed at:
+
+sounds/custom/characters/default/general/bleed1.ogg
+
+These sounds are shared by all maps and are not included inside map packs.
+
+Global Soundpack Folder Structure
+
+A typical soundpack contains the following folders:
+
+characters
+equipments
+keyboards
+menus
+misc
+npc
+objects
+soundtracks
+
+Each folder contains additional subfolders matching the structure of the default soundpack.
+
+Wildcard Sound Searching
+
+Simple Fighter supports wildcard sound searching. This means the game does not always require an exact filename. Instead, it can search for sounds containing a specific keyword.
+
+When the game requests a sound using a wildcard pattern, it will look for any file whose name contains that keyword and randomly select one of the matches.
+
+Example wildcard search used by the engine:
+
+*lev*
+
+This could match files such as:
+
+lev.ogg
+lev1.ogg
+lev2.ogg
+charlev.ogg
+charlevfast.ogg
+
+Any of these would work because the filename contains the keyword "lev".
+
+This allows soundpack creators to add multiple variations of a sound without needing to follow strict numbering rules. As long as the keyword exists in the filename, the game can detect it.
+
+For example, the character level sound could be implemented as:
+
+lev.ogg
+levelup.ogg
+charlev1.ogg
+charlevfast.ogg
+
+The engine will randomly choose one of the matching sounds when the event occurs.
+
+Wildcard searching makes soundpacks more flexible and helps reduce repetitive audio during gameplay.
+
+However, some sounds still require exact filenames, especially certain menu sounds and misc sounds. If a sound does not use wildcard searching internally, the filename must match exactly.
+
+Characters
+
+The characters folder contains sounds used by the player.
+
+Each character contains two important folders:
+
+general
+map
+
+general contains sounds related to player actions.
+map contains sounds related to tools and map interaction.
+
+These sounds are global because they describe the player's abilities rather than a specific map.
+
+Character General Sounds
+
+bleed.ogg
+Played when the character begins bleeding.
+
+break.ogg
+Played when the character breaks a bone.
+
+buy.ogg
+Played when the character purchases an upgrade.
+
+change.ogg
+Played when the character changes a map setting or object.
+
+crit.ogg
+Played when the character receives critical damage.
+
+death.ogg
+Played when the character dies.
+
+fail.ogg
+Played when pain from a broken bone prevents movement.
+
+fall.ogg
+Played when the character begins falling.
+
+give.ogg
+Played when the character gives themselves an item.
+
+healing.ogg
+Played while the character heals.
+
+healstart.ogg
+Played when healing begins.
+
+healstop.ogg
+Played when healing stops.
+
+hurt.ogg
+Played when the character receives minor damage.
+
+inv.ogg
+Played when cycling through inventory.
+
+jump.ogg
+Played when the character jumps.
+
+kill.ogg
+Played when the character kills an entity.
+
+lev.ogg
+Played when the character levels up.
+
+life.ogg
+Played when the character loses a life.
+
+pain.ogg
+Played when a broken bone causes pain while moving.
+
+pause.ogg
+Played when the game pauses.
+
+plummet.ogg
+Played during extreme falls.
+
+resume.ogg
+Played when the game resumes.
+
+take.ogg
+Played when recycling an inventory item.
+
+telxy.ogg
+Played when teleporting on both axes.
+
+turn.ogg
+Played when turning in place.
+
+xtel.ogg
+Played when teleporting on the X axis.
+
+ytel.ogg
+Played when teleporting on the Y axis.
+
+Character Map Sounds
+
+camair.ogg
+Camera detects empty air.
+
+camclear.ogg
+Camera marker is cleared.
+
+camhazard.ogg
+Camera detects a hazard.
+
+camplayer.ogg
+Camera detects another player or entity.
+
+camset.ogg
+Camera marker is set.
+
+camtile.ogg
+Camera detects a platform.
+
+camwall.ogg
+Camera detects a wall.
+
+delete.ogg
+Played when a map is deleted.
+
+finish.ogg
+Played when a map is completed.
+
+hookcatch.ogg
+Played when the grappling hook attaches to an object.
+
+hookclimb.ogg
+Played while climbing the hook.
+
+hookdrop.ogg
+Played when the hook drops.
+
+hookrelease.ogg
+Played when the hook releases.
+
+hookthrow.ogg
+Played when throwing the hook.
+
+load.ogg
+Played when loading a map.
+
+move.ogg
+Played when moving between maps.
+
+sonair.ogg
+Sonar detects air.
+
+sondown.ogg
+Sonar scanning for stairs downward.
+
+sonhazard.ogg
+Sonar detects a hazard.
+
+sontile.ogg
+Sonar detects a tile.
+
+sonup.ogg
+Sonar scanning for stairs upward.
+
+sonvanish.ogg
+Sonar detects a vanishing platform.
+
+sonwall.ogg
+Sonar detects a wall.
+
+start.ogg
+Map loading begins.
+
+stop.ogg
+Map loading stops.
+
+update.ogg
+Played when a map is modified during building.
+
+Keyboards
+
+Keyboard sounds are played while typing in input boxes.
+
+cap.ogg
+Capital letter typed.
+
+delete.ogg
+Character deleted.
+
+return.ogg
+New line inserted.
+
+space.ogg
+Space typed.
+
+type.ogg
+Normal character typed.
+
+Menus
+
+Menu sounds provide interface feedback.
+
+click.ogg
+Moving through menu options.
+
+edge.ogg
+Reaching the end of a menu.
+
+enter.ogg
+Selecting a menu item.
+
+error.ogg
+Invalid action performed.
+
+music.ogg
+Menu background music.
+
+open.ogg
+Opening a menu.
+
+speaker.ogg
+Speaker test option.
+
+sub.ogg
+Entering a submenu.
+
+wrap.ogg
+Menu wraps from end to beginning.
+
+Misc
+
+Misc sounds are small system sounds used across multiple features.
+
+menu.ogg
+Generic question menu interaction.
+
+pi.ogg
+Small extracting notification sound.
+
+punch.ogg
+Punch sound used by certain commands.
+
+switchoff.ogg
+Switch turned off.
+
+switchon.ogg
+Switch turned on.
+
+toggleoff.ogg
+Toggle disabled.
+
+toggleon.ogg
+Toggle enabled.
+
+Equipments
+
+Equipment sounds describe weapon and shield behavior.
+
+Shield Sounds
+
+break.ogg
+Shield breaks.
+
+draw.ogg
+Shield drawn.
+
+hit.ogg
+Shield blocks damage.
+
+loop.ogg
+Shield active loop.
+
+remove.ogg
+Shield removed.
+
+wear.ogg
+Shield equipped.
+
+Weapon Sounds
+
+block.ogg
+Melee weapon blocks an attack.
+
+draw.ogg
+Weapon drawn.
+
+empty.ogg
+Weapon runs out of ammunition.
+
+fire.ogg
+Weapon used.
+
+hit.ogg
+Weapon hits a target.
+
+loop.ogg
+Continuous weapon operation.
+
+off.ogg
+Reflection mode disabled.
+
+on.ogg
+Reflection mode enabled.
+
+ping.ogg
+Ammo loaded.
+
+reload.ogg
+Weapon reloading.
+
+ref.ogg
+Continuous reflection operation.
+
+rico.ogg
+Weapon ricochet.
+
+shell.ogg
+Ammo shell drops.
+
+NPC
+
+NPC sounds describe actions performed by enemies or other entities.
+
+death.ogg
+Entity dies.
+
+heal.ogg
+Entity heals.
+
+hit.ogg
+Entity hits the player.
+
+hurt.ogg
+Entity takes damage.
+
+launch.ogg
+Entity launches an attack or projectile.
+
+life.ogg
+Entity loses a life.
+
+loop.ogg
+Entity idle or active loop.
+
+remove.ogg
+Entity removed from the map.
+
+spawn.ogg
+Entity appears.
+
+step.ogg
+Entity movement.
+
+taunt.ogg
+Entity taunts the player.
+
+tel.ogg
+Entity teleports.
+
+Objects
+
+Objects represent environmental systems such as doors, elevators, vehicles, hazards, and machines.
+
+Common sounds include:
+
+loop.ogg
+Continuous ambient sound.
+
+break.ogg
+Object breaking.
+
+press.ogg
+Object activated.
+
+spawn.ogg
+Object appearing.
+
+remove.ogg
+Object disappearing.
+
+move.ogg
+Object movement.
+
+hit.ogg
+Object collision.
+
+Soundtracks
+
+The soundtracks folder contains background music and ambience.
+
+loop.ogg
+Background music or environmental ambience that repeats.
+
+Map-Based Soundpacks
+
+Map soundpacks contain sounds specific to a single map. These sounds are stored inside the map folder or compiled map pack.
+
+Map soundpacks allow creators to add unique audio such as:
+
+custom ambiences
+story dialogue
+special environmental effects
+unique object sounds
+
+These sounds only affect that map and do not modify the global soundpack.
+
+Performance Considerations
+
+Compiled maps store sounds inside pack files. When a map contains too many sounds, the game must read them from the pack file instead of directly from disk.
+
+This can slow down loading and movement.
+
+Recommended map sound size:
+
+100 to 200MB maximum when possible.
+
+If a map requires large amounts of audio, it is often better to place those sounds in the global soundpack instead of packing them into the map.
+
+Decompiled maps read sounds directly from disk and usually do not experience the same slowdown.
+
+Sound Variations
+
+The game supports multiple sound variations for many events.
+
+Example:
+
+hit1.ogg
+hit2.ogg
+hit3.ogg
+
+All of these are treated as variations of hit.ogg.
+
+The game randomly chooses one when the sound is played, which reduces repetition and makes gameplay sound more natural.
+
+Wildcard support and numbered variations can also be combined. For example:
+
+hit1.ogg
+hitmetal.ogg
+hitheavy.ogg
+
+If the engine searches for "*hit*", all of these files may be used as valid variations.
+
+Best Practices for Soundpack Creators
+
+Keep sound volumes balanced so no sound is excessively loud or quiet.
+
+Use short sounds for actions like clicks, hits, and steps.
+
+Design loop sounds carefully so they repeat smoothly.
+
+Use multiple variations of common sounds to reduce repetition.
+
+Keep file sizes reasonable to avoid unnecessary loading delays.
+
+Test your soundpack during gameplay to ensure everything sounds correct.
+
+Maintain a consistent style across your soundpack so it feels immersive.
+
+Conclusion
+
+Soundpacks allow Simple Fighter to be heavily customized without changing gameplay. By following the folder structure, naming rules, and wildcard system, creators can build unique audio experiences that work across the entire game or within individual maps.
+
+Proper organization, optimized audio files, and thoughtful design will ensure that your soundpack performs well and enhances the overall gameplay experience.

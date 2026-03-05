@@ -118,61 +118,54 @@ void cycle_inv(int dir)
 }
 void useitem(string current)
 {
-string[] healtype=get_map_sound_folders("objects/items/health/*");
-string[] healtype2=get_map_sound_folders("objects/items/stamina/*");
-string[] misktype=get_map_sound_folders("objects/items/other/*");
-for(uint i1=0; i1<healtype.length(); i1++)
-{
-for(uint i2=0; i2<healtype2.length(); i2++)
-{
-for (uint i3=0; i3<misktype.length(); i3++)
-{
 if (inv.get_size()<=0)
 {
 speak("No items");
+return;
 }
 else
 {
 string[] keys = inv.get_keys();
 keys.sort_ascending();
-
 if (invpos < 0 || invpos >= keys.length())
     return;
-
 current = keys[invpos];
-if(current==healtype[i1])
+    string[] healtype = get_map_sound_folders("objects/items/health/*");
+    string[] healtype2 = get_map_sound_folders("objects/items/stamina/*");
+    string[] misctype = get_map_sound_folders("objects/items/other/*");
+    if (healtype.find(current) != -1)
 {
 if(health>=maxhealth)
 {
 speak("You don't need to use this!");
 return;
 }
-if(firesound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/health/"+healtype[i1]+"/*fire*"),false,0,0,itemvolume,itempitch,false);
-if(hitsound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/health/"+healtype[i1]+"/*hit*"),false,0,0,itemvolume,itempitch,false);
-give(healtype[i1],-1);
+if(firesound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/health/"+current+"/*fire*"),false,0,0,itemvolume,itempitch,false);
+if(hitsound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/health/"+current+"/*hit*"),false,0,0,itemvolume,itempitch,false);
+give(current,-1);
 double heal_percent = random(5, 10);
 double heal_amount = maxhealth * (heal_percent / 100.0);
 health = min(health + heal_amount, maxhealth);
 speak("healed to"+round(health/maxhealth*100,2)+"percent health");
 return;
 }
-if(current==healtype2[i2])
+    if (healtype2.find(current) != -1)
 {
 if(stamina>=maxstamina)
 {
 speak("You don't need to use this!");
 return;
 }
-if(firesound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/stamina/"+healtype2[i2]+"/*fire*"),false,0,0,itemvolume,itempitch,false);
-if(hitsound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/stamina/"+healtype2[i2]+"/*hit*"),false,0,0,itemvolume,itempitch,false);
-give(healtype2[i2],-1);
+if(firesound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/stamina/"+current+"/*fire*"),false,0,0,itemvolume,itempitch,false);
+if(hitsound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/stamina/"+current+"/*hit*"),false,0,0,itemvolume,itempitch,false);
+give(current,-1);
 double heal_percent = random(5, 10);
 double heal_amount = maxstamina * (heal_percent / 100.0);
 stamina = min(stamina + heal_amount, maxstamina);
 speak("healed to"+round(stamina/maxstamina*100,2)+"percent stamina");
 return;
 }
-if(current==misktype[i3])
+    if (misctype.find(current) != -1)
 {
 if (current == "healing_cast")
 {
@@ -230,14 +223,11 @@ speak(message);
 }
 return;
 }
-if(firesound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/other/"+misktype[i3]+"/*fire*"),false,0,0,itemvolume,itempitch,false);
-if(hitsound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/other/"+misktype[i3]+"/*hit*"),false,0,0,itemvolume,itempitch,false);
-give(misktype[i3],-1);
-speak(misktype[i3]+";"+"recycled");
+if(firesound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/other/"+current+"/*fire*"),false,0,0,itemvolume,itempitch,false);
+if(hitsound==1) itemslot=p.play_stationary_extended(get_map_sound("objects/items/other/"+current+"/*hit*"),false,0,0,itemvolume,itempitch,false);
+give(current,-1);
+speak(current+";"+"recycled");
 return;
-}
-}
-}
 }
 }
 }
