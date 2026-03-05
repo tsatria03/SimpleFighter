@@ -28,25 +28,37 @@ is_backing=bkg;
 }
 void get_all_platform_tiles(double x, double y, array<string>@ tiles, array<double>@ volumes, array<double>@ pitches)
 {
-    int last_replace = -1;
-    for(uint i=0; i<platforms.length(); i++)
+    array<int> stack;
+    for(uint i = 0; i < platforms.length(); i++)
     {
         if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
         {
-            if(!platforms[i].overlap)
-                last_replace = i;
+            stack.insert_last(i);
         }
     }
-    for(uint i=0; i<platforms.length(); i++)
+    if(stack.length() == 0)
+        return;
+    array<int> visible;
+    for(uint i = 0; i < stack.length(); i++)
     {
-        if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
+        int p = stack[i];
+        if(!platforms[p].overlap)
         {
-            if(last_replace != -1 && i < last_replace)
-                continue;
-            tiles.insert_last(platforms[i].tile);
-            volumes.insert_last(platforms[i].volume);
-            pitches.insert_last(platforms[i].pitch);
+            if(visible.length() > 0)
+                visible.remove_at(visible.length()-1);
+            visible.insert_last(p);
         }
+        else
+        {
+            visible.insert_last(p);
+        }
+    }
+    for(int i = visible.length()-1; i >= 0; i--)
+    {
+        int p = visible[i];
+        tiles.insert_last(platforms[p].tile);
+        volumes.insert_last(platforms[p].volume);
+        pitches.insert_last(platforms[p].pitch);
     }
 }
 void platcheck()
