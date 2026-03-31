@@ -1,50 +1,134 @@
-#include"bgt_compat.nvgt"
-void main() {
-bool onequote;
-int lquotes;
-bool uquotes=false;
-int qloop;
- string fn=input_box("File name", "Enter the name of the file to check:");
- file f; f.open(fn, "r");
- int quotes=0; int braces=0; int parentheses=0; int brackets=0;
- string text=f.read(0);
-string[] lines=string_split(text,"\n",true);
- for(uint i=0; i<=lines.length()-1; i++) {
-lquotes=0;
-qloop=1;
-while (string_contains(lines[i],"\"",qloop)>-1) {
-qloop+=1;
-lquotes+=1;
+#include "bgt_compat.nvgt"
+
+string normalize_newlines(string text)
+{
+    text = string_replace(text, "\r\n", "\n", true);
+    text = string_replace(text, "\r", "\n", true);
+    return text;
 }
-int oddnum=lquotes%2;
-if (oddnum>0) {
-uquotes=true;
-alert("Oops!","Unmatched quotes at line "+i+": "+lines[i]);
-clipboard_copy_text(lines[i]);
-}
-}
- for(uint i=0; i<text.length(); i++) {
- if(text[i]=="\"") {
- if((i>0)&&(text[i-1]=="\\")) continue;
- quotes++;
- }
-  else if(text[i]=="(") parentheses++;
- else if(text[i]==")") parentheses--;
- else if(text[i]=="{") braces++;
- else if(text[i]=="}") braces--;
- else if(text[i]=="[") brackets++;
- else if(text[i]=="]") brackets--;
- if((braces<0)||(parentheses<0)||(brackets<0)) {
-alert("Negative numbers!", " There are too many " + text[i] + ", starting at " + i + ". ");
- string context="";
- uint j=0;
- if(i<10) j=0; else j=i-10;
- for(j=j; (j<i+10)&&(j<text.length()); j++) context += text[j];
- clipboard_copy_text(context);
- alert("Context", context);
- if(braces<0) braces=0; if(brackets<0) brackets=0; if(parentheses<0) parentheses=0;
- }
- }
-if (!uquotes) alert("no unclosed quotes","No unclosed quotes found.");
- alert("Results", "There are " + quotes + " quotation marks.\nThere are " + braces + " unclosed braces, " + parentheses + " unclosed parentheses, and " + brackets + " unclosed brackets. ");
+
+void main()
+{
+    string fn = input_box("File name", "Enter the name of the file to check:");
+
+    file f;
+    if(!f.open(fn, "r"))
+    {
+        alert("Error", "Could not open file.");
+        return;
+    }
+
+    string text = f.read(0);
+    f.close();
+
+    text = normalize_newlines(text);
+
+    // --- Split into lines (DO NOT FILTER) ---
+    string[] lines = string_split(text, "\n", true);
+
+    // --- State ---
+    bool in_string = false;
+    int string_start_line = -1;
+
+    int braces = 0;
+    int parentheses = 0;
+    int brackets = 0;
+
+    string[] errors;
+
+    // =========================================================
+    // 🔍 LINE-BASED PARSER (FULL FILE, NO SKIPPING)
+    // =========================================================
+    for(uint li = 0; li < lines.length(); li++)
+    {
+        string line_text = lines[li];
+        uint real_line = li + 1;
+
+        for(uint ci = 0; ci < line_text.length(); ci++)
+        {
+            string c = line_text.substr(ci, 1);
+
+            // --- Handle quotes ---
+            if(c == "\"" && (ci == 0 || line_text.substr(ci-1,1) != "\\"))
+            {
+                if(!in_string)
+                {
+                    in_string = true;
+                    string_start_line = real_line;
+                }
+                else
+                {
+                    in_string = false;
+                }
+                continue;
+            }
+
+            // Ignore structure inside strings
+            if(in_string) continue;
+
+            // --- Structure tracking ---
+            if(c == "{") braces++;
+            else if(c == "}") braces--;
+            else if(c == "(") parentheses++;
+            else if(c == ")") parentheses--;
+            else if(c == "[") brackets++;
+            else if(c == "]") brackets--;
+
+            // --- Detect unexpected closing ---
+            if(braces < 0 || parentheses < 0 || brackets < 0)
+            {
+                errors.insert_last("Line " + real_line + ": Unexpected '" + c + "'");
+
+                if(braces < 0) braces = 0;
+                if(parentheses < 0) parentheses = 0;
+                if(brackets < 0) brackets = 0;
+            }
+        }
+    }
+
+    // =========================================================
+    // 🔍 FINAL CHECKS
+    // =========================================================
+
+    if(in_string)
+    {
+        errors.insert_last("Line " + string_start_line + ": Unclosed quotation detected.");
+    }
+
+    if(braces > 0)
+    {
+        errors.insert_last(braces + " unclosed brace" + (braces == 1 ? "" : "s") + ".");
+    }
+
+    if(parentheses > 0)
+    {
+        errors.insert_last(parentheses + " unclosed parenthesis" + (parentheses == 1 ? "" : "es") + ".");
+    }
+
+    if(brackets > 0)
+    {
+        errors.insert_last(brackets + " unclosed bracket" + (brackets == 1 ? "" : "s") + ".");
+    }
+
+    // =========================================================
+    // 📊 FINAL OUTPUT
+    // =========================================================
+
+    if(errors.length() == 0)
+    {
+        alert("Results", "No issues found.");
+        return;
+    }
+
+    string output = "";
+
+    for(uint i = 0; i < errors.length(); i++)
+    {
+        output += errors[i];
+
+        if(i < errors.length() - 1)
+            output += "\n";
+    }
+
+    info_box("Results", "Results", output);
 }
