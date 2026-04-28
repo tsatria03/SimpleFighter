@@ -3423,14 +3423,19 @@ string saved_y1 = sel_bottom_set ? sel_bottom : "";
 string saved_y2 = sel_top_set ? sel_top : "";
 string saved_id = generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 int saved_effect_pos = 0;
-float[] rev_s = {50, 50, 50, 50, 50};
-float[] echo_s = {50, 50, 50, 500};
-float[] low_s = {500, 50, 50};
+float[] rev_s = {50, 150, 50, 50, 50};
+float[] echo_s = {100, 100, 50, 500};
+float[] low_s = {11000, 500, 50};
+float[] highpass_s = {11000, 500, 50};
+float[] chorus_s = {100, 100, 50, 3000, 3000, 500};
+float[] dist_s = {250, 250, 250, 50, 100};
+float[] phaser_s = {100, 100, 5, 50, 50, 180};
+float[] flanger_s = {100, 100, 50, 10, 10, 5};
 bool do_build = true;
 int last_effect_pos = -1;
 int saved_plat_pos = 0;
 int mx, mx2, my, my2, rd, effect_list;
-int s1, s2, s3, s4, s5;
+int s1, s2, s3, s4, s5, s6;
 int platile, efok, efcn;
 while (true)
 {
@@ -3449,24 +3454,65 @@ int sp = form.get_list_position(platile);
 if (sp >= 0) saved_plat_pos = sp;
 if (last_effect_pos == 0)
 {
+echo_s[0] = form.get_slider(s1);
+echo_s[1] = form.get_slider(s2);
+echo_s[2] = form.get_slider(s3);
+echo_s[3] = form.get_slider(s4);
+}
+else if (last_effect_pos == 1)
+{
 rev_s[0] = form.get_slider(s1);
 rev_s[1] = form.get_slider(s2);
 rev_s[2] = form.get_slider(s3);
 rev_s[3] = form.get_slider(s4);
 rev_s[4] = form.get_slider(s5);
 }
-else if (last_effect_pos == 1)
-{
-echo_s[0] = form.get_slider(s1);
-echo_s[1] = form.get_slider(s2);
-echo_s[2] = form.get_slider(s3);
-echo_s[3] = form.get_slider(s4);
-}
-else
+else if (last_effect_pos == 2)
 {
 low_s[0] = form.get_slider(s1);
 low_s[1] = form.get_slider(s2);
 low_s[2] = form.get_slider(s3);
+}
+else if (last_effect_pos == 3)
+{
+highpass_s[0] = form.get_slider(s1);
+highpass_s[1] = form.get_slider(s2);
+highpass_s[2] = form.get_slider(s3);
+}
+else if (last_effect_pos == 4)
+{
+chorus_s[0] = form.get_slider(s1);
+chorus_s[1] = form.get_slider(s2);
+chorus_s[2] = form.get_slider(s3);
+chorus_s[3] = form.get_slider(s4);
+chorus_s[4] = form.get_slider(s5);
+chorus_s[5] = form.get_slider(s6);
+}
+else if (last_effect_pos == 5)
+{
+dist_s[0] = form.get_slider(s1);
+dist_s[1] = form.get_slider(s2);
+dist_s[2] = form.get_slider(s3);
+dist_s[3] = form.get_slider(s4);
+dist_s[4] = form.get_slider(s5);
+}
+else if (last_effect_pos == 6)
+{
+phaser_s[0] = form.get_slider(s1);
+phaser_s[1] = form.get_slider(s2);
+phaser_s[2] = form.get_slider(s3);
+phaser_s[3] = form.get_slider(s4);
+phaser_s[4] = form.get_slider(s5);
+phaser_s[5] = form.get_slider(s6);
+}
+else if (last_effect_pos == 7)
+{
+flanger_s[0] = form.get_slider(s1);
+flanger_s[1] = form.get_slider(s2);
+flanger_s[2] = form.get_slider(s3);
+flanger_s[3] = form.get_slider(s4);
+flanger_s[4] = form.get_slider(s5);
+flanger_s[5] = form.get_slider(s6);
 }
 }
 form.reset();
@@ -3482,32 +3528,79 @@ form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not a
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
 effect_list = form.create_list("e&ffect type");
-form.add_list_item(effect_list, "reverb", "reverb");
 form.add_list_item(effect_list, "echo", "echo");
+form.add_list_item(effect_list, "reverb", "reverb");
 form.add_list_item(effect_list, "lowpass", "lowpass");
+form.add_list_item(effect_list, "highpass", "highpass");
+form.add_list_item(effect_list, "chorus", "chorus");
+form.add_list_item(effect_list, "distortion", "distortion");
+form.add_list_item(effect_list, "phaser", "phaser");
+form.add_list_item(effect_list, "flanger", "flanger");
 form.set_list_position(effect_list, saved_effect_pos, false);
 s4 = -1;
 s5 = -1;
+s6 = -1;
 if (saved_effect_pos == 0)
 {
-s1 = form.create_slider("&dry mix: ", rev_s[0], 1, 100, "");
-s2 = form.create_slider("&wet mix: ", rev_s[1], 1, 100, "");
-s3 = form.create_slider("&room size: ", rev_s[2], 1, 100, "");
-s4 = form.create_slider("dam&ping: ", rev_s[3], 1, 100, "");
-s5 = form.create_slider("w&idth: ", rev_s[4], 1, 100, "");
+s1 = form.create_slider("&dry mix: ", echo_s[0], 0, 200, "");
+s2 = form.create_slider("&wet mix: ", echo_s[1], 0, 200, "");
+s3 = form.create_slider("&feedback: ", echo_s[2], 0, 100, "");
+s4 = form.create_slider("&delay: ", echo_s[3], 0, 1000, "ms", 5);
 }
 else if (saved_effect_pos == 1)
 {
-s1 = form.create_slider("&dry mix: ", echo_s[0], 1, 100, "");
-s2 = form.create_slider("&wet mix: ", echo_s[1], 1, 100, "");
-s3 = form.create_slider("&feedback: ", echo_s[2], 1, 100, "");
-s4 = form.create_slider("&delay: ", echo_s[3], 0, 1000, "ms");
+s1 = form.create_slider("&dry mix: ", rev_s[0], 0, 100, "");
+s2 = form.create_slider("&wet mix: ", rev_s[1], 0, 300, "");
+s3 = form.create_slider("&room size: ", rev_s[2], 0, 100, "");
+s4 = form.create_slider("dam&ping: ", rev_s[3], 0, 100, "");
+s5 = form.create_slider("w&idth: ", rev_s[4], 0, 100, "");
 }
-else
+else if (saved_effect_pos == 2)
 {
-s1 = form.create_slider("&frequency: ", low_s[0], 0, 1000, "hz");
-s2 = form.create_slider("&bandwidth: ", low_s[1], 0, 100, "");
-s3 = form.create_slider("&q: ", low_s[2], 0, 100, "");
+s1 = form.create_slider("&frequency: ", low_s[0], 0, 22000, "hz", 100);
+s2 = form.create_slider("&bandwidth: ", low_s[1], 0, 1000, "oct");
+s3 = form.create_slider("&quality: ", low_s[2], 0, 100, "");
+}
+else if (saved_effect_pos == 3)
+{
+s1 = form.create_slider("&frequency: ", highpass_s[0], 0, 22000, "hz", 100);
+s2 = form.create_slider("&bandwidth: ", highpass_s[1], 0, 1000, "oct");
+s3 = form.create_slider("&quality: ", highpass_s[2], 0, 100, "");
+}
+else if (saved_effect_pos == 4)
+{
+s1 = form.create_slider("&dry mix: ", chorus_s[0], 0, 200, "");
+s2 = form.create_slider("&wet mix: ", chorus_s[1], 0, 200, "");
+s3 = form.create_slider("&feedback: ", chorus_s[2], 0, 100, "");
+s4 = form.create_slider("min s&weep: ", chorus_s[3], 0, 6000, "ms", 10);
+s5 = form.create_slider("max sw&eep: ", chorus_s[4], 0, 6000, "ms", 10);
+s6 = form.create_slider("&rate: ", chorus_s[5], 0, 1000, "ms/s", 5);
+}
+else if (saved_effect_pos == 5)
+{
+s1 = form.create_slider("d&rive: ", dist_s[0], 0, 500, "");
+s2 = form.create_slider("&dry mix: ", dist_s[1], 0, 500, "");
+s3 = form.create_slider("&wet mix: ", dist_s[2], 0, 500, "");
+s4 = form.create_slider("&feedback: ", dist_s[3], 0, 100, "");
+s5 = form.create_slider("&volume: ", dist_s[4], 0, 200, "");
+}
+else if (saved_effect_pos == 6)
+{
+s1 = form.create_slider("&dry mix: ", phaser_s[0], 0, 200, "");
+s2 = form.create_slider("&wet mix: ", phaser_s[1], 0, 200, "");
+s3 = form.create_slider("&rate: ", phaser_s[2], 0, 10, "hz");
+s4 = form.create_slider("de&pth: ", phaser_s[3], 0, 100, "");
+s5 = form.create_slider("&feedback: ", phaser_s[4], 0, 100, "");
+s6 = form.create_slider("p&hase: ", phaser_s[5], 0, 360, "deg");
+}
+else if (saved_effect_pos == 7)
+{
+s1 = form.create_slider("&dry mix: ", flanger_s[0], 0, 200, "");
+s2 = form.create_slider("&wet mix: ", flanger_s[1], 0, 200, "");
+s3 = form.create_slider("&feedback: ", flanger_s[2], 0, 100, "");
+s4 = form.create_slider("min &delay: ", flanger_s[3], 0, 20, "ms");
+s5 = form.create_slider("max d&elay: ", flanger_s[4], 0, 20, "ms");
+s6 = form.create_slider("&rate: ", flanger_s[5], 0, 10, "hz");
 }
 platile = form.create_list("te&st surface");
 string[] plats = get_map_sound_folders("objects/platforms/*");
@@ -3544,9 +3637,7 @@ x = string_to_number(form.get_text(mx));
 paxx = string_to_number(form.get_text(mx2));
 y = string_to_number(form.get_text(my));
 paxy = string_to_number(form.get_text(my2));
-if (saved_effect_pos == 0) reverid = form.get_text(rd);
-else if (saved_effect_pos == 1) echoid = form.get_text(rd);
-else lowpassid = form.get_text(rd);
+effect_id = form.get_text(rd);
 int cur_effect_pos = form.get_list_position(effect_list);
 if (cur_effect_pos != -1 && cur_effect_pos != last_effect_pos)
 {
@@ -3575,18 +3666,47 @@ if (form.get_current_focus() == platile)
 string fxtype = "";
 if (saved_effect_pos == 0)
 {
-float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, r = form.get_slider(s3)/100.0, dp = form.get_slider(s4)/100.0, wt = form.get_slider(s5)/100.0;
-fxtype = "$test_effect:freeverb:" + d + ":" + w + ":" + r + ":" + dp + ":" + wt;
-}
-else if (saved_effect_pos == 1)
-{
 float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, fb = form.get_slider(s3)/100.0, dl = form.get_slider(s4)/1000.0;
 fxtype = "$test_effect:echo4:" + d + ":" + w + ":" + fb + ":" + dl + ":0";
 }
-else
+else if (saved_effect_pos == 1)
+{
+float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, r = form.get_slider(s3)/100.0, dp = form.get_slider(s4)/100.0, wt = form.get_slider(s5)/100.0;
+fxtype = "$test_effect:freeverb:" + d + ":" + w + ":" + r + ":" + dp + ":" + wt;
+}
+else if (saved_effect_pos == 2)
 {
 float fr = form.get_slider(s1), bw = form.get_slider(s2)/100.0, q = form.get_slider(s3)/100.0;
 fxtype = "$test_effect:lowpass:" + fr + ":" + bw + ":" + q;
+}
+else if (saved_effect_pos == 3)
+{
+float fr = form.get_slider(s1), bw = form.get_slider(s2)/100.0, q = form.get_slider(s3)/100.0;
+fxtype = "$test_effect:highpass:" + fr + ":" + bw + ":" + q;
+}
+else if (saved_effect_pos == 4)
+{
+float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, fb = form.get_slider(s3)/100.0;
+float ms = form.get_slider(s4), mxs = form.get_slider(s5), rt = form.get_slider(s6);
+fxtype = "$test_effect:chorus:" + d + ":" + w + ":" + fb + ":" + ms + ":" + mxs + ":" + rt;
+}
+else if (saved_effect_pos == 5)
+{
+float dr = form.get_slider(s1)/100.0, dy = form.get_slider(s2)/100.0, wt = form.get_slider(s3)/100.0;
+float fb = form.get_slider(s4)/100.0, vo = form.get_slider(s5)/100.0;
+fxtype = "$test_effect:distortion:" + dr + ":" + dy + ":" + wt + ":" + fb + ":" + vo;
+}
+else if (saved_effect_pos == 6)
+{
+float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, rt = form.get_slider(s3);
+float dp = form.get_slider(s4)/100.0, fb = form.get_slider(s5)/100.0, ph = form.get_slider(s6);
+fxtype = "$test_effect:phaser:" + d + ":" + w + ":" + rt + ":" + dp + ":" + fb + ":" + ph;
+}
+else if (saved_effect_pos == 7)
+{
+float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, fb = form.get_slider(s3)/100.0;
+float mnd = form.get_slider(s4), mxd = form.get_slider(s5), rt = form.get_slider(s6);
+fxtype = "$test_effect:flanger:" + d + ":" + w + ":" + fb + ":" + mnd + ":" + mxd + ":" + rt;
 }
 if (key_down(KEY_SPACE) && spacehold == 1 && movetimer.elapsed >= movetime)
 {
@@ -3653,33 +3773,97 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "ab");
 mapdata = mapper.read();
 if (saved_effect_pos == 0)
 {
-revdry = form.get_slider(s1)/100.0;
-revwet = form.get_slider(s2)/100.0;
-revsize = form.get_slider(s3)/100.0;
-revdamp = form.get_slider(s4)/100.0;
-revwidth = form.get_slider(s5)/100.0;
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" reverb "+round(revdry, 2)+" "+round(revwet, 2)+" "+round(revsize, 2)+" "+round(revdamp, 2)+" "+round(revwidth, 2));
+effect_params.resize(4);
+effect_params[0] = form.get_slider(s1)/100.0;
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3)/100.0;
+effect_params[3] = form.get_slider(s4)/1000.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" echo "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 2));
 mapper.close();
-spawn_reverb_space(x, paxx, y, paxy, reverid, revdry, revwet, revsize, revdamp, revwidth);
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$echo:echo4:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":0", "$echo");
 }
 else if (saved_effect_pos == 1)
 {
-echodry = form.get_slider(s1)/100.0;
-echowet = form.get_slider(s2)/100.0;
-echofeedback = form.get_slider(s3)/100.0;
-echodelay = form.get_slider(s4)/1000.0;
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+echoid+" echo "+round(echodry, 2)+" "+round(echowet, 2)+" "+round(echofeedback, 2)+" "+round(echodelay, 2));
+effect_params.resize(5);
+effect_params[0] = form.get_slider(s1)/100.0;
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3)/100.0;
+effect_params[3] = form.get_slider(s4)/100.0;
+effect_params[4] = form.get_slider(s5)/100.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" reverb "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2));
 mapper.close();
-spawn_echo_space(x, paxx, y, paxy, echoid, echodry, echowet, echofeedback, echodelay);
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$reverb:freeverb:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4], "$reverb");
 }
-else
+else if (saved_effect_pos == 2)
 {
-lowpassfreq = form.get_slider(s1);
-lowpassbw = form.get_slider(s2)/100.0;
-lowpassq = form.get_slider(s3)/100.0;
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+lowpassid+" lowpass "+round(lowpassfreq, 1)+" "+round(lowpassbw, 2)+" "+round(lowpassq, 2));
+effect_params.resize(3);
+effect_params[0] = form.get_slider(s1);
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3)/100.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" lowpass "+effect_params[0]+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2));
 mapper.close();
-spawn_lowpass_space(x, paxx, y, paxy, lowpassid, lowpassfreq, lowpassbw, lowpassq);
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$lowpass:lowpass:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2], "$lowpass");
+}
+else if (saved_effect_pos == 3)
+{
+effect_params.resize(3);
+effect_params[0] = form.get_slider(s1);
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3)/100.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" highpass "+effect_params[0]+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2));
+mapper.close();
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$highpass:highpass:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2], "$highpass");
+}
+else if (saved_effect_pos == 4)
+{
+effect_params.resize(6);
+effect_params[0] = form.get_slider(s1)/100.0;
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3)/100.0;
+effect_params[3] = form.get_slider(s4);
+effect_params[4] = form.get_slider(s5);
+effect_params[5] = form.get_slider(s6);
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" chorus "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+effect_params[3]+" "+effect_params[4]+" "+effect_params[5]);
+mapper.close();
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$chorus:chorus:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$chorus");
+}
+else if (saved_effect_pos == 5)
+{
+effect_params.resize(5);
+effect_params[0] = form.get_slider(s1)/100.0;
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3)/100.0;
+effect_params[3] = form.get_slider(s4)/100.0;
+effect_params[4] = form.get_slider(s5)/100.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" distortion "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2));
+mapper.close();
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$distortion:distortion:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4], "$distortion");
+}
+else if (saved_effect_pos == 6)
+{
+effect_params.resize(6);
+effect_params[0] = form.get_slider(s1)/100.0;
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3);
+effect_params[3] = form.get_slider(s4)/100.0;
+effect_params[4] = form.get_slider(s5)/100.0;
+effect_params[5] = form.get_slider(s6);
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" phaser "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+effect_params[2]+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2)+" "+effect_params[5]);
+mapper.close();
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$phaser:phaser:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$phaser");
+}
+else if (saved_effect_pos == 7)
+{
+effect_params.resize(6);
+effect_params[0] = form.get_slider(s1)/100.0;
+effect_params[1] = form.get_slider(s2)/100.0;
+effect_params[2] = form.get_slider(s3)/100.0;
+effect_params[3] = form.get_slider(s4);
+effect_params[4] = form.get_slider(s5);
+effect_params[5] = form.get_slider(s6);
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" flanger "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+effect_params[3]+" "+effect_params[4]+" "+effect_params[5]);
+mapper.close();
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$flanger:flanger:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$flanger");
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);

@@ -1,10 +1,14 @@
+float[] effect_params;
+string effect_id;
+
 class effect_zone
 {
 double minx, maxx, miny, maxy;
 string zone_id;
 string fx_string;
+string clear_tag;
 effect_zone() {}
-effect_zone(double x1, double x2, double y1, double y2, string id, string fx)
+effect_zone(double x1, double x2, double y1, double y2, string id, string fx, string ctag)
 {
 minx = x1;
 maxx = x2;
@@ -12,27 +16,40 @@ miny = y1;
 maxy = y2;
 zone_id = id;
 fx_string = fx;
+clear_tag = ctag;
 }
 }
 
-void apply_zone_array(double x, double y, sound_pool@ pool, array<effect_zone@>@ zones, string clear_tag)
+effect_zone@[] effect_spaces(0);
+
+void spawn_effect_space(double x1, double x2, double y1, double y2, string id, string fx, string ctag)
 {
-for (uint i = 0; i < zones.length(); i++)
-{
-if (zones[i].minx <= x && zones[i].maxx >= x && zones[i].miny <= y && zones[i].maxy >= y)
-{
-pool.mixer.set_fx(zones[i].fx_string);
-return;
+effect_spaces.insert_last(effect_zone(x1, x2, y1, y2, id, fx, ctag));
 }
-}
-pool.mixer.set_fx(clear_tag);
+
+void destroy_all_effect_spaces()
+{
+effect_spaces.resize(0);
 }
 
 void apply_all_effects(double x, double y, sound_pool@ pool)
 {
-apply_reverb_space(x, y, pool);
-apply_echo_space(x, y, pool);
-apply_lowpass_space(x, y, pool);
+string[] tags = {"$reverb", "$echo", "$lowpass", "$highpass", "$chorus", "$distortion", "$phaser", "$flanger"};
+for (uint t = 0; t < tags.length(); t++)
+{
+bool found = false;
+for (uint i = 0; i < effect_spaces.length(); i++)
+{
+if (effect_spaces[i].clear_tag != tags[t]) continue;
+if (effect_spaces[i].minx <= x && effect_spaces[i].maxx >= x && effect_spaces[i].miny <= y && effect_spaces[i].maxy >= y)
+{
+pool.mixer.set_fx(effect_spaces[i].fx_string);
+found = true;
+break;
+}
+}
+if (!found) pool.mixer.set_fx(tags[t]);
+}
 }
 
 void apply_effect_pools()
