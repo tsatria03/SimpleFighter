@@ -3424,8 +3424,8 @@ string saved_y2 = sel_top_set ? sel_top : "";
 string saved_id = generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 int saved_effect_pos = 0;
 float[] rev_s = {50, 50, 50, 50, 50};
-float[] echo_s = {50, 50, 50, 50};
-float[] low_s = {50, 50, 50};
+float[] echo_s = {50, 50, 50, 500};
+float[] low_s = {500, 50, 50};
 bool do_build = true;
 int last_effect_pos = -1;
 int saved_plat_pos = 0;
@@ -3482,32 +3482,32 @@ form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not a
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
 effect_list = form.create_list("e&ffect type");
-form.add_list_item(effect_list, "reverb (freeverb)", "reverb");
-form.add_list_item(effect_list, "echo (echo4)", "echo");
+form.add_list_item(effect_list, "reverb", "reverb");
+form.add_list_item(effect_list, "echo", "echo");
 form.add_list_item(effect_list, "lowpass", "lowpass");
 form.set_list_position(effect_list, saved_effect_pos, false);
 s4 = -1;
 s5 = -1;
 if (saved_effect_pos == 0)
 {
-s1 = form.create_slider("&dry mix: ", rev_s[0], 0, 100, "percent");
-s2 = form.create_slider("&wet mix: ", rev_s[1], 0, 100, "percent");
-s3 = form.create_slider("&room size: ", rev_s[2], 0, 100, "percent");
-s4 = form.create_slider("dam&ping: ", rev_s[3], 0, 100, "percent");
-s5 = form.create_slider("w&idth: ", rev_s[4], 0, 100, "percent");
+s1 = form.create_slider("&dry mix: ", rev_s[0], 1, 100, "");
+s2 = form.create_slider("&wet mix: ", rev_s[1], 1, 100, "");
+s3 = form.create_slider("&room size: ", rev_s[2], 1, 100, "");
+s4 = form.create_slider("dam&ping: ", rev_s[3], 1, 100, "");
+s5 = form.create_slider("w&idth: ", rev_s[4], 1, 100, "");
 }
 else if (saved_effect_pos == 1)
 {
-s1 = form.create_slider("&dry mix: ", echo_s[0], 0, 100, "percent");
-s2 = form.create_slider("&wet mix: ", echo_s[1], 0, 100, "percent");
-s3 = form.create_slider("&feedback: ", echo_s[2], 0, 100, "percent");
-s4 = form.create_slider("&delay: ", echo_s[3], 0, 100, "percent");
+s1 = form.create_slider("&dry mix: ", echo_s[0], 1, 100, "");
+s2 = form.create_slider("&wet mix: ", echo_s[1], 1, 100, "");
+s3 = form.create_slider("&feedback: ", echo_s[2], 1, 100, "");
+s4 = form.create_slider("&delay: ", echo_s[3], 0, 1000, "ms");
 }
 else
 {
-s1 = form.create_slider("&frequency: ", low_s[0], 0, 100, "percent");
-s2 = form.create_slider("&bandwidth: ", low_s[1], 0, 100, "percent");
-s3 = form.create_slider("&q: ", low_s[2], 0, 100, "percent");
+s1 = form.create_slider("&frequency: ", low_s[0], 0, 1000, "hz");
+s2 = form.create_slider("&bandwidth: ", low_s[1], 0, 100, "");
+s3 = form.create_slider("&q: ", low_s[2], 0, 100, "");
 }
 platile = form.create_list("te&st surface");
 string[] plats = get_map_sound_folders("objects/platforms/*");
@@ -3544,7 +3544,9 @@ x = string_to_number(form.get_text(mx));
 paxx = string_to_number(form.get_text(mx2));
 y = string_to_number(form.get_text(my));
 paxy = string_to_number(form.get_text(my2));
-reverid = form.get_text(rd);
+if (saved_effect_pos == 0) reverid = form.get_text(rd);
+else if (saved_effect_pos == 1) echoid = form.get_text(rd);
+else lowpassid = form.get_text(rd);
 int cur_effect_pos = form.get_list_position(effect_list);
 if (cur_effect_pos != -1 && cur_effect_pos != last_effect_pos)
 {
@@ -3665,19 +3667,19 @@ else if (saved_effect_pos == 1)
 echodry = form.get_slider(s1)/100.0;
 echowet = form.get_slider(s2)/100.0;
 echofeedback = form.get_slider(s3)/100.0;
-echodelay = form.get_slider(s4)/100.0;
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" echo "+round(echodry, 2)+" "+round(echowet, 2)+" "+round(echofeedback, 2)+" "+round(echodelay, 3));
+echodelay = form.get_slider(s4)/1000.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+echoid+" echo "+round(echodry, 2)+" "+round(echowet, 2)+" "+round(echofeedback, 2)+" "+round(echodelay, 2));
 mapper.close();
-spawn_echo_space(x, paxx, y, paxy, reverid, echodry, echowet, echofeedback, echodelay);
+spawn_echo_space(x, paxx, y, paxy, echoid, echodry, echowet, echofeedback, echodelay);
 }
 else
 {
-lowpassfreq = 20 + (form.get_slider(s1)/100.0) * (22000.0 - 20.0);
+lowpassfreq = form.get_slider(s1);
 lowpassbw = form.get_slider(s2)/100.0;
 lowpassq = form.get_slider(s3)/100.0;
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" lowpass "+round(lowpassfreq, 1)+" "+round(lowpassbw, 2)+" "+round(lowpassq, 2));
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+lowpassid+" lowpass "+round(lowpassfreq, 1)+" "+round(lowpassbw, 2)+" "+round(lowpassq, 2));
 mapper.close();
-spawn_lowpass_space(x, paxx, y, paxy, reverid, lowpassfreq, lowpassbw, lowpassq);
+spawn_lowpass_space(x, paxx, y, paxy, lowpassid, lowpassfreq, lowpassbw, lowpassq);
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
