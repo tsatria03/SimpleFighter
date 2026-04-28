@@ -3415,67 +3415,153 @@ load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
 }
-if(buildtype == "reverb_space")
+if(buildtype == "effect_space")
 {
+string saved_x1 = sel_left_set ? sel_left : "";
+string saved_x2 = sel_right_set ? sel_right : "";
+string saved_y1 = sel_bottom_set ? sel_bottom : "";
+string saved_y2 = sel_top_set ? sel_top : "";
+string saved_id = generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+int saved_effect_pos = 0;
+float[] rev_s = {50, 50, 50, 50, 50};
+float[] echo_s = {50, 50, 50, 50};
+float[] low_s = {50, 50, 50};
+bool do_build = true;
+int last_effect_pos = -1;
+int saved_plat_pos = 0;
+int mx, mx2, my, my2, rd, effect_list;
+int s1, s2, s3, s4, s5;
+int platile, efok, efcn;
+while (true)
+{
+wait(5);
+if (do_build)
+{
+do_build = false;
+if (last_effect_pos != -1)
+{
+saved_x1 = form.get_text(mx);
+saved_x2 = form.get_text(mx2);
+saved_y1 = form.get_text(my);
+saved_y2 = form.get_text(my2);
+saved_id = form.get_text(rd);
+int sp = form.get_list_position(platile);
+if (sp >= 0) saved_plat_pos = sp;
+if (last_effect_pos == 0)
+{
+rev_s[0] = form.get_slider(s1);
+rev_s[1] = form.get_slider(s2);
+rev_s[2] = form.get_slider(s3);
+rev_s[3] = form.get_slider(s4);
+rev_s[4] = form.get_slider(s5);
+}
+else if (last_effect_pos == 1)
+{
+echo_s[0] = form.get_slider(s1);
+echo_s[1] = form.get_slider(s2);
+echo_s[2] = form.get_slider(s3);
+echo_s[3] = form.get_slider(s4);
+}
+else
+{
+low_s[0] = form.get_slider(s1);
+low_s[1] = form.get_slider(s2);
+low_s[2] = form.get_slider(s3);
+}
+}
 form.reset();
-form.create_window("reverb space", false);
-int mx=form.create_input_box("Enter the minimum x of this reverb space", sel_left_set ? sel_left : "");
-int mx2=form.create_input_box("Enter the maximum x of this reverb space", sel_right_set ? sel_right : "");
-int my=form.create_input_box("Enter the minimum y of this reverb space", sel_bottom_set ? sel_bottom : "");
-int my2=form.create_input_box("Enter the maximum y of this reverb space", sel_top_set ? sel_top : "");
-int rd=form.create_input_box("Enter the id of this reverb space", generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"));
+form.create_window("effect space", false, true, last_effect_pos != -1);
+mx = form.create_input_box("Enter the minimum x of this effect space", saved_x1);
+mx2 = form.create_input_box("Enter the maximum x of this effect space", saved_x2);
+my = form.create_input_box("Enter the minimum y of this effect space", saved_y1);
+my2 = form.create_input_box("Enter the maximum y of this effect space", saved_y2);
+rd = form.create_input_box("Enter the id of this effect space", saved_id);
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
-int dr=form.create_slider("&dry_mix: ", 50, 0, 100, "percent");
-int wm=form.create_slider("&wet_mix: ", 50, 0, 100, "percent");
-int rm=form.create_slider("&room_size: ", 50, 0, 100, "percent");
-int dp=form.create_slider("dam&ping: ", 50, 0, 100, "percent");
-int wt=form.create_slider("w&idth: ", 50, 0, 100, "percent");
-int platile = form.create_list("te&st surface");
+effect_list = form.create_list("e&ffect type");
+form.add_list_item(effect_list, "reverb (freeverb)", "reverb");
+form.add_list_item(effect_list, "echo (echo4)", "echo");
+form.add_list_item(effect_list, "lowpass", "lowpass");
+form.set_list_position(effect_list, saved_effect_pos, false);
+s4 = -1;
+s5 = -1;
+if (saved_effect_pos == 0)
+{
+s1 = form.create_slider("&dry mix: ", rev_s[0], 0, 100, "percent");
+s2 = form.create_slider("&wet mix: ", rev_s[1], 0, 100, "percent");
+s3 = form.create_slider("&room size: ", rev_s[2], 0, 100, "percent");
+s4 = form.create_slider("dam&ping: ", rev_s[3], 0, 100, "percent");
+s5 = form.create_slider("w&idth: ", rev_s[4], 0, 100, "percent");
+}
+else if (saved_effect_pos == 1)
+{
+s1 = form.create_slider("&dry mix: ", echo_s[0], 0, 100, "percent");
+s2 = form.create_slider("&wet mix: ", echo_s[1], 0, 100, "percent");
+s3 = form.create_slider("&feedback: ", echo_s[2], 0, 100, "percent");
+s4 = form.create_slider("&delay: ", echo_s[3], 0, 100, "percent");
+}
+else
+{
+s1 = form.create_slider("&frequency: ", low_s[0], 0, 100, "percent");
+s2 = form.create_slider("&bandwidth: ", low_s[1], 0, 100, "percent");
+s3 = form.create_slider("&q: ", low_s[2], 0, 100, "percent");
+}
+platile = form.create_list("te&st surface");
 string[] plats = get_map_sound_folders("objects/platforms/*");
+if (last_effect_pos == -1)
+{
 string current_tile = gmt(me.x, me.y);
-int selected_index = 0;
 for (uint i = 0; i < plats.length(); i++)
 {
 form.add_list_item(platile, plats[i], plats[i]);
-if (plats[i] == current_tile)
-selected_index = i;
+if (plats[i] == current_tile) saved_plat_pos = i;
 }
-form.set_list_position(platile, selected_index);
-if(plats.length()!=0) tiletype = plats[selected_index];
-int revok = form.create_button("&okay", true);
-int revcn = form.create_button("&cancel");
-form.focus(mx);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
-while (true)
+}
+else
 {
+for (uint i = 0; i < plats.length(); i++)
+form.add_list_item(platile, plats[i], plats[i]);
+}
+form.set_list_position(platile, saved_plat_pos);
+if (plats.length() != 0) tiletype = plats[saved_plat_pos];
+efok = form.create_button("&okay", true);
+efcn = form.create_button("&cancel");
+if (last_effect_pos == -1)
+{
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+}
+else
+form.focus_silently(effect_list);
+last_effect_pos = saved_effect_pos;
+}
 form.monitor();
 wait(5);
-x=string_to_number(form.get_text(mx));
-paxx=string_to_number(form.get_text(mx2));
-y=string_to_number(form.get_text(my));
-paxy=string_to_number(form.get_text(my2));
-reverid=form.get_text(rd);
-revdry = form.get_slider(dr) / 100.0;
-revwet = form.get_slider(wm) / 100.0;
-revsize = form.get_slider(rm) / 100.0;
-revdamp = form.get_slider(dp) / 100.0;
-revwidth = form.get_slider(wt) / 100.0;
+x = string_to_number(form.get_text(mx));
+paxx = string_to_number(form.get_text(mx2));
+y = string_to_number(form.get_text(my));
+paxy = string_to_number(form.get_text(my2));
+reverid = form.get_text(rd);
+int cur_effect_pos = form.get_list_position(effect_list);
+if (cur_effect_pos != -1 && cur_effect_pos != last_effect_pos)
+{
+saved_effect_pos = cur_effect_pos;
+do_build = true;
+continue;
+}
 int list_position = form.get_list_position(platile);
 if (list_position != -1)
-{
 tiletype = form.get_list_item(platile, list_position);
-}
-if(key_pressed(KEY_ESCAPE))
+if (key_pressed(KEY_ESCAPE))
 {
 resume_pools();
 speak("canceled");
 game();
 }
-if(form.is_pressed(revcn))
+if (form.is_pressed(efcn))
 {
 resume_pools();
 speak("canceled");
@@ -3484,14 +3570,24 @@ game();
 if (form.get_current_focus() == platile)
 {
 @temp.mixer = mixer();
+string fxtype = "";
+if (saved_effect_pos == 0)
+{
+float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, r = form.get_slider(s3)/100.0, dp = form.get_slider(s4)/100.0, wt = form.get_slider(s5)/100.0;
+fxtype = "$test_effect:freeverb:" + d + ":" + w + ":" + r + ":" + dp + ":" + wt;
+}
+else if (saved_effect_pos == 1)
+{
+float d = form.get_slider(s1)/100.0, w = form.get_slider(s2)/100.0, fb = form.get_slider(s3)/100.0, dl = form.get_slider(s4)/1000.0;
+fxtype = "$test_effect:echo4:" + d + ":" + w + ":" + fb + ":" + dl + ":0";
+}
+else
+{
+float fr = form.get_slider(s1), bw = form.get_slider(s2)/100.0, q = form.get_slider(s3)/100.0;
+fxtype = "$test_effect:lowpass:" + fr + ":" + bw + ":" + q;
+}
 if (key_down(KEY_SPACE) && spacehold == 1 && movetimer.elapsed >= movetime)
 {
-revdry = form.get_slider(dr) / 100.0;
-revwet = form.get_slider(wm) / 100.0;
-revsize = form.get_slider(rm) / 100.0;
-revdamp = form.get_slider(dp) / 100.0;
-revwidth = form.get_slider(wt) / 100.0;
-string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
 temp.mixer.set_fx(fxtype);
 temp.destroy_sound(tileslot);
 tileslot = temp.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
@@ -3499,83 +3595,92 @@ movetimer.restart();
 }
 if (key_pressed(KEY_SPACE) && spacehold == 0)
 {
-revdry = form.get_slider(dr) / 100.0;
-revwet = form.get_slider(wm) / 100.0;
-revsize = form.get_slider(rm) / 100.0;
-revdamp = form.get_slider(dp) / 100.0;
-revwidth = form.get_slider(wt) / 100.0;
-string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
 temp.mixer.set_fx(fxtype);
 temp.destroy_sound(tileslot);
 tileslot = temp.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), false, 0, 0, tilevolume, tilepitch);
 }
 if (control_is_down() && key_repeating(KEY_L))
 {
-revdry = form.get_slider(dr) / 100.0;
-revwet = form.get_slider(wm) / 100.0;
-revsize = form.get_slider(rm) / 100.0;
-revdamp = form.get_slider(dp) / 100.0;
-revwidth = form.get_slider(wt) / 100.0;
-string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
 temp.mixer.set_fx(fxtype);
 temp.destroy_sound(tileslot);
 tileslot = temp.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*land*"), false, 0, 0, tilevolume, tilepitch);
 }
 if (control_is_down() && key_repeating(KEY_H))
 {
-revdry = form.get_slider(dr) / 100.0;
-revwet = form.get_slider(wm) / 100.0;
-revsize = form.get_slider(rm) / 100.0;
-revdamp = form.get_slider(dp) / 100.0;
-revwidth = form.get_slider(wt) / 100.0;
-string fxtype = "$test_reverb:freeverb:" + revdry + ":" + revwet + ":" + revsize + ":" + revdamp + ":" + revwidth;
 temp.mixer.set_fx(fxtype);
 temp.destroy_sound(tileslot);
 tileslot = temp.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*fall*"), false, 0, 0, tilevolume, tilepitch);
 }
 }
-if(form.is_pressed(revok))
+if (form.is_pressed(efok))
 {
-if(form.get_text(mx)=="")
+if (form.get_text(mx) == "")
 {
 speak("Minimum x is required.");
 form.focus(mx);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
 }
-else if(form.get_text(mx2)=="")
+else if (form.get_text(mx2) == "")
 {
 speak("Maximum x is required.");
 form.focus(mx2);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
 }
-else if(form.get_text(my)=="")
+else if (form.get_text(my) == "")
 {
 speak("Minimum y is required.");
 form.focus(my);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
 }
-else if(form.get_text(my2)=="")
+else if (form.get_text(my2) == "")
 {
 speak("Maximum y is required.");
 form.focus(my2);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
 }
-else if(form.get_text(rd)=="")
+else if (form.get_text(rd) == "")
 {
 speak("Id is required.");
 form.focus(rd);
-spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
 }
 else
 {
 resume_pools();
-mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
-mapdata=mapper.read();
-mapper.write("\r\n"+"reverb "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" "+round(revdry, 2)+" "+round(revwet, 2)+" "+round(revsize, 2)+" "+round(revdamp, 2)+" "+round(revwidth, 2));
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "ab");
+mapdata = mapper.read();
+if (saved_effect_pos == 0)
+{
+revdry = form.get_slider(s1)/100.0;
+revwet = form.get_slider(s2)/100.0;
+revsize = form.get_slider(s3)/100.0;
+revdamp = form.get_slider(s4)/100.0;
+revwidth = form.get_slider(s5)/100.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" reverb "+round(revdry, 2)+" "+round(revwet, 2)+" "+round(revsize, 2)+" "+round(revdamp, 2)+" "+round(revwidth, 2));
 mapper.close();
 spawn_reverb_space(x, paxx, y, paxy, reverid, revdry, revwet, revsize, revdamp, revwidth);
+}
+else if (saved_effect_pos == 1)
+{
+echodry = form.get_slider(s1)/100.0;
+echowet = form.get_slider(s2)/100.0;
+echofeedback = form.get_slider(s3)/100.0;
+echodelay = form.get_slider(s4)/100.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" echo "+round(echodry, 2)+" "+round(echowet, 2)+" "+round(echofeedback, 2)+" "+round(echodelay, 3));
+mapper.close();
+spawn_echo_space(x, paxx, y, paxy, reverid, echodry, echowet, echofeedback, echodelay);
+}
+else
+{
+lowpassfreq = 20 + (form.get_slider(s1)/100.0) * (22000.0 - 20.0);
+lowpassbw = form.get_slider(s2)/100.0;
+lowpassq = form.get_slider(s3)/100.0;
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+reverid+" lowpass "+round(lowpassfreq, 1)+" "+round(lowpassbw, 2)+" "+round(lowpassq, 2));
+mapper.close();
+spawn_lowpass_space(x, paxx, y, paxy, reverid, lowpassfreq, lowpassbw, lowpassq);
+}
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
 game();
 }

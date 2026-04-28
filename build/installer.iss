@@ -1,19 +1,16 @@
-#define MyAppId "{{B5718EDD-4F38-45A6-AD84-68BC34D57407}}"
-#define MyAppName "SimpleFighter"
-#define MyAppVersion "8.9"
+#define MyAppVersion Trim(FileRead(FileOpen("version.txt")))
 #define MyAppPublisher "tsatria03"
-#define MyAppURL "https://tsatria03.itch.io/SimpleFighter"
-#define MyAppExeName "sf.exe"
+#define MyOutputFilename MyAppName + "_windows_installer_password_is_" + MyAppPassword
 
 [Setup]
-AppId={#MyAppId}
+AppId={{{#MyAppId}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppPublisher}\{#MyAppName}\sf
+DefaultDirName={autopf}\{#MyAppPublisher}\{#MyAppName}\cst
 DefaultGroupName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 ArchitecturesAllowed=x64compatible
@@ -21,9 +18,9 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
 AppMutex={#MyAppName}_Mutex
-OutputDir=.
-OutputBaseFilename=SimpleFighter_windows_installer_password_is_SpfBuilder
-Password=SpfBuilder
+OutputDir=..\releases\archives
+OutputBaseFilename={#MyOutputFilename}
+Password={#MyAppPassword}
 Encryption=yes
 SolidCompression=yes
 WizardStyle=modern
@@ -36,7 +33,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Name: "startmenuicon"; Description: "Create a Start Menu shortcut"; GroupDescription: "Additional icons:"
 
 [Files]
-Source: "C:\Users\tonys\OneDrive\Documents\GitHub\SimpleFighter\releases\windows\SimpleFighter_windows_portable_password_is_SpfBuilder\sf\*"; \
+Source: "{#MySourcePath}\*"; \
   DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
