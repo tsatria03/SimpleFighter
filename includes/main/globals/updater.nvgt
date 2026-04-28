@@ -27,12 +27,6 @@ bool check_for_updates(string old_version, string projectname, bool precheck = f
     string url = get_download_url(projectname, new_version);
     string filename = get_disk_filename(url);
     string bare_name = strip_extension(strip_directory(filename));
-if (system_is_unix)
-{
-    clipboard_set_text(url);
-alert("Manual Download Required", "This update must be installed manually for this platform. The download link has been copied to your clipboard. Please paste it into your browser to download the update.");
-    return false;
-}
 if (!file_exists(filename))
 {
     string test_file = filename + ".test";
@@ -117,26 +111,18 @@ else
 
 string get_download_url(string projectname, string new_version)
 {
-    bool is_mac = system_is_unix;
     string base = "https://github.com/tsatria03/" + projectname + "/releases/download/V" + new_version+"0";
-    if (is_mac)
-    {
-        return base + "/SimpleFighter_mac_portable_password_is_SpfBuilder.zip";
-    }
+    setupmenu(false);
+    m.add_item_tts("Windows Installer", "installer");
+    m.add_item_tts("Windows Portable", "portable");
+    m.add_item_tts("cancel", "cancel");
+    int mres = m.run("Which version of the game would you like to download?", true);
+    string version_choice = m.get_item_name(mres);
+    if (mres == 0 || version_choice == "cancel") mainmenu();
+    if (version_choice == "portable")
+        return base + "/SimpleFighter_windows_portable_password_is_SpfBuilder.7z";
     else
-    {
-        setupmenu(false);
-        m.add_item_tts("Windows Installer", "installer");
-        m.add_item_tts("Windows Portable", "portable");
-m.add_item_tts("cancel", "cancel");
-        int mres = m.run("Which version of the game would you like to download?", true);
-        string version_choice = m.get_item_name(mres);
-        if (mres == 0 || version_choice == "cancel") mainmenu();
-        if (version_choice == "portable")
-            return base + "/SimpleFighter_windows_portable_password_is_SpfBuilder.7z";
-        else
-            return base + "/SimpleFighter_windows_installer_password_is_SpfBuilder.exe";
-    }
+        return base + "/SimpleFighter_windows_installer_password_is_SpfBuilder.exe";
 }
 
 void downloadsounds()
