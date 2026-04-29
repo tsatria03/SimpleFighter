@@ -1,5 +1,6 @@
 bool elvmove;
 elevator@[] elevators(0);
+
 class elevator
 {
 bool is_moving = false;
@@ -150,26 +151,25 @@ elevators.resize(0);
 elvmove = false;
 }
 
-el_floor@[] el_floors(0);
-class el_floor
+void read_elevator(string[] sd)
 {
-double minx, maxx;
-int floory;
-string text;
-el_floor(double mx, double mx2, int fly, string txt)
-{
-minx = mx;
-maxx = mx2;
-floory=fly;
-text = txt;
+int x=stn(sd[1]);
+int y=stn(sd[2]);
+int sp=stn(sd[3]);
+string txt=join_string_array(sd, 4, sd.length()-6);
+string ellotype=sd[sd.length()-6];
+string elmotype=sd[sd.length()-5];
+string eloptype=sd[sd.length()-4];
+string elcotype=sd[sd.length()-3];
+string elbetype=sd[sd.length()-2];
+bool fsp=string_to_bool(sd[sd.length()-1]);
+spawn_elevator(x, y, sp, txt, ellotype, elmotype, eloptype, elcotype, elbetype, fsp);
 }
-}
-void spawn_el_floor(double x1, double x2, int floory, string text)
+
+void write_elevator(int x, int y, int speed, string txt, string looptype, string movetype, string opentype, string closetype, string beeptype, bool floorspeak)
 {
-el_floor elfr1(x1, x2, floory, text);
-el_floors.insert_last(elfr1);
-}
-void destroy_all_el_floors()
-{
-el_floors.resize(0);
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"elevator "+x+" "+y+" "+speed+" "+txt+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+beeptype+" "+floorspeak);
+mapper.close();
 }
