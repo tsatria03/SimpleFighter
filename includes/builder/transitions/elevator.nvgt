@@ -151,6 +151,128 @@ elevators.resize(0);
 elvmove = false;
 }
 
+void build_elevator()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this elevator.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this elevator.", sel_bottom_set ? sel_bottom : "");
+string sp=vd.input_box("", "Enter the speed of this elevator.");
+string text=vd.input_box("", "Enter the menu text of this elevator. Press enter to use the default menu text.", "Choose the floor you'd like to go to.");
+if(x=="" and y=="" and speedtime=="" and txt=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+txt=text;
+string[] eldloop=get_map_sound_folders("objects/elevators/loop/*");
+if(eldloop.length()==0)
+{
+dlg_snd("Error. There are no elevator loops available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=eldloopsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+ellooptyp=res;
+}
+}
+string[] eldmove=get_map_sound_folders("objects/elevators/move/*");
+if(eldmove.length()==0)
+{
+dlg_snd("Error. There are no elevator moves available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res2=eldmovesmenu();
+if(res2!="")
+{
+t.destroy_sound(prevslot);
+elmovtyp=res2;
+}
+}
+string[] eldopen=get_map_sound_folders("objects/elevators/open/*");
+if(eldopen.length()==0)
+{
+dlg_snd("Error. There are no elevator opens available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res3=eldopensmenu();
+if(res3!="")
+{
+t.destroy_sound(prevslot);
+elopentyp=res3;
+}
+}
+string[] eldclose=get_map_sound_folders("objects/elevators/close/*");
+if(eldclose.length()==0)
+{
+dlg_snd("Error. There are no elevator closes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res4=eldclosesmenu();
+if(res4!="")
+{
+t.destroy_sound(prevslot);
+elclostyp=res4;
+}
+}
+string[] elbeeptype=get_map_sound_folders("objects/elevators/beep/*");
+if(elbeeptype.length()==0)
+{
+dlg_snd("Error. There are no elevator beeps available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res5=elbeepsmenu();
+if(res5!="")
+{
+t.destroy_sound(prevslot);
+elbeeptyp=res5;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres27=m.run("Do you want the elevator floors to be spoken?",true);
+if(mres27==0)
+{
+speak("canceled");
+return;
+}
+if(mres27==1)
+{
+fls=true;
+}
+if(mres27==2)
+{
+fls=false;
+}
+resume_pools();
+write_elevator(x, y, speedtime, txt, ellooptyp, elmovtyp, elopentyp, elclostyp, elbeeptyp, fls);
+spawn_elevator(x, y, speedtime, txt, ellooptyp, elmovtyp, elopentyp, elclostyp, elbeeptyp, fls);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_elevator(string[] sd)
 {
 int x=stn(sd[1]);

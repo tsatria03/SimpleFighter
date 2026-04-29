@@ -66,6 +66,49 @@ void destroy_all_healzones()
 healzones.resize(0);
 }
 
+void build_heal_zone()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this heal zone.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this heal zone.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this heal zone.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this heal zone.", sel_top_set ? sel_top : "");
+string hm=vd.input_box("", "Enter the healing mode of this heal zone. 0 for decreasing health, and 1 for increasing health.");
+string hp=vd.input_box("", "Enter the health of this heal zone.");
+string ht=vd.input_box("", "Enter the healing time of this heal zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and healthmode=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+healthmode=string_to_number(hm);
+damage=string_to_number(hp);
+speedtime=string_to_number(ht);
+string[] heals=get_map_sound_folders("objects/heal zones/*");
+if(heals.length()==0)
+{
+dlg_snd("Error. There are no heal zones available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=healsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+healtyp=res;
+}
+}
+resume_pools();
+write_heal_zone(x, paxx, y, paxy, healthmode, damage, speedtime, healtyp);
+spawn_healzone(x, paxx, y, paxy, healthmode, damage, speedtime, healtype);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_heal_zone(string[] sd)
 {
 double mx=stn(sd[1]);

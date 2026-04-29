@@ -225,6 +225,231 @@ turpool.destroy_sound(turrets[i].tursound);
 turrets.resize(0);
 }
 
+void build_turret()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this turret.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this turret.", sel_bottom_set ? sel_bottom : "");
+string hp=vd.input_box("", "Enter the health of this turret.");
+string hc=vd.input_box("", "Enter the maximum lives of this turret. Press enter to use the default lives.", "1");
+string dm=vd.input_box("", "Enter the maximum attack of this turret.");
+string ft=vd.input_box("", "Enter the fire time of this turret.");
+string lt=vd.input_box("", "Enter the launch time of this turret.");
+string sp=vd.input_box("", "Enter the speed of this turret.");
+string lev=vd.input_box("", "Enter the level of this turret.");
+string exper=vd.input_box("", "Enter the xp of this turret.");
+if(x=="" and y=="" and minhp=="" and card=="" and damage=="" and firetime=="" and launchtime=="" and speedtime=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+card=string_to_number(hc);
+damage=string_to_number(dm);
+firetime=string_to_number(ft);
+launchtime=string_to_number(lt);
+speedtime=string_to_number(sp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] turret=get_map_sound_folders("npc/turrets/*");
+if(turret.length()==0)
+{
+dlg_snd("Error. There are no turrets available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=turretsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+tutype=res;
+}
+}
+setupmenu();
+m.add_item_tts("animal","an2");
+m.add_item_tts("human", "hum2");
+m.add_item_tts("projectile","pj2");
+m.add_item_tts("robot","rt2");
+m.add_item_tts("zombie","zb2");
+int mres=m.run("What would you like this turret to spawn?",true);
+string turem=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(turem=="an2")
+{
+string[] animal=get_map_sound_folders("npc/animals/*");
+if(animal.length()==0)
+{
+dlg_snd("Error. There are no animals available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=animalsmenu();
+if(res!="")
+{
+tutype2="animal";
+t.destroy_sound(prevslot);
+tutype3=res;
+}
+}
+}
+if(turem=="hum2")
+{
+string[] human=get_map_sound_folders("npc/humans/*");
+if(human.length()==0)
+{
+dlg_snd("Error. There are no humans available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=humansmenu();
+if(res!="")
+{
+tutype2="human";
+t.destroy_sound(prevslot);
+tutype3=res;
+}
+}
+}
+if(turem=="pj2")
+{
+string[] projectile=get_map_sound_folders("npc/projectiles/*");
+if(projectile.length()==0)
+{
+dlg_snd("Error. There are no projectiles available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=projesmenu();
+if(res!="")
+{
+tutype2="projectile";
+t.destroy_sound(prevslot);
+tutype3=res;
+}
+}
+}
+if(turem=="rt2")
+{
+string[] robot=get_map_sound_folders("npc/robots/*");
+if(robot.length()==0)
+{
+dlg_snd("Error. There are no robots available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=robotsmenu();
+if(res!="")
+{
+tutype2="robot";
+t.destroy_sound(prevslot);
+tutype3=res;
+}
+}
+}
+if(turem=="zb2")
+{
+string[] zombie=get_map_sound_folders("npc/zombies/*");
+if(zombie.length()==0)
+{
+dlg_snd("Error. There are no zombies available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=zombiesmenu();
+if(res!="")
+{
+tutype2="zombie";
+t.destroy_sound(prevslot);
+tutype3=res;
+}
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres18=m.run("Should the turret attack you?",true);
+if(mres18==0)
+{
+speak("canceled");
+return;
+}
+if(mres18==1)
+{
+fb=true;
+}
+if(mres18==2)
+{
+fb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres19=m.run("Should the turret move on the x axes?",true);
+if(mres19==0)
+{
+speak("canceled");
+return;
+}
+if(mres19==1)
+{
+mb=true;
+}
+if(mres19==2)
+{
+mb=false;
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres20=m.run("Should the turret move on the y axes?",true);
+if(mres20==0)
+{
+speak("canceled");
+return;
+}
+if(mres20==1)
+{
+mb2=true;
+}
+if(mres20==2)
+{
+mb2=false;
+}
+resume_pools();
+write_turret(x, y, minhp, card, damage, firetime, launchtime, speedtime, lv, xn, tutype, tutype2, tutype3, fb, mb, mb2);
+spawn_turret(x, y, minhp, minhp, card, damage, firetime, launchtime, speedtime, lv, xn, tutype, tutype2, tutype3, fb, mb, mb2);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_turret(string[] sd)
 {
 int x=stn(sd[1]);

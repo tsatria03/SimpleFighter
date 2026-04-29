@@ -67,6 +67,63 @@ beltpool.destroy_sound(belts[i].beltsound);
 belts.resize(0);
 }
 
+void build_conveyor_belt()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this conveyor belt.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this conveyor belt.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this conveyor belt.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this conveyor belt.", sel_top_set ? sel_top : "");
+string dr=vd.input_box("", "Enter the direction of this conveyor belt. 1 for left, 2 for right, 3 for down, and 4 for up.");
+string sp=vd.input_box("", "Enter the speed of this conveyor belt.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and direction=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+direction=string_to_number(dr);
+speedtime=string_to_number(sp);
+string[] platform=get_map_sound_folders("objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+tiletype=res;
+}
+}
+string[] belt=get_map_sound_folders("objects/belts/*");
+if(belt.length()==0)
+{
+dlg_snd("Error. There are no belts available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=beltsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+belttyp=res;
+}
+}
+resume_pools();
+write_belt(x, paxx, y, paxy, direction, speedtime, tiletype, belttyp);
+spawn_belt(x, paxx, y, paxy, direction, speedtime, tiletype, belttyp);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_belt(string[] sd)
 {
 double mx=stn(sd[1]);

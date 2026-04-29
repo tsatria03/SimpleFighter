@@ -42,6 +42,43 @@ void destroy_all_robotzones()
 robotzones.resize(0);
 }
 
+void build_robot_zone()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this robot zone.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this robot zone.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the y of this robot zone.", sel_bottom_set ? sel_bottom : "");
+string sp=vd.input_box("", "Enter the spawn time of this robot zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] robot=get_map_sound_folders("npc/robots/*");
+if(robot.length()==0)
+{
+dlg_snd("Error. There are no robots available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=robotsmenu(true);
+if(res!="")
+{
+t.destroy_sound(prevslot);
+rotype=res;
+}
+}
+resume_pools();
+write_robot_zone(x, paxx, y, speedtime, rotype);
+spawn_robotzone(x, paxx, y, speedtime, rotype);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_robot_zone(string[] sd)
 {
 double mx=stn(sd[1]);

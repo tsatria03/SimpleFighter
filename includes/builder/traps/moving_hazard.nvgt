@@ -139,6 +139,53 @@ remove_hazard(moving_hazards[i].hazard_id);
 moving_hazards.resize(0);
 }
 
+void build_moving_hazard()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the left x of this moving hazard.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the right x of this moving hazard.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the bottom y of this moving hazard.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the top y of this moving hazard.", sel_top_set ? sel_top : "");
+string sx=vd.input_box("", "Enter the maximum x length of this moving hazard.", sel_right_set ? sel_right : "");
+string sy=vd.input_box("", "Enter the maximum y length of this moving hazard.", sel_top_set ? sel_top : "");
+string dr=vd.input_box("", "Enter the direction of this moving hazard. 0 for Right and left, 1 for up and down, 2 for Diagonal up/right and down/left, 3 for diagonal up/left and down/right, 4 for Left and right, 5 for Down and up, 6 for Diagonal down/left and up/right, and 7 for diagonal down/right and up/left.");
+string sn=vd.input_box("", "Enter the snap mode of this moving hazard. 0 for no snapping, 1 for forward to snap, 2 for backward to snap, and 3 for snap at ends.");
+string sp=vd.input_box("", "Enter the sspeed of this moving hazard. 100 is equaled to 1000 milliseconds, 50 is equaled to 500 milliseconds, 10 is equaled to 100 milliseconds, 5 is equaled to 50 milliseconds, and 1 is equaled to 10 milliseconds.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and x2=="" and y2=="" and direction=="" and direction2=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+x2=string_to_number(sx);
+y2=string_to_number(sy);
+direction=string_to_number(dr);
+direction2=string_to_number(sn);
+speedtime=string_to_number(sp);
+string[] hazardtype=get_map_sound_folders("objects/hazards/*");
+if(hazardtype.length()==0)
+{
+dlg_snd("Error. There are no hazards available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=hazardsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+hazztype=res;
+}
+}
+resume_pools();
+write_mhazard(x, paxx, y, paxy, x2, y2, direction, direction2, speedtime, hazztype);
+spawn_moving_hazard(x, paxx, y, paxy, x2, y2, direction, direction2, speedtime, hazztype);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_mhazard(string[] sd)
 {
 double mx=stn(sd[1]);
@@ -160,5 +207,4 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"mhazard "+x1+" "+x2+" "+y1+" "+y2+" "+sx+" "+sy+" "+direction+" "+direction2+" "+speed+" "+hazardtype);
 mapper.close();
-}
 }

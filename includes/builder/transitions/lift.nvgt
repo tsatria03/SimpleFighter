@@ -95,6 +95,94 @@ void destroy_all_lifts()
     liftmove = false;
 }
 
+void build_lift()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this lift.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this lift.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this lift.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this lift.", sel_top_set ? sel_top : "");
+string dr=vd.input_box("", "Enter the direction of this lift. 0 for down and up, and 1 for up and down.");
+string sp=vd.input_box("", "Enter the speed of this lift.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and direction=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+direction=string_to_number(dr);
+speedtime=string_to_number(sp);
+string[] platform=get_map_sound_folders("objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+tiletype=res;
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("Canceled");
+return;
+}
+t.destroy_sound(prevslot);
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+string[] liftform=get_map_sound_folders("objects/lifts/*");
+if(liftform.length()==0)
+{
+dlg_snd("Error. There are no lifts available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=liftsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+lifttyp=res;
+prevslot = t.play_stationary_extended(get_map_sound("objects/lifts/" + lifttyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
+int sres2= s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres2==0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("Canceled");
+return;
+}
+t.destroy_sound(prevslot);
+resume_pools();
+volume2=s.get_item_value(0);
+pitch2=s.get_item_value(1);
+write_lift(x, paxx, y, paxy, direction, speedtime, tiletype, volume, pitch, lifttyp, volume2, pitch2);
+spawn_lift(x, paxx, y, paxy, direction, speedtime, tiletype, volume, pitch, lifttyp, volume2, pitch2);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_lift(string[] sd)
 {
 double mx=stn(sd[1]);

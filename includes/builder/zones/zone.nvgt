@@ -56,6 +56,91 @@ void destroy_all_zones()
 zones.resize(0);
 }
 
+void build_zone()
+{
+form.reset();
+form.create_window("zone", false);
+int mx=form.create_input_box("Enter the minimum x of this zone", sel_left_set ? sel_left : "");
+int mx2=form.create_input_box("Enter the maximum x of this zone", sel_right_set ? sel_right : "");
+int my=form.create_input_box("Enter the minimum y of this zone", sel_bottom_set ? sel_bottom : "");
+int my2=form.create_input_box("Enter the maximum y of this zone", sel_top_set ? sel_top : "");
+int zntext=form.create_input_box("Enter the text of this zone");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+txt=form.get_text(zntext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(zntext)=="")
+{
+speak("Zone text is required.");
+form.focus(zntext);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else
+{
+resume_pools();
+write_zone(x, paxx, y, paxy, txt);
+spawn_zone(x, paxx, y, paxy, txt);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+game();
+}
+}
+}
+}
+
 void read_zone(string[] sd)
 {
 double mx=stn(sd[1]);

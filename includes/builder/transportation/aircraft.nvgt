@@ -320,6 +320,41 @@ aircrafts.resize(0);
 inplain=false;
 }
 
+void build_aircraft()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this aircraft.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this aircraft.", sel_bottom_set ? sel_bottom : "");
+string hp=vd.input_box("", "Enter the health of this aircraft. Press enter to use the default health.", "1");
+if(x=="" and y=="" and minhp=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+string[] aircraft=get_map_sound_folders("objects/aircrafts/*");
+if(aircraft.length()==0)
+{
+dlg_snd("Error. There are no aircrafts available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=plainsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+plaintyp=res;
+}
+}
+resume_pools();
+write_aircraft(x, y, minhp, plaintyp);
+spawn_aircraft(x, y, minhp, minhp, plaintyp);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_aircraft(string[] sd)
 {
 int x=stn(sd[1]);
@@ -336,5 +371,4 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"aircraft "+x+" "+y+" "+hp+" "+plaintype);
 mapper.close();
-}
 }

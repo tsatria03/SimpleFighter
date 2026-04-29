@@ -46,6 +46,48 @@ void destroy_all_vanishing_hazards()
 vanishing_hazards.resize(0);
 }
 
+void build_vanishing_hazard()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this vanishing hazard.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this vanishing hazard.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this vanishing hazard.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this vanishing hazard.", sel_top_set ? sel_top : "");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+string[] hazardtype=get_map_sound_folders("objects/hazards/*");
+if(hazardtype.length()==0)
+{
+dlg_snd("Error. There are no hazards available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=hazardsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+hazztype=res;
+}
+}
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("", "Enter the speed of this vanishing hazard.");
+if(speedtime=="")
+return;
+speedtime=string_to_number(sp);
+resume_pools();
+write_vanishing_hazard(x, paxx, y, paxy, hazztype, speedtime);
+spawn_vanishing_hazard(x, paxx, y, paxy, hazztype, speedtime);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_vanishing_hazard(string[] sd)
 {
 double mx=stn(sd[1]);

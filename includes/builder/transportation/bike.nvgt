@@ -457,6 +457,43 @@ bikes.resize(0);
 onbike=false;
 }
 
+void build_bike()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this bike.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this bike.", sel_bottom_set ? sel_bottom : "");
+string hp=vd.input_box("", "Enter the health of this bike. Press enter to use the default health.", "1");
+string sp=vd.input_box("", "Enter the base speed of this bike. Press enter to use the default base speed.", "1500");
+if(x=="" and y=="" and minhp=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+minhp=string_to_number(hp);
+speedtime=string_to_number(sp);
+string[] bike=get_map_sound_folders("objects/bikes/*");
+if(bike.length()==0)
+{
+dlg_snd("Error. There are no bikes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=bikesmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+biktyp=res;
+}
+}
+resume_pools();
+write_bike(x, y, minhp, speedtime, biktyp);
+spawn_bike(x, y, minhp, minhp, speedtime, biktyp);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_bike(string[] sd)
 {
 int x=stn(sd[1]);
@@ -473,5 +510,4 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"bike "+x+" "+y+" "+hp+" "+speed+" "+biketype);
 mapper.close();
-}
 }

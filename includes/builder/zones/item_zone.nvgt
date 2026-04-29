@@ -38,6 +38,100 @@ void destroy_all_objzones()
 objzones.resize(0);
 }
 
+void build_item_zone()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this item zone.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this item zone.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this item zone.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this item zone.", sel_top_set ? sel_top : "");
+string sp=vd.input_box("", "Enter the spawn time of this item zone.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+speedtime=string_to_number(sp);
+setupmenu();
+m.add_item_tts("health", "hp");
+m.add_item_tts("other", "ot");
+m.add_item_tts("stamina", "st");
+int mres=m.run("Items menu",true);
+string itsm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(itsm=="hp")
+{
+string[] ithealth=get_map_sound_folders("objects/items/health/*");
+if(ithealth.length()==0)
+{
+dlg_snd("Error. There are no health items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=healthsmenu();
+if(res!="")
+{
+itemtype="health";
+t.destroy_sound(prevslot);
+itemtype2=res;
+}
+}
+}
+if(itsm=="ot")
+{
+string[] itother=get_map_sound_folders("objects/items/other/*");
+if(itother.length()==0)
+{
+dlg_snd("Error. There are no other items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=othersmenu();
+if(res!="")
+{
+itemtype="other";
+t.destroy_sound(prevslot);
+itemtype2=res;
+}
+}
+}
+if(itsm=="st")
+{
+string[] itstamina=get_map_sound_folders("objects/items/stamina/*");
+if(itstamina.length()==0)
+{
+dlg_snd("Error. There are no stamina items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=staminasmenu();
+if(res!="")
+{
+itemtype="stamina";
+t.destroy_sound(prevslot);
+itemtype2=res;
+}
+}
+}
+resume_pools();
+write_item_zone(x, paxx, y, paxy, speedtime, itemtype, itemtype2);
+spawn_objzone(x, paxx, y, paxy, speedtime, itemtype, itemtype2);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_item_zone(string[] sd)
 {
 double mx=stn(sd[1]);

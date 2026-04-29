@@ -308,6 +308,62 @@ minepool.destroy_sound(mines[i].minesound);
 mines.resize(0);
 }
 
+void build_mine()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this mine.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this mine.", sel_bottom_set ? sel_bottom : "");
+string dm=vd.input_box("", "Enter the maximum attack of this mine.");
+if(x=="" and y=="" and damage=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+damage=string_to_number(dm);
+string[] mine=get_map_sound_folders("objects/mines/*");
+if(mine.length()==0)
+{
+dlg_snd("Error. There are no mines available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=minesmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+minetyp=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Should this mine be auto activated?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+trg=true;
+}
+if(mres==2)
+{
+trg=false;
+}
+resume_pools();
+write_mine(x, y, damage, minetyp, trg);
+spawn_mine(x, y, damage, minetyp, trg);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_mine(string[] sd)
 {
 int x=stn(sd[1]);
@@ -324,5 +380,4 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"mine "+x+" "+y+" "+damage+" "+minetype+" "+triggered);
 mapper.close();
-}
 }

@@ -199,6 +199,104 @@ void destroy_all_moving_platforms()
     platformmove = false;
 }
 
+void build_moving_platform()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the left x of this moving platform.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the right x of this moving platform.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the bottom y of this moving platform.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the top y of this moving platform.", sel_top_set ? sel_top : "");
+string sx=vd.input_box("", "Enter the maximum x length of this moving platform.", sel_right_set ? sel_right : "");
+string dr=vd.input_box("", "Enter the direction of this moving platform. 0 for Right and left, 1 for up and down, 2 for Diagonal up/right and down/left, 3 for diagonal up/left and down/right, 4 for Left and right, 5 for Down and up, 6 for Diagonal down/left and up/right, and 7 for diagonal down/right and up/left.");
+string sn=vd.input_box("", "Enter the snap mode of this moving platform. 0 for no snapping, 1 for forward to snap, 2 for backward to snap, and 3 for snap at ends.");
+string sp=vd.input_box("", "Enter the sspeed of this moving platform. 100 is equaled to 1000 milliseconds, 50 is equaled to 500 milliseconds, 10 is equaled to 100 milliseconds, 5 is equaled to 50 milliseconds, and 1 is equaled to 10 milliseconds.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and x2=="" and direction=="" and direction2=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+x2=string_to_number(sx);
+direction=string_to_number(dr);
+direction2=string_to_number(sn);
+speedtime=string_to_number(sp);
+string[] platform=get_map_sound_folders("objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+tiletype=res;
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("Canceled");
+return;
+}
+t.destroy_sound(prevslot);
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+string[] mplatform=get_map_sound_folders("objects/moving platforms/*");
+if(mplatform.length()==0)
+{
+dlg_snd("Error. There are no moving platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=mplatsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+mplattyp=res;
+prevslot = t.play_stationary_extended(get_map_sound("objects/moving platforms/" + mplattyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
+int sres2= s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres2==0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("Canceled");
+return;
+}
+t.destroy_sound(prevslot);
+resume_pools();
+volume2=s.get_item_value(0);
+pitch2=s.get_item_value(1);
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string vof=vd.input_box("", "Enter the volume offset of this moving platform.");
+if(volset=="")
+return;
+volset=string_to_number(vof);
+resume_pools();
+write_mplatform(x, paxx, y, paxy, x2, direction, direction2, speedtime, tiletype, volume, pitch, mplattyp, volume2, pitch2, volset);
+spawn_moving_platform(x, paxx, y, paxy, x2, direction, direction2, speedtime, tiletype, volume, pitch, mplattyp, volume2, pitch2, volset);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_mplatform(string[] sd)
 {
 double mx=stn(sd[1]);

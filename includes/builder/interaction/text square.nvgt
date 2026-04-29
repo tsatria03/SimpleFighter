@@ -31,6 +31,73 @@ void destroy_all_text_squares()
 text_squares.resize(0);
 }
 
+void build_text_square()
+{
+form.reset();
+form.create_window("text square", false);
+int mx=form.create_input_box("Enter the x of this text square", sel_left_set ? sel_left : "");
+int my=form.create_input_box("Enter the y of this text square", sel_bottom_set ? sel_bottom : "");
+int tqtext=form.create_input_box("Enter the text of this text square");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+y=string_to_number(form.get_text(my));
+txt=form.get_text(tqtext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(tqtext)=="")
+{
+speak("Text is required.");
+form.focus(tqtext);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else
+{
+resume_pools();
+write_text_square(x, y, txt);
+spawn_text_square(x, y, txt);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+game();
+}
+}
+}
+}
+
 void read_text_square(string[] sd)
 {
 int x=stn(sd[1]);

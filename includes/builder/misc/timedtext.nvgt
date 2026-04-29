@@ -36,6 +36,100 @@ void destroy_all_timedtexts()
 timedtexts.resize(0);
 }
 
+void build_timed_text()
+{
+form.reset();
+form.create_window("timed text", false);
+int mx=form.create_input_box("Enter the minimum x of this timed text", sel_left_set ? sel_left : "");
+int mx2=form.create_input_box("Enter the maximum x of this timed text", sel_right_set ? sel_right : "");
+int my=form.create_input_box("Enter the minimum y of this timed text", sel_bottom_set ? sel_bottom : "");
+int my2=form.create_input_box("Enter the maximum y of this timed text", sel_top_set ? sel_top : "");
+int sp=form.create_input_box("Enter the speed of this timed text");
+int tmtext=form.create_input_box("Enter the text of this timed text");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+speedtime=string_to_number(form.get_text(sp));
+txt=form.get_text(tmtext);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(sp)=="")
+{
+speak("Speed is required.");
+form.focus(sp);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(tmtext)=="")
+{
+speak("Text is required.");
+form.focus(tmtext);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else
+{
+resume_pools();
+write_timed_text(x, paxx, y, paxy, speedtime, txt);
+spawn_timedtext(x, paxx, y, paxy, speedtime, txt);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+game();
+}
+}
+}
+}
+
 void read_timed_text(string[] sd)
 {
 double mx=stn(sd[1]);

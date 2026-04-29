@@ -74,6 +74,104 @@ sourcepool.destroy_sound(ex_soundsources[i].sorcesound);
     ex_soundsources.resize(0);
 }
 
+void build_excludable_source()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this excludable source.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this excludable source.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this excludable source.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this excludable source.", sel_top_set ? sel_top : "");
+if(x=="" and paxx=="" and y=="" and paxy=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+setupmenu();
+m.add_item_tts("musics", "mus");
+m.add_item_tts("sources", "src");
+int mres=m.run("Soundtracks menu",true);
+string strm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(strm=="mus")
+{
+string[] musics=get_map_sound_folders("soundtracks/musics/*");
+if(musics.length()==0)
+{
+dlg_snd("Error. There are no musics available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=musicsmenu();
+if(res!="")
+{
+sorcetyp="musics";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+if(strm=="src")
+{
+string[] sources=get_map_sound_folders("soundtracks/sources/*");
+if(sources.length()==0)
+{
+dlg_snd("Error. There are no sources available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=sorcesmenu();
+if(res!="")
+{
+sorcetyp="sources";
+t.destroy_sound(prevslot);
+sorcetyp2=res;
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("Canceled");
+return;
+}
+t.destroy_sound(prevslot);
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx3=vd.input_box("", "Enter the minimum x of this exclusion zone.", sel_left_set ? sel_left : "");
+string mx4=vd.input_box("", "Enter the maximum x of this exclusion zone.", sel_right_set ? sel_right : "");
+string my3=vd.input_box("", "Enter the minimum y of this exclusion zone.", sel_bottom_set ? sel_bottom : "");
+string my4=vd.input_box("", "Enter the maximum y of this exclusion zone.", sel_top_set ? sel_top : "");
+if(x2=="" and paxx2=="" and y2=="" and paxy2=="")
+return;
+x2=string_to_number(mx3);
+paxx2=string_to_number(mx4);
+y2=string_to_number(my3);
+paxy2=string_to_number(my4);
+write_ex_source(x, paxx, y, paxy, sorcetyp, sorcetyp2, volume, pitch, x2, paxx2, y2, paxy2);
+spawn_ex_soundsource(x, paxx, y, paxy, sorcetyp, sorcetyp2, volume, pitch, x2, paxx2, y2, paxy2);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_ex_source(string[] sd)
 {
 double mx=stn(sd[1]);

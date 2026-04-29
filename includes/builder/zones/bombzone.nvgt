@@ -36,6 +36,43 @@ void destroy_all_bombzones()
 bombzones.resize(0);
 }
 
+void build_bomb_zone()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this bomb zone.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this bomb zone.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the y of this bomb zone.", sel_bottom_set ? sel_bottom : "");
+string sp=vd.input_box("", "Enter the spawn time of this bomb zone.");
+if(x=="" and paxx=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] bomb=get_map_sound_folders("objects/bombs/*");
+if(bomb.length()==0)
+{
+dlg_snd("Error. There are no bombs available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=bombsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+botype=res;
+}
+}
+resume_pools();
+write_bomb_zone(x, paxx, y, speedtime, botype);
+spawn_bombzone(x, paxx, y, speedtime, botype);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_bomb_zone(string[] sd)
 {
 double mx=stn(sd[1]);

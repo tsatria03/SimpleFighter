@@ -67,6 +67,94 @@ vanpool.destroy_sound(vanishing_platforms[i].vplatsound);
 vanishing_platforms.resize(0);
 }
 
+void build_vanishing_platform()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this vanishing platform.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this vanishing platform.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the y of this vanishing platform.", sel_bottom_set ? sel_bottom : "");
+if(x=="" and paxx=="" and y=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+string[] platform=get_map_sound_folders("objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+tiletype=res;
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
+int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres==0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("Canceled");
+return;
+}
+t.destroy_sound(prevslot);
+resume_pools();
+volume=s.get_item_value(0);
+pitch=s.get_item_value(1);
+string[] vplatform=get_map_sound_folders("objects/vanishing platforms/*");
+if(vplatform.length()==0)
+{
+dlg_snd("Error. There are no vanishing platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=vplatsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+vplattyp=res;
+prevslot = t.play_stationary_extended(get_map_sound("objects/vanishing platforms/" + vplattyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+}
+}
+create_slider();
+s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
+s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
+int sres2= s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
+if (sres2==0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("Canceled");
+return;
+}
+t.destroy_sound(prevslot);
+resume_pools();
+volume2=s.get_item_value(0);
+pitch2=s.get_item_value(1);
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("", "Enter the speed of this vanishing platform.");
+if(speedtime=="")
+return;
+speedtime=string_to_number(sp);
+resume_pools();
+write_vanishing_platform(x, paxx, y, tiletype, volume, pitch, vplattyp, volume2, pitch2, speedtime);
+spawn_vanishing_platform(x, paxx, y, y, tiletype, volume, pitch, vplattyp, volume2, pitch2, speedtime);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_vanishing_platform(string[] sd)
 {
 double mx=stn(sd[1]);

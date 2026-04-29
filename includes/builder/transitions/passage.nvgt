@@ -233,6 +233,98 @@ void destroy_all_passages()
     passages.resize(0);
 }
 
+void build_passage()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sx=vd.input_box("", "Enter the starting x of this passage.", sel_left_set ? sel_left : "");
+string sy=vd.input_box("", "Enter the starting y of this passage.", sel_bottom_set ? sel_bottom : "");
+string dr=vd.input_box("", "Enter the direction of this passage. 1 for left to right, and 2 for bottom to top.");
+string lk=vd.input_box("", "Enter the maximum length of this passage.");
+if(x=="" and y=="" and direction=="" and ln=="")
+return;
+x=string_to_number(sx);
+y=string_to_number(sy);
+direction=string_to_number(dr);
+ln=string_to_number(lk);
+string[] platform=get_map_sound_folders("objects/platforms/*");
+if(platform.length()==0)
+{
+dlg_snd("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=platsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+tiletype=res;
+}
+}
+string[] dloop=get_map_sound_folders("objects/doors/loop/*");
+if(dloop.length()==0)
+{
+dlg_snd("Error. There are no door loops available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=dloopsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+looptyp=res;
+}
+}
+string[] dopen=get_map_sound_folders("objects/doors/open/*");
+if(dopen.length()==0)
+{
+dlg_snd("Error. There are no door opens available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res2=dopensmenu();
+if(res2!="")
+{
+t.destroy_sound(prevslot);
+opentyp=res2;
+}
+}
+string[] dclose=get_map_sound_folders("objects/doors/close/*");
+if(dclose.length()==0)
+{
+dlg_snd("Error. There are no door closes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res3=dclosesmenu();
+if(res3!="")
+{
+t.destroy_sound(prevslot);
+clostyp=res3;
+}
+}
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string sp=vd.input_box("", "Enter the opening time of this passage.");
+string sp2=vd.input_box("", "Enter the closing time of this passage.");
+if(speedtime=="" and speedtime2=="")
+return;
+speedtime=string_to_number(sp);
+speedtime2=string_to_number(sp);
+resume_pools();
+write_passage(x, y, direction, ln, tiletype, looptyp, opentyp, clostyp, speedtime, speedtime2);
+spawn_passage(x, y, direction, ln, tiletype, looptyp, opentyp, clostyp, speedtime, speedtime2);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_passage(string[] sd)
 {
 int sx=stn(sd[1]);

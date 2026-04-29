@@ -130,6 +130,53 @@ sucampool.destroy_sound(sucams[i].wornsound);
 sucams.resize(0);
 }
 
+void build_security_camera()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this security camera.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this security camera.", sel_bottom_set ? sel_bottom : "");
+string rng=vd.input_box("", "Enter the horizontal seeing range of this security camera. Press enter to use the default horizontal seeing range.", maxx);
+string rng2=vd.input_box("", "Enter the vertical seeing range of this security camera. Press enter to use the default vertical seeing range.", maxy);
+string dr=vd.input_box("", "Enter the direction of this security camera. 1 for left, and 2 for right.");
+string sp=vd.input_box("", "Enter the speed of this security camera.");
+string hp=vd.input_box("", "Enter the health of this security camera.");
+string lev=vd.input_box("", "Enter the level of this security camera.");
+string exper=vd.input_box("", "Enter the xp of this security camera.");
+if(x=="" and y=="" and camrange=="" and camrange2=="" and direction=="" and speedtime=="" and minhp=="" and lv=="" and xn=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+camrange=string_to_number(rng);
+camrange2=string_to_number(rng2);
+direction=string_to_number(dr);
+speedtime=string_to_number(sp);
+minhp=string_to_number(hp);
+lv=string_to_number(lev);
+xn=string_to_number(exper);
+string[] camera=get_map_sound_folders("objects/cameras/*");
+if(camera.length()==0)
+{
+dlg_snd("Error. There are no cameras available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=camsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+camtyp=res;
+}
+}
+resume_pools();
+write_camera(x, y, camrange, camrange2, direction, speedtime, minhp, lv, xn, camtyp);
+spawn_camera(x, y, camrange, camrange2, direction, speedtime, minhp, minhp, lv, xn, camtyp);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_camera(string[] sd)
 {
 int camx=stn(sd[1]);

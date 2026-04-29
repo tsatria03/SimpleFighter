@@ -60,6 +60,117 @@ itempool.destroy_sound(objs[i].objsound);
 objs.resize(0);
 }
 
+void build_item()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this item.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this item.", sel_bottom_set ? sel_bottom : "");
+string sp=vd.input_box("", "Enter the speed of this item. Press enter to use the default speed.", "500");
+if(x=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+setupmenu();
+m.add_item_tts("health", "hp");
+m.add_item_tts("other", "ot");
+m.add_item_tts("stamina", "st");
+int mres=m.run("Items menu",true);
+string itsm=m.get_item_name(mres);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(itsm=="hp")
+{
+string[] ithealth=get_map_sound_folders("objects/items/health/*");
+if(ithealth.length()==0)
+{
+dlg_snd("Error. There are no health items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=healthsmenu();
+if(res!="")
+{
+itemtype="health";
+t.destroy_sound(prevslot);
+itemtype2=res;
+}
+}
+}
+if(itsm=="ot")
+{
+string[] itother=get_map_sound_folders("objects/items/other/*");
+if(itother.length()==0)
+{
+dlg_snd("Error. There are no other items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=othersmenu();
+if(res!="")
+{
+itemtype="other";
+t.destroy_sound(prevslot);
+itemtype2=res;
+}
+}
+}
+if(itsm=="st")
+{
+string[] itstamina=get_map_sound_folders("objects/items/stamina/*");
+if(itstamina.length()==0)
+{
+dlg_snd("Error. There are no stamina items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=staminasmenu();
+if(res!="")
+{
+itemtype="stamina";
+t.destroy_sound(prevslot);
+itemtype2=res;
+}
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres28=m.run("Do you want this item to be autograbbed when stepped on?",true);
+if(mres28==0)
+{
+speak("canceled");
+return;
+}
+if(mres28==1)
+{
+itm=true;
+}
+if(mres28==2)
+{
+itm=false;
+}
+resume_pools();
+write_item(x, y, speedtime, itemtype, itemtype2, itm);
+spawn_obj(x, y, speedtime, itemtype, itemtype2, itm);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_item(string[] sd)
 {
 int x=stn(sd[1]);

@@ -294,6 +294,43 @@ bombpool.destroy_sound(bombs[i].fallsound);
 bombs.resize(0);
 }
 
+void build_bomb()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this bomb.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this bomb.", sel_bottom_set ? sel_bottom : "");
+string dm=vd.input_box("", "Enter the maximum attack of this bomb.");
+string sp=vd.input_box("", "Enter the speed of this bomb.");
+if(x=="" and y=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+string[] bomb=get_map_sound_folders("objects/bombs/*");
+if(bomb.length()==0)
+{
+dlg_snd("Error. There are no bombs available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=bombsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+botype=res;
+}
+}
+resume_pools();
+write_bomb(x, y, damage, speedtime, botype);
+spawn_bomb(x, y, damage, speedtime, botype);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_bomb(string[] sd)
 {
 int x=stn(sd[1]);
@@ -310,6 +347,5 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"bomb "+x+" "+y+" "+damage+" "+speed+" "+bombtype);
 mapper.close();
-}
 }
 

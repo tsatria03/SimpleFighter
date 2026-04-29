@@ -29,6 +29,39 @@ floorbreakers[i].destsound=breakerpool.play_2d(get_map_sound("objects/floor brea
 floorbreakers.resize(0);
 }
 
+void build_floor_breaker()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this floor breaker.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this floor breaker.", sel_bottom_set ? sel_bottom : "");
+if(x=="" and y=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+string[] floorbtype=get_map_sound_folders("objects/floor breakers/*");
+if(floorbtype.length()==0)
+{
+dlg_snd("Error. There are no floor breakers available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=floorsmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+floortyp=res;
+}
+}
+resume_pools();
+write_floor_breaker(x, y, floortyp);
+spawn_floorbreaker(x, y, floortyp);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_floor_breaker(string[] sd)
 {
 int x=stn(sd[1]);

@@ -132,6 +132,41 @@ checkpoints.resize(0);
 @last_checkpoint = null;
 }
 
+void build_checkpoint()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the x of this checkpoint.", sel_left_set ? sel_left : "");
+string my=vd.input_box("", "Enter the y of this checkpoint.", sel_bottom_set ? sel_bottom : "");
+string sp=vd.input_box("", "Enter the speed of this checkpoint. Press enter to use the default speed.", "350");
+if(x=="" and y=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+y=string_to_number(my);
+speedtime=string_to_number(sp);
+string[] checktype=get_map_sound_folders("objects/checkpoints/*");
+if(checktype.length()==0)
+{
+dlg_snd("Error. There are no checkpoints available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=checksmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+checktyp=res;
+}
+}
+resume_pools();
+write_checkpoint(x, y, speedtime, checktyp);
+spawn_checkpoint(x, y, speedtime, checktyp);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_checkpoint(string[] sd)
 {
 int x=stn(sd[1]);

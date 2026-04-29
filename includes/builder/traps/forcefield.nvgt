@@ -99,6 +99,47 @@ forcepool.destroy_sound(forcefields[i].inactivesound);
 forcefields.resize(0);
 }
 
+void build_forcefield()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this force field.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this force field.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this force field.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this force field.", sel_top_set ? sel_top : "");
+string dm=vd.input_box("", "Enter the maximum attack of this force field.");
+string sp=vd.input_box("", "Enter the speed of this force field.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+string[] forcefield=get_map_sound_folders("objects/force fields/*");
+if(forcefield.length()==0)
+{
+dlg_snd("Error. There are no force fields available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=forcesmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+forcetyp=res;
+}
+}
+resume_pools();
+write_forcefield(x, paxx, y, paxy, damage, speedtime, forcetyp);
+spawn_forcefield(x, paxx, y, paxy, damage, speedtime, forcetyp);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_forcefield(string[] sd)
 {
 double mx=stn(sd[1]);

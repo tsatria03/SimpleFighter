@@ -96,6 +96,70 @@ spikepool.destroy_sound(spikes[i].spikesound);
 spikes.resize(0);
 }
 
+void build_spike()
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string mx=vd.input_box("", "Enter the minimum x of this spike.", sel_left_set ? sel_left : "");
+string mx2=vd.input_box("", "Enter the maximum x of this spike.", sel_right_set ? sel_right : "");
+string my=vd.input_box("", "Enter the minimum y of this spike.", sel_bottom_set ? sel_bottom : "");
+string my2=vd.input_box("", "Enter the maximum y of this spike.", sel_top_set ? sel_top : "");
+string hp=vd.input_box("", "Enter the health of this spike. Press enter to use the default health.", "1");
+string dm=vd.input_box("", "Enter the maximum attack of this spike.");
+string sp=vd.input_box("", "Enter the speed of this spike.");
+if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="" and damage=="" and speedtime=="")
+return;
+x=string_to_number(mx);
+paxx=string_to_number(mx2);
+y=string_to_number(my);
+paxy=string_to_number(my2);
+minhp=string_to_number(hp);
+damage=string_to_number(dm);
+speedtime=string_to_number(sp);
+string[] spike=get_map_sound_folders("objects/spikes/*");
+if(spike.length()==0)
+{
+dlg_snd("Error. There are no spikes available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+string res=spikesmenu();
+if(res!="")
+{
+t.destroy_sound(prevslot);
+spiktype=res;
+}
+}
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Do you want this spike to be destroyable?",true);
+if(mres==0)
+{
+speak("canceled");
+return;
+}
+if(mres==1)
+{
+dmd=true;
+}
+if(mres==2)
+{
+dmd=false;
+}
+resume_pools();
+write_spike(x, paxx, y, paxy, minhp, damage, speedtime, spiktype, dmd);
+spawn_spike(x, paxx, y, paxy, minhp, minhp, damage, speedtime, spiktype, dmd);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+
 void read_spike(string[] sd)
 {
 double mx=stn(sd[1]);
@@ -116,5 +180,4 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"spike "+x1+" "+x2+" "+y1+" "+y2+" "+hp+" "+damage+" "+speed+" "+spiketype+" "+destroyable);
 mapper.close();
-}
 }

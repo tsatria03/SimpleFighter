@@ -55,6 +55,104 @@ void destroy_all_cblockers()
 cblockers.resize(0);
 }
 
+void build_command_blocker()
+{
+form.reset();
+form.create_window("command blocker", false);
+int mx=form.create_input_box("Enter the minimum x of this command blocker", sel_left_set ? sel_left : "");
+int mx2=form.create_input_box("Enter the maximum x of this command blocker", sel_right_set ? sel_right : "");
+int my=form.create_input_box("Enter the minimum y of this command blocker", sel_bottom_set ? sel_bottom : "");
+int my2=form.create_input_box("Enter the maximum y of this command blocker", sel_top_set ? sel_top : "");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int comlist = form.create_list("Select the slash commands to block or allow", 0, true);
+string[] allcommands = {"build", "bl", "changemap", "cm", "delmap", "dm", "draw", "dr", "gamestart", "gs", "gamestop", "gp", "getall", "gl", "give", "gv", "go", "gozone", "gz", "help", "hp", "invclear", "ic", "kill", "kn", "killall", "kl", "maps", "mp", "menu", "mu", "newmap", "nm", "play", "pl", "preffs", "pf", "rawmap", "rp", "rawdata", "rd", "relchar", "rc", "relmap", "rm", "relshields", "rs", "relscripts", "rt", "relweps", "rw", "scriptmode", "sm", "speek", "sp", "stats", "st", "suicide", "sd"};
+for (uint i = 0; i < allcommands.length(); i++)
+{
+form.add_list_item(comlist, allcommands[i], "", -1, false);
+}
+int cw = form.create_checkbox("Enable whitelist", false);
+int comok = form.create_button("&okay", true);
+int comcn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+while (true)
+{
+form.monitor();
+wait(5);
+x=string_to_number(form.get_text(mx));
+paxx=string_to_number(form.get_text(mx2));
+y=string_to_number(form.get_text(my));
+paxy=string_to_number(form.get_text(my2));
+ctl = form.is_checked(cw);
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(comcn))
+{
+resume_pools();
+speak("canceled");
+game();
+}
+if(form.is_pressed(comok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
+}
+else
+{
+comslist.resize(0);
+        int[] selected = form.get_checked_list_items(comlist);
+        for (uint i = 0; i < selected.length(); i++)
+{
+            string cmd = form.get_list_item(comlist, selected[i]);
+            comslist.insert_last(cmd);
+        }
+        if (comslist.length() == 0)
+{
+            speak("You must select at least one command.");
+form.focus(comlist);
+continue;
+        }
+resume_pools();
+write_cblocker(x, paxx, y, paxy, comslist, ctl);
+spawn_cblocker(x, paxx, y, paxy, comslist, ctl);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+game();
+}
+}
+}
+}
+
 void read_cblocker(string[] sd)
 {
 double mx=stn(sd[1]);
