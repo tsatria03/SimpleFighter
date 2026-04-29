@@ -1347,6 +1347,48 @@ spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*return*"),fal
 		c_form[control_index].list_nav_translate = nav_translate;
 		return true;
 	}
+	bool set_first_letter_nav(int control_index, bool value) {
+		form_error = 0;
+		if (!active) {
+			form_error = form_error_no_window;
+			return false;
+		}
+		if ((control_index < 0) || (control_index > c_form.length() - 1)) {
+			form_error = form_error_invalid_index;
+			return false;
+		}
+		if (c_form[control_index].type != ct_list) {
+			form_error = form_error_invalid_control;
+			return false;
+		}
+		if (!c_form[control_index].active) {
+			form_error = form_error_invalid_control;
+			return false;
+		}
+		c_form[control_index].first_letter_nav = value;
+		return true;
+	}
+	bool set_multi_letter_nav(int control_index, bool value) {
+		form_error = 0;
+		if (!active) {
+			form_error = form_error_no_window;
+			return false;
+		}
+		if ((control_index < 0) || (control_index > c_form.length() - 1)) {
+			form_error = form_error_invalid_index;
+			return false;
+		}
+		if (c_form[control_index].type != ct_list) {
+			form_error = form_error_invalid_control;
+			return false;
+		}
+		if (!c_form[control_index].active) {
+			form_error = form_error_invalid_control;
+			return false;
+		}
+		c_form[control_index].multi_letter_nav = value;
+		return true;
+	}
 	int[]@ get_list_selections(int control_index) {
 		int[] temp;
 		int position;
@@ -2602,6 +2644,8 @@ class control {
 	timer multinav_timer;
 	bool multinav_letters;
 	bool multinav_numbers;
+	bool first_letter_nav;
+	bool multi_letter_nav;
 	tts_voice@ ui_speech;
 	audio_form@ subform = null;
 	string[] disallowed_chars;
@@ -2635,6 +2679,8 @@ class control {
 		visible = true;
 		multinav_letters = true;
 		multinav_numbers = true;
+		first_letter_nav = true;
+		multi_letter_nav = false;
 		list_nav_translate = true;
 		enabled = true;
 		active = true;
@@ -2932,6 +2978,7 @@ spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*space*"),fals
 		if (type == ct_list) {
 			if (list_length == -1)
 				return;
+			if (multi_letter_nav) {
 			if (multinav_characters != "" && multinav_timer.elapsed > 1000) {
 				multinav_timer.pause();
 				multinav_characters = "";
@@ -2977,6 +3024,46 @@ spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*space*"),fals
 spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
 					speak_list_item();
 				}
+			}
+			}
+			else if (first_letter_nav) {
+			if ((key_down(KEY_LSHIFT) || key_down(KEY_RSHIFT)) && (char.is_alphabetic() || char.is_digits())) char = "";
+			if (char != "" && key_up(KEY_LALT) && key_up(KEY_RALT) && key_up(KEY_LCTRL) && key_up(KEY_RCTRL) && (multinav_letters && char.is_alphabetic() || multinav_numbers && char.is_digits() || char == "-" || char == "_")) {
+				char = char.lower();
+				int old_list_position = list_position;
+				string[] nav_items(list.length());
+				for (int i = 0; i < list.length(); i++)
+					nav_items[i] = list[i].item;
+				bool speak_pos = false;
+				for (int i = list_position + 1; i <= list_length; i++) {
+					if (nav_items[i].length() > 0 && nav_items[i].lower().substr(0, char.length()) == char) {
+						list_position = i;
+						speak_pos = true;
+						break;
+					}
+				}
+				if (list_position == old_list_position) {
+					for (int i = 0; i <= list_position; i++) {
+						if (nav_items[i].length() > 0 && nav_items[i].lower().substr(0, char.length()) == char) {
+							list_position = i;
+							speak_pos = true;
+							break;
+						}
+					}
+				}
+				if (@event_callback != null and list_position != old_list_position) {
+					dictionary args = {{"first_letter", char}};
+					if (event_callback(f, tab_index, event_list_cursor, args) == 1) {
+						list_position = old_list_position;
+						speak_pos = false;
+					}
+					if (args.exists("silent")) speak_pos = false;
+				}
+				if (speak_pos) {
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
+					speak_list_item();
+				}
+			}
 			}
 			if (key_repeating(KEY_SPACE)) {
 				if ((list_position == -1) || (!list_multiselect))

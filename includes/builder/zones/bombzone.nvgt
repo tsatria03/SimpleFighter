@@ -38,39 +38,116 @@ bombzones.resize(0);
 
 void build_bomb_zone()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this bomb zone.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this bomb zone.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the y of this bomb zone.", sel_bottom_set ? sel_bottom : "");
-string sp=vd.input_box("", "Enter the spawn time of this bomb zone.");
-if(x=="" and paxx=="" and y=="" and speedtime=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-speedtime=string_to_number(sp);
-string[] bomb=get_map_sound_folders("objects/bombs/*");
-if(bomb.length()==0)
+string[] bombs = get_map_sound_folders("objects/bombs/*");
+if(bombs.length() == 0)
 {
 dlg_snd("Error. There are no bombs available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("bomb zone", false);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int sp = form.create_input_box("spawn time");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+int bomb_list = form.create_list("bomb sound");
+form.add_list_item(bomb_list, "none", "none");
+for(uint i = 0; i < bombs.length(); i++)
+form.add_list_item(bomb_list, bombs[i], bombs[i]);
+form.set_list_position(bomb_list, 0, false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+while(true)
 {
-string res=bombsmenu();
-if(res!="")
+form.monitor();
+wait(5);
+int cur_focus = form.get_current_focus();
+if(key_pressed(KEY_SPACE) or (key_down(KEY_SPACE) and spacehold == 1 and keytimer.elapsed >= keytime))
+{
+if(cur_focus == bomb_list)
+{
+int p = form.get_list_position(bomb_list);
+if(p > 0)
 {
 t.destroy_sound(prevslot);
-botype=res;
+prevslot = t.play_stationary(get_map_sound("objects/bombs/"+bombs[p-1]+"/*land*"), false);
+keytimer.restart();
 }
 }
+}
+if(cur_focus == bomb_list && control_is_down() && key_repeating(KEY_L))
+{
+int p = form.get_list_position(bomb_list);
+if(p > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/bombs/"+bombs[p-1]+"/*fall*"), false);
+}
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
 resume_pools();
-write_bomb_zone(x, paxx, y, speedtime, botype);
-spawn_bombzone(x, paxx, y, speedtime, botype);
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+continue;
+}
+if(form.get_text(mx2) == "")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+continue;
+}
+if(form.get_text(my) == "")
+{
+speak("Y is required.");
+form.focus(my);
+continue;
+}
+if(form.get_text(sp) == "")
+{
+speak("Spawn time is required.");
+form.focus(sp);
+continue;
+}
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+int by = string_to_number(form.get_text(my));
+int bsp = string_to_number(form.get_text(sp));
+int p = form.get_list_position(bomb_list);
+string btype = (p > 0) ? bombs[p-1] : "none";
+t.destroy_sound(prevslot);
+resume_pools();
+write_bomb_zone(bx, bx2, by, bsp, btype);
+spawn_bombzone(bx, bx2, by, bsp, btype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_bomb_zone(string[] sd)
