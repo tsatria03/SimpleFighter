@@ -3,9 +3,7 @@ void spy(string direction, int distance=101)
 bool found_object = false;
 bool on_lift=false;
 bool in_passage=false;
-bool in_pspassage=false;
 passage@ current_passage = null;
-pspassage@ current_pspassage = null;
 vector spyage(me.x,me.y);
 string materials;
 string current_tile=gmt(me.x,me.y);
@@ -23,15 +21,6 @@ string current_tile=gmt(me.x,me.y);
         {
             in_passage = true;
             @current_passage = passages[i];
-            break;
-        }
-    }
-    for (uint i = 0; i < pspassages.length(); i++)
-    {
-        if(pspassages[i].is_within_pspassage(me.x, me.y))
-        {
-            in_pspassage = true;
-            @current_pspassage = pspassages[i];
             break;
         }
     }
@@ -94,46 +83,6 @@ spyage.y++;
         }
             if (found_object) break;
         }
-        if (in_pspassage)
-        {
-            string endpoint_desc = current_pspassage.get_endpoint_description(spyage.x, spyage.y);
-            if (endpoint_desc != "")
-            {
-                materials += endpoint_desc + ": " + i + " feet. ";
-                found_object = true;
-            }
-            else if (!current_pspassage.is_within_pspassage(spyage.x, spyage.y))
-            {
-                in_pspassage = false;
-            }
-        }
-        if (!in_pspassage)
-        {
-            for (uint j2 = 0; j2 < pspassages.length(); j2++)
-            {
-                string endpoint_desc = pspassages[j2].get_endpoint_description(spyage.x, spyage.y);
-                if (endpoint_desc != "")
-                {
-                    materials += endpoint_desc + ": " + i + " feet. ";
-                }
-            else if (pspassages[j2].is_within_pspassage(spyage.x, spyage.y))
-            {
-                in_pspassage = true;
-                @current_pspassage = pspassages[j2];
-                string pspassage_dimensions;
-                if (current_pspassage.direction == 1)
-                {
-                    pspassage_dimensions = current_pspassage.pspassagelength + " x 1";
-                }
-                else if (current_pspassage.direction == 2)
-                {
-                    pspassage_dimensions = "1 x " + current_pspassage.pspassagelength;
-                }
-                materials += pspassage_dimensions + " tile " + " passage: " + i + " feet. ";
-            }
-        }
-            if (found_object) break;
-        }
                 if (!found_object)
         {
 for (uint i1 = 0; i1 < blockages.length(); i1++)
@@ -163,7 +112,10 @@ for (uint i4 = 0; i4 < doors.length(); i4++)
 {
 if(spyage.x==doors[i4].startx && spyage.y==doors[i4].starty)
 {
+if(doors[i4].lockmode=="none")
 materials+="door: "+i+" feet. ";
+else
+materials+="locked door: "+i+" feet. ";
 }
 }
 for (uint i5 = 0; i5 < hazards.length(); i5++)
@@ -251,13 +203,6 @@ for (uint i16 = 0; i16 < zombies.length(); i16++)
 if(spyage.x==zombies[i16].zombx && spyage.y==zombies[i16].zomby)
 {
 materials+=zombies[i16].zombiecard+" x "+zombies[i16].zombietype+": "+i+" feet. ";
-}
-}
-for (uint i17 = 0; i17 < psdoors.length(); i17++)
-{
-if(spyage.x==psdoors[i17].startx && spyage.y==psdoors[i17].starty)
-{
-materials+="locked door: "+i+" feet. ";
 }
 }
 for (uint i18 = 0; i18 < teleporters.length(); i18++)
