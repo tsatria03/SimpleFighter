@@ -408,6 +408,7 @@ form.add_list_item(dir_list, "horizontal", "horizontal");
 form.add_list_item(dir_list, "vertical", "vertical");
 form.set_list_position(dir_list, saved_dir_pos, false);
 tile_list = form.create_list("tile");
+form.add_list_item(tile_list, "air", "air");
 for(uint i = 0; i < ptiles.length(); i++)
 form.add_list_item(tile_list, ptiles[i], ptiles[i]);
 form.set_list_position(tile_list, saved_tile_pos, false);
@@ -491,27 +492,27 @@ else if(lock_list != -1 && cur_focus == lock_list)
 int p = form.get_list_position(lock_list);
 if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/doors/lock/"+plock[p-1]+"/*deny*"), false);
 }
+else if(cur_focus == tile_list)
+{
+int p = form.get_list_position(tile_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/platforms/"+ptiles[p-1]+"/*step*"), false);
+}
 keytimer.restart();
 }
 if(cur_focus == tile_list)
 {
 int p = form.get_list_position(tile_list);
-if(p >= 0)
+if(p > 0)
 {
-if(key_repeating(KEY_SPACE))
-{
-t.destroy_sound(prevslot);
-prevslot = t.play_stationary(get_map_sound("objects/platforms/"+ptiles[p]+"/*step*"), false);
-}
 if(control_is_down() && key_repeating(KEY_L))
 {
 t.destroy_sound(prevslot);
-prevslot = t.play_stationary(get_map_sound("objects/platforms/"+ptiles[p]+"/*land*"), false);
+prevslot = t.play_stationary(get_map_sound("objects/platforms/"+ptiles[p-1]+"/*land*"), false);
 }
 if(control_is_down() && key_repeating(KEY_H))
 {
 t.destroy_sound(prevslot);
-prevslot = t.play_stationary(get_map_sound("objects/platforms/"+ptiles[p]+"/*fall*"), false);
+prevslot = t.play_stationary(get_map_sound("objects/platforms/"+ptiles[p-1]+"/*fall*"), false);
 }
 }
 }
@@ -581,7 +582,7 @@ int bct = string_to_number(form.get_text(fclosetime));
 int dpos = form.get_list_position(dir_list);
 int bdir = (dpos == 1) ? 2 : 1;
 int tp = form.get_list_position(tile_list);
-string btile = (tp >= 0 && ptiles.length() > 0) ? ptiles[tp] : "none";
+string btile = (tp == 0) ? "air" : (tp > 0 && ptiles.length() > 0) ? ptiles[tp-1] : "none";
 string lkmode = "none";
 if(saved_lockmode_pos == 1) lkmode = "key";
 else if(saved_lockmode_pos == 2) lkmode = "password";
