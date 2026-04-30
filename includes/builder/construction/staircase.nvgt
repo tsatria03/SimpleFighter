@@ -99,98 +99,161 @@ onstaircase=false;
 
 void build_staircase()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this staircase.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this staircase.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this staircase.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this staircase.", sel_top_set ? sel_top : "");
-string hp=vd.input_box("", "Enter the health of this staircase. Press enter to use the default health.", "1");
-if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-minhp=string_to_number(hp);
-string[] platform=get_map_sound_folders("objects/platforms/*");
-if(platform.length()==0)
+string[] tiles_list = get_map_sound_folders("objects/platforms/*");
+if(tiles_list.length() == 0)
 {
 dlg("Error. There are no platforms available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("staircase", false);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
+int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int hp = form.create_input_box("health", "1");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+int tile_list = form.create_list("tile sound");
+form.add_list_item(tile_list, "air", "air");
+for(uint i = 0; i < tiles_list.length(); i++)
+form.add_list_item(tile_list, tiles_list[i], tiles_list[i]);
+form.set_list_position(tile_list, 0, false);
+int tile_vol = form.create_slider("tile volume", 0, -100, 0, "", 5);
+int tile_pit = form.create_slider("tile pitch", 100, 5, 500, "", 5);
+int dest_cb = form.create_checkbox("destroyable", false);
+int overlap_cb = form.create_checkbox("overlap", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+int active_group = 0;
+int last_tile_pos = 0;
+bool preview_playing = false;
+string tile_glob = "step";
+while(true)
 {
-string res=platsmenu();
-if(res!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+int cur_group = 0;
+if(cur_focus == tile_list || cur_focus == tile_vol || cur_focus == tile_pit) cur_group = 1;
+int cur_tile_pos = form.get_list_position(tile_list);
+if(cur_group != active_group)
 {
 t.destroy_sound(prevslot);
-tiletype=res;
-prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
+prevslot = -1;
+preview_playing = false;
+active_group = cur_group;
+last_tile_pos = cur_tile_pos;
 }
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
+if(preview_playing && cur_group == 1 && cur_tile_pos != last_tile_pos)
+{
+last_tile_pos = cur_tile_pos;
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(cur_tile_pos > 0)
+{
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*"+tile_glob+"*"), true, 0, 0, v, pt, false);
+}
+else preview_playing = false;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group != 0)
+{
+if(preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
+else if(cur_group == 1 && cur_tile_pos > 0)
+{
+tile_glob = "step";
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*step*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_tile_pos = cur_tile_pos;
+}
+keytimer.restart();
+}
+if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_L) && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+tile_glob = "land";
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*land*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_tile_pos = cur_tile_pos;
+}
+if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_H) && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+tile_glob = "fall";
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*fall*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_tile_pos = cur_tile_pos;
+}
+if(preview_playing && prevslot != -1 && cur_group == 1)
+{
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+if(key_pressed(KEY_ESCAPE))
 {
 t.destroy_sound(prevslot);
 resume_pools();
-speak("Canceled");
+speak("canceled");
 return;
 }
+if(form.is_pressed(cn))
+{
 t.destroy_sound(prevslot);
 resume_pools();
-volume=s.get_item_value(0);
-pitch=s.get_item_value(1);
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Do you want this staircase to be destroyable?",true);
-if(mres==0)
-{
 speak("canceled");
 return;
 }
-if(mres==1)
+if(form.is_pressed(ok))
 {
-dmd=true;
-}
-if(mres==2)
-{
-dmd=false;
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres2=m.run("Do you want this staircase to overlap?",true);
-if(mres2==0)
-{
-speak("canceled");
-return;
-}
-if(mres2==1)
-{
-rpl=true;
-}
-if(mres2==2)
-{
-rpl=false;
-}
-write_staircase(x, paxx, y, paxy, minhp, tiletype, volume, pitch, dmd, rpl);
-spawn_staircase(x, paxx, y, paxy, minhp, minhp, tiletype, volume, pitch, dmd, rpl);
+if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my) == "") { speak("Minimum y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(hp) == "") { speak("Health is required."); form.focus(hp); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+double bhp = string_to_number(form.get_text(hp));
+int p = form.get_list_position(tile_list);
+string btile = (p > 0) ? tiles_list[p-1] : "air";
+double bvol = form.get_slider(tile_vol);
+double bpit = form.get_slider(tile_pit);
+bool bdest = form.is_checked(dest_cb);
+bool boverlap = form.is_checked(overlap_cb);
+t.destroy_sound(prevslot);
+resume_pools();
+write_staircase(bx, bx2, by, by2, bhp, btile, bvol, bpit, bdest, boverlap);
+spawn_staircase(bx, bx2, by, by2, bhp, bhp, btile, bvol, bpit, bdest, boverlap);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_staircase(string[] sd)

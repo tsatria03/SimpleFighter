@@ -96,98 +96,161 @@ void destroy_all_walls()
 
 void build_wall()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this wall.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this wall.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this wall.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this wall.", sel_top_set ? sel_top : "");
-string hp=vd.input_box("", "Enter the health of this wall. Press enter to use the default health.", "1");
-if(x=="" and paxx=="" and y=="" and paxy=="" and minhp=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-minhp=string_to_number(hp);
-string[] border=get_map_sound_folders("objects/walls/*");
-if(border.length()==0)
+string[] walls_list = get_map_sound_folders("objects/walls/*");
+if(walls_list.length() == 0)
 {
 dlg("Error. There are no walls available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("wall", false);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
+int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int hp = form.create_input_box("health", "1");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+int wall_list = form.create_list("wall sound");
+form.add_list_item(wall_list, "wall", "wall");
+for(uint i = 0; i < walls_list.length(); i++)
+form.add_list_item(wall_list, walls_list[i], walls_list[i]);
+form.set_list_position(wall_list, 0, false);
+int wall_vol = form.create_slider("wall volume", 0, -100, 0, "", 5);
+int wall_pit = form.create_slider("wall pitch", 100, 5, 500, "", 5);
+int dest_cb = form.create_checkbox("destroyable", false);
+int trans_cb = form.create_checkbox("transparent", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+int active_group = 0;
+int last_wall_pos = 0;
+bool preview_playing = false;
+string wall_glob = "bump";
+while(true)
 {
-string res=wallsmenu();
-if(res!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+int cur_group = 0;
+if(cur_focus == wall_list || cur_focus == wall_vol || cur_focus == wall_pit) cur_group = 1;
+int cur_wall_pos = form.get_list_position(wall_list);
+if(cur_group != active_group)
 {
 t.destroy_sound(prevslot);
-walltype=res;
-prevslot = t.play_stationary_extended(get_map_sound("objects/walls/" + walltype + "/*bump*"), true, 0, 0, 0.0, 100.0, false);
+prevslot = -1;
+preview_playing = false;
+active_group = cur_group;
+last_wall_pos = cur_wall_pos;
 }
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
+if(preview_playing && cur_group == 1 && cur_wall_pos != last_wall_pos)
+{
+last_wall_pos = cur_wall_pos;
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(cur_wall_pos > 0)
+{
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/walls/"+walls_list[cur_wall_pos-1]+"/*"+wall_glob+"*"), true, 0, 0, v, pt, false);
+}
+else preview_playing = false;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group != 0)
+{
+if(preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
+else if(cur_group == 1 && cur_wall_pos > 0)
+{
+wall_glob = "bump";
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/walls/"+walls_list[cur_wall_pos-1]+"/*bump*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_wall_pos = cur_wall_pos;
+}
+keytimer.restart();
+}
+if(cur_focus == wall_list && control_is_down() && key_repeating(KEY_L) && cur_wall_pos > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+wall_glob = "hurt";
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/walls/"+walls_list[cur_wall_pos-1]+"/*hurt*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_wall_pos = cur_wall_pos;
+}
+if(cur_focus == wall_list && control_is_down() && key_repeating(KEY_H) && cur_wall_pos > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+wall_glob = "death";
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/walls/"+walls_list[cur_wall_pos-1]+"/*death*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_wall_pos = cur_wall_pos;
+}
+if(preview_playing && prevslot != -1 && cur_group == 1)
+{
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+if(key_pressed(KEY_ESCAPE))
 {
 t.destroy_sound(prevslot);
 resume_pools();
-speak("Canceled");
+speak("canceled");
 return;
 }
+if(form.is_pressed(cn))
+{
 t.destroy_sound(prevslot);
 resume_pools();
-volume=s.get_item_value(0);
-pitch=s.get_item_value(1);
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Do you want this wall to be destroyable?",true);
-if(mres==0)
-{
 speak("canceled");
 return;
 }
-if(mres==1)
+if(form.is_pressed(ok))
 {
-dmd=true;
-}
-if(mres==2)
-{
-dmd=false;
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres2=m.run("Do you want this wall to be transparent?",true);
-if(mres2==0)
-{
-speak("canceled");
-return;
-}
-if(mres2==1)
-{
-trt=true;
-}
-if(mres2==2)
-{
-trt=false;
-}
-write_wall(x, paxx, y, paxy, minhp, walltype, volume, pitch, dmd, trt);
-spawn_wall(x, paxx, y, paxx, minhp, minhp, walltype, volume, pitch, dmd, trt);
+if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my) == "") { speak("Minimum y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(hp) == "") { speak("Health is required."); form.focus(hp); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+double bhp = string_to_number(form.get_text(hp));
+int p = form.get_list_position(wall_list);
+string btype = (p > 0) ? walls_list[p-1] : "wall";
+double bvol = form.get_slider(wall_vol);
+double bpit = form.get_slider(wall_pit);
+bool bdest = form.is_checked(dest_cb);
+bool btrans = form.is_checked(trans_cb);
+t.destroy_sound(prevslot);
+resume_pools();
+write_wall(bx, bx2, by, by2, bhp, btype, bvol, bpit, bdest, btrans);
+spawn_wall(bx, bx2, by, by2, bhp, bhp, btype, bvol, bpit, bdest, btrans);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_wall(string[] sd)

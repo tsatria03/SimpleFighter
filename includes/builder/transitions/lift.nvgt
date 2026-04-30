@@ -97,90 +97,217 @@ void destroy_all_lifts()
 
 void build_lift()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this lift.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this lift.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this lift.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this lift.", sel_top_set ? sel_top : "");
-string dr=vd.input_box("", "Enter the direction of this lift. 0 for down and up, and 1 for up and down.");
-string sp=vd.input_box("", "Enter the speed of this lift.");
-if(x=="" and paxx=="" and y=="" and paxy=="" and direction=="" and speedtime=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-direction=string_to_number(dr);
-speedtime=string_to_number(sp);
-string[] platform=get_map_sound_folders("objects/platforms/*");
-if(platform.length()==0)
+string[] tiles_list = get_map_sound_folders("objects/platforms/*");
+if(tiles_list.length() == 0)
 {
 dlg("Error. There are no platforms available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
-{
-string res=platsmenu();
-if(res!="")
-{
-t.destroy_sound(prevslot);
-tiletype=res;
-prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/" + tiletype + "/*step*"), true, 0, 0, 0.0, 100.0, false);
-}
-}
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
-{
-t.destroy_sound(prevslot);
-resume_pools();
-speak("Canceled");
-return;
-}
-t.destroy_sound(prevslot);
-resume_pools();
-volume=s.get_item_value(0);
-pitch=s.get_item_value(1);
-string[] liftform=get_map_sound_folders("objects/lifts/*");
-if(liftform.length()==0)
+string[] lifts_sound_list = get_map_sound_folders("objects/lifts/*");
+if(lifts_sound_list.length() == 0)
 {
 dlg("Error. There are no lifts available to view. Press enter to continue.");
 resume_pools();
 return;
 }
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("lift", false);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
+int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int sp = form.create_input_box("speed");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+int dir_list = form.create_list("direction");
+form.add_list_item(dir_list, "down then up", "down");
+form.add_list_item(dir_list, "up then down", "up");
+form.set_list_position(dir_list, 0, false);
+int tile_list = form.create_list("tile sound");
+form.add_list_item(tile_list, "air", "air");
+for(uint i = 0; i < tiles_list.length(); i++)
+form.add_list_item(tile_list, tiles_list[i], tiles_list[i]);
+form.set_list_position(tile_list, 0, false);
+int tile_vol = form.create_slider("tile volume", 0, -100, 0, "", 5);
+int tile_pit = form.create_slider("tile pitch", 100, 5, 500, "", 5);
+int lift_list = form.create_list("lift sound");
+form.add_list_item(lift_list, "none", "none");
+for(uint i = 0; i < lifts_sound_list.length(); i++)
+form.add_list_item(lift_list, lifts_sound_list[i], lifts_sound_list[i]);
+form.set_list_position(lift_list, 0, false);
+int lift_vol = form.create_slider("lift volume", 0, -100, 0, "", 5);
+int lift_pit = form.create_slider("lift pitch", 100, 5, 500, "", 5);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+int active_group = 0;
+int last_tile_pos = 0;
+int last_lift_pos = 0;
+bool preview_playing = false;
+string tile_glob = "step";
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+int cur_group = 0;
+if(cur_focus == tile_list || cur_focus == tile_vol || cur_focus == tile_pit) cur_group = 1;
+else if(cur_focus == lift_list || cur_focus == lift_vol || cur_focus == lift_pit) cur_group = 2;
+int cur_tile_pos = form.get_list_position(tile_list);
+int cur_lift_pos = form.get_list_position(lift_list);
+if(cur_group != active_group)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+active_group = cur_group;
+last_tile_pos = cur_tile_pos;
+last_lift_pos = cur_lift_pos;
+}
+if(preview_playing && cur_group == 1 && cur_tile_pos != last_tile_pos)
+{
+last_tile_pos = cur_tile_pos;
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(cur_tile_pos > 0)
+{
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*"+tile_glob+"*"), true, 0, 0, v, pt, false);
+}
+else preview_playing = false;
+}
+if(preview_playing && cur_group == 2 && cur_lift_pos != last_lift_pos)
+{
+last_lift_pos = cur_lift_pos;
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(cur_lift_pos > 0)
+{
+float v = form.get_slider(lift_vol);
+float pt = form.get_slider(lift_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/lifts/"+lifts_sound_list[cur_lift_pos-1]+"/*loop*"), true, 0, 0, v, pt, false);
+}
+else preview_playing = false;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group != 0)
+{
+if(preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
 else
 {
-string res=liftsmenu();
-if(res!="")
+if(cur_group == 1 && cur_tile_pos > 0)
+{
+tile_glob = "step";
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*step*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_tile_pos = cur_tile_pos;
+}
+else if(cur_group == 2 && cur_lift_pos > 0)
+{
+float v = form.get_slider(lift_vol);
+float pt = form.get_slider(lift_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/lifts/"+lifts_sound_list[cur_lift_pos-1]+"/*loop*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_lift_pos = cur_lift_pos;
+}
+}
+keytimer.restart();
+}
+if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_L) && cur_tile_pos > 0)
 {
 t.destroy_sound(prevslot);
-lifttyp=res;
-prevslot = t.play_stationary_extended(get_map_sound("objects/lifts/" + lifttyp + "/*loop*"), true, 0, 0, 0.0, 100.0, false);
+prevslot = -1;
+tile_glob = "land";
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*land*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_tile_pos = cur_tile_pos;
+}
+if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_H) && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+tile_glob = "fall";
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+prevslot = t.play_stationary_extended(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*fall*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+last_tile_pos = cur_tile_pos;
+}
+if(preview_playing && prevslot != -1)
+{
+if(cur_group == 1)
+{
+float v = form.get_slider(tile_vol);
+float pt = form.get_slider(tile_pit);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+else if(cur_group == 2)
+{
+float v = form.get_slider(lift_vol);
+float pt = form.get_slider(lift_pit);
+t.update_sound_start_values(prevslot, 0, v, pt);
 }
 }
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres2= s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres2==0)
+if(key_pressed(KEY_ESCAPE))
 {
 t.destroy_sound(prevslot);
 resume_pools();
-speak("Canceled");
+speak("canceled");
 return;
 }
+if(form.is_pressed(cn))
+{
 t.destroy_sound(prevslot);
 resume_pools();
-volume2=s.get_item_value(0);
-pitch2=s.get_item_value(1);
-write_lift(x, paxx, y, paxy, direction, speedtime, tiletype, volume, pitch, lifttyp, volume2, pitch2);
-spawn_lift(x, paxx, y, paxy, direction, speedtime, tiletype, volume, pitch, lifttyp, volume2, pitch2);
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my) == "") { speak("Minimum y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(sp) == "") { speak("Speed is required."); form.focus(sp); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+int bsp = string_to_number(form.get_text(sp));
+int bdir = form.get_list_position(dir_list);
+int pt = form.get_list_position(tile_list);
+string btile = (pt > 0) ? tiles_list[pt-1] : "air";
+int pl = form.get_list_position(lift_list);
+string bltype = (pl > 0) ? lifts_sound_list[pl-1] : "none";
+double btvol = form.get_slider(tile_vol);
+double btpit = form.get_slider(tile_pit);
+double blvol = form.get_slider(lift_vol);
+double blpit = form.get_slider(lift_pit);
+t.destroy_sound(prevslot);
+resume_pools();
+write_lift(bx, bx2, by, by2, bdir, bsp, btile, btvol, btpit, bltype, blvol, blpit);
+spawn_lift(bx, bx2, by, by2, bdir, bsp, btile, btvol, btpit, bltype, blvol, blpit);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_lift(string[] sd)

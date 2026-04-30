@@ -66,95 +66,188 @@ timedambs.resize(0);
 
 void build_timed_ambience()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this timed ambience.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this timed ambience.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this timed ambience.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this timed ambience.", sel_top_set ? sel_top : "");
-if(x=="" and paxx=="" and y=="" and paxy=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-setupmenu();
-m.add_item_tts("musics", "mus");
-m.add_item_tts("sources", "src");
-int mres=m.run("Soundtracks menu",true);
-string strm=m.get_item_name(mres);
-if(mres==0)
+string[] musics_list = get_map_sound_folders("soundtracks/musics/*");
+string[] sources_list = get_map_sound_folders("soundtracks/sources/*");
+if(musics_list.length() == 0 && sources_list.length() == 0)
 {
+dlg("Error. There are no soundtracks available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+string saved_x = sel_left_set ? sel_left : "";
+string saved_x2 = sel_right_set ? sel_right : "";
+string saved_y = sel_bottom_set ? sel_bottom : "";
+string saved_y2 = sel_top_set ? sel_top : "";
+string saved_sp = "";
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+double saved_vol = 0;
+double saved_pit = 100;
+bool do_build = true;
+int last_cat_pos = -1;
+int mx, mx2, my, my2, sp, cat_list, sub_list, vol_s, pit_s, ok, cn;
+bool preview_playing = false;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+if(last_cat_pos != -1)
+{
+saved_x = form.get_text(mx);
+saved_x2 = form.get_text(mx2);
+saved_y = form.get_text(my);
+saved_y2 = form.get_text(my2);
+saved_sp = form.get_text(sp);
+saved_vol = form.get_slider(vol_s);
+saved_pit = form.get_slider(pit_s);
+}
+form.reset();
+form.create_window("timed ambience", false, true, last_cat_pos != -1);
+mx = form.create_input_box("minimum x", saved_x);
+mx2 = form.create_input_box("maximum x", saved_x2);
+my = form.create_input_box("minimum y", saved_y);
+my2 = form.create_input_box("maximum y", saved_y2);
+sp = form.create_input_box("speed", saved_sp);
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+cat_list = form.create_list("category");
+form.add_list_item(cat_list, "musics", "musics");
+form.add_list_item(cat_list, "sources", "sources");
+form.set_list_position(cat_list, saved_cat_pos, false);
+string sub_label = (saved_cat_pos == 0) ? "music sound" : "source sound";
+sub_list = form.create_list(sub_label);
+form.add_list_item(sub_list, "none", "none");
+if(saved_cat_pos == 0)
+for(uint i = 0; i < musics_list.length(); i++) form.add_list_item(sub_list, musics_list[i], musics_list[i]);
+else
+for(uint i = 0; i < sources_list.length(); i++) form.add_list_item(sub_list, sources_list[i], sources_list[i]);
+form.set_list_position(sub_list, saved_sub_pos, false);
+vol_s = form.create_slider("volume", saved_vol, -100, 0, "", 5);
+pit_s = form.create_slider("pitch", saved_pit, 5, 500, "", 5);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_cat_pos == -1)
+{
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+}
+else
+form.focus_silently(cat_list);
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_cat_pos = form.get_list_position(cat_list);
+if(cur_cat_pos != -1 && cur_cat_pos != last_cat_pos)
+{
+saved_cat_pos = cur_cat_pos;
+saved_sub_pos = 0;
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+do_build = true;
+continue;
+}
+int cur_focus = form.get_current_focus();
+bool in_group = (cur_focus == sub_list || cur_focus == vol_s || cur_focus == pit_s);
+int cur_sub_pos = form.get_list_position(sub_list);
+if(!in_group && preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
+if(preview_playing && cur_sub_pos != saved_sub_pos)
+{
+saved_sub_pos = cur_sub_pos;
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(cur_sub_pos > 0)
+{
+string cat = (saved_cat_pos == 0) ? "musics" : "sources";
+string sub = (saved_cat_pos == 0) ? musics_list[cur_sub_pos-1] : sources_list[cur_sub_pos-1];
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+cat+"/"+sub+"/*loop*"), true, 0, 0, v, pt, false);
+}
+else preview_playing = false;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && in_group)
+{
+if(preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
+else if(cur_sub_pos > 0)
+{
+string cat = (saved_cat_pos == 0) ? "musics" : "sources";
+string sub = (saved_cat_pos == 0) ? musics_list[cur_sub_pos-1] : sources_list[cur_sub_pos-1];
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+cat+"/"+sub+"/*loop*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+saved_sub_pos = cur_sub_pos;
+}
+keytimer.restart();
+}
+if(preview_playing && prevslot != -1 && in_group)
+{
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
 speak("canceled");
 return;
 }
-if(strm=="mus")
+if(form.is_pressed(cn))
 {
-string[] musics=get_map_sound_folders("soundtracks/musics/*");
-if(musics.length()==0)
-{
-dlg("Error. There are no musics available to view. Press enter to continue.");
+t.destroy_sound(prevslot);
 resume_pools();
+speak("canceled");
 return;
 }
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my) == "") { speak("Minimum y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(sp) == "") { speak("Speed is required."); form.focus(sp); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+int bsp = string_to_number(form.get_text(sp));
+string bcat = (saved_cat_pos == 0) ? "musics" : "sources";
+int p = form.get_list_position(sub_list);
+string bsub;
+if(p > 0)
+bsub = (saved_cat_pos == 0) ? musics_list[p-1] : sources_list[p-1];
 else
-{
-string res=musicsmenu();
-if(res!="")
-{
-sorcetyp="musics";
-t.destroy_sound(prevslot);
-sorcetyp2=res;
-prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
-}
-}
-}
-if(strm=="src")
-{
-string[] sources=get_map_sound_folders("soundtracks/sources/*");
-if(sources.length()==0)
-{
-dlg("Error. There are no sources available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-string res=sorcesmenu();
-if(res!="")
-{
-sorcetyp="sources";
-t.destroy_sound(prevslot);
-sorcetyp2=res;
-prevslot = t.play_stationary_extended(get_map_sound("soundtracks/"+sorcetyp+"/"+sorcetyp2+"/*loop*"), true, 0, 0, 0.0, 100.0, false);
-}
-}
-}
-create_slider();
-s.add_slider_item("volume", -100.0, 0.0, 0.0, 1.0);
-s.add_slider_item("pitch", 5.0, 500.0, 100.0, 1.0);
-int sres = s.run_slider("Effects designer. Press tab or shift tab to cycle through the effect parameters. Press the arrow keys to increase or decrease the value you're currently focused on. Press the home or end key to directly jump to the minimum or maximum value of the parameter. Press the enter key when you're done shaping the effect to your liking.");
-if (sres==0)
-{
+bsub = "none";
+double bvol = form.get_slider(vol_s);
+double bpit = form.get_slider(pit_s);
 t.destroy_sound(prevslot);
 resume_pools();
-speak("Canceled");
-return;
-}
-t.destroy_sound(prevslot);
-resume_pools();
-volume=s.get_item_value(0);
-pitch=s.get_item_value(1);
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string sp=vd.input_box("", "Enter the speed of this timed ambience.");
-if(speedtime=="")
-return;
-speedtime=string_to_number(sp);
-resume_pools();
-write_timed_ambience(x, paxx, y, paxy, sorcetyp, sorcetyp2, volume, pitch, speedtime);
-spawn_timedamb(x, paxx, y, paxy, volume, pitch, speedtime, sorcetyp, sorcetyp2);
+write_timed_ambience(bx, bx2, by, by2, bcat, bsub, bvol, bpit, bsp);
+spawn_timedamb(bx, bx2, by, by2, bvol, bpit, bsp, bcat, bsub);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_timed_ambience(string[] sd)
