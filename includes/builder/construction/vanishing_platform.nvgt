@@ -12,19 +12,19 @@ int vplattime;
 string tile;
 string vptype;
 timer vplattimer;
-vanishing_platform(double mx,double mx2,double my,double my2,string ty,double vol,double semitone,string vtype,double vol2,double semitone2,int vtime)
+vanishing_platform(double mx,double mx2,double my,double my2,double vol,double semitone,double vol2,double semitone2,int vtime,string ty,string vtype)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
-tile=ty;
 tilevolume=vol;
 tilepitch=semitone;
-vptype=vtype;
 vplatvolume=vol2;
 vplatpitch=semitone2;
 vplattime=vtime;
+tile=ty;
+vptype=vtype;
 spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true);
 vplatsound=vanpool.play_extended_2d(get_map_sound("objects/vanishing platforms/"+vptype+"/*loop*"),me.x,me.y,minx,miny,0,0,0,0,true,0,0,vplatvolume,vplatpitch,false);
 vanpool.update_sound_2d(vplatsound,minx,miny);
@@ -53,9 +53,9 @@ vanishing_platforms[i].vplattimer.restart();
 }
 }
 }
-void spawn_vanishing_platform(double x1,double x2,double y1,double y2,string tile,double tilevol,double tilepitch,string vtype,double vplatvol,double vplatpitch,int vtime)
+void spawn_vanishing_platform(double x1,double x2,double y1,double y2,double tilevol,double tilepitch,double vplatvol,double vplatpitch,int vtime,string tile,string vtype)
 {
-vanishing_platform vp1(x1,x2,y1,y2,tile,tilevol,tilepitch,vtype,vplatvol,vplatpitch,vtime);
+vanishing_platform vp1(x1,x2,y1,y2,tilevol,tilepitch,vplatvol,vplatpitch,vtime,tile,vtype);
 vanishing_platforms.insert_last(vp1);
 }
 void destroy_all_vanishing_platforms()
@@ -148,8 +148,8 @@ if(speedtime=="")
 return;
 speedtime=string_to_number(sp);
 resume_pools();
-write_vanishing_platform(x, paxx, y, tiletype, volume, pitch, vplattyp, volume2, pitch2, speedtime);
-spawn_vanishing_platform(x, paxx, y, y, tiletype, volume, pitch, vplattyp, volume2, pitch2, speedtime);
+write_vanishing_platform(x, paxx, y, volume, pitch, volume2, pitch2, speedtime, tiletype, vplattyp);
+spawn_vanishing_platform(x, paxx, y, y, volume, pitch, volume2, pitch2, speedtime, tiletype, vplattyp);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -160,20 +160,20 @@ void read_vanishing_platform(string[] sd)
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
-string tiletype=sd[4];
-double tilevol=stn(sd[5]);
-double tilepitch=stn(sd[6]);
-string vplattype=sd[7];
-double vplatvol=stn(sd[8]);
-double vplatpitch=stn(sd[9]);
-int sp=stn(sd[10]);
-spawn_vanishing_platform(mx, mx2, my, my, tiletype, tilevol, tilepitch, vplattype, vplatvol, vplatpitch, sp);
+double tilevol=stn(sd[4]);
+double tilepitch=stn(sd[5]);
+double vplatvol=stn(sd[6]);
+double vplatpitch=stn(sd[7]);
+int sp=stn(sd[8]);
+string tiletype=sd[9];
+string vplattype=sd[10];
+spawn_vanishing_platform(mx, mx2, my, my, tilevol, tilepitch, vplatvol, vplatpitch, sp, tiletype, vplattype);
 }
 
-void write_vanishing_platform(double x1, double x2, double y1, string tile, double tilevol, double tilepitch, string vplattype, double vplatvol, double vplatpitch, int speed)
+void write_vanishing_platform(double x1, double x2, double y1, double tilevol, double tilepitch, double vplatvol, double vplatpitch, int speed, string tile, string vplattype)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"vanishing_platform "+x1+" "+x2+" "+y1+" "+tile+" "+tilevol+" "+tilepitch+" "+vplattype+" "+vplatvol+" "+vplatpitch+" "+speed);
+mapper.write("\r\n"+"vanishing_platform "+x1+" "+x2+" "+y1+" "+tilevol+" "+tilepitch+" "+vplatvol+" "+vplatpitch+" "+speed+" "+tile+" "+vplattype);
 mapper.close();
 }

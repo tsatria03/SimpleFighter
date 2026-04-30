@@ -12,9 +12,9 @@ class moving_platform
     string mplattype;
     int move_mode;
     int snap_mode;
-    double speed;
+    int speed;
     bool moving_forward;
-    double move_accumulator_x, move_accumulator_y;
+    timer move_timer;
     double tilevolume;
     double tilepitch;
     double mplatvolume;
@@ -33,7 +33,7 @@ class moving_platform
         move_mode = direction;
         snap_mode = snap;
         if (speed_in <= 0) speed_in = 1;
-        speed = 1.0 / speed_in;
+        speed = speed_in;
         tile = ty;
         tilevolume = vol;
         tilepitch = semitone;
@@ -42,9 +42,7 @@ class moving_platform
         mplatpitch = semitone2;
         offset_volume = vol_offset;
         moving_forward = true;
-        move_accumulator_x = 0;
-        move_accumulator_y = 0;        
-        platform_id = spawn_platform(left_x, left_x + x_length, bottom_y, bottom_y + 1, 1, 1, tile, tilevolume, tilepitch, false, false, true);        
+        platform_id = spawn_platform(left_x, left_x + x_length, bottom_y, bottom_y + 1, 1, 1, tile, tilevolume, tilepitch, false, false, true);
         platsound = platpool.play_extended_2d(get_map_sound("objects/moving platforms/" + mplattype + "/*loop*"), me.x, me.y, currentx, currenty, 0, 0, 0, 0, true, 0, 0, mplatvolume, mplatpitch, false);
         update_platform_sound();
     }
@@ -71,49 +69,37 @@ void update_platform_sound()
 
     void move()
     {
+        if (move_timer.elapsed < speed) return;
+        move_timer.restart();
         double old_x = currentx;
         double old_y = currenty;
-        double dx = 0, dy = 0;
+        int dx = 0, dy = 0;
         bool reached_endpoint = false;
 
         switch(move_mode)
         {
             case 0: case 4:
-                dx = (move_mode == 0 ? 1 : -1) * (moving_forward ? speed : -speed);
+                dx = (move_mode == 0 ? 1 : -1) * (moving_forward ? 1 : -1);
                 reached_endpoint = (moving_forward && currentx >= maxx) || (!moving_forward && currentx <= minx);
                 break;
             case 1: case 5:
-                dy = (move_mode == 1 ? 1 : -1) * (moving_forward ? speed : -speed);
+                dy = (move_mode == 1 ? 1 : -1) * (moving_forward ? 1 : -1);
                 reached_endpoint = (moving_forward && currenty >= maxy) || (!moving_forward && currenty <= miny);
                 break;
             case 2: case 6:
-                dx = (move_mode == 2 ? 1 : -1) * (moving_forward ? speed : -speed);
-                dy = (move_mode == 2 ? 1 : -1) * (moving_forward ? speed : -speed);
+                dx = (move_mode == 2 ? 1 : -1) * (moving_forward ? 1 : -1);
+                dy = (move_mode == 2 ? 1 : -1) * (moving_forward ? 1 : -1);
                 reached_endpoint = (moving_forward && (currentx >= maxx || currenty >= maxy)) || (!moving_forward && (currentx <= minx || currenty <= miny));
                 break;
             case 3: case 7:
-                dx = (move_mode == 3 ? -1 : 1) * (moving_forward ? speed : -speed);
-                dy = (move_mode == 3 ? 1 : -1) * (moving_forward ? speed : -speed);
+                dx = (move_mode == 3 ? -1 : 1) * (moving_forward ? 1 : -1);
+                dy = (move_mode == 3 ? 1 : -1) * (moving_forward ? 1 : -1);
                 reached_endpoint = (moving_forward && (currentx <= minx || currenty >= maxy)) || (!moving_forward && (currentx >= maxx || currenty <= miny));
                 break;
         }
 
-        move_accumulator_x += dx;
-        move_accumulator_y += dy;
-
-        if(abs(move_accumulator_x) >= 1)
-        {
-            int steps = int(move_accumulator_x);
-            currentx += steps;
-            move_accumulator_x -= steps;
-        }
-
-        if(abs(move_accumulator_y) >= 1)
-        {
-            int steps = int(move_accumulator_y);
-            currenty += steps;
-            move_accumulator_y -= steps;
-        }
+        currentx += dx;
+        currenty += dy;
 
         if(reached_endpoint)
         {

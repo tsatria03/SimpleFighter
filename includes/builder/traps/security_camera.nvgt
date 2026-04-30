@@ -132,49 +132,157 @@ sucams.resize(0);
 
 void build_security_camera()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the x of this security camera.", sel_left_set ? sel_left : "");
-string my=vd.input_box("", "Enter the y of this security camera.", sel_bottom_set ? sel_bottom : "");
-string rng=vd.input_box("", "Enter the horizontal seeing range of this security camera. Press enter to use the default horizontal seeing range.", maxx);
-string rng2=vd.input_box("", "Enter the vertical seeing range of this security camera. Press enter to use the default vertical seeing range.", maxy);
-string dr=vd.input_box("", "Enter the direction of this security camera. 1 for left, and 2 for right.");
-string sp=vd.input_box("", "Enter the speed of this security camera.");
-string hp=vd.input_box("", "Enter the health of this security camera.");
-string lev=vd.input_box("", "Enter the level of this security camera.");
-string exper=vd.input_box("", "Enter the xp of this security camera.");
-if(x=="" and y=="" and camrange=="" and camrange2=="" and direction=="" and speedtime=="" and minhp=="" and lv=="" and xn=="")
-return;
-x=string_to_number(mx);
-y=string_to_number(my);
-camrange=string_to_number(rng);
-camrange2=string_to_number(rng2);
-direction=string_to_number(dr);
-speedtime=string_to_number(sp);
-minhp=string_to_number(hp);
-lv=string_to_number(lev);
-xn=string_to_number(exper);
-string[] camera=get_map_sound_folders("objects/cameras/*");
-if(camera.length()==0)
+string[] cams = get_map_sound_folders("objects/cameras/*");
+if(cams.length() == 0)
 {
 dlg_snd("Error. There are no cameras available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("security camera", false);
+int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int rng = form.create_input_box("horizontal seeing range", ""+maxx);
+int rng2 = form.create_input_box("vertical seeing range", ""+maxy);
+int sp = form.create_input_box("speed");
+int hp = form.create_input_box("health");
+int lev = form.create_input_box("level");
+int exper = form.create_input_box("xp");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(rng, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(rng2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(exper, disallowed_nums, false, "This character is not allowed.");
+int dir_list = form.create_list("direction");
+form.add_list_item(dir_list, "left", "left");
+form.add_list_item(dir_list, "right", "right");
+form.set_list_position(dir_list, 0, false);
+int cam_list = form.create_list("camera sound");
+form.add_list_item(cam_list, "none", "none");
+for(uint i = 0; i < cams.length(); i++)
+form.add_list_item(cam_list, cams[i], cams[i]);
+form.set_list_position(cam_list, 0, false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+while(true)
 {
-string res=camsmenu();
-if(res!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+if(key_pressed(KEY_SPACE) or (key_down(KEY_SPACE) and spacehold == 1 and keytimer.elapsed >= keytime))
 {
 t.destroy_sound(prevslot);
-camtyp=res;
+if(cur_focus == cam_list)
+{
+int p = form.get_list_position(cam_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/cameras/"+cams[p-1]+"/*hurt*"), false);
+}
+keytimer.restart();
+}
+if(cur_focus == cam_list && control_is_down() && key_repeating(KEY_L))
+{
+int p = form.get_list_position(cam_list);
+if(p > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/cameras/"+cams[p-1]+"/*turn*"), false);
 }
 }
+if(cur_focus == cam_list && control_is_down() && key_repeating(KEY_H))
+{
+int p = form.get_list_position(cam_list);
+if(p > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/cameras/"+cams[p-1]+"/*alert*"), false);
+}
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
 resume_pools();
-write_camera(x, y, camrange, camrange2, direction, speedtime, minhp, lv, xn, camtyp);
-spawn_camera(x, y, camrange, camrange2, direction, speedtime, minhp, minhp, lv, xn, camtyp);
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(my) == "")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(sp) == "")
+{
+speak("Speed is required.");
+form.focus(sp);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(hp) == "")
+{
+speak("Health is required.");
+form.focus(hp);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(lev) == "")
+{
+speak("Level is required.");
+form.focus(lev);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(exper) == "")
+{
+speak("XP is required.");
+form.focus(exper);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int brng = string_to_number(form.get_text(rng));
+int brng2 = string_to_number(form.get_text(rng2));
+int bsp = string_to_number(form.get_text(sp));
+double bhp = string_to_number(form.get_text(hp));
+double blev = string_to_number(form.get_text(lev));
+double bxp = string_to_number(form.get_text(exper));
+int bdir = form.get_list_position(dir_list) + 1;
+int p = form.get_list_position(cam_list);
+string btype = (p > 0) ? cams[p-1] : "none";
+t.destroy_sound(prevslot);
+resume_pools();
+write_camera(bx, by, brng, brng2, bdir, bsp, bhp, blev, bxp, btype);
+spawn_camera(bx, by, brng, brng2, bdir, bsp, bhp, bhp, blev, bxp, btype);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_camera(string[] sd)
