@@ -153,124 +153,180 @@ elvmove = false;
 
 void build_elevator()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the x of this elevator.", sel_left_set ? sel_left : "");
-string my=vd.input_box("", "Enter the y of this elevator.", sel_bottom_set ? sel_bottom : "");
-string sp=vd.input_box("", "Enter the speed of this elevator.");
-string text=vd.input_box("", "Enter the menu text of this elevator. Press enter to use the default menu text.", "Choose the floor you'd like to go to.");
-if(x=="" and y=="" and speedtime=="" and txt=="")
-return;
-x=string_to_number(mx);
-y=string_to_number(my);
-speedtime=string_to_number(sp);
-txt=text;
-string[] eldloop=get_map_sound_folders("objects/elevators/loop/*");
-if(eldloop.length()==0)
+string[] loops_list = get_map_sound_folders("objects/elevators/loop/*");
+if(loops_list.length() == 0)
 {
 dlg("Error. There are no elevator loops available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
-{
-string res=eldloopsmenu();
-if(res!="")
-{
-t.destroy_sound(prevslot);
-ellooptyp=res;
-}
-}
-string[] eldmove=get_map_sound_folders("objects/elevators/move/*");
-if(eldmove.length()==0)
+string[] moves_list = get_map_sound_folders("objects/elevators/move/*");
+if(moves_list.length() == 0)
 {
 dlg("Error. There are no elevator moves available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
-{
-string res2=eldmovesmenu();
-if(res2!="")
-{
-t.destroy_sound(prevslot);
-elmovtyp=res2;
-}
-}
-string[] eldopen=get_map_sound_folders("objects/elevators/open/*");
-if(eldopen.length()==0)
+string[] opens_list = get_map_sound_folders("objects/elevators/open/*");
+if(opens_list.length() == 0)
 {
 dlg("Error. There are no elevator opens available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
-{
-string res3=eldopensmenu();
-if(res3!="")
-{
-t.destroy_sound(prevslot);
-elopentyp=res3;
-}
-}
-string[] eldclose=get_map_sound_folders("objects/elevators/close/*");
-if(eldclose.length()==0)
+string[] closes_list = get_map_sound_folders("objects/elevators/close/*");
+if(closes_list.length() == 0)
 {
 dlg("Error. There are no elevator closes available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
-{
-string res4=eldclosesmenu();
-if(res4!="")
-{
-t.destroy_sound(prevslot);
-elclostyp=res4;
-}
-}
-string[] elbeeptype=get_map_sound_folders("objects/elevators/beep/*");
-if(elbeeptype.length()==0)
+string[] beeps_list = get_map_sound_folders("objects/elevators/beep/*");
+if(beeps_list.length() == 0)
 {
 dlg("Error. There are no elevator beeps available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("elevator", false);
+int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int sp = form.create_input_box("speed");
+int txtbox = form.create_input_box("menu text", "Choose the floor you'd like to go to.");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+int loop_list = form.create_list("loop sound");
+form.add_list_item(loop_list, "none", "none");
+for(uint i = 0; i < loops_list.length(); i++) form.add_list_item(loop_list, loops_list[i], loops_list[i]);
+form.set_list_position(loop_list, 0, false);
+int move_list = form.create_list("move sound");
+form.add_list_item(move_list, "none", "none");
+for(uint i = 0; i < moves_list.length(); i++) form.add_list_item(move_list, moves_list[i], moves_list[i]);
+form.set_list_position(move_list, 0, false);
+int open_list = form.create_list("open sound");
+form.add_list_item(open_list, "none", "none");
+for(uint i = 0; i < opens_list.length(); i++) form.add_list_item(open_list, opens_list[i], opens_list[i]);
+form.set_list_position(open_list, 0, false);
+int close_list = form.create_list("close sound");
+form.add_list_item(close_list, "none", "none");
+for(uint i = 0; i < closes_list.length(); i++) form.add_list_item(close_list, closes_list[i], closes_list[i]);
+form.set_list_position(close_list, 0, false);
+int beep_list = form.create_list("beep sound");
+form.add_list_item(beep_list, "none", "none");
+for(uint i = 0; i < beeps_list.length(); i++) form.add_list_item(beep_list, beeps_list[i], beeps_list[i]);
+form.set_list_position(beep_list, 0, false);
+int speak_cb = form.create_checkbox("speak floors", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+while(true)
 {
-string res5=elbeepsmenu();
-if(res5!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+if(key_pressed(KEY_SPACE) or (key_down(KEY_SPACE) and spacehold == 1 and keytimer.elapsed >= keytime))
 {
 t.destroy_sound(prevslot);
-elbeeptyp=res5;
-}
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres27=m.run("Do you want the elevator floors to be spoken?",true);
-if(mres27==0)
+if(cur_focus == loop_list)
 {
+int p = form.get_list_position(loop_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/elevators/loop/"+loops_list[p-1]+"/*loop*"), false);
+}
+else if(cur_focus == move_list)
+{
+int p = form.get_list_position(move_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/elevators/move/"+moves_list[p-1]+"/*move*"), false);
+}
+else if(cur_focus == open_list)
+{
+int p = form.get_list_position(open_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/elevators/open/"+opens_list[p-1]+"/*open*"), false);
+}
+else if(cur_focus == close_list)
+{
+int p = form.get_list_position(close_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/elevators/close/"+closes_list[p-1]+"/*close*"), false);
+}
+else if(cur_focus == beep_list)
+{
+int p = form.get_list_position(beep_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/elevators/beep/"+beeps_list[p-1]+"/*beep*"), false);
+}
+keytimer.restart();
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
 speak("canceled");
 return;
 }
-if(mres27==1)
+if(form.is_pressed(cn))
 {
-fls=true;
-}
-if(mres27==2)
-{
-fls=false;
-}
+t.destroy_sound(prevslot);
 resume_pools();
-write_elevator(x, y, speedtime, txt, ellooptyp, elmovtyp, elopentyp, elclostyp, elbeeptyp, fls);
-spawn_elevator(x, y, speedtime, txt, ellooptyp, elmovtyp, elopentyp, elclostyp, elbeeptyp, fls);
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(my) == "")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(sp) == "")
+{
+speak("Speed is required.");
+form.focus(sp);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(txtbox) == "")
+{
+speak("Menu text is required.");
+form.focus(txtbox);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int bsp = string_to_number(form.get_text(sp));
+string btxt = form.get_text(txtbox);
+int pl = form.get_list_position(loop_list);
+string blo = (pl > 0) ? loops_list[pl-1] : "none";
+int pm = form.get_list_position(move_list);
+string bmo = (pm > 0) ? moves_list[pm-1] : "none";
+int po = form.get_list_position(open_list);
+string bop = (po > 0) ? opens_list[po-1] : "none";
+int pc = form.get_list_position(close_list);
+string bcl = (pc > 0) ? closes_list[pc-1] : "none";
+int pb = form.get_list_position(beep_list);
+string bbe = (pb > 0) ? beeps_list[pb-1] : "none";
+bool bspk = form.is_checked(speak_cb);
+t.destroy_sound(prevslot);
+resume_pools();
+write_elevator(bx, by, bsp, btxt, blo, bmo, bop, bcl, bbe, bspk);
+spawn_elevator(bx, by, bsp, btxt, blo, bmo, bop, bcl, bbe, bspk);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_elevator(string[] sd)

@@ -310,58 +310,118 @@ mines.resize(0);
 
 void build_mine()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the x of this mine.", sel_left_set ? sel_left : "");
-string my=vd.input_box("", "Enter the y of this mine.", sel_bottom_set ? sel_bottom : "");
-string dm=vd.input_box("", "Enter the maximum attack of this mine.");
-if(x=="" and y=="" and damage=="")
-return;
-x=string_to_number(mx);
-y=string_to_number(my);
-damage=string_to_number(dm);
-string[] mine=get_map_sound_folders("objects/mines/*");
-if(mine.length()==0)
+string[] mines_list = get_map_sound_folders("objects/mines/*");
+if(mines_list.length() == 0)
 {
 dlg("Error. There are no mines available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("mine", false);
+int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int dm = form.create_input_box("maximum attack");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
+int mine_list = form.create_list("mine sound");
+form.add_list_item(mine_list, "none", "none");
+for(uint i = 0; i < mines_list.length(); i++)
+form.add_list_item(mine_list, mines_list[i], mines_list[i]);
+form.set_list_position(mine_list, 0, false);
+int auto_cb = form.create_checkbox("auto activate", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+while(true)
 {
-string res=minesmenu();
-if(res!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+if(key_pressed(KEY_SPACE) or (key_down(KEY_SPACE) and spacehold == 1 and keytimer.elapsed >= keytime))
 {
 t.destroy_sound(prevslot);
-minetyp=res;
-}
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Should this mine be auto activated?",true);
-if(mres==0)
+if(cur_focus == mine_list)
 {
+int p = form.get_list_position(mine_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/mines/"+mines_list[p-1]+"/*spawn*"), false);
+}
+keytimer.restart();
+}
+if(cur_focus == mine_list && control_is_down() && key_repeating(KEY_L))
+{
+int p = form.get_list_position(mine_list);
+if(p > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/mines/"+mines_list[p-1]+"/*loop*"), false);
+}
+}
+if(cur_focus == mine_list && control_is_down() && key_repeating(KEY_H))
+{
+int p = form.get_list_position(mine_list);
+if(p > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/mines/"+mines_list[p-1]+"/*explode*"), false);
+}
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
 speak("canceled");
 return;
 }
-if(mres==1)
+if(form.is_pressed(cn))
 {
-trg=true;
-}
-if(mres==2)
-{
-trg=false;
-}
+t.destroy_sound(prevslot);
 resume_pools();
-write_mine(x, y, damage, minetyp, trg);
-spawn_mine(x, y, damage, minetyp, trg);
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(my) == "")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(dm) == "")
+{
+speak("Maximum attack is required.");
+form.focus(dm);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int bdmg = string_to_number(form.get_text(dm));
+int p = form.get_list_position(mine_list);
+string btype = (p > 0) ? mines_list[p-1] : "none";
+bool btrig = form.is_checked(auto_cb);
+t.destroy_sound(prevslot);
+resume_pools();
+write_mine(bx, by, bdmg, btype, btrig);
+spawn_mine(bx, by, bdmg, btype, btrig);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_mine(string[] sd)
