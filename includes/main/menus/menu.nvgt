@@ -3,12 +3,11 @@ void mainmenu()
 setupmenu(true);
 if(hidedocks==false) m.add_item_tts("documentation menu", "help");
 if(hidemaps==false) m.add_item_tts("map menu", "map");
-if(hidemisc==false) m.add_item_tts("miscellaneous menu", "msm");
 if(hidesets==false) m.add_item_tts("settings menu", "settings");
 m.add_item_tts("check for updates", "chup");
-if(system_is_windows) m.add_item_tts("redownload all sounds", "rdl");
+m.add_item_tts("redownload all sounds", "rdl");
 m.add_item_tts("test speakers", "st");
-if(system_is_windows) m.add_item_tts("restart game", "rx");
+m.add_item_tts("restart game", "rx");
 m.add_item_tts("exit game", "ex");
 int mres=m.run("Main menu. Please choose an option with your arrow keys, then press enter to activate one.",true);
 string main=m.get_item_name(mres);
@@ -21,10 +20,6 @@ exit();
 if(main=="map")
 {
 mapmenu();
-}
-if(main=="msm")
-{
-miscmenu();
 }
 if(main=="help")
 {
@@ -85,319 +80,6 @@ m.fade_music();
 settingsmenu();
 }
 }
-void miscmenu()
-{
-setupmenu(true);
-m.add_item_tts("layouts editor", "ldr");
-m.add_item_tts("layouts viewer", "ldv");
-m.add_item_tts("back", "back");
-int mres=m.run("Miscellaneous menu",true);
-string mcm=m.get_item_name(mres);
-if(mres==0)
-{
-mainmenu();
-}
-if(mcm=="ldr")
-{
-m.fade_music();
-edit_layouts();
-}
-if(mcm=="ldv")
-{
-m.fade_music();
-view_layouts();
-}
-if(mcm=="back")
-{
-mainmenu();
-}
-}
-void edit_layouts()
-{
-    setupmenu();
-    m.add_item_tts("Characters", "characters");
-    m.add_item_tts("Shields", "shields");
-    m.add_item_tts("Weapons", "weapons");
-    m.add_item_tts("Back", "back");
-    int res = m.run("Select a layout type to edit", true);
-    string choice = m.get_item_name(res);
-    if (choice == "back" || res == 0)
-{
-        miscmenu();
-        return;
-    }
-    string path = "data/layouts/" + choice + "/";
-    string selected = "";
-    string category = "";
-    if (choice == "weapons")
-    {
-        setupmenu();
-        string[] categories = find_directories(path + "*");
-        for (uint i = 0; i < categories.length(); i++)
-            m.add_item_tts(categories[i], categories[i]);
-        m.add_item_tts("Create new category", "new_cat");
-        m.add_item_tts("Back", "back");
-        int c_res = m.run("Select a weapon category to edit", true);
-        category = m.get_item_name(c_res);
-        if (category == "back" || c_res == 0)
-{
-            edit_layouts();
-            return;
-        }
-        if (category == "new_cat")
-{
-            category = input_box("category name", "Enter new category name:");
-            if (category == "")
-{
-                edit_layouts();
-                return;
-            }
-            directory_create(path + category);
-        }
-        setupmenu();
-        string[] weapons = find_directories(path + category + "/*");
-        for (uint i = 0; i < weapons.length(); i++)
-            m.add_item_tts(weapons[i], weapons[i]);
-        m.add_item_tts("Create new weapon", "new");
-        m.add_item_tts("Back", "back");
-        int w_res = m.run("Select a weapon to edit", true);
-        selected = m.get_item_name(w_res);
-        if (selected == "back" || w_res == 0)
-{
-            edit_layouts();
-            return;
-        }
-        if (selected == "new")
-{
-            selected = input_box("weapon name", "Enter new weapon name:");
-            if (selected == "")
-{
-                edit_layouts();
-                return;
-            }
-            directory_create(path + category + "/" + selected);
-        }
-        path = path + category + "/" + selected + "/info.sif";
-    }
-    else
-    {
-        setupmenu();
-        string[] entries = find_directories(path + "*");
-        for (uint i = 0; i < entries.length(); i++)
-            m.add_item_tts(entries[i], entries[i]);
-        m.add_item_tts("Create a new layout", "new");
-        m.add_item_tts("Back", "back");
-        int l_res = m.run("Select the " + choice + " to edit", true);
-        selected = m.get_item_name(l_res);
-        if (selected == "back" || l_res == 0)
-{
-            edit_layouts();
-            return;
-        }
-        if (selected == "new")
-{
-            selected = input_box("layout name", "Enter new " + choice + " name:");
-            if (selected == "")
-{
-                edit_layouts();
-                return;
-            }
-            directory_create(path + selected);
-        }
-        path = path + selected + "/info.sif";
-    }
-    string[] lines;
-    file f;
-    if (file_exists(path))
-{
-        if (!f.open(path, "rb"))
-{
-            alert("Error", "Could not open info.sif.");
-            edit_layouts();
-            return;
-        }
-        lines = string_split(f.read(), "\r\n", true);
-        f.close();
-    }
-else
-{
-        alert("Notice", "info.sif not found. A new one will be created.");
-    }
-    while (true)
-    {
-        wait(5);
-setupmenu();
-        for (uint i = 0; i < lines.length(); i++) {
-            string[] parts = string_split(lines[i], "=", true);
-            if (parts.length() == 2)
-                m.add_item_tts(parts[0] + "=" + parts[1], parts[0]);
-        }
-        m.add_item_tts("Add a stat line", "add");
-        m.add_item_tts("Remove a stat line", "remove");
-        m.add_item_tts("Save and exit", "save");
-        m.add_item_tts("Back", "back");
-        int ed_res = m.run("Editing " + selected, true);
-        string option = m.get_item_name(ed_res);
-        if (option == "save")
-{
-            file f;
-            f.open(path, "wb");
-            f.write(string_join(lines, "\r\n"));
-            f.close();
-            speak("Stat saved.");
-edit_layouts();
-        }
-        if (option == "back" || ed_res == 0)
-{
-            edit_layouts();
-            return;
-        }
-if (option == "add")
-{
-    string newline = input_box("Line editor", "Enter new line (key=value):");
-    if (newline == "")
-    {
-        alert("Error", "No line added.");
-        continue;
-    }
-    if (string_contains(newline, "=", 1) == -1)
-    {
-        alert("Error", "Invalid format. Use key=value.");
-        continue;
-    }
-    lines.insert_last(newline);
-    alert("Success", "Line added: " + newline);
-    continue;
-}
-        else if (option == "remove")
-{
-            setupmenu();
-            for (uint i = 0; i < lines.length(); i++) {
-                string[] parts = string_split(lines[i], "=", true);
-                if (parts.length() == 2)
-                    m.add_item_tts(parts[0] + "=" + parts[1], parts[0]);
-            }
-            m.add_item_tts("Back", "back");
-            int rm_res = m.run("Select a stat line to remove", true);
-            string remove = m.get_item_name(rm_res);
-            if (remove == "back" || rm_res == 0) continue;
-            for (uint i = 0; i < lines.length(); i++)
-{
-                if (string_starts_with(lines[i], remove + "="))
-{
-                    lines.remove_at(i);
-                    break;
-                }
-            }
-        }
-else
-{
-string val = "";
-for (uint i = 0; i < lines.length(); i++)
-{
-    if (string_starts_with(lines[i], option + "="))
-{
-        val = string_trim_sides(lines[i].substr(option.length() + 1));
-        break;
-    }
-}
-string newval = input_box("Line editor", "Enter new value for " + option + ":", val);
-if (newval == "")
-{
-    alert("Error", "No changes have been made to " + option + ".");
-    continue;
-}
-            for (uint i = 0; i < lines.length(); i++)
-{
-                if (string_starts_with(lines[i], option + "="))
-{
-                    lines[i] = option + "=" + newval;
-                    break;
-                }
-            }
-        alert("Success", option + " set to " + newval + ".");
-continue;
-}
-    }
-}
-void view_layouts()
-{
-    setupmenu();
-    m.add_item_tts("Characters", "characters");
-    m.add_item_tts("Shields", "shields");
-    m.add_item_tts("Weapons", "weapons");
-    m.add_item_tts("Back", "back");
-    int res = m.run("Select a layout type to view", true);
-    string choice = m.get_item_name(res);
-    if (choice == "back" || res == 0) {
-        miscmenu();
-        return;
-    }
-    string path = "data/layouts/" + choice + "/";
-    string selected = "";
-    if (choice == "weapons")
-    {
-        setupmenu();
-        string[] categories = find_directories(path + "*");
-        for (uint i = 0; i < categories.length(); i++)
-            m.add_item_tts(categories[i], categories[i]);
-        m.add_item_tts("Back", "back");
-        int c_res = m.run("Select a weapon category to view", true);
-        string cat = m.get_item_name(c_res);
-        if (cat == "back" || c_res == 0) {
-            view_layouts();
-            return;
-        }
-        setupmenu();
-        string[] weapons = find_directories(path + cat + "/*");
-        for (uint i = 0; i < weapons.length(); i++)
-            m.add_item_tts(weapons[i], weapons[i]);
-        m.add_item_tts("Back", "back");
-        int w_res = m.run("Select a weapon to view", true);
-        selected = m.get_item_name(w_res);
-        if (selected == "back" || w_res == 0) {
-            view_layouts();
-            return;
-        }
-        path = path + cat + "/" + selected + "/info.sif";
-    }
-    else
-    {
-        setupmenu();
-        string[] entries = find_directories(path + "*");
-        for (uint i = 0; i < entries.length(); i++)
-            m.add_item_tts(entries[i], entries[i]);
-        m.add_item_tts("Back", "back");
-        int l_res = m.run("Select the " + choice + " to view", true);
-        selected = m.get_item_name(l_res);
-        if (selected == "back" || l_res == 0) {
-            view_layouts();
-            return;
-        }
-        path = path + selected + "/info.sif";
-    }
-    if (!file_exists(path))
-    {
-        alert("Error", "info.sif does not exist at: " + path);
-        view_layouts();
-        return;
-    }
-    file f;
-    if (!f.open(path, "rb")) {
-        alert("Error", "Failed to open " + path);
-        view_layouts();
-        return;
-    }
-    string[] lines = string_split(f.read(), "\r\n", true);
-    f.close();
-    setupmenu();
-    for (uint i = 0; i < lines.length(); i++) {
-        if (lines[i] != "") m.add_item_tts(lines[i], "", "", false);
-    }
-    m.add_item_tts("Back", "back");
-    m.run("Viewing info for " + selected, true);
-    view_layouts();
-}
 void docksmenu()
 {
 setupmenu(true);
@@ -455,7 +137,7 @@ else
 {
 hidstatus2="hidden";
 }
-if(hidemisc==false)
+if(hidesets==false)
 {
 hidstatus3="unhidden";
 }
@@ -463,19 +145,10 @@ else
 {
 hidstatus3="hidden";
 }
-if(hidesets==false)
-{
-hidstatus4="unhidden";
-}
-else
-{
-hidstatus4="hidden";
-}
 setupmenu();
 m.add_item_tts("Documentation menu. Status, "+hidstatus, "docks");
 m.add_item_tts("Map menu. Status, "+hidstatus2, "maps");
-m.add_item_tts("Miscellaneous menu. Status, "+hidstatus3, "misc");
-m.add_item_tts("Settings menu. Status, "+hidstatus4, "settings");
+m.add_item_tts("Settings menu. Status, "+hidstatus3, "settings");
 m.add_item_tts("back", "back");
 int mres=m.run("Choose the main menu items you'd like to show or hide.",true);
 string hdm=m.get_item_name(mres);
@@ -516,34 +189,18 @@ dlg("Map menu unhidden. Press enter to continue.");
 }
 hidemenu();
 }
-if(hdm=="misc")
-{
-if(hidemisc==false)
-{
-hidemisc=true;
-hidstatus3="hidden";
-dlg("Miscellaneous menu hidden. Press enter to continue.");
-}
-else
-{
-hidemisc=false;
-hidstatus3="unhidden";
-dlg("Miscellaneous menu unhidden. Press enter to continue.");
-}
-hidemenu();
-}
 if(hdm=="settings")
 {
 if(hidesets==false)
 {
 hidesets=true;
-hidstatus4="hidden";
+hidstatus3="hidden";
 dlg("Settings menu hidden. Press enter to continue.");
 }
 else
 {
 hidesets=false;
-hidstatus4="unhidden";
+hidstatus3="unhidden";
 dlg("Settings menu unhidden. Press enter to continue.");
 }
 hidemenu();

@@ -56,17 +56,17 @@ telleble=tb;
 telleble2=tb2;
 regenhp=rgp;
 dropitem=dpm;
-spawnsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosstype+"/*spawn*"),me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+spawnsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosstype+"/*spawn*"),me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,0,100,false);
 }
 void regenerate_bosshp(double hp)
 {
-healsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosstype+"/*heal*"),me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+healsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosstype+"/*heal*"),me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,0,100,false);
 bosshealth+=hp;
 bossmaxhealth+=hp;
 }
 void teleport_boss(int bx,int by)
 {
-telsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosstype+"/*tel*"),me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+telsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosstype+"/*tel*"),me.x,me.y,bossx,bossy,0,0,0,0,false,0,0,0,100,false);
 bossx=bx;
 bossy=by;
 }
@@ -82,11 +82,12 @@ bosses[i].healtimer.restart();
 }
 if(bosses[i].launchtimer.elapsed>=bosses[i].launchtime)
 {
-if(facing=="left" or facing=="right") bosses[i].firesound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*launch*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+if(facing=="left" or facing=="right") bosses[i].firesound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*launch*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,0,100,false);
 string spawn_subtype = bosses[i].bosstype3;
 if(spawn_subtype == "random")
 {
-string[] folders = get_map_sound_folders("kombat/"+bosses[i].bosstype2+"s/*");
+string spawn_base = (bosses[i].bosstype2 == "projectile") ? "kombat/" : "npc/";
+string[] folders = get_map_sound_folders(spawn_base+bosses[i].bosstype2+"s/*");
 if(folders.length() > 0) spawn_subtype = random_string(folders);
 }
 int dx = (facing == "left") ? -1 : 1;
@@ -104,7 +105,7 @@ bosses[i].launchtimer.restart();
 }
 if(bosses[i].teltimer.elapsed>=bosses[i].teltime && (bosses[i].telleble || bosses[i].telleble2))
 {
-bosses[i].telsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*tel*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+bosses[i].telsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*tel*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,0,100,false);
 if(bosses[i].telleble==true) bosses[i].teleport_boss(random(0, maxx), bosses[i].bossy);
 if(bosses[i].telleble2==true) bosses[i].teleport_boss(random(0, maxx), random(0, maxy));
 bosspool.update_sound_2d(bosses[i].bossesound,bosses[i].bossx,bosses[i].bossy);
@@ -173,7 +174,7 @@ moved = true;
 }
 if (moved)
 {
-bosses[i].tilesound = bosspool.play_extended_2d(get_map_sound("kombat/" + bosses[i].bosstype + "/*step*"),me.x, me.y, bosses[i].bossx, bosses[i].bossy, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+bosses[i].tilesound = bosspool.play_extended_2d(get_map_sound("kombat/bosses/" + bosses[i].bosstype + "/*step*"),me.x, me.y, bosses[i].bossx, bosses[i].bossy, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
 bosses[i].stepsound = 1;
 }
 else
@@ -186,7 +187,7 @@ bosses[i].bosstimer.restart();
 }
 if (bosses[i].taunttimer.elapsed >= bosses[i].taunttime)
 {
-bosses[i].bossesound = bosspool.play_extended_2d(get_map_sound("kombat/bosses/" + bosses[i].bosstype + "/*taunt*"), me.x, me.y, bosses[i].bossx, bosses[i].bossy, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+bosses[i].bossesound = bosspool.play_extended_2d(get_map_sound("kombat/bosses/" + bosses[i].bosstype + "/*taunt*"), me.x, me.y, bosses[i].bossx, bosses[i].bossy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 int bossdelay = round(bosspool.get_sound_length(bosses[i].bossesound), 0);
 bosses[i].taunttime = (bossdelay <= 0 ? random(500, 1000) : bossdelay);
 bosses[i].taunttimer.restart();
@@ -200,20 +201,20 @@ int refchance = random(0, 100);
 int refprob = 80;
 if(refchance < refprob)
 {
-weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"),false,0,0,weaponvolume,weaponpitch,false);
+weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"),false,0,0,0,100,false);
 }
 else
 {
 if(shieldon==1)
 {
-if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
 int sdm = max(1, ((bosses[i].damage * 0.5) * bosses[i].bosslevel) - (shielddefence * 3));
 shieldstrength -= sdm;
 kombatlog.insert_last(bosses[i].bosstype + "'s attack took " + shieldtype + " " + sdm + " damage.");
 }
 else
 {
-bosses[i].wepsound=bosspool.play_stationary_extended(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*hit*"),false,0,0,weaponvolume,weaponpitch,false);
+bosses[i].wepsound=bosspool.play_stationary_extended(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*hit*"),false,0,0,0,100,false);
 int dmg = max(1, ((bosses[i].damage * 0.5) * bosses[i].bosslevel) - (defence * 3));
 health -= dmg;
 kombatlog.insert_last(bosses[i].bosstype + "'s attack took you " + dmg + " damage.");
@@ -233,21 +234,21 @@ else
 {
 painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
 }
-painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
 }
 }
 }
 }
 else if (shieldon == 1)
 {
-if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,shieldvolume,shieldpitch,false);
+if(shieldhitsound==1) shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
 int sdm = max(1, (bosses[i].damage * bosses[i].bosslevel) - (shielddefence * 3));
 shieldstrength -= sdm;
 kombatlog.insert_last(bosses[i].bosstype + "'s attack took " + shieldtype + " " + sdm + " damage.");
 }
 else
 {
-bosses[i].wepsound=bosspool.play_stationary_extended(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*hit*"),false,0,0,weaponvolume,weaponpitch,false);
+bosses[i].wepsound=bosspool.play_stationary_extended(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*hit*"),false,0,0,0,100,false);
 int dmg = max(1, (bosses[i].damage * bosses[i].bosslevel) - (defence * 3));
 health -= dmg;
 kombatlog.insert_last(bosses[i].bosstype + "'s attack took you " + dmg + " damage.");
@@ -267,7 +268,7 @@ else
 {
 painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
 }
-painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
 }
 }
 bosses[i].firetimer.restart();
@@ -276,9 +277,9 @@ for(uint i=0; i<objs.length(); i++)
 {
 if(objs[i].itx==bosses[i].bossx and objs[i].ity==bosses[i].bossy and bosses[i].firetimer.elapsed>=bosses[i].firetime and bosses[i].fireable==true)
 {
-bosses[i].wepsound=animalpool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*hit*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,weaponvolume,weaponpitch,false);
+bosses[i].wepsound=animalpool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*hit*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,0,100,false);
 itempool.destroy_sound(objs[i].objsound);
-objs[i].hurtsound=itempool.play_extended_2d(get_map_sound("objects/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*break*"),me.x,me.y,objs[i].itx,objs[i].ity,0,0,0,0,false,0,0,itemvolume,itempitch,false);
+objs[i].hurtsound=itempool.play_extended_2d(get_map_sound("objects/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*break*"),me.x,me.y,objs[i].itx,objs[i].ity,0,0,0,0,false,0,0,0,100,false);
 bosses[i].firetimer.restart();
 objs.remove_at(i);
 return;
@@ -288,7 +289,7 @@ for(uint i=0; i<vehicles.length(); i++)
 {
 if(vehicles[i].vehx==bosses[i].bossx and vehicles[i].vehy==bosses[i].bossy and bosses[i].firetimer.elapsed>=bosses[i].firetime and bosses[i].fireable==true and invehicle==true)
 {
-vehicles[i].hurtsound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*hurt*"),false,0,0,painvolume,painpitch,false);
+vehicles[i].hurtsound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*hurt*"),false,0,0,0,100,false);
 vehicles[i].vehhealth-=bosses[i].damage;
 bosses[i].firetimer.restart();
 }
@@ -305,7 +306,7 @@ else if(bosses[i].bosscard<=1 and paused==0)
 {
 bosspool.destroy_sound(bosses[i].hurtsound);
 bosspool.destroy_sound(bosses[i].bossesound);
-bosses[i].defsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*death*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+bosses[i].defsound=bosspool.play_extended_2d(get_map_sound("kombat/bosses/"+bosses[i].bosstype+"/*death*"),me.x,me.y,bosses[i].bossx,bosses[i].bossy,0,0,0,0,false,0,0,0,100,false);
 if (xpmod >= 1)
 {
 double gained_xp = bosses[i].bossxp * bosses[i].bosslevel * xpmod;
@@ -349,11 +350,11 @@ dlg("Error. There are no bosses available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-string[] animals_list = get_map_sound_folders("kombat/animals/*");
-string[] humans_list = get_map_sound_folders("kombat/humans/*");
+string[] animals_list = get_map_sound_folders("npc/animals/*");
+string[] humans_list = get_map_sound_folders("npc/humans/*");
 string[] projs_list = get_map_sound_folders("kombat/projectiles/*");
-string[] robots_list = get_map_sound_folders("kombat/robots/*");
-string[] zombies_list = get_map_sound_folders("kombat/zombies/*");
+string[] robots_list = get_map_sound_folders("npc/robots/*");
+string[] zombies_list = get_map_sound_folders("npc/zombies/*");
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 string saved_x = sel_left_set ? sel_left : "";
 string saved_y = sel_bottom_set ? sel_bottom : "";
@@ -520,7 +521,7 @@ int p = form.get_list_position(sub_list);
 int sub_count = (saved_spawn_pos == 0 ? int(animals_list.length()) : (saved_spawn_pos == 1 ? int(humans_list.length()) : (saved_spawn_pos == 2 ? int(projs_list.length()) : (saved_spawn_pos == 3 ? int(robots_list.length()) : int(zombies_list.length())))));
 if(p > 0 && p <= sub_count)
 {
-string folder = (saved_spawn_pos == 0 ? "kombat/animals/" : (saved_spawn_pos == 1 ? "kombat/humans/" : (saved_spawn_pos == 2 ? "kombat/projectiles/" : (saved_spawn_pos == 3 ? "kombat/robots/" : "kombat/zombies/"))));
+string folder = (saved_spawn_pos == 0 ? "npc/animals/" : (saved_spawn_pos == 1 ? "npc/humans/" : (saved_spawn_pos == 2 ? "kombat/projectiles/" : (saved_spawn_pos == 3 ? "npc/robots/" : "npc/zombies/"))));
 string sub = (saved_spawn_pos == 0 ? animals_list[p-1] : (saved_spawn_pos == 1 ? humans_list[p-1] : (saved_spawn_pos == 2 ? projs_list[p-1] : (saved_spawn_pos == 3 ? robots_list[p-1] : zombies_list[p-1]))));
 string space_glob = (saved_spawn_pos == 2 ? "/*loop*" : "/*hurt*");
 prevslot = t.play_stationary(get_map_sound(folder+sub+space_glob), false);
@@ -552,7 +553,7 @@ int p = form.get_list_position(sub_list);
 int sub_count = (saved_spawn_pos == 0 ? int(animals_list.length()) : (saved_spawn_pos == 1 ? int(humans_list.length()) : (saved_spawn_pos == 2 ? int(projs_list.length()) : (saved_spawn_pos == 3 ? int(robots_list.length()) : int(zombies_list.length())))));
 if(p > 0 && p <= sub_count)
 {
-string folder = (saved_spawn_pos == 0 ? "kombat/animals/" : (saved_spawn_pos == 1 ? "kombat/humans/" : (saved_spawn_pos == 2 ? "kombat/projectiles/" : (saved_spawn_pos == 3 ? "kombat/robots/" : "kombat/zombies/"))));
+string folder = (saved_spawn_pos == 0 ? "npc/animals/" : (saved_spawn_pos == 1 ? "npc/humans/" : (saved_spawn_pos == 2 ? "kombat/projectiles/" : (saved_spawn_pos == 3 ? "npc/robots/" : "npc/zombies/"))));
 string sub = (saved_spawn_pos == 0 ? animals_list[p-1] : (saved_spawn_pos == 1 ? humans_list[p-1] : (saved_spawn_pos == 2 ? projs_list[p-1] : (saved_spawn_pos == 3 ? robots_list[p-1] : zombies_list[p-1]))));
 string ctrl_l_glob = (saved_spawn_pos == 2 ? "/*hit*" : "/*taunt*");
 t.destroy_sound(prevslot);
@@ -565,7 +566,7 @@ int p = form.get_list_position(sub_list);
 int sub_count = (saved_spawn_pos == 0 ? int(animals_list.length()) : (saved_spawn_pos == 1 ? int(humans_list.length()) : (saved_spawn_pos == 2 ? int(projs_list.length()) : (saved_spawn_pos == 3 ? int(robots_list.length()) : int(zombies_list.length())))));
 if(p > 0 && p <= sub_count)
 {
-string folder = (saved_spawn_pos == 0 ? "kombat/animals/" : (saved_spawn_pos == 1 ? "kombat/humans/" : (saved_spawn_pos == 2 ? "kombat/projectiles/" : (saved_spawn_pos == 3 ? "kombat/robots/" : "kombat/zombies/"))));
+string folder = (saved_spawn_pos == 0 ? "npc/animals/" : (saved_spawn_pos == 1 ? "npc/humans/" : (saved_spawn_pos == 2 ? "kombat/projectiles/" : (saved_spawn_pos == 3 ? "npc/robots/" : "npc/zombies/"))));
 string sub = (saved_spawn_pos == 0 ? animals_list[p-1] : (saved_spawn_pos == 1 ? humans_list[p-1] : (saved_spawn_pos == 2 ? projs_list[p-1] : (saved_spawn_pos == 3 ? robots_list[p-1] : zombies_list[p-1]))));
 t.destroy_sound(prevslot);
 prevslot = t.play_stationary(get_map_sound(folder+sub+"/*death*"), false);

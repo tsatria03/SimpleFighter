@@ -5,6 +5,7 @@ class aircraft
 {
 bool landing, moveable;
 int altsound, defsound, hurtsound, loopsound, speedsound, landsound, plainsound, turnsound;
+double current_pitch = 100;
 double plainhealth;
 double plainmaxhealth;
 int plainx;
@@ -63,7 +64,7 @@ plainpool.destroy_sound(aircrafts[i].plainsound);
 dlgplay(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*enter*"));
 dlgplay(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*start*"));
 dlgplay(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*flight*"));
-aircrafts[i].plainsound=plainpool.play_stationary_extended(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*engin*"),true,0,0,plainvolume,plainpitch,false);
+aircrafts[i].plainsound=plainpool.play_stationary_extended(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*engin*"),true,0,0,0,aircrafts[i].current_pitch,false);
 int randply=random(10, 50);
 me.y=randply;
 aircrafts[i].plainy=randply;
@@ -152,8 +153,8 @@ plainpool.resume_sound(aircrafts[i].plainsound);
 }
 if(aircrafts[i].plainspeed>=1)
 {
-plainpool.update_sound_start_values(aircrafts[i].plainsound, plainpan, plainvolume, plainpitch);
-plainpitch=100+aircrafts[i].plainspeed-10;
+aircrafts[i].current_pitch = 100 + aircrafts[i].plainspeed - 10;
+plainpool.update_sound_start_values(aircrafts[i].plainsound, 0, 0, aircrafts[i].current_pitch);
 aircrafts[i].plaintime=1000/aircrafts[i].plainspeed;
 }
 if(me.x<=0 and aircrafts[i].plainx<=0)
@@ -185,7 +186,7 @@ if(aircrafts[i].plainhealth<=0)
 plainpool.destroy_sound(aircrafts[i].hurtsound);
 plainpool.destroy_sound(aircrafts[i].loopsound);
 plainpool.destroy_sound(aircrafts[i].plainsound);
-aircrafts[i].defsound=plainpool.play_extended_2d(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*death*"),me.x,me.y,aircrafts[i].plainx,aircrafts[i].plainy,0,0,0,0,false,0,0,painvolume,painpitch,false);
+aircrafts[i].defsound=plainpool.play_extended_2d(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*death*"),me.x,me.y,aircrafts[i].plainx,aircrafts[i].plainy,0,0,0,0,false,0,0,0,100,false);
 aircrafts.remove_at(i);
 return;
 }

@@ -45,13 +45,32 @@ class npc
     bool spotted;
     bool step_active;
     int taunttime;
-    int spawnsound, mainsound, defsound, hurtsound, stepsound, tilesound, wepsound;
+    int spawnsound, mainsound, defsound, hurtsound, stepsound, tilesound, wepsound, healsound;
     timer movetimer, firetimer, taunttimer;
     string weapontype, weapontype2;
     int drawsound, refsound, refsound2, firesound, hitsound, shellsound;
     bool refon;
     timer reftimer;
     string[] targets;
+    string chase_trigger;
+    string chase_wander;
+    int chase_calm_min, chase_calm_max;
+    int chase_random_min, chase_random_max;
+    int roam_pause_min, roam_pause_max;
+    double last_health;
+    bool provoked;
+    timer provoke_lost_timer;
+    bool random_chasing;
+    timer random_phase_timer;
+    int random_phase_duration;
+    int wander_x, wander_y;
+    bool has_wander_dest;
+    int patrol_dx, patrol_dy;
+    bool wander_paused;
+    timer wander_pause_timer;
+    int wander_pause_duration;
+    timer wander_travel_timer;
+    string last_state;
     npc(int sx, int sy, int scale_level, string cat, string sub)
     {
         x = sx;
@@ -59,6 +78,19 @@ class npc
         category = cat;
         subtype = sub;
         targets.insert_last("player");
+        chase_trigger = "sight";
+        chase_wander = "none";
+        chase_calm_min = 15000; chase_calm_max = 15000;
+        chase_random_min = 10000; chase_random_max = 10000;
+        roam_pause_min = 2000; roam_pause_max = 2000;
+        provoked = false;
+        random_chasing = false;
+        random_phase_duration = 0;
+        has_wander_dest = false;
+        patrol_dx = 1; patrol_dy = 1;
+        wander_paused = false;
+        wander_pause_duration = 0;
+        last_state = "normal";
         npc_parse(this);
         if(scale_level > 0)
         {
@@ -100,9 +132,10 @@ class npc
             h_xpvalue = xpvalue;
         }
         health = maxhealth;
+        last_health = maxhealth;
         currentlives = lives;
         sound_pool@ pool = npc_pool(category);
-        spawnsound = pool.play_extended_2d(get_map_sound("npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+        spawnsound = pool.play_extended_2d(get_map_sound("npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         if(category == "humans")
         {
             string[] wepcads = {"archery", "artillery", "explosive", "melee"};
@@ -111,7 +144,7 @@ class npc
             if(weapons.length() > 0)
             {
                 weapontype2 = random_string(weapons);
-                drawsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*draw*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                drawsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*draw*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             }
             refon = false;
         }
@@ -143,6 +176,19 @@ string get_npc_category_info_path(string category)
     string global_path = "sounds/"+soundpack+"/npc/"+category+"/info.sif";
     if(file_exists(global_path)) return global_path;
     return "";
+}
+
+void parse_range_int(string v, int &out a, int &out b)
+{
+    string[] parts = string_split(v, ",", true);
+    a = parse_int(parts[0]);
+    b = (parts.length() >= 2 && parts[1] != "") ? parse_int(parts[1]) : a;
+}
+
+int roll_range(int min_v, int max_v)
+{
+    if(min_v >= max_v) return min_v;
+    return random(min_v, max_v);
 }
 
 void parse_triple_int(string v, int &out a, int &out b, int &out c)
@@ -198,6 +244,19 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "move_x") self.move_x = string_to_bool(v);
         else if(k == "move_y") self.move_y = string_to_bool(v);
         else if(k == "drop_item") self.dropitem = string_to_bool(v);
+        else if(k == "chase mode")
+        {
+            string[] parts = string_split(v, ":", true);
+            if(parts.length() >= 1 && parts[0] != "") self.chase_trigger = parts[0];
+            if(parts.length() >= 2 && parts[1] != "") self.chase_wander = parts[1];
+        }
+        else if(k == "chase time")
+        {
+            string[] parts = string_split(v, ":", true);
+            if(parts.length() >= 1 && parts[0] != "") parse_range_int(parts[0], self.chase_calm_min, self.chase_calm_max);
+            if(parts.length() >= 2 && parts[1] != "") parse_range_int(parts[1], self.chase_random_min, self.chase_random_max);
+            if(parts.length() >= 3 && parts[2] != "") parse_range_int(parts[2], self.roam_pause_min, self.roam_pause_max);
+        }
         else if(k == "targets")
         {
             self.targets.resize(0);
@@ -276,7 +335,7 @@ void npc_play_pain(int dmg)
         painfile = get_pack_sound("characters/"+chartype+"/general/*crit*");
     else
         painfile = get_pack_sound("characters/"+chartype+"/general/*hurt*");
-    painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+    painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
 }
 
 void npc_apply_break_charbones(int dmg, string category)
@@ -304,32 +363,40 @@ void npcloop()
             pool.destroy_sound(npcs[i].refsound2);
             if(!npcs[i].refon)
             {
-                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*on*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
-                npcs[i].refsound2 = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*ref*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, true, 0, 0, weaponvolume, weaponpitch, false);
+                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*on*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                npcs[i].refsound2 = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*ref*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
                 npcs[i].refon = true;
             }
             else
             {
-                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*off*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*off*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 npcs[i].refon = false;
             }
             npcs[i].reftimer.restart();
         }
 
-        // pick nearest valid target (player or another npc)
-        bool found_target = false;
+        // detect damage taken since last tick (drives provoke)
+        if(npcs[i].health < npcs[i].last_health)
+        {
+            npcs[i].provoked = true;
+            npcs[i].provoke_lost_timer.restart();
+        }
+        npcs[i].last_health = npcs[i].health;
+
+        // pick nearest valid combat target (player or another npc)
+        bool combat_found = false;
         bool target_is_player = false;
         int target_npc = -1;
-        int tx = 0, ty = 0;
+        int combat_tx = 0, combat_ty = 0;
         int best_dist = 0;
         if(npc_targets(npcs[i], "player") && inplain == false && invehicle == false)
         {
             int d = absolute(me.x - npcs[i].x) + absolute(me.y - npcs[i].y);
             best_dist = d;
-            tx = me.x; ty = me.y;
+            combat_tx = me.x; combat_ty = me.y;
             target_is_player = true;
             target_npc = -1;
-            found_target = true;
+            combat_found = true;
         }
         for(uint j = 0; j < npcs.length(); j++)
         {
@@ -337,25 +404,39 @@ void npcloop()
             if(npcs[j].health <= 0) continue;
             if(!npc_targets(npcs[i], npcs[j].category)) continue;
             int d = absolute(npcs[j].x - npcs[i].x) + absolute(npcs[j].y - npcs[i].y);
-            if(!found_target || d < best_dist)
+            if(!combat_found || d < best_dist)
             {
                 best_dist = d;
-                tx = npcs[j].x; ty = npcs[j].y;
+                combat_tx = npcs[j].x; combat_ty = npcs[j].y;
                 target_is_player = false;
                 target_npc = int(j);
-                found_target = true;
+                combat_found = true;
             }
         }
 
         // determine state: normal / wounded / healing
         bool sub_threshold = npc_below_threshold(npcs[i]);
-        bool target_in_w_sight = found_target && absolute(tx - npcs[i].x) <= npcs[i].w_hsight && absolute(ty - npcs[i].y) <= npcs[i].w_vsight;
+        bool target_in_w_sight = combat_found && absolute(combat_tx - npcs[i].x) <= npcs[i].w_hsight && absolute(combat_ty - npcs[i].y) <= npcs[i].w_vsight;
         bool in_wounded = sub_threshold && target_in_w_sight;
         bool in_healing = sub_threshold && !target_in_w_sight;
         bool in_normal = !sub_threshold;
+
+        // state transition: reset wander state on entering normal
+        string cur_state = in_normal ? "normal" : (in_wounded ? "wounded" : "healing");
+        if(cur_state != npcs[i].last_state)
+        {
+            if(cur_state == "normal")
+            {
+                npcs[i].has_wander_dest = false;
+                npcs[i].wander_paused = false;
+                npcs[i].random_phase_duration = 0;
+            }
+            npcs[i].last_state = cur_state;
+        }
+
         if(in_healing)
         {
-            found_target = false;
+            combat_found = false;
             target_npc = -1;
         }
         int eff_hrange = in_normal ? npcs[i].hrange : (in_wounded ? npcs[i].w_hrange : npcs[i].h_hrange);
@@ -372,18 +453,136 @@ void npcloop()
         // heal tick (only fires while in healing state)
         if(in_healing && npcs[i].heal_speed > 0 && npcs[i].heal_amount > 0 && npcs[i].heal_timer.elapsed >= npcs[i].heal_speed)
         {
+            npcs[i].healsound = pool.play_extended_2d(get_map_sound(sound_base+"/*heal*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             npcs[i].health += npcs[i].heal_amount;
             if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
             npcs[i].heal_timer.restart();
         }
 
+        // determine pursuing flag from chase trigger (only relevant in normal state)
+        bool pursuing = false;
+        bool combat_in_sight = combat_found && absolute(combat_tx - npcs[i].x) <= eff_hsight && absolute(combat_ty - npcs[i].y) <= eff_vsight;
+        if(in_normal && combat_found)
+        {
+            string trigger = npcs[i].chase_trigger;
+            if(trigger == "always") pursuing = true;
+            else if(trigger == "sight") pursuing = combat_in_sight;
+            else if(trigger == "provoke")
+            {
+                if(npcs[i].provoked)
+                {
+                    if(combat_in_sight)
+                    {
+                        npcs[i].provoke_lost_timer.restart();
+                        pursuing = true;
+                    }
+                    else
+                    {
+                        int calm_time = roll_range(npcs[i].chase_calm_min, npcs[i].chase_calm_max);
+                        if(npcs[i].provoke_lost_timer.elapsed >= calm_time) npcs[i].provoked = false;
+                    }
+                }
+            }
+            else if(trigger == "random")
+            {
+                if(npcs[i].random_phase_duration == 0 || npcs[i].random_phase_timer.elapsed >= npcs[i].random_phase_duration)
+                {
+                    npcs[i].random_chasing = !npcs[i].random_chasing;
+                    npcs[i].random_phase_duration = roll_range(npcs[i].chase_random_min, npcs[i].chase_random_max);
+                    npcs[i].random_phase_timer.restart();
+                }
+                if(npcs[i].random_chasing) pursuing = combat_in_sight;
+            }
+            // "never" leaves pursuing false
+        }
+
+        // determine movement target (tx, ty) and whether to require sight
+        int tx = 0, ty = 0;
+        bool has_move = false;
+        bool sight_required = true;
+        if(in_wounded && combat_found)
+        {
+            tx = combat_tx; ty = combat_ty;
+            has_move = true;
+        }
+        else if(in_normal && pursuing && combat_found)
+        {
+            tx = combat_tx; ty = combat_ty;
+            has_move = true;
+            sight_required = (npcs[i].chase_trigger != "always");
+        }
+        else if(in_normal && !pursuing)
+        {
+            string wander = npcs[i].chase_wander;
+            if(wander == "roam")
+            {
+                if(npcs[i].wander_paused)
+                {
+                    if(npcs[i].wander_pause_timer.elapsed >= npcs[i].wander_pause_duration)
+                    {
+                        npcs[i].wander_paused = false;
+                        npcs[i].has_wander_dest = false;
+                    }
+                }
+                if(!npcs[i].wander_paused)
+                {
+                    if(!npcs[i].has_wander_dest)
+                    {
+                        int rx = (npcs[i].move_x && maxx > minx) ? random(minx, maxx) : npcs[i].x;
+                        int ry = (npcs[i].move_y && maxy > miny) ? random(miny, maxy) : npcs[i].y;
+                        npcs[i].wander_x = rx;
+                        npcs[i].wander_y = ry;
+                        npcs[i].has_wander_dest = true;
+                        npcs[i].wander_travel_timer.restart();
+                    }
+                    if(npcs[i].x == npcs[i].wander_x && npcs[i].y == npcs[i].wander_y)
+                    {
+                        npcs[i].wander_paused = true;
+                        npcs[i].wander_pause_timer.restart();
+                        npcs[i].wander_pause_duration = roll_range(npcs[i].roam_pause_min, npcs[i].roam_pause_max);
+                    }
+                    else if(npcs[i].wander_travel_timer.elapsed >= 60000)
+                    {
+                        npcs[i].has_wander_dest = false;
+                    }
+                    else
+                    {
+                        tx = npcs[i].wander_x; ty = npcs[i].wander_y;
+                        has_move = true;
+                        sight_required = false;
+                    }
+                }
+            }
+            else if(wander == "patrol")
+            {
+                if(!npcs[i].has_wander_dest)
+                {
+                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? maxx : minx) : npcs[i].x;
+                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? maxy : miny) : npcs[i].y;
+                    npcs[i].has_wander_dest = true;
+                }
+                bool x_reached = (npcs[i].x == npcs[i].wander_x) || !npcs[i].move_x;
+                bool y_reached = (npcs[i].y == npcs[i].wander_y) || !npcs[i].move_y;
+                if(x_reached && y_reached)
+                {
+                    npcs[i].patrol_dx = -npcs[i].patrol_dx;
+                    npcs[i].patrol_dy = -npcs[i].patrol_dy;
+                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? maxx : minx) : npcs[i].x;
+                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? maxy : miny) : npcs[i].y;
+                }
+                tx = npcs[i].wander_x; ty = npcs[i].wander_y;
+                has_move = true;
+                sight_required = false;
+            }
+        }
+
         // movement / spotting
-        if(found_target && npcs[i].movetimer.elapsed >= eff_movetime)
+        if(has_move && npcs[i].movetimer.elapsed >= eff_movetime)
         {
             bool h = absolute(tx - npcs[i].x) <= eff_hsight;
             bool v = absolute(ty - npcs[i].y) <= eff_vsight;
             npcs[i].spotted = h && v;
-            if(npcs[i].spotted)
+            if(!sight_required || npcs[i].spotted)
             {
                 bool moved = false;
                 int dx_intent = 0;
@@ -443,18 +642,18 @@ void npcloop()
         // taunt
         if(npcs[i].taunttimer.elapsed >= npcs[i].taunttime)
         {
-            npcs[i].mainsound = pool.play_extended_2d(get_map_sound(sound_base+"/*taunt*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+            npcs[i].mainsound = pool.play_extended_2d(get_map_sound(sound_base+"/*taunt*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             int delay = round(pool.get_sound_length(npcs[i].mainsound), 0);
             npcs[i].taunttime = (delay <= 0 ? random(500, 1000) : delay);
             npcs[i].taunttimer.restart();
         }
 
         // attack chosen target
-        if(found_target && absolute(tx - npcs[i].x) <= eff_hrange && absolute(ty - npcs[i].y) <= eff_vrange && npcs[i].firetimer.elapsed >= eff_firetime && npcs[i].fireable && paused == 0)
+        if(combat_found && absolute(combat_tx - npcs[i].x) <= eff_hrange && absolute(combat_ty - npcs[i].y) <= eff_vrange && npcs[i].firetimer.elapsed >= eff_firetime && npcs[i].fireable && paused == 0)
         {
             npcs[i].step_active = false;
             if(human_armed)
-                npcs[i].firesound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*fire*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                npcs[i].firesound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*fire*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 
             if(target_is_player)
             {
@@ -464,11 +663,11 @@ void npcloop()
                     int refprob = 80;
                     if(refchance < refprob)
                     {
-                        weaponslot = p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                        weaponslot = p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"), false, 0, 0, 0, 100, false);
                     }
                     else if(shieldon == 1)
                     {
-                        if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, shieldvolume, shieldpitch, false);
+                        if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
                         int sdm = max(1, ((eff_attack * 0.5) * eff_level) - (shielddefence * 3));
                         shieldstrength -= sdm;
                         kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
@@ -477,12 +676,12 @@ void npcloop()
                     {
                         if(human_armed)
                         {
-                            npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
-                            npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                            npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, 0, 100, false);
+                            npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, 0, 100, false);
                         }
                         else
                         {
-                            npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                            npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
                         }
                         int dmg = max(1, ((eff_attack * 0.5) * eff_level) - (defence * 3));
                         health -= dmg;
@@ -493,7 +692,7 @@ void npcloop()
                 }
                 else if(shieldon == 1)
                 {
-                    if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, shieldvolume, shieldpitch, false);
+                    if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
                     int sdm = max(1, (eff_attack * eff_level) - (shielddefence * 3));
                     shieldstrength -= sdm;
                     kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
@@ -502,12 +701,12 @@ void npcloop()
                 {
                     if(human_armed)
                     {
-                        npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
-                        npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                        npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, 0, 100, false);
+                        npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, 0, 100, false);
                     }
                     else
                     {
-                        npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                        npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
                     }
                     int dmg = max(1, (eff_attack * eff_level) - (defence * 3));
                     health -= dmg;
@@ -521,15 +720,15 @@ void npcloop()
                 int j = target_npc;
                 if(human_armed)
                 {
-                    npcs[i].hitsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
-                    npcs[i].shellsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                    npcs[i].hitsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    npcs[i].shellsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 }
                 else
                 {
-                    npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                    npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 }
                 sound_pool@ vpool = npc_pool(npcs[j].category);
-                vpool.play_extended_2d(get_map_sound("npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+                vpool.play_extended_2d(get_map_sound("npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 int j_defence = npcs[j].defence;
                 if(npc_below_threshold(npcs[j]))
                 {
@@ -548,9 +747,9 @@ void npcloop()
         {
             if(objs[k].itx == npcs[i].x and objs[k].ity == npcs[i].y and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable)
             {
-                npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 itempool.destroy_sound(objs[k].objsound);
-                objs[k].hurtsound = itempool.play_extended_2d(get_map_sound("objects/items/"+objs[k].objtype+"/"+objs[k].objtype2+"/*break*"), me.x, me.y, objs[k].itx, objs[k].ity, 0, 0, 0, 0, false, 0, 0, itemvolume, itempitch, false);
+                objs[k].hurtsound = itempool.play_extended_2d(get_map_sound("objects/items/"+objs[k].objtype+"/"+objs[k].objtype2+"/*break*"), me.x, me.y, objs[k].itx, objs[k].ity, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 npcs[i].firetimer.restart();
                 objs.remove_at(k);
                 return;
@@ -562,7 +761,7 @@ void npcloop()
         {
             if(vehicles[k].vehx == npcs[i].x and vehicles[k].vehy == npcs[i].y and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable and invehicle)
             {
-                vehicles[k].hurtsound = vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[k].vehtype+"/*hurt*"), false, 0, 0, painvolume, painpitch, false);
+                vehicles[k].hurtsound = vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[k].vehtype+"/*hurt*"), false, 0, 0, 0, 100, false);
                 vehicles[k].vehhealth -= eff_attack;
                 npcs[i].firetimer.restart();
             }
@@ -581,7 +780,7 @@ void npcloop()
             {
                 pool.destroy_sound(npcs[i].hurtsound);
                 pool.destroy_sound(npcs[i].mainsound);
-                npcs[i].defsound = pool.play_extended_2d(get_map_sound(sound_base+"/*death*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+                npcs[i].defsound = pool.play_extended_2d(get_map_sound(sound_base+"/*death*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 if(xpmod >= 1)
                 {
                     double effx_xp = in_normal ? npcs[i].xpvalue : (in_wounded ? npcs[i].w_xpvalue : npcs[i].h_xpvalue);
