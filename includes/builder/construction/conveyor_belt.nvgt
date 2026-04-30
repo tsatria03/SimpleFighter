@@ -69,59 +69,129 @@ belts.resize(0);
 
 void build_conveyor_belt()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this conveyor belt.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this conveyor belt.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this conveyor belt.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this conveyor belt.", sel_top_set ? sel_top : "");
-string dr=vd.input_box("", "Enter the direction of this conveyor belt. 1 for left, 2 for right, 3 for down, and 4 for up.");
-string sp=vd.input_box("", "Enter the speed of this conveyor belt.");
-if(x=="" and paxx=="" and y=="" and paxy=="" and direction=="" and speedtime=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-direction=string_to_number(dr);
-speedtime=string_to_number(sp);
-string[] platform=get_map_sound_folders("objects/platforms/*");
-if(platform.length()==0)
+string[] tiles_list = get_map_sound_folders("objects/platforms/*");
+if(tiles_list.length() == 0)
 {
 dlg("Error. There are no platforms available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
-{
-string res=platsmenu();
-if(res!="")
-{
-t.destroy_sound(prevslot);
-tiletype=res;
-}
-}
-string[] belt=get_map_sound_folders("objects/belts/*");
-if(belt.length()==0)
+string[] belts_list = get_map_sound_folders("objects/belts/*");
+if(belts_list.length() == 0)
 {
 dlg("Error. There are no belts available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("conveyor belt", false);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
+int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int sp = form.create_input_box("speed", "");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+int dir_list = form.create_list("direction");
+form.add_list_item(dir_list, "left", "1");
+form.add_list_item(dir_list, "right", "2");
+form.add_list_item(dir_list, "down", "3");
+form.add_list_item(dir_list, "up", "4");
+form.set_list_position(dir_list, 0, false);
+int tile_list = form.create_list("tile sound");
+form.add_list_item(tile_list, "air", "air");
+for(uint i = 0; i < tiles_list.length(); i++)
+form.add_list_item(tile_list, tiles_list[i], tiles_list[i]);
+form.set_list_position(tile_list, 0, false);
+int belt_list = form.create_list("belt sound");
+form.add_list_item(belt_list, "none", "none");
+for(uint i = 0; i < belts_list.length(); i++)
+form.add_list_item(belt_list, belts_list[i], belts_list[i]);
+form.set_list_position(belt_list, 0, false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+while(true)
 {
-string res=beltsmenu();
-if(res!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+int cur_tile_pos = form.get_list_position(tile_list);
+int cur_belt_pos = form.get_list_position(belt_list);
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+{
+if(cur_focus == tile_list)
 {
 t.destroy_sound(prevslot);
-belttyp=res;
+prevslot = -1;
+if(cur_tile_pos > 0)
+prevslot = t.play_stationary(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*step*"), false);
 }
+else if(cur_focus == belt_list)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(cur_belt_pos > 0)
+prevslot = t.play_stationary(get_map_sound("objects/belts/"+belts_list[cur_belt_pos-1]+"/*loop*"), false);
 }
+keytimer.restart();
+}
+if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_L) && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*land*"), false);
+}
+if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_H) && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/platforms/"+tiles_list[cur_tile_pos-1]+"/*fall*"), false);
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
 resume_pools();
-write_belt(x, paxx, y, paxy, direction, speedtime, tiletype, belttyp);
-spawn_belt(x, paxx, y, paxy, direction, speedtime, tiletype, belttyp);
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my) == "") { speak("Minimum y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(sp) == "") { speak("Speed is required."); form.focus(sp); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+int bsp = string_to_number(form.get_text(sp));
+int bdir = form.get_list_position(dir_list) + 1;
+int tp = form.get_list_position(tile_list);
+string btile = (tp > 0) ? tiles_list[tp-1] : "air";
+int bp = form.get_list_position(belt_list);
+string bbelt = (bp > 0) ? belts_list[bp-1] : "none";
+t.destroy_sound(prevslot);
+resume_pools();
+write_belt(bx, bx2, by, by2, bdir, bsp, btile, bbelt);
+spawn_belt(bx, bx2, by, by2, bdir, bsp, btile, bbelt);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_belt(string[] sd)

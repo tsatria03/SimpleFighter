@@ -22,9 +22,16 @@ break;
 void enable()
 {
 if (active) return;
+for (uint i = 0; i < aircrafts.length(); i++)
+{
+if (aircrafts[i].landing)
+{
 active = true;
-loopsound = plainpool.play_2d(get_map_sound("objects/aircrafts/" + plaintyp + "/*beacon*"), me.x, me.y, bx, by, true);
+loopsound = plainpool.play_2d(get_map_sound("objects/aircrafts/" + aircrafts[i].plaintype + "/*beacon*"), me.x, me.y, bx, by, true);
 plainpool.update_sound_2d(loopsound, bx, by);
+return;
+}
+}
 }
 void disable()
 {
@@ -68,8 +75,6 @@ while (true)
 {
 wait(5);
 form.monitor();
-x=string_to_number(form.get_text(mx));
-width=string_to_number(form.get_text(wt));
 if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
@@ -98,9 +103,11 @@ spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"),false);
 }
 else
 {
+int bx_in = string_to_number(form.get_text(mx));
+int bw = string_to_number(form.get_text(wt));
 resume_pools();
-write_airbeacon(x, width);
-spawn_airbeacon(x, 0, width);
+write_airbeacon(bx_in, bw);
+spawn_airbeacon(bx_in, 0, bw);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
