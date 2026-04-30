@@ -1,0 +1,729 @@
+npc@[] npcs(0);
+class npc
+{
+    int x, y;
+    string category;
+    string subtype;
+    int hrange, vrange;
+    int hsight, vsight;
+    double maxhealth;
+    int lives;
+    int attack;
+    int defence;
+    int firetime;
+    int movetime;
+    double level;
+    double xpvalue;
+    double run_health;
+    double heal_amount;
+    int heal_speed;
+    timer heal_timer;
+    int w_hrange, w_vrange;
+    int w_hsight, w_vsight;
+    int w_lives;
+    int w_attack;
+    int w_defence;
+    int w_firetime;
+    int w_movetime;
+    double w_level;
+    double w_xpvalue;
+    int h_hrange, h_vrange;
+    int h_hsight, h_vsight;
+    int h_lives;
+    int h_attack;
+    int h_defence;
+    int h_firetime;
+    int h_movetime;
+    double h_level;
+    double h_xpvalue;
+    bool fireable;
+    bool move_x;
+    bool move_y;
+    bool dropitem;
+    double health;
+    int currentlives;
+    bool spotted;
+    bool step_active;
+    int taunttime;
+    int spawnsound, mainsound, defsound, hurtsound, stepsound, tilesound, wepsound;
+    timer movetimer, firetimer, taunttimer;
+    string weapontype, weapontype2;
+    int drawsound, refsound, refsound2, firesound, hitsound, shellsound;
+    bool refon;
+    timer reftimer;
+    string[] targets;
+    npc(int sx, int sy, int scale_level, string cat, string sub)
+    {
+        x = sx;
+        y = sy;
+        category = cat;
+        subtype = sub;
+        targets.insert_last("player");
+        npc_parse(this);
+        if(scale_level > 0)
+        {
+            hrange = 0;
+            vrange = 0;
+            hsight = maxx;
+            vsight = maxy;
+            maxhealth = xp + 1;
+            attack = int(xp) + 1;
+            lives = 1;
+            firetime = random(100, 1000);
+            movetime = random(100, 1000);
+            this.level = scale_level;
+            xpvalue = level;
+            fireable = true;
+            move_x = true;
+            move_y = random_bool();
+            dropitem = random_bool();
+            run_health = 0;
+            heal_amount = 0;
+            heal_speed = 0;
+            w_hrange = hrange; w_vrange = vrange;
+            w_hsight = hsight; w_vsight = vsight;
+            w_lives = lives;
+            w_attack = attack;
+            w_defence = defence;
+            w_firetime = firetime;
+            w_movetime = movetime;
+            w_level = this.level;
+            w_xpvalue = xpvalue;
+            h_hrange = hrange; h_vrange = vrange;
+            h_hsight = hsight; h_vsight = vsight;
+            h_lives = lives;
+            h_attack = attack;
+            h_defence = defence;
+            h_firetime = firetime;
+            h_movetime = movetime;
+            h_level = this.level;
+            h_xpvalue = xpvalue;
+        }
+        health = maxhealth;
+        currentlives = lives;
+        sound_pool@ pool = npc_pool(category);
+        spawnsound = pool.play_extended_2d(get_map_sound("npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+        if(category == "humans")
+        {
+            string[] wepcads = {"archery", "artillery", "explosive", "melee"};
+            weapontype = random_string(wepcads);
+            string[] weapons = get_pack_sound_folders("equipments/weapons/"+weapontype+"/*");
+            if(weapons.length() > 0)
+            {
+                weapontype2 = random_string(weapons);
+                drawsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*draw*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+            }
+            refon = false;
+        }
+    }
+}
+
+sound_pool@ npc_pool(string category)
+{
+    if(category == "animals") return animalpool;
+    if(category == "humans") return humanpool;
+    if(category == "robots") return robpool;
+    if(category == "zombies") return zombpool;
+    return animalpool;
+}
+
+string get_npc_info_path(string category, string subtype)
+{
+    string maplocal = "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/"+subtype+"/info.sif";
+    if(file_exists(maplocal)) return maplocal;
+    string global_path = "sounds/"+soundpack+"/npc/"+category+"/"+subtype+"/info.sif";
+    if(file_exists(global_path)) return global_path;
+    return "";
+}
+
+string get_npc_category_info_path(string category)
+{
+    string maplocal = "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/info.sif";
+    if(file_exists(maplocal)) return maplocal;
+    string global_path = "sounds/"+soundpack+"/npc/"+category+"/info.sif";
+    if(file_exists(global_path)) return global_path;
+    return "";
+}
+
+void parse_triple_int(string v, int &out a, int &out b, int &out c)
+{
+    string[] parts = string_split(v, ":", true);
+    a = parse_int(parts[0]);
+    b = (parts.length() >= 2 && parts[1] != "") ? parse_int(parts[1]) : a;
+    c = (parts.length() >= 3 && parts[2] != "") ? parse_int(parts[2]) : a;
+}
+void parse_triple_double(string v, double &out a, double &out b, double &out c)
+{
+    string[] parts = string_split(v, ":", true);
+    a = parse_double(parts[0]);
+    b = (parts.length() >= 2 && parts[1] != "") ? parse_double(parts[1]) : a;
+    c = (parts.length() >= 3 && parts[2] != "") ? parse_double(parts[2]) : a;
+}
+
+void npc_parse_file(npc@ self, string path)
+{
+    if(path == "") return;
+    file info;
+    if(!info.open(path, "rb")) return;
+    string content = info.read();
+    info.close();
+    content = string_replace(content, "\r", "", true);
+    string[] lines = string_split(content, "\n", true);
+    for(uint i=0; i<lines.length(); i++)
+    {
+        string[] data = string_split(lines[i], "=", true);
+        if(data.length() < 2) continue;
+        string k = data[0];
+        string v = data[1];
+        if(k == "horizontal att range") parse_triple_int(v, self.hrange, self.w_hrange, self.h_hrange);
+        else if(k == "vertical att range") parse_triple_int(v, self.vrange, self.w_vrange, self.h_vrange);
+        else if(k == "horizontal sight range") parse_triple_int(v, self.hsight, self.w_hsight, self.h_hsight);
+        else if(k == "vertical sight range") parse_triple_int(v, self.vsight, self.w_vsight, self.h_vsight);
+        else if(k == "health")
+        {
+            string[] parts = string_split(v, ":", true);
+            self.maxhealth = parse_double(parts[0]);
+            self.run_health = (parts.length() >= 2 && parts[1] != "") ? parse_double(parts[1]) : 0;
+            self.heal_amount = (parts.length() >= 3 && parts[2] != "") ? parse_double(parts[2]) : 0;
+        }
+        else if(k == "heal speed") self.heal_speed = parse_int(v);
+        else if(k == "lives") parse_triple_int(v, self.lives, self.w_lives, self.h_lives);
+        else if(k == "attack") parse_triple_int(v, self.attack, self.w_attack, self.h_attack);
+        else if(k == "defense") parse_triple_int(v, self.defence, self.w_defence, self.h_defence);
+        else if(k == "fire speed") parse_triple_int(v, self.firetime, self.w_firetime, self.h_firetime);
+        else if(k == "move speed") parse_triple_int(v, self.movetime, self.w_movetime, self.h_movetime);
+        else if(k == "level") parse_triple_double(v, self.level, self.w_level, self.h_level);
+        else if(k == "xp") parse_triple_double(v, self.xpvalue, self.w_xpvalue, self.h_xpvalue);
+        else if(k == "attacking") self.fireable = string_to_bool(v);
+        else if(k == "move_x") self.move_x = string_to_bool(v);
+        else if(k == "move_y") self.move_y = string_to_bool(v);
+        else if(k == "drop_item") self.dropitem = string_to_bool(v);
+        else if(k == "targets")
+        {
+            self.targets.resize(0);
+            string[] parts = string_split(v, ",", true);
+            for(uint j=0; j<parts.length(); j++)
+            {
+                if(parts[j] != "" && parts[j] != "none") self.targets.insert_last(parts[j]);
+            }
+        }
+    }
+}
+
+void npc_parse(npc@ self)
+{
+    npc_parse_file(self, get_npc_category_info_path(self.category));
+    npc_parse_file(self, get_npc_info_path(self.category, self.subtype));
+}
+
+bool npc_below_threshold(npc@ self)
+{
+    return self.run_health > 0 && self.health <= self.run_health;
+}
+
+bool npc_targets(npc@ self, string cat)
+{
+    for(uint j=0; j<self.targets.length(); j++)
+    {
+        if(self.targets[j] == "all") return true;
+        if(self.targets[j] == cat) return true;
+    }
+    return false;
+}
+
+void spawn_npc(int x, int y, int scale_level, string category, string subtype)
+{
+    if(subtype == "" || subtype == "none") return;
+    npc n(x, y, scale_level, category, subtype);
+    npcs.insert_last(n);
+}
+
+void destroy_all_npcs()
+{
+    for(uint i=0; i<npcs.length(); i++)
+    {
+        sound_pool@ pool = npc_pool(npcs[i].category);
+        pool.destroy_sound(npcs[i].mainsound);
+        pool.destroy_sound(npcs[i].spawnsound);
+    }
+    npcs.resize(0);
+}
+
+void read_npc(string[] sd)
+{
+    int x = stn(sd[1]);
+    int y = stn(sd[2]);
+    int scale_level = stn(sd[3]);
+    string category = sd[4];
+    string subtype = sd[5];
+    spawn_npc(x, y, scale_level, category, subtype);
+}
+
+void write_npc(int x, int y, int scale_level, string category, string subtype)
+{
+    mapper.open("data/maps/decompiled/"+mapname+"/info.sif", "ab");
+    mapdata = mapper.read();
+    mapper.write("\r\n"+"npc "+x+" "+y+" "+scale_level+" "+category+" "+subtype);
+    mapper.close();
+}
+
+void npc_play_pain(int dmg)
+{
+    if(charhurtsound != 1) return;
+    int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+    string painfile;
+    if(damage_percent >= 10)
+        painfile = get_pack_sound("characters/"+chartype+"/general/*crit*");
+    else
+        painfile = get_pack_sound("characters/"+chartype+"/general/*hurt*");
+    painslot = p.play_stationary_extended(painfile, false, 0, 0, painvolume, painpitch, false);
+}
+
+void npc_apply_break_charbones(int dmg, string category)
+{
+    if(category != "animals" && category != "zombies") return;
+    if((dmg >= 100 && dmg <= 500 && dmg >= random(100, 500)) || dmg > 500)
+    {
+        int ct = clamp(dmg * 2, 0, 100);
+        int count = clamp(dmg / 15, 1, 5);
+        break_charbones(ct, dmg, random(100, 200), count);
+    }
+}
+
+void npcloop()
+{
+    for(uint i = 0; i < npcs.length(); i++)
+    {
+        sound_pool@ pool = npc_pool(npcs[i].category);
+        string sound_base = "npc/"+npcs[i].category+"/"+npcs[i].subtype;
+        bool human_armed = (npcs[i].category == "humans" && npcs[i].weapontype != "");
+
+        // human melee reflection toggle
+        if(human_armed && npcs[i].weapontype == "melee" && npcs[i].reftimer.elapsed >= random(5000, 10000))
+        {
+            pool.destroy_sound(npcs[i].refsound2);
+            if(!npcs[i].refon)
+            {
+                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*on*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                npcs[i].refsound2 = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*ref*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, true, 0, 0, weaponvolume, weaponpitch, false);
+                npcs[i].refon = true;
+            }
+            else
+            {
+                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*off*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                npcs[i].refon = false;
+            }
+            npcs[i].reftimer.restart();
+        }
+
+        // pick nearest valid target (player or another npc)
+        bool found_target = false;
+        bool target_is_player = false;
+        int target_npc = -1;
+        int tx = 0, ty = 0;
+        int best_dist = 0;
+        if(npc_targets(npcs[i], "player") && inplain == false && invehicle == false)
+        {
+            int d = absolute(me.x - npcs[i].x) + absolute(me.y - npcs[i].y);
+            best_dist = d;
+            tx = me.x; ty = me.y;
+            target_is_player = true;
+            target_npc = -1;
+            found_target = true;
+        }
+        for(uint j = 0; j < npcs.length(); j++)
+        {
+            if(j == i) continue;
+            if(npcs[j].health <= 0) continue;
+            if(!npc_targets(npcs[i], npcs[j].category)) continue;
+            int d = absolute(npcs[j].x - npcs[i].x) + absolute(npcs[j].y - npcs[i].y);
+            if(!found_target || d < best_dist)
+            {
+                best_dist = d;
+                tx = npcs[j].x; ty = npcs[j].y;
+                target_is_player = false;
+                target_npc = int(j);
+                found_target = true;
+            }
+        }
+
+        // determine state: normal / wounded / healing
+        bool sub_threshold = npc_below_threshold(npcs[i]);
+        bool target_in_w_sight = found_target && absolute(tx - npcs[i].x) <= npcs[i].w_hsight && absolute(ty - npcs[i].y) <= npcs[i].w_vsight;
+        bool in_wounded = sub_threshold && target_in_w_sight;
+        bool in_healing = sub_threshold && !target_in_w_sight;
+        bool in_normal = !sub_threshold;
+        if(in_healing)
+        {
+            found_target = false;
+            target_npc = -1;
+        }
+        int eff_hrange = in_normal ? npcs[i].hrange : (in_wounded ? npcs[i].w_hrange : npcs[i].h_hrange);
+        int eff_vrange = in_normal ? npcs[i].vrange : (in_wounded ? npcs[i].w_vrange : npcs[i].h_vrange);
+        int eff_hsight = in_normal ? npcs[i].hsight : (in_wounded ? npcs[i].w_hsight : npcs[i].h_hsight);
+        int eff_vsight = in_normal ? npcs[i].vsight : (in_wounded ? npcs[i].w_vsight : npcs[i].h_vsight);
+        int eff_firetime = in_normal ? npcs[i].firetime : (in_wounded ? npcs[i].w_firetime : npcs[i].h_firetime);
+        int eff_movetime = in_normal ? npcs[i].movetime : (in_wounded ? npcs[i].w_movetime : npcs[i].h_movetime);
+        int eff_attack = in_normal ? npcs[i].attack : (in_wounded ? npcs[i].w_attack : npcs[i].h_attack);
+        double eff_level = in_normal ? npcs[i].level : (in_wounded ? npcs[i].w_level : npcs[i].h_level);
+        int eff_lives_cap = in_normal ? npcs[i].lives : (in_wounded ? npcs[i].w_lives : npcs[i].h_lives);
+        if(npcs[i].currentlives > eff_lives_cap) npcs[i].currentlives = eff_lives_cap;
+
+        // heal tick (only fires while in healing state)
+        if(in_healing && npcs[i].heal_speed > 0 && npcs[i].heal_amount > 0 && npcs[i].heal_timer.elapsed >= npcs[i].heal_speed)
+        {
+            npcs[i].health += npcs[i].heal_amount;
+            if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
+            npcs[i].heal_timer.restart();
+        }
+
+        // movement / spotting
+        if(found_target && npcs[i].movetimer.elapsed >= eff_movetime)
+        {
+            bool h = absolute(tx - npcs[i].x) <= eff_hsight;
+            bool v = absolute(ty - npcs[i].y) <= eff_vsight;
+            npcs[i].spotted = h && v;
+            if(npcs[i].spotted)
+            {
+                bool moved = false;
+                int dx_intent = 0;
+                if(npcs[i].x < tx) dx_intent = 1;
+                else if(npcs[i].x > tx) dx_intent = -1;
+                if(in_wounded)
+                {
+                    if(dx_intent == 0) dx_intent = (random(0, 1) == 0) ? -1 : 1;
+                    else dx_intent = -dx_intent;
+                }
+                int dy_intent = 0;
+                if(npcs[i].y < ty) dy_intent = 1;
+                else if(npcs[i].y > ty) dy_intent = -1;
+                if(in_wounded)
+                {
+                    if(dy_intent == 0) dy_intent = (random(0, 1) == 0) ? -1 : 1;
+                    else dy_intent = -dy_intent;
+                }
+                if(dx_intent != 0 && npcs[i].move_x && paused == 0)
+                {
+                    int next_x = npcs[i].x + dx_intent;
+                    if(string_contains(gmt(next_x, npcs[i].y), "wall", 1) > -1 or is_in_safe(next_x, npcs[i].y))
+                        next_x = npcs[i].x - dx_intent;
+                    if(next_x >= minx && next_x <= maxx)
+                    {
+                        npcs[i].x = next_x;
+                        moved = true;
+                    }
+                }
+                if(dy_intent != 0 && npcs[i].move_y && paused == 0)
+                {
+                    int next_y = npcs[i].y + dy_intent;
+                    if(string_contains(gmt(npcs[i].x, next_y), "wall", 1) > -1 or is_in_safe(npcs[i].x, next_y))
+                        next_y = npcs[i].y - dy_intent;
+                    if(next_y >= miny && next_y <= maxy)
+                    {
+                        npcs[i].y = next_y;
+                        moved = true;
+                    }
+                }
+                if(moved)
+                {
+                    string step_resolved = get_map_sound("objects/platforms/"+gmt(npcs[i].x, npcs[i].y)+"/*step*");
+                    if(step_resolved == "") step_resolved = get_map_sound(sound_base+"/*step*");
+                    npcs[i].tilesound = pool.play_extended_2d(step_resolved, me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+                    npcs[i].step_active = true;
+                }
+                else
+                {
+                    npcs[i].step_active = false;
+                }
+                pool.update_sound_2d(npcs[i].mainsound, npcs[i].x, npcs[i].y);
+                npcs[i].movetimer.restart();
+            }
+        }
+
+        // taunt
+        if(npcs[i].taunttimer.elapsed >= npcs[i].taunttime)
+        {
+            npcs[i].mainsound = pool.play_extended_2d(get_map_sound(sound_base+"/*taunt*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+            int delay = round(pool.get_sound_length(npcs[i].mainsound), 0);
+            npcs[i].taunttime = (delay <= 0 ? random(500, 1000) : delay);
+            npcs[i].taunttimer.restart();
+        }
+
+        // attack chosen target
+        if(found_target && absolute(tx - npcs[i].x) <= eff_hrange && absolute(ty - npcs[i].y) <= eff_vrange && npcs[i].firetimer.elapsed >= eff_firetime && npcs[i].fireable && paused == 0)
+        {
+            npcs[i].step_active = false;
+            if(human_armed)
+                npcs[i].firesound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*fire*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+
+            if(target_is_player)
+            {
+                if(melee == true and weapontype == "melee" and wepdef == 1)
+                {
+                    int refchance = random(0, 100);
+                    int refprob = 80;
+                    if(refchance < refprob)
+                    {
+                        weaponslot = p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                    }
+                    else if(shieldon == 1)
+                    {
+                        if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, shieldvolume, shieldpitch, false);
+                        int sdm = max(1, ((eff_attack * 0.5) * eff_level) - (shielddefence * 3));
+                        shieldstrength -= sdm;
+                        kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+                    }
+                    else
+                    {
+                        if(human_armed)
+                        {
+                            npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                            npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                        }
+                        else
+                        {
+                            npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                        }
+                        int dmg = max(1, ((eff_attack * 0.5) * eff_level) - (defence * 3));
+                        health -= dmg;
+                        kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
+                        npc_play_pain(dmg);
+                        npc_apply_break_charbones(dmg, npcs[i].category);
+                    }
+                }
+                else if(shieldon == 1)
+                {
+                    if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, shieldvolume, shieldpitch, false);
+                    int sdm = max(1, (eff_attack * eff_level) - (shielddefence * 3));
+                    shieldstrength -= sdm;
+                    kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+                }
+                else
+                {
+                    if(human_armed)
+                    {
+                        npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                        npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                    }
+                    else
+                    {
+                        npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, weaponvolume, weaponpitch, false);
+                    }
+                    int dmg = max(1, (eff_attack * eff_level) - (defence * 3));
+                    health -= dmg;
+                    kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
+                    npc_play_pain(dmg);
+                    npc_apply_break_charbones(dmg, npcs[i].category);
+                }
+            }
+            else
+            {
+                int j = target_npc;
+                if(human_armed)
+                {
+                    npcs[i].hitsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                    npcs[i].shellsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                }
+                else
+                {
+                    npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                }
+                sound_pool@ vpool = npc_pool(npcs[j].category);
+                vpool.play_extended_2d(get_map_sound("npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+                int j_defence = npcs[j].defence;
+                if(npc_below_threshold(npcs[j]))
+                {
+                    bool j_in_w_sight = absolute(npcs[i].x - npcs[j].x) <= npcs[j].w_hsight && absolute(npcs[i].y - npcs[j].y) <= npcs[j].w_vsight;
+                    j_defence = j_in_w_sight ? npcs[j].w_defence : npcs[j].h_defence;
+                }
+                int dmg = max(1, (eff_attack * eff_level) - (j_defence * 3));
+                npcs[j].health -= dmg;
+                kombatlog.insert_last(npcs[i].subtype + " attacked " + npcs[j].subtype + " for " + dmg + " damage.");
+            }
+            npcs[i].firetimer.restart();
+        }
+
+        // hit nearby items
+        for(uint k = 0; k < objs.length(); k++)
+        {
+            if(objs[k].itx == npcs[i].x and objs[k].ity == npcs[i].y and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable)
+            {
+                npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, weaponvolume, weaponpitch, false);
+                itempool.destroy_sound(objs[k].objsound);
+                objs[k].hurtsound = itempool.play_extended_2d(get_map_sound("objects/items/"+objs[k].objtype+"/"+objs[k].objtype2+"/*break*"), me.x, me.y, objs[k].itx, objs[k].ity, 0, 0, 0, 0, false, 0, 0, itemvolume, itempitch, false);
+                npcs[i].firetimer.restart();
+                objs.remove_at(k);
+                return;
+            }
+        }
+
+        // hit player vehicle
+        for(uint k = 0; k < vehicles.length(); k++)
+        {
+            if(vehicles[k].vehx == npcs[i].x and vehicles[k].vehy == npcs[i].y and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable and invehicle)
+            {
+                vehicles[k].hurtsound = vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[k].vehtype+"/*hurt*"), false, 0, 0, painvolume, painpitch, false);
+                vehicles[k].vehhealth -= eff_attack;
+                npcs[i].firetimer.restart();
+            }
+        }
+
+        // death / revive
+        if(npcs[i].health <= 0)
+        {
+            if(npcs[i].currentlives >= 2 and paused == 0)
+            {
+                pool.play_2d(get_map_sound(sound_base+"/*life*"), me.x, me.y, npcs[i].x, npcs[i].y, false);
+                npcs[i].health = npcs[i].maxhealth;
+                npcs[i].currentlives -= 1;
+            }
+            else if(npcs[i].currentlives <= 1 and paused == 0)
+            {
+                pool.destroy_sound(npcs[i].hurtsound);
+                pool.destroy_sound(npcs[i].mainsound);
+                npcs[i].defsound = pool.play_extended_2d(get_map_sound(sound_base+"/*death*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, painvolume, painpitch, false);
+                if(xpmod >= 1)
+                {
+                    double effx_xp = in_normal ? npcs[i].xpvalue : (in_wounded ? npcs[i].w_xpvalue : npcs[i].h_xpvalue);
+                    double gained_xp = effx_xp * eff_level * xpmod;
+                    xp += gained_xp;
+                    kombatlog.insert_last(gained_xp + " experience gained. Defeated " + npcs[i].subtype + " level " + eff_level + ".");
+                }
+                kills += 1;
+                int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
+                spawn_bodyfall(npcs[i].x, npcs[i].y, (falldelay <= 0 ? random(500, 1000) : falldelay));
+                string[] heal_folders = {"health", "stamina"};
+                string chosen_folder = random_string(heal_folders);
+                string[] healtypes = get_map_sound_folders("objects/items/"+chosen_folder+"/*");
+                if(healtypes.length() != 0 and npcs[i].dropitem) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true);
+                if(charkillsound == 1) p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*kill*"), false);
+                npcs.remove_at(i);
+                return;
+            }
+        }
+    }
+}
+
+void build_npc()
+{
+    string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+    string[] categories = {"animals", "humans", "robots", "zombies"};
+    string saved_x = sel_left_set ? sel_left : "";
+    string saved_y = sel_bottom_set ? sel_bottom : "";
+    string saved_lev = "0";
+    int saved_cat_pos = 0;
+    int saved_sub_pos = 0;
+    bool do_build = true;
+    int last_cat_pos = -1;
+    int mx, my, lev, cat_list, sub_list, ok, cn;
+    string[] sub_data;
+    while(true)
+    {
+        wait(5);
+        if(do_build)
+        {
+            do_build = false;
+            if(last_cat_pos != -1)
+            {
+                saved_x = form.get_text(mx);
+                saved_y = form.get_text(my);
+                saved_lev = form.get_text(lev);
+            }
+            sub_data = get_map_sound_folders("npc/"+categories[saved_cat_pos]+"/*");
+            form.reset();
+            form.create_window("npc", false, true, last_cat_pos != -1);
+            mx = form.create_input_box("x", saved_x);
+            my = form.create_input_box("y", saved_y);
+            lev = form.create_input_box("scale level", saved_lev);
+            form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+            form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+            form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
+            cat_list = form.create_list("category");
+            for(uint i = 0; i < categories.length(); i++)
+                form.add_list_item(cat_list, categories[i], categories[i]);
+            form.set_list_position(cat_list, saved_cat_pos, false);
+            sub_list = form.create_list("subtype");
+            form.add_list_item(sub_list, "none", "none");
+            for(uint i = 0; i < sub_data.length(); i++)
+                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+            int sp = (saved_sub_pos <= int(sub_data.length())) ? saved_sub_pos : 0;
+            form.set_list_position(sub_list, sp, false);
+            ok = form.create_button("&okay", true);
+            cn = form.create_button("&cancel");
+            if(last_cat_pos == -1)
+            {
+                form.focus(mx);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+            }
+            else
+                form.focus_silently(cat_list);
+            last_cat_pos = saved_cat_pos;
+        }
+        form.monitor();
+        int cur_cat = form.get_list_position(cat_list);
+        if(cur_cat != -1 && cur_cat != last_cat_pos)
+        {
+            saved_cat_pos = cur_cat;
+            saved_sub_pos = 0;
+            t.destroy_sound(prevslot);
+            prevslot = -1;
+            do_build = true;
+            continue;
+        }
+        int cur_focus = form.get_current_focus();
+        int cur_sub = form.get_list_position(sub_list);
+        if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+        {
+            t.destroy_sound(prevslot);
+            prevslot = -1;
+            if(cur_focus == sub_list && cur_sub > 0 && cur_sub <= int(sub_data.length()))
+                prevslot = t.play_stationary(get_map_sound("npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*hurt*"), false);
+            keytimer.restart();
+        }
+        if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_L) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
+        {
+            t.destroy_sound(prevslot);
+            prevslot = t.play_stationary(get_map_sound("npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*taunt*"), false);
+        }
+        if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_H) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
+        {
+            t.destroy_sound(prevslot);
+            prevslot = t.play_stationary(get_map_sound("npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*death*"), false);
+        }
+        if(key_pressed(KEY_ESCAPE))
+        {
+            t.destroy_sound(prevslot);
+            resume_pools();
+            speak("canceled");
+            return;
+        }
+        if(form.is_pressed(cn))
+        {
+            t.destroy_sound(prevslot);
+            resume_pools();
+            speak("canceled");
+            return;
+        }
+        if(form.is_pressed(ok))
+        {
+            if(form.get_text(mx) == "") { speak("X is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+            if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+            if(form.get_text(lev) == "") { speak("Scale level is required."); form.focus(lev); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+            int p = form.get_list_position(sub_list);
+            if(p < 0 || p > int(sub_data.length())) { speak("Subtype is required."); form.focus(sub_list); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+            int bx = string_to_number(form.get_text(mx));
+            int by = string_to_number(form.get_text(my));
+            int blev = string_to_number(form.get_text(lev));
+            string bcat = categories[saved_cat_pos];
+            string bsub = (p == 0) ? "none" : sub_data[p - 1];
+            t.destroy_sound(prevslot);
+            resume_pools();
+            write_npc(bx, by, blev, bcat, bsub);
+            spawn_npc(bx, by, blev, bcat, bsub);
+            load_map(mapname, mapowner);
+            mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
+            speak("Map updated.");
+            return;
+        }
+    }
+}

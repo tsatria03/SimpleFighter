@@ -50,8 +50,7 @@ void destroymap()
 {
 destroy_all_aircrafts();
 destroy_all_airbeacons();
-destroy_all_animals();
-destroy_all_animalzones();
+destroy_all_npc_zones();
 destroy_all_belts();
 destroy_all_bikes();
 destroy_all_bombs();
@@ -71,8 +70,6 @@ destroy_all_elevators();
 destroy_all_fires();
 destroy_all_floorbreakers();
 destroy_all_forcefields();
-destroy_all_humans();
-destroy_all_humanzones();
 destroy_all_hazards();
 destroy_all_healzones();
 destroy_all_helpers();
@@ -84,10 +81,9 @@ destroy_all_moving_platforms();
 destroy_all_objs();
 destroy_all_objzones();
 destroy_all_passages();
+destroy_all_npcs();
 destroy_all_projectiles();
 destroy_all_projzones();
-destroy_all_robots();
-destroy_all_robotzones();
 destroy_all_safezones();
 destroy_all_signs();
 destroy_all_spikes();
@@ -103,8 +99,6 @@ destroy_all_turrets();
 destroy_all_vanishing_hazards();
 destroy_all_vanishing_platforms();
 destroy_all_vehicles();
-destroy_all_zombies();
-destroy_all_zombiezones();
 }
 
 void gop(string entity,string id,double x,double y)
@@ -125,34 +119,20 @@ if(fallcounter>=0) p.destroy_sound(fallslot);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*move*"),false);
 speak("Player moved to "+me.x+", "+me.y+".");
 }
-else if(entity=="animal")
+else if(entity=="animal" || entity=="human" || entity=="robot" || entity=="zombie")
 {
-for(uint i=0; i<animals.length(); i++)
+string target_cat = entity + "s";
+for(uint i=0; i<npcs.length(); i++)
 {
-if(animals[i].animaltype==id)
+if(npcs[i].category == target_cat && npcs[i].subtype == id)
 {
-animals[i].amx=int(x);
-animals[i].amy=int(y);
-animalpool.update_sound_2d(animals[i].amsound, animals[i].amx, animals[i].amy);
-animals[i].animaltimer.restart();
+npcs[i].x = int(x);
+npcs[i].y = int(y);
+sound_pool@ pool = npc_pool(npcs[i].category);
+pool.update_sound_2d(npcs[i].mainsound, npcs[i].x, npcs[i].y);
+npcs[i].movetimer.restart();
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*move*"),false);
-speak("animal moved to "+animals[i].amx+", "+animals[i].amy+".");
-return;
-}
-}
-}
-else if(entity=="human")
-{
-for(uint i=0; i<humans.length(); i++)
-{
-if(humans[i].humantype==id)
-{
-humans[i].humx=int(x);
-humans[i].humy=int(y);
-humanpool.update_sound_2d(humans[i].humsound, humans[i].humx, humans[i].humy);
-humans[i].humantimer.restart();
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*move*"),false);
-speak("human moved to "+humans[i].humx+", "+humans[i].humy+".");
+speak(entity+" moved to "+npcs[i].x+", "+npcs[i].y+".");
 return;
 }
 }
@@ -205,22 +185,6 @@ return;
 }
 }
 }
-else if(entity=="robot")
-{
-for(uint i=0; i<robots.length(); i++)
-{
-if(robots[i].robottype==id)
-{
-robots[i].robx=int(x);
-robots[i].roby=int(y);
-robpool.update_sound_2d(robots[i].robsound, robots[i].robx, robots[i].roby);
-robots[i].robottimer.restart();
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*move*"),false);
-speak("robot moved to "+robots[i].robx+", "+robots[i].roby+".");
-return;
-}
-}
-}
 else if(entity=="turret")
 {
 for(uint i=0; i<turrets.length(); i++)
@@ -233,22 +197,6 @@ turpool.update_sound_2d(turrets[i].tursound, turrets[i].turx, turrets[i].tury);
 turrets[i].turtimer.restart();
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*move*"),false);
 speak("turret moved to "+turrets[i].turx+", "+turrets[i].tury+".");
-return;
-}
-}
-}
-else if(entity=="zombie")
-{
-for(uint i=0; i<zombies.length(); i++)
-{
-if(zombies[i].zombietype==id)
-{
-zombies[i].zombx=int(x);
-zombies[i].zomby=int(y);
-zombpool.update_sound_2d(zombies[i].zombsound, zombies[i].zombx, zombies[i].zomby);
-zombies[i].zombietimer.restart();
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*move*"),false);
-speak("zombie moved to "+zombies[i].zombx+", "+zombies[i].zomby+".");
 return;
 }
 }
@@ -378,7 +326,7 @@ miny=my;
 maxy=my2;
 
 string base = "data/maps/decompiled/" + mapname;
-string[] mapdirs ={"/assets", "/assets/npc", "/assets/npc/animals", "/assets/npc/bosses", "/assets/npc/helpers", "/assets/npc/humans", "/assets/npc/projectiles", "/assets/npc/robots", "/assets/npc/turrets", "/assets/npc/zombies", "/assets/objects", "/assets/objects/aircrafts", "/assets/objects/belts", "/assets/objects/bikes", "/assets/objects/bombs", "/assets/objects/calendars", "/assets/objects/cameras", "/assets/objects/checkpoints", "/assets/objects/clocks", "/assets/objects/dialogs", "/assets/objects/doors", "/assets/objects/doors/close", "/assets/objects/doors/dest", "/assets/objects/doors/loop", "/assets/objects/doors/move", "/assets/objects/doors/open", "/assets/objects/elevators", "/assets/objects/elevators/beep", "/assets/objects/elevators/close", "/assets/objects/elevators/loop", "/assets/objects/elevators/move", "/assets/objects/elevators/open", "/assets/objects/fires", "/assets/objects/floor breakers", "/assets/objects/force fields", "/assets/objects/hazards", "/assets/objects/heal zones", "/assets/objects/items", "/assets/objects/items/health", "/assets/objects/items/other", "/assets/objects/items/stamina", "/assets/objects/lifts", "/assets/objects/mines", "/assets/objects/moving platforms", "/assets/objects/platforms", "/assets/objects/safe zones", "/assets/objects/signs", "/assets/objects/spikes", "/assets/objects/switches", "/assets/objects/teleporters", "/assets/objects/time bombs", "/assets/objects/vanishing platforms", "/assets/objects/vehicles", "/assets/objects/walls", "/assets/soundtracks", "/assets/soundtracks/musics", "/assets/soundtracks/sources"};
+string[] mapdirs ={"/assets", "/assets/kombat", "/assets/kombat/bosses", "/assets/kombat/helpers", "/assets/kombat/projectiles", "/assets/kombat/turrets", "/assets/npc", "/assets/npc/animals", "/assets/npc/bosses", "/assets/npc/helpers", "/assets/npc/humans", "/assets/npc/projectiles", "/assets/npc/robots", "/assets/npc/turrets", "/assets/npc/zombies", "/assets/objects", "/assets/objects/aircrafts", "/assets/objects/belts", "/assets/objects/bikes", "/assets/objects/bombs", "/assets/objects/calendars", "/assets/objects/cameras", "/assets/objects/checkpoints", "/assets/objects/clocks", "/assets/objects/dialogs", "/assets/objects/doors", "/assets/objects/doors/close", "/assets/objects/doors/dest", "/assets/objects/doors/loop", "/assets/objects/doors/move", "/assets/objects/doors/open", "/assets/objects/elevators", "/assets/objects/elevators/beep", "/assets/objects/elevators/close", "/assets/objects/elevators/loop", "/assets/objects/elevators/move", "/assets/objects/elevators/open", "/assets/objects/fires", "/assets/objects/floor breakers", "/assets/objects/force fields", "/assets/objects/hazards", "/assets/objects/heal zones", "/assets/objects/items", "/assets/objects/items/health", "/assets/objects/items/other", "/assets/objects/items/stamina", "/assets/objects/lifts", "/assets/objects/mines", "/assets/objects/moving platforms", "/assets/objects/platforms", "/assets/objects/safe zones", "/assets/objects/signs", "/assets/objects/spikes", "/assets/objects/switches", "/assets/objects/teleporters", "/assets/objects/time bombs", "/assets/objects/vanishing platforms", "/assets/objects/vehicles", "/assets/objects/walls", "/assets/soundtracks", "/assets/soundtracks/musics", "/assets/soundtracks/sources"};
 for (uint i = 0; i < mapdirs.length(); i++)
 {
     string fullpath = base + mapdirs[i];
