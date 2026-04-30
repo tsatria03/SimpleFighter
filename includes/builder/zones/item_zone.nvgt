@@ -40,96 +40,202 @@ objzones.resize(0);
 
 void build_item_zone()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the minimum x of this item zone.", sel_left_set ? sel_left : "");
-string mx2=vd.input_box("", "Enter the maximum x of this item zone.", sel_right_set ? sel_right : "");
-string my=vd.input_box("", "Enter the minimum y of this item zone.", sel_bottom_set ? sel_bottom : "");
-string my2=vd.input_box("", "Enter the maximum y of this item zone.", sel_top_set ? sel_top : "");
-string sp=vd.input_box("", "Enter the spawn time of this item zone.");
-if(x=="" and paxx=="" and y=="" and paxy=="" and speedtime=="")
-return;
-x=string_to_number(mx);
-paxx=string_to_number(mx2);
-y=string_to_number(my);
-paxy=string_to_number(my2);
-speedtime=string_to_number(sp);
-setupmenu();
-m.add_item_tts("health", "hp");
-m.add_item_tts("other", "ot");
-m.add_item_tts("stamina", "st");
-int mres=m.run("Items menu",true);
-string itsm=m.get_item_name(mres);
-if(mres==0)
+string[] health_items = get_map_sound_folders("objects/items/health/*");
+string[] stamina_items = get_map_sound_folders("objects/items/stamina/*");
+string[] other_items = get_map_sound_folders("objects/items/other/*");
+if(health_items.length() == 0 && stamina_items.length() == 0 && other_items.length() == 0)
 {
+dlg("Error. There are no items available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+string saved_x = sel_left_set ? sel_left : "";
+string saved_x2 = sel_right_set ? sel_right : "";
+string saved_y = sel_bottom_set ? sel_bottom : "";
+string saved_y2 = sel_top_set ? sel_top : "";
+string saved_sp = "";
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+bool do_build = true;
+int last_cat_pos = -1;
+int mx, mx2, my, my2, sp, cat_list, sub_list, ok, cn;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+if(last_cat_pos != -1)
+{
+saved_x = form.get_text(mx);
+saved_x2 = form.get_text(mx2);
+saved_y = form.get_text(my);
+saved_y2 = form.get_text(my2);
+saved_sp = form.get_text(sp);
+}
+form.reset();
+form.create_window("item zone", false, true, last_cat_pos != -1);
+mx = form.create_input_box("minimum x", saved_x);
+mx2 = form.create_input_box("maximum x", saved_x2);
+my = form.create_input_box("minimum y", saved_y);
+my2 = form.create_input_box("maximum y", saved_y2);
+sp = form.create_input_box("spawn time", saved_sp);
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+cat_list = form.create_list("category");
+form.add_list_item(cat_list, "health", "health");
+form.add_list_item(cat_list, "stamina", "stamina");
+form.add_list_item(cat_list, "other", "other");
+form.set_list_position(cat_list, saved_cat_pos, false);
+string sub_label = (saved_cat_pos == 1) ? "stamina sound" : (saved_cat_pos == 2 ? "other sound" : "health sound");
+sub_list = form.create_list(sub_label);
+form.add_list_item(sub_list, "none", "none");
+if(saved_cat_pos == 0)
+for(uint i = 0; i < health_items.length(); i++) form.add_list_item(sub_list, health_items[i], health_items[i]);
+else if(saved_cat_pos == 1)
+for(uint i = 0; i < stamina_items.length(); i++) form.add_list_item(sub_list, stamina_items[i], stamina_items[i]);
+else
+for(uint i = 0; i < other_items.length(); i++) form.add_list_item(sub_list, other_items[i], other_items[i]);
+form.set_list_position(sub_list, saved_sub_pos, false);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_cat_pos == -1)
+{
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+}
+else
+form.focus_silently(cat_list);
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_cat_pos = form.get_list_position(cat_list);
+if(cur_cat_pos != -1 && cur_cat_pos != last_cat_pos)
+{
+saved_cat_pos = cur_cat_pos;
+saved_sub_pos = 0;
+do_build = true;
+continue;
+}
+int cur_focus = form.get_current_focus();
+if(key_pressed(KEY_SPACE) && spacehold == 0)
+{
+t.destroy_sound(prevslot);
+if(cur_focus == sub_list)
+{
+int p = form.get_list_position(sub_list);
+if(p > 0)
+{
+string cat = (saved_cat_pos == 1) ? "stamina" : (saved_cat_pos == 2 ? "other" : "health");
+string sub = (saved_cat_pos == 0) ? health_items[p-1] : ((saved_cat_pos == 1) ? stamina_items[p-1] : other_items[p-1]);
+prevslot = t.play_stationary(get_map_sound("objects/items/"+cat+"/"+sub+"/*loop*"), false);
+}
+}
+keytimer.restart();
+}
+if(key_down(KEY_SPACE) && spacehold == 1 && keytimer.elapsed >= keytime)
+{
+t.destroy_sound(prevslot);
+if(cur_focus == sub_list)
+{
+int p = form.get_list_position(sub_list);
+if(p > 0)
+{
+string cat = (saved_cat_pos == 1) ? "stamina" : (saved_cat_pos == 2 ? "other" : "health");
+string sub = (saved_cat_pos == 0) ? health_items[p-1] : ((saved_cat_pos == 1) ? stamina_items[p-1] : other_items[p-1]);
+prevslot = t.play_stationary(get_map_sound("objects/items/"+cat+"/"+sub+"/*loop*"), false);
+}
+}
+keytimer.restart();
+}
+if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_L))
+{
+int p = form.get_list_position(sub_list);
+if(p > 0)
+{
+string cat = (saved_cat_pos == 1) ? "stamina" : (saved_cat_pos == 2 ? "other" : "health");
+string sub = (saved_cat_pos == 0) ? health_items[p-1] : ((saved_cat_pos == 1) ? stamina_items[p-1] : other_items[p-1]);
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/items/"+cat+"/"+sub+"/*get*"), false);
+}
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
 speak("canceled");
 return;
 }
-if(itsm=="hp")
+if(form.is_pressed(cn))
 {
-string[] ithealth=get_map_sound_folders("objects/items/health/*");
-if(ithealth.length()==0)
-{
-dlg("Error. There are no health items available to view. Press enter to continue.");
+t.destroy_sound(prevslot);
 resume_pools();
+speak("canceled");
 return;
 }
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(mx2) == "")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(my) == "")
+{
+speak("Minimum y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(my2) == "")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(sp) == "")
+{
+speak("Spawn time is required.");
+form.focus(sp);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+int bsp = string_to_number(form.get_text(sp));
+int p = form.get_list_position(sub_list);
+string btype = (saved_cat_pos == 1) ? "stamina" : (saved_cat_pos == 2 ? "other" : "health");
+string btype2;
+if(p > 0)
+btype2 = (saved_cat_pos == 0) ? health_items[p-1] : ((saved_cat_pos == 1) ? stamina_items[p-1] : other_items[p-1]);
 else
-{
-string res=healthsmenu();
-if(res!="")
-{
-itemtype="health";
+btype2 = "none";
 t.destroy_sound(prevslot);
-itemtype2=res;
-}
-}
-}
-if(itsm=="ot")
-{
-string[] itother=get_map_sound_folders("objects/items/other/*");
-if(itother.length()==0)
-{
-dlg("Error. There are no other items available to view. Press enter to continue.");
 resume_pools();
-return;
-}
-else
-{
-string res=othersmenu();
-if(res!="")
-{
-itemtype="other";
-t.destroy_sound(prevslot);
-itemtype2=res;
-}
-}
-}
-if(itsm=="st")
-{
-string[] itstamina=get_map_sound_folders("objects/items/stamina/*");
-if(itstamina.length()==0)
-{
-dlg("Error. There are no stamina items available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-string res=staminasmenu();
-if(res!="")
-{
-itemtype="stamina";
-t.destroy_sound(prevslot);
-itemtype2=res;
-}
-}
-}
-resume_pools();
-write_item_zone(x, paxx, y, paxy, speedtime, itemtype, itemtype2);
-spawn_objzone(x, paxx, y, paxy, speedtime, itemtype, itemtype2);
+write_item_zone(bx, bx2, by, by2, bsp, btype, btype2);
+spawn_objzone(bx, bx2, by, by2, bsp, btype, btype2);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_item_zone(string[] sd)
