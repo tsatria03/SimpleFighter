@@ -66,77 +66,101 @@ switchers.resize(0);
 
 void build_switch()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string scx=vd.input_box("", "Enter the x of this switch.", sel_left_set ? sel_left : "");
-string scy=vd.input_box("", "Enter the y of this switch.", sel_bottom_set ? sel_bottom : "");
-if(x=="" and y=="")
-return;
-x=string_to_number(scx);
-y=string_to_number(scy);
-string[] switcher=get_map_sound_folders("objects/switches/*");
-if(switcher.length()==0)
+string[] switches_list = get_map_sound_folders("objects/switches/*");
+if(switches_list.length() == 0)
 {
 dlg("Error. There are no switches available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("switch", false);
+int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+int switch_list = form.create_list("switch sound");
+form.add_list_item(switch_list, "none", "none");
+for(uint i = 0; i < switches_list.length(); i++)
+form.add_list_item(switch_list, switches_list[i], switches_list[i]);
+form.set_list_position(switch_list, 0, false);
+int auto_cb = form.create_checkbox("auto activate", false);
+int single_cb = form.create_checkbox("single use", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+while(true)
 {
-string res=switchesmenu();
-if(res!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
 {
 t.destroy_sound(prevslot);
-switchtyp=res;
-}
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Should this switch be auto activated?",true);
-if(mres==0)
+if(cur_focus == switch_list)
 {
-speak("canceled");
-return;
+int p = form.get_list_position(switch_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("objects/switches/"+switches_list[p-1]+"/*loop*"), false);
 }
-if(mres==1)
+keytimer.restart();
+}
+if(cur_focus == switch_list && control_is_down() && key_repeating(KEY_L))
 {
-trg=true;
-}
-if(mres==2)
+int p = form.get_list_position(switch_list);
+if(p > 0)
 {
-trg=false;
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("objects/switches/"+switches_list[p-1]+"/*press*"), false);
 }
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres2=m.run("Should this switch be single-use only?",true);
-if(mres2==0)
+}
+if(key_pressed(KEY_ESCAPE))
 {
-speak("canceled");
-return;
-}
-if(mres2==1)
-{
-sse=true;
-}
-if(mres2==2)
-{
-sse=false;
-}
+t.destroy_sound(prevslot);
 resume_pools();
-write_switch(x, y, switchtyp, trg, sse);
-spawn_switcher(x, y, switchtyp, trg, sse);
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "")
+{
+speak("X is required.");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+if(form.get_text(my) == "")
+{
+speak("Y is required.");
+form.focus(my);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+continue;
+}
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int p = form.get_list_position(switch_list);
+string btype = (p > 0) ? switches_list[p-1] : "none";
+bool btrg = form.is_checked(auto_cb);
+bool bsse = form.is_checked(single_cb);
+t.destroy_sound(prevslot);
+resume_pools();
+write_switch(bx, by, btype, btrg, bsse);
+spawn_switcher(bx, by, btype, btrg, bsse);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_switch(string[] sd)

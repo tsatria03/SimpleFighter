@@ -293,141 +293,146 @@ zombies.resize(0);
 
 void build_zombie()
 {
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("", "Enter the x of this zombie.", sel_left_set ? sel_left : "");
-string my=vd.input_box("", "Enter the y of this zombie.", sel_bottom_set ? sel_bottom : "");
-string rng=vd.input_box("", "Enter the horizontal attacking range of this zombie. Press enter to use the default horizontal attacking range.", "0");
-string rng2=vd.input_box("", "Enter the vertical attacking range of this zombie. Press enter to use the default vertical attacking range.", "0");
-string rng3=vd.input_box("", "Enter the horizontal seeing range of this zombie. Press enter to use the default horizontal seeing range.", maxx);
-string rng4=vd.input_box("", "Enter the vertical seeing range of this zombie. Press enter to use the default vertical seeing range.", maxy);
-string hp=vd.input_box("", "Enter the health of this zombie.");
-string hc=vd.input_box("", "Enter the maximum lives of this zombie. Press enter to use the default lives.", "1");
-string dm=vd.input_box("", "Enter the maximum attack of this zombie.");
-string ft=vd.input_box("", "Enter the fire time of this zombie.");
-string sp=vd.input_box("", "Enter the speed of this zombie.");
-string lev=vd.input_box("", "Enter the level of this zombie.");
-string exper=vd.input_box("", "Enter the xp of this zombie.");
-if(x=="" and y=="" and zombrange=="" and zombrange2=="" and zombrange3=="" and zombrange4=="" and minhp=="" and card=="" and damage=="" and firetime=="" and speedtime=="" and lv=="" and xn=="")
-return;
-x=string_to_number(mx);
-y=string_to_number(my);
-zombrange=string_to_number(rng);
-zombrange2=string_to_number(rng2);
-zombrange3=string_to_number(rng3);
-zombrange4=string_to_number(rng4);
-minhp=string_to_number(hp);
-card=string_to_number(hc);
-damage=string_to_number(dm);
-firetime=string_to_number(ft);
-speedtime=string_to_number(sp);
-lv=string_to_number(lev);
-xn=string_to_number(exper);
-string[] zombie=get_map_sound_folders("npc/zombies/*");
-if(zombie.length()==0)
+string[] zombies_list = get_map_sound_folders("npc/zombies/*");
+if(zombies_list.length() == 0)
 {
 dlg("Error. There are no zombies available to view. Press enter to continue.");
 resume_pools();
 return;
 }
-else
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("zombie", false);
+int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int rng = form.create_input_box("horizontal attacking range", "0");
+int rng2 = form.create_input_box("vertical attacking range", "0");
+int rng3 = form.create_input_box("horizontal seeing range", "" + maxx);
+int rng4 = form.create_input_box("vertical seeing range", "" + maxy);
+int hp = form.create_input_box("health");
+int hc = form.create_input_box("maximum lives", "1");
+int dm = form.create_input_box("maximum attack");
+int ft = form.create_input_box("fire time");
+int sp = form.create_input_box("speed");
+int lev = form.create_input_box("level");
+int exper = form.create_input_box("xp");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(rng, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(rng2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(rng3, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(rng4, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hc, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(ft, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(exper, disallowed_nums, false, "This character is not allowed.");
+int zombie_list = form.create_list("zombie sound");
+form.add_list_item(zombie_list, "none", "none");
+for(uint i = 0; i < zombies_list.length(); i++)
+form.add_list_item(zombie_list, zombies_list[i], zombies_list[i]);
+form.set_list_position(zombie_list, 0, false);
+int attack_cb = form.create_checkbox("attack player", false);
+int movex_cb = form.create_checkbox("move on x axis", false);
+int movey_cb = form.create_checkbox("move on y axis", false);
+int drop_cb = form.create_checkbox("drop item on death", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+while(true)
 {
-string res=zombiesmenu();
-if(res!="")
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
 {
 t.destroy_sound(prevslot);
-zotype=res;
-}
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres2=m.run("Should the zombie attack you?",true);
-if(mres2==0)
+if(cur_focus == zombie_list)
 {
-speak("canceled");
-return;
+int p = form.get_list_position(zombie_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("npc/zombies/"+zombies_list[p-1]+"/*hurt*"), false);
 }
-if(mres2==1)
+keytimer.restart();
+}
+if(cur_focus == zombie_list && control_is_down() && key_repeating(KEY_L))
 {
-fb=true;
-}
-if(mres2==2)
+int p = form.get_list_position(zombie_list);
+if(p > 0)
 {
-fb=false;
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("npc/zombies/"+zombies_list[p-1]+"/*taunt*"), false);
 }
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres3=m.run("Should the zombie move on the x axes?",true);
-if(mres3==0)
+}
+if(cur_focus == zombie_list && control_is_down() && key_repeating(KEY_H))
 {
-speak("canceled");
-return;
-}
-if(mres3==1)
+int p = form.get_list_position(zombie_list);
+if(p > 0)
 {
-mb=true;
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("npc/zombies/"+zombies_list[p-1]+"/*death*"), false);
 }
-if(mres3==2)
+}
+if(key_pressed(KEY_ESCAPE))
 {
-mb=false;
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres4=m.run("Should the zombie move on the y axes?",true);
-if(mres4==0)
-{
-speak("canceled");
-return;
-}
-if(mres4==1)
-{
-mb2=true;
-}
-if(mres4==2)
-{
-mb2=false;
-}
-setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres5=m.run("Should the zombie drop an item after killing it?",true);
-if(mres5==0)
-{
-speak("canceled");
-return;
-}
-if(mres5==1)
-{
-itms=true;
-}
-if(mres5==2)
-{
-itms=false;
-}
+t.destroy_sound(prevslot);
 resume_pools();
-write_zombie(x, y, zombrange, zombrange2, zombrange3, zombrange4, minhp, card, damage, firetime, speedtime, lv, xn, zotype, fb, mb, mb2, itms);
-spawn_zombie(x, y, zombrange, zombrange2, zombrange3, zombrange4, minhp, minhp, card, damage, firetime, speedtime, lv, xn, zotype, fb, mb, mb2, itms);
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "") { speak("X is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(rng) == "") { speak("Horizontal attacking range is required."); form.focus(rng); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(rng2) == "") { speak("Vertical attacking range is required."); form.focus(rng2); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(rng3) == "") { speak("Horizontal seeing range is required."); form.focus(rng3); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(rng4) == "") { speak("Vertical seeing range is required."); form.focus(rng4); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(hp) == "") { speak("Health is required."); form.focus(hp); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(hc) == "") { speak("Maximum lives is required."); form.focus(hc); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(dm) == "") { speak("Maximum attack is required."); form.focus(dm); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(ft) == "") { speak("Fire time is required."); form.focus(ft); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(sp) == "") { speak("Speed is required."); form.focus(sp); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(lev) == "") { speak("Level is required."); form.focus(lev); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+if(form.get_text(exper) == "") { speak("Xp is required."); form.focus(exper); spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false); continue; }
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int br = string_to_number(form.get_text(rng));
+int br2 = string_to_number(form.get_text(rng2));
+int br3 = string_to_number(form.get_text(rng3));
+int br4 = string_to_number(form.get_text(rng4));
+double bhp = string_to_number(form.get_text(hp));
+int bcard = string_to_number(form.get_text(hc));
+int bdmg = string_to_number(form.get_text(dm));
+int bft = string_to_number(form.get_text(ft));
+int bsp = string_to_number(form.get_text(sp));
+double blv = string_to_number(form.get_text(lev));
+double bxn = string_to_number(form.get_text(exper));
+int p = form.get_list_position(zombie_list);
+string btype = (p > 0) ? zombies_list[p-1] : "none";
+bool battack = form.is_checked(attack_cb);
+bool bmx = form.is_checked(movex_cb);
+bool bmy = form.is_checked(movey_cb);
+bool bdrop = form.is_checked(drop_cb);
+t.destroy_sound(prevslot);
+resume_pools();
+write_zombie(bx, by, br, br2, br3, br4, bhp, bcard, bdmg, bft, bsp, blv, bxn, btype, battack, bmx, bmy, bdrop);
+spawn_zombie(bx, by, br, br2, br3, br4, bhp, bhp, bcard, bdmg, bft, bsp, blv, bxn, btype, battack, bmx, bmy, bdrop);
 load_map(mapname, mapowner);
-mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
+mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+return;
+}
+}
 }
 
 void read_zombie(string[] sd)
