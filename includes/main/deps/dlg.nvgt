@@ -1,6 +1,7 @@
-bool dlg(string message, bool dlgcoppy=true, int timeout=-1)
+bool dlg(string message, bool dlgcoppy=true, bool dlgsound=true, int timeout=-1, string dlgtype="")
 {
 timer timeouter;
+if(dlgsound==true) temp.play_stationary(get_pack_sound("menus/"+menutype+"/*error*"),false);
 speak(message);
 while(true)
 {
@@ -10,14 +11,14 @@ return false;
 if (key_repeating(KEY_C) and dlgcoppy==true)
 {
 temp.destroy_all();
-temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtyp+"/*copy*"),false);
+if(dlgtype != "") temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtype+"/*copy*"),false);
 speak("Text copied");
 clipboard_copy_text(message);
 }
 if (key_repeating(KEY_LEFT) or key_repeating(KEY_RIGHT) or key_repeating(KEY_UP) or key_repeating(KEY_DOWN))
 {
 temp.destroy_all();
-temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtyp+"/*scroll*"),false);
+if(dlgtype != "") temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtype+"/*scroll*"),false);
 speak(message);
 }
 if (key_repeating(KEY_ESCAPE))
@@ -33,53 +34,25 @@ break;
 }
 return false;
 }
-void dlgmessage(string messages)
+void dlgmessage(string messages, string dlgtype="")
 {
-temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtyp+"/*open*"),false);
+if(dlgtype != "") temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtype+"/*open*"),false);
 string[] d = string_split(messages, "--", true);
-bool escaped = dlg(d[0]);
+bool escaped = dlg(d[0], dlgsound:false, dlgtype:dlgtype);
 if (escaped)
 {
-temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtyp+"/*close*"),false);
+if(dlgtype != "") temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtype+"/*close*"),false);
 return;
 }
 for (uint i = 1; i < d.length(); i++)
 {
-temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtyp+"/*scroll*"),false);
-escaped = dlg(d[i]);
+if(dlgtype != "") temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtype+"/*scroll*"),false);
+escaped = dlg(d[i], dlgsound:false, dlgtype:dlgtype);
 if (escaped)
 {
-temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtyp+"/*close*"),false);
+if(dlgtype != "") temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtype+"/*close*"),false);
 return;
 }
 }
-temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtyp+"/*close*"),false);
-}
-void dlg_snd(string message, string dlgsound=get_pack_sound("menus/"+menutype+"/*error*"), bool dlgcoppy=true, int timeout=-1)
-{
-timer timeouter;
-temp.play_stationary(dlgsound, false);
-speak(message);
-while(true)
-{
-wait(5);
-if (timeout>-1 and timeouter.elapsed>=timeout)
-return;
-if (key_repeating(KEY_C) and dlgcoppy==true)
-{
-temp.destroy_all();
-temp.play_stationary(get_map_sound("dialogs/"+dlgtyp+"/*copy*"),false);
-speak("Copied");
-clipboard_copy_text(message);
-}
-if (key_repeating(KEY_LEFT) or key_repeating(KEY_RIGHT) or key_repeating(KEY_UP) or key_repeating(KEY_DOWN))
-{
-speak(message);
-}
-if(key_repeating(KEY_RETURN) or key_down(KEY_A))
-{
-temp.destroy_all();
-break;
-}
-}
+if(dlgtype != "") temp.play_stationary(get_map_sound("objects/dialogs/"+dlgtype+"/*close*"),false);
 }
