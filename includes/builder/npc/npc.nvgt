@@ -47,6 +47,8 @@ class npc
     int tel_h_min, tel_h_max;
     timer teltimer;
     int telsound;
+    int patrol_x_min, patrol_x_max;
+    int patrol_y_min, patrol_y_max;
     double health;
     int currentlives;
     bool spotted;
@@ -103,6 +105,8 @@ class npc
         tel_n_min = -1; tel_n_max = -1;
         tel_w_min = -1; tel_w_max = -1;
         tel_h_min = -1; tel_h_max = -1;
+        patrol_x_min = minx; patrol_x_max = maxx;
+        patrol_y_min = miny; patrol_y_max = maxy;
         npc_parse(this);
         if(scale_level > 0)
         {
@@ -148,7 +152,7 @@ class npc
         currentlives = lives;
         sound_pool@ pool = npc_pool(category);
         spawnsound = pool.play_extended_2d(get_map_sound("npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-        if(category == "humans")
+        if(category == "humans" && fireable && targets.length() > 0)
         {
             string[] wepcads = {"archery", "artillery", "explosive", "melee"};
             weapontype = random_string(wepcads);
@@ -268,11 +272,23 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "level") parse_triple_double(v, self.level, self.w_level, self.h_level);
         else if(k == "xp") parse_triple_double(v, self.xpvalue, self.w_xpvalue, self.h_xpvalue);
         else if(k == "attacking") self.fireable = string_to_bool(v);
-        else if(k == "move_x") self.move_x = string_to_bool(v);
-        else if(k == "move_y") self.move_y = string_to_bool(v);
-        else if(k == "drop_item") self.dropitem = string_to_bool(v);
-        else if(k == "tel_x") self.tel_x = string_to_bool(v);
-        else if(k == "tel_y") self.tel_y = string_to_bool(v);
+        else if(k == "move x") self.move_x = string_to_bool(v);
+        else if(k == "move y") self.move_y = string_to_bool(v);
+        else if(k == "drop item") self.dropitem = string_to_bool(v);
+        else if(k == "tel x") self.tel_x = string_to_bool(v);
+        else if(k == "tel y") self.tel_y = string_to_bool(v);
+        else if(k == "patrol x range")
+        {
+            string[] parts = string_split(v, ",", true);
+            self.patrol_x_min = smart_int(parts[0]);
+            self.patrol_x_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_x_min;
+        }
+        else if(k == "patrol y range")
+        {
+            string[] parts = string_split(v, ",", true);
+            self.patrol_y_min = smart_int(parts[0]);
+            self.patrol_y_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_y_min;
+        }
         else if(k == "teleport time")
         {
             string[] parts = string_split(v, ":", true);
@@ -394,7 +410,7 @@ void npcloop()
         bool human_armed = (npcs[i].category == "humans" && npcs[i].weapontype != "");
 
         // human melee reflection toggle
-        if(human_armed && npcs[i].weapontype == "melee" && npcs[i].reftimer.elapsed >= random(5000, 10000))
+        if(human_armed && npcs[i].fireable && npcs[i].weapontype == "melee" && npcs[i].reftimer.elapsed >= random(5000, 10000))
         {
             pool.destroy_sound(npcs[i].refsound2);
             if(!npcs[i].refon)
@@ -502,11 +518,12 @@ void npcloop()
             int tel_max = in_normal ? npcs[i].tel_n_max : (in_wounded ? npcs[i].tel_w_max : npcs[i].tel_h_max);
             if(tel_min > 0 && tel_max > 0 && npcs[i].teltimer.elapsed >= roll_range(tel_min, tel_max))
             {
-                int new_x = npcs[i].tel_x ? random(minx, maxx) : npcs[i].x;
-                int new_y = npcs[i].tel_y ? random(miny, maxy) : npcs[i].y;
-                npcs[i].telsound = pool.play_extended_2d(get_map_sound(sound_base+"/*tel*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                int new_x = npcs[i].tel_x ? random(npcs[i].patrol_x_min, npcs[i].patrol_x_max) : npcs[i].x;
+                int new_y = npcs[i].tel_y ? random(npcs[i].patrol_y_min, npcs[i].patrol_y_max) : npcs[i].y;
+                pool.play_extended_2d(get_map_sound(sound_base+"/*tel*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 npcs[i].x = new_x;
                 npcs[i].y = new_y;
+                npcs[i].telsound = pool.play_extended_2d(get_map_sound(sound_base+"/*tel*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 pool.update_sound_2d(npcs[i].mainsound, npcs[i].x, npcs[i].y);
                 npcs[i].teltimer.restart();
             }
@@ -520,22 +537,6 @@ void npcloop()
             string trigger = npcs[i].chase_trigger;
             if(trigger == "always") pursuing = true;
             else if(trigger == "sight") pursuing = combat_in_sight;
-            else if(trigger == "provoke")
-            {
-                if(npcs[i].provoked)
-                {
-                    if(combat_in_sight)
-                    {
-                        npcs[i].provoke_lost_timer.restart();
-                        pursuing = true;
-                    }
-                    else
-                    {
-                        int calm_time = roll_range(npcs[i].chase_calm_min, npcs[i].chase_calm_max);
-                        if(npcs[i].provoke_lost_timer.elapsed >= calm_time) npcs[i].provoked = false;
-                    }
-                }
-            }
             else if(trigger == "random")
             {
                 if(npcs[i].random_phase_duration == 0 || npcs[i].random_phase_timer.elapsed >= npcs[i].random_phase_duration)
@@ -546,7 +547,22 @@ void npcloop()
                 }
                 if(npcs[i].random_chasing) pursuing = combat_in_sight;
             }
-            // "never" leaves pursuing false
+            // "never" leaves pursuing false and is exempt from the provoke override below
+
+            // Universal provoke: a hit starts the chase regardless of trigger, except for "never"
+            if(npcs[i].provoked && trigger != "never")
+            {
+                if(combat_in_sight)
+                {
+                    npcs[i].provoke_lost_timer.restart();
+                    pursuing = true;
+                }
+                else
+                {
+                    int calm_time = roll_range(npcs[i].chase_calm_min, npcs[i].chase_calm_max);
+                    if(npcs[i].provoke_lost_timer.elapsed >= calm_time) npcs[i].provoked = false;
+                }
+            }
         }
 
         // determine movement target (tx, ty) and whether to require sight
@@ -581,8 +597,8 @@ void npcloop()
                 {
                     if(!npcs[i].has_wander_dest)
                     {
-                        int rx = (npcs[i].move_x && maxx > minx) ? random(minx, maxx) : npcs[i].x;
-                        int ry = (npcs[i].move_y && maxy > miny) ? random(miny, maxy) : npcs[i].y;
+                        int rx = (npcs[i].move_x && npcs[i].patrol_x_max > npcs[i].patrol_x_min) ? random(npcs[i].patrol_x_min, npcs[i].patrol_x_max) : npcs[i].x;
+                        int ry = (npcs[i].move_y && npcs[i].patrol_y_max > npcs[i].patrol_y_min) ? random(npcs[i].patrol_y_min, npcs[i].patrol_y_max) : npcs[i].y;
                         npcs[i].wander_x = rx;
                         npcs[i].wander_y = ry;
                         npcs[i].has_wander_dest = true;
@@ -610,8 +626,8 @@ void npcloop()
             {
                 if(!npcs[i].has_wander_dest)
                 {
-                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? maxx : minx) : npcs[i].x;
-                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? maxy : miny) : npcs[i].y;
+                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? npcs[i].patrol_x_max : npcs[i].patrol_x_min) : npcs[i].x;
+                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? npcs[i].patrol_y_max : npcs[i].patrol_y_min) : npcs[i].y;
                     npcs[i].has_wander_dest = true;
                 }
                 bool x_reached = (npcs[i].x == npcs[i].wander_x) || !npcs[i].move_x;
@@ -620,8 +636,8 @@ void npcloop()
                 {
                     npcs[i].patrol_dx = -npcs[i].patrol_dx;
                     npcs[i].patrol_dy = -npcs[i].patrol_dy;
-                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? maxx : minx) : npcs[i].x;
-                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? maxy : miny) : npcs[i].y;
+                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? npcs[i].patrol_x_max : npcs[i].patrol_x_min) : npcs[i].x;
+                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? npcs[i].patrol_y_max : npcs[i].patrol_y_min) : npcs[i].y;
                 }
                 tx = npcs[i].wander_x; ty = npcs[i].wander_y;
                 has_move = true;
@@ -897,8 +913,8 @@ bool add_npc_form(string path_choice, string category, string subtype)
     string target_path = (path_choice == "global")
         ? "sounds/"+soundpack+"/npc/"+category+"/"+subtype+"/info.sif"
         : "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/"+subtype+"/info.sif";
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "targets"};
-    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item", "tel_x", "tel_y"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y"};
     form.reset();
     form.create_window("add "+subtype, false, true, false);
     int[] inputs;
@@ -1191,8 +1207,8 @@ void remove_npc()
 
 bool edit_npc_form(string target_path, string subtype)
 {
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "targets"};
-    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item", "tel_x", "tel_y"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y"};
     dictionary existing;
     file fin;
     if(fin.open(target_path, "rb"))
