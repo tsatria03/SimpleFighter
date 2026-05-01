@@ -191,12 +191,21 @@ int roll_range(int min_v, int max_v)
     return random(min_v, max_v);
 }
 
+int smart_int(string v)
+{
+    if(v == "maxx") return maxx;
+    if(v == "maxy") return maxy;
+    if(v == "minx") return minx;
+    if(v == "miny") return miny;
+    return parse_int(v);
+}
+
 void parse_triple_int(string v, int &out a, int &out b, int &out c)
 {
     string[] parts = string_split(v, ":", true);
-    a = parse_int(parts[0]);
-    b = (parts.length() >= 2 && parts[1] != "") ? parse_int(parts[1]) : a;
-    c = (parts.length() >= 3 && parts[2] != "") ? parse_int(parts[2]) : a;
+    a = smart_int(parts[0]);
+    b = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : a;
+    c = (parts.length() >= 3 && parts[2] != "") ? smart_int(parts[2]) : a;
 }
 void parse_triple_double(string v, double &out a, double &out b, double &out c)
 {
@@ -803,6 +812,628 @@ void npcloop()
     }
 }
 
+void npc_chooser()
+{
+    bool do_build = true;
+    int b_add, b_edit, b_remove, b_spawn, b_view, b_cancel;
+    while(true)
+    {
+        wait(5);
+        if(do_build)
+        {
+            do_build = false;
+            form.reset();
+            form.create_window("npc", false, true, false);
+            b_add = form.create_button("&add npc");
+            b_edit = form.create_button("&edit npc");
+            b_remove = form.create_button("&remove npc");
+            b_spawn = form.create_button("&spawn npc", true);
+            b_view = form.create_button("&view npc");
+            b_cancel = form.create_button("&cancel", false, true);
+            form.focus(b_add);
+            spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+        }
+        form.monitor();
+        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+        {
+            resume_pools();
+            speak("canceled");
+            return;
+        }
+        if(form.is_pressed(b_add)) { add_npc(); do_build = true; continue; }
+        if(form.is_pressed(b_edit)) { edit_npc(); do_build = true; continue; }
+        if(form.is_pressed(b_remove)) { remove_npc(); do_build = true; continue; }
+        if(form.is_pressed(b_view)) { view_npc(); do_build = true; continue; }
+        if(form.is_pressed(b_spawn)) { build_npc(); do_build = true; continue; }
+    }
+}
+
+bool add_npc_form(string path_choice, string category, string subtype)
+{
+    string target_path = (path_choice == "global")
+        ? "sounds/"+soundpack+"/npc/"+category+"/"+subtype+"/info.sif"
+        : "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/"+subtype+"/info.sif";
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "targets"};
+    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item"};
+    form.reset();
+    form.create_window("add "+subtype, false, true, false);
+    int[] inputs;
+    for(uint i=0; i<keys.length(); i++)
+        inputs.insert_last(form.create_input_box(keys[i]));
+    int[] checkboxes;
+    for(uint i=0; i<cb_keys.length(); i++)
+        checkboxes.insert_last(form.create_checkbox(cb_keys[i]));
+    int b_save = form.create_button("&save", true);
+    int b_cancel = form.create_button("&cancel", false, true);
+    form.focus(inputs[0]);
+    spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+    while(true)
+    {
+        wait(5);
+        form.monitor();
+        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+        {
+            speak("canceled");
+            return false;
+        }
+        if(form.is_pressed(b_save))
+        {
+            bool blank = false;
+            for(uint i=0; i<inputs.length(); i++)
+            {
+                if(form.get_text(inputs[i]) == "")
+                {
+                    speak(keys[i]+" is required.");
+                    form.focus(inputs[i]);
+                    spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+                    blank = true;
+                    break;
+                }
+            }
+            if(blank) continue;
+            if(file_exists(target_path))
+            {
+                setupmenu();
+                m.wrap_sound = "none.ogg";
+                m.click_sound = get_pack_sound("misc/menu1.ogg");
+                m.enter_sound = get_pack_sound("misc/menu2.ogg");
+                m.open_sound = get_pack_sound("misc/menu3.ogg");
+                m.add_item_tts("yes");
+                m.add_item_tts("no");
+                int mres = m.run("An info.sif already exists for this NPC. Overwrite?", true);
+                if(mres != 0) continue;
+            }
+            string content = "";
+            for(uint i=0; i<inputs.length(); i++)
+                content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+            for(uint i=0; i<checkboxes.length(); i++)
+                content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
+            file fout;
+            if(!fout.open(target_path, "w"))
+            {
+                speak("Failed to open file for writing.");
+                continue;
+            }
+            fout.write(content);
+            fout.close();
+            speak("Saved.");
+            return true;
+        }
+    }
+    return false;
+}
+
+string read_npc_info_file(string base, string subtype)
+{
+    string path = base+"/"+subtype+"/info.sif";
+    file fin;
+    if(!fin.open(path, "rb")) return "";
+    string content = fin.read();
+    fin.close();
+    return content;
+}
+
+void view_npc()
+{
+    string[] paths = {"global", "map"};
+    string[] categories = {"animals", "humans", "robots", "zombies"};
+    int saved_path_pos = 0;
+    int saved_cat_pos = 0;
+    int saved_sub_pos = 0;
+    bool do_build = true;
+    int last_path_pos = -1;
+    int last_cat_pos = -1;
+    int last_sub_pos = -1;
+    int focus_after_build = 0;
+    int path_list, cat_list, sub_list, content_box, b_cancel;
+    string[] sub_data;
+    string base = "";
+    while(true)
+    {
+        wait(5);
+        if(do_build)
+        {
+            do_build = false;
+            base = (saved_path_pos == 0)
+                ? "sounds/"+soundpack+"/npc/"+categories[saved_cat_pos]
+                : "data/maps/decompiled/"+mapname+"/assets/npc/"+categories[saved_cat_pos];
+            string[] all_dirs = find_directories(base+"/*");
+            sub_data.resize(0);
+            for(uint i=0; i<all_dirs.length(); i++)
+            {
+                if(file_exists(base+"/"+all_dirs[i]+"/info.sif"))
+                    sub_data.insert_last(all_dirs[i]);
+            }
+            if(sub_data.length() > 0) sort_naturally(sub_data);
+            int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+            string initial_content = (sub_data.length() > 0) ? read_npc_info_file(base, sub_data[sp]) : "";
+            string initial_caption = (sub_data.length() > 0) ? "contents for "+sub_data[sp] : "contents";
+            form.reset();
+            form.create_window("view npc", false, true, last_path_pos != -1);
+            path_list = form.create_list("path");
+            for(uint i=0; i<paths.length(); i++)
+                form.add_list_item(path_list, paths[i], paths[i]);
+            form.set_list_position(path_list, saved_path_pos, false);
+            cat_list = form.create_list("category");
+            for(uint i=0; i<categories.length(); i++)
+                form.add_list_item(cat_list, categories[i], categories[i]);
+            form.set_list_position(cat_list, saved_cat_pos, false);
+            sub_list = form.create_list("subtype");
+            for(uint i=0; i<sub_data.length(); i++)
+                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+            form.set_list_position(sub_list, sp, false);
+            content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
+            b_cancel = form.create_button("&cancel", false, true);
+            last_sub_pos = sp;
+            if(last_path_pos == -1)
+            {
+                form.focus(path_list);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+            }
+            else if(focus_after_build == 1)
+                form.focus_silently(cat_list);
+            else
+                form.focus_silently(path_list);
+            last_path_pos = saved_path_pos;
+            last_cat_pos = saved_cat_pos;
+        }
+        form.monitor();
+        int cur_path = form.get_list_position(path_list);
+        if(cur_path != -1 && cur_path != last_path_pos)
+        {
+            saved_path_pos = cur_path;
+            saved_sub_pos = 0;
+            focus_after_build = 0;
+            do_build = true;
+            continue;
+        }
+        int cur_cat = form.get_list_position(cat_list);
+        if(cur_cat != -1 && cur_cat != last_cat_pos)
+        {
+            saved_cat_pos = cur_cat;
+            saved_sub_pos = 0;
+            focus_after_build = 1;
+            do_build = true;
+            continue;
+        }
+        int cur_sub = form.get_list_position(sub_list);
+        if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
+        {
+            saved_sub_pos = cur_sub;
+            last_sub_pos = cur_sub;
+            form.set_text(content_box, read_npc_info_file(base, sub_data[cur_sub]));
+            form.set_caption(content_box, "contents for "+sub_data[cur_sub]);
+        }
+        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+        {
+            speak("canceled");
+            return;
+        }
+    }
+}
+
+void remove_npc()
+{
+    string[] paths = {"global", "map"};
+    string[] categories = {"animals", "humans", "robots", "zombies"};
+    int saved_path_pos = 0;
+    int saved_cat_pos = 0;
+    bool do_build = true;
+    int last_path_pos = -1;
+    int last_cat_pos = -1;
+    int focus_after_build = 0;
+    int path_list, cat_list, sub_list, b_remove, b_cancel;
+    string[] sub_data;
+    string base = "";
+    while(true)
+    {
+        wait(5);
+        if(do_build)
+        {
+            do_build = false;
+            base = (saved_path_pos == 0)
+                ? "sounds/"+soundpack+"/npc/"+categories[saved_cat_pos]
+                : "data/maps/decompiled/"+mapname+"/assets/npc/"+categories[saved_cat_pos];
+            string[] all_dirs = find_directories(base+"/*");
+            sub_data.resize(0);
+            for(uint i=0; i<all_dirs.length(); i++)
+            {
+                if(file_exists(base+"/"+all_dirs[i]+"/info.sif"))
+                    sub_data.insert_last(all_dirs[i]);
+            }
+            if(sub_data.length() > 0) sort_naturally(sub_data);
+            form.reset();
+            form.create_window("remove npc", false, true, last_path_pos != -1);
+            path_list = form.create_list("path");
+            for(uint i=0; i<paths.length(); i++)
+                form.add_list_item(path_list, paths[i], paths[i]);
+            form.set_list_position(path_list, saved_path_pos, false);
+            cat_list = form.create_list("category");
+            for(uint i=0; i<categories.length(); i++)
+                form.add_list_item(cat_list, categories[i], categories[i]);
+            form.set_list_position(cat_list, saved_cat_pos, false);
+            sub_list = form.create_list("subtype", 0, true);
+            for(uint i=0; i<sub_data.length(); i++)
+                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+            b_remove = form.create_button("&remove", true);
+            b_cancel = form.create_button("&cancel", false, true);
+            if(last_path_pos == -1)
+            {
+                form.focus(path_list);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+            }
+            else if(focus_after_build == 1)
+                form.focus_silently(cat_list);
+            else
+                form.focus_silently(path_list);
+            last_path_pos = saved_path_pos;
+            last_cat_pos = saved_cat_pos;
+        }
+        form.monitor();
+        int cur_path = form.get_list_position(path_list);
+        if(cur_path != -1 && cur_path != last_path_pos)
+        {
+            saved_path_pos = cur_path;
+            focus_after_build = 0;
+            do_build = true;
+            continue;
+        }
+        int cur_cat = form.get_list_position(cat_list);
+        if(cur_cat != -1 && cur_cat != last_cat_pos)
+        {
+            saved_cat_pos = cur_cat;
+            focus_after_build = 1;
+            do_build = true;
+            continue;
+        }
+        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+        {
+            speak("canceled");
+            return;
+        }
+        if(form.is_pressed(b_remove))
+        {
+            int[]@ checked = form.get_checked_list_items(sub_list);
+            if(checked is null || checked.length() == 0)
+            {
+                speak("No subtypes selected.");
+                form.focus(sub_list);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+                continue;
+            }
+            setupmenu();
+            m.wrap_sound = "none.ogg";
+            m.click_sound = get_pack_sound("misc/menu1.ogg");
+            m.enter_sound = get_pack_sound("misc/menu2.ogg");
+            m.open_sound = get_pack_sound("misc/menu3.ogg");
+            m.add_item_tts("yes");
+            m.add_item_tts("no");
+            int mres = m.run("Are you sure you would like to remove "+checked.length()+" info.sif files?", true);
+            if(mres != 0)
+            {
+                do_build = true;
+                continue;
+            }
+            for(uint i=0; i<checked.length(); i++)
+            {
+                string p = base+"/"+sub_data[checked[i]]+"/info.sif";
+                if(file_exists(p)) file_delete(p);
+            }
+            speak("Removed "+checked.length()+" info.sif files.");
+            return;
+        }
+    }
+}
+
+bool edit_npc_form(string target_path, string subtype)
+{
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "targets"};
+    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item"};
+    dictionary existing;
+    file fin;
+    if(fin.open(target_path, "rb"))
+    {
+        string content = fin.read();
+        fin.close();
+        content = string_replace(content, "\r", "", true);
+        string[] lines = string_split(content, "\n", true);
+        for(uint i=0; i<lines.length(); i++)
+        {
+            int eq = string_contains(lines[i], "=", 1);
+            if(eq < 0) continue;
+            string k = string_left(lines[i], eq);
+            string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
+            existing[k] = v;
+        }
+    }
+    form.reset();
+    form.create_window("edit "+subtype, false, true, false);
+    int[] inputs;
+    for(uint i=0; i<keys.length(); i++)
+    {
+        string preset = "";
+        if(existing.exists(keys[i])) existing.get(keys[i], preset);
+        inputs.insert_last(form.create_input_box(keys[i], preset));
+    }
+    int[] checkboxes;
+    for(uint i=0; i<cb_keys.length(); i++)
+    {
+        string cv = "";
+        if(existing.exists(cb_keys[i])) existing.get(cb_keys[i], cv);
+        checkboxes.insert_last(form.create_checkbox(cb_keys[i], cv == "true"));
+    }
+    int b_save = form.create_button("&save", true);
+    int b_cancel = form.create_button("&cancel", false, true);
+    form.focus(inputs[0]);
+    spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+    while(true)
+    {
+        wait(5);
+        form.monitor();
+        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+        {
+            speak("canceled");
+            return false;
+        }
+        if(form.is_pressed(b_save))
+        {
+            bool blank = false;
+            for(uint i=0; i<inputs.length(); i++)
+            {
+                if(form.get_text(inputs[i]) == "")
+                {
+                    speak(keys[i]+" is required.");
+                    form.focus(inputs[i]);
+                    spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+                    blank = true;
+                    break;
+                }
+            }
+            if(blank) continue;
+            string content = "";
+            for(uint i=0; i<inputs.length(); i++)
+                content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+            for(uint i=0; i<checkboxes.length(); i++)
+                content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
+            file fout;
+            if(!fout.open(target_path, "w"))
+            {
+                speak("Failed to open file for writing.");
+                continue;
+            }
+            fout.write(content);
+            fout.close();
+            speak("Saved.");
+            return true;
+        }
+    }
+    return false;
+}
+
+void edit_npc()
+{
+    string[] paths = {"global", "map"};
+    string[] categories = {"animals", "humans", "robots", "zombies"};
+    int saved_path_pos = 0;
+    int saved_cat_pos = 0;
+    int saved_sub_pos = 0;
+    bool do_build = true;
+    int last_path_pos = -1;
+    int last_cat_pos = -1;
+    int focus_after_build = 0;
+    int path_list, cat_list, sub_list, b_edit, b_cancel;
+    string[] sub_data;
+    while(true)
+    {
+        wait(5);
+        if(do_build)
+        {
+            do_build = false;
+            string base = (saved_path_pos == 0)
+                ? "sounds/"+soundpack+"/npc/"+categories[saved_cat_pos]
+                : "data/maps/decompiled/"+mapname+"/assets/npc/"+categories[saved_cat_pos];
+            string[] all_dirs = find_directories(base+"/*");
+            sub_data.resize(0);
+            for(uint i=0; i<all_dirs.length(); i++)
+            {
+                if(file_exists(base+"/"+all_dirs[i]+"/info.sif"))
+                    sub_data.insert_last(all_dirs[i]);
+            }
+            if(sub_data.length() > 0) sort_naturally(sub_data);
+            form.reset();
+            form.create_window("edit npc", false, true, last_path_pos != -1);
+            path_list = form.create_list("path");
+            for(uint i=0; i<paths.length(); i++)
+                form.add_list_item(path_list, paths[i], paths[i]);
+            form.set_list_position(path_list, saved_path_pos, false);
+            cat_list = form.create_list("category");
+            for(uint i=0; i<categories.length(); i++)
+                form.add_list_item(cat_list, categories[i], categories[i]);
+            form.set_list_position(cat_list, saved_cat_pos, false);
+            sub_list = form.create_list("subtype");
+            for(uint i=0; i<sub_data.length(); i++)
+                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+            int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+            form.set_list_position(sub_list, sp, false);
+            b_edit = form.create_button("&edit", true);
+            b_cancel = form.create_button("&cancel", false, true);
+            if(last_path_pos == -1)
+            {
+                form.focus(path_list);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+            }
+            else if(focus_after_build == 1)
+                form.focus_silently(cat_list);
+            else
+                form.focus_silently(path_list);
+            last_path_pos = saved_path_pos;
+            last_cat_pos = saved_cat_pos;
+        }
+        form.monitor();
+        int cur_path = form.get_list_position(path_list);
+        if(cur_path != -1 && cur_path != last_path_pos)
+        {
+            saved_path_pos = cur_path;
+            saved_sub_pos = 0;
+            focus_after_build = 0;
+            do_build = true;
+            continue;
+        }
+        int cur_cat = form.get_list_position(cat_list);
+        if(cur_cat != -1 && cur_cat != last_cat_pos)
+        {
+            saved_cat_pos = cur_cat;
+            saved_sub_pos = 0;
+            focus_after_build = 1;
+            do_build = true;
+            continue;
+        }
+        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+        {
+            speak("canceled");
+            return;
+        }
+        if(form.is_pressed(b_edit))
+        {
+            int p = form.get_list_position(sub_list);
+            if(p < 0 || p >= int(sub_data.length()))
+            {
+                speak("Subtype is required.");
+                form.focus(sub_list);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+                continue;
+            }
+            string chosen_sub = sub_data[p];
+            string chosen_cat = categories[saved_cat_pos];
+            string target_path = (saved_path_pos == 0)
+                ? "sounds/"+soundpack+"/npc/"+chosen_cat+"/"+chosen_sub+"/info.sif"
+                : "data/maps/decompiled/"+mapname+"/assets/npc/"+chosen_cat+"/"+chosen_sub+"/info.sif";
+            saved_sub_pos = p;
+            if(edit_npc_form(target_path, chosen_sub)) return;
+            do_build = true;
+            continue;
+        }
+    }
+}
+
+void add_npc()
+{
+    string[] paths = {"global", "map"};
+    string[] categories = {"animals", "humans", "robots", "zombies"};
+    int saved_path_pos = 0;
+    int saved_cat_pos = 0;
+    int saved_sub_pos = 0;
+    bool do_build = true;
+    int last_path_pos = -1;
+    int last_cat_pos = -1;
+    int focus_after_build = 0;
+    int path_list, cat_list, sub_list, b_add, b_cancel;
+    string[] sub_data;
+    while(true)
+    {
+        wait(5);
+        if(do_build)
+        {
+            do_build = false;
+            string base = (saved_path_pos == 0)
+                ? "sounds/"+soundpack+"/npc/"+categories[saved_cat_pos]
+                : "data/maps/decompiled/"+mapname+"/assets/npc/"+categories[saved_cat_pos];
+            sub_data = find_directories(base+"/*");
+            if(sub_data.length() > 0) sort_naturally(sub_data);
+            form.reset();
+            form.create_window("add npc", false, true, last_path_pos != -1);
+            path_list = form.create_list("path");
+            for(uint i=0; i<paths.length(); i++)
+                form.add_list_item(path_list, paths[i], paths[i]);
+            form.set_list_position(path_list, saved_path_pos, false);
+            cat_list = form.create_list("category");
+            for(uint i=0; i<categories.length(); i++)
+                form.add_list_item(cat_list, categories[i], categories[i]);
+            form.set_list_position(cat_list, saved_cat_pos, false);
+            sub_list = form.create_list("subtype");
+            for(uint i=0; i<sub_data.length(); i++)
+                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+            int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+            form.set_list_position(sub_list, sp, false);
+            b_add = form.create_button("&add", true);
+            b_cancel = form.create_button("&cancel", false, true);
+            if(last_path_pos == -1)
+            {
+                form.focus(path_list);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+            }
+            else if(focus_after_build == 1)
+                form.focus_silently(cat_list);
+            else
+                form.focus_silently(path_list);
+            last_path_pos = saved_path_pos;
+            last_cat_pos = saved_cat_pos;
+        }
+        form.monitor();
+        int cur_path = form.get_list_position(path_list);
+        if(cur_path != -1 && cur_path != last_path_pos)
+        {
+            saved_path_pos = cur_path;
+            saved_sub_pos = 0;
+            focus_after_build = 0;
+            do_build = true;
+            continue;
+        }
+        int cur_cat = form.get_list_position(cat_list);
+        if(cur_cat != -1 && cur_cat != last_cat_pos)
+        {
+            saved_cat_pos = cur_cat;
+            saved_sub_pos = 0;
+            focus_after_build = 1;
+            do_build = true;
+            continue;
+        }
+        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+        {
+            speak("canceled");
+            return;
+        }
+        if(form.is_pressed(b_add))
+        {
+            int p = form.get_list_position(sub_list);
+            if(p < 0 || p >= int(sub_data.length()))
+            {
+                speak("Subtype is required.");
+                form.focus(sub_list);
+                spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
+                continue;
+            }
+            string chosen_sub = sub_data[p];
+            string chosen_cat = categories[saved_cat_pos];
+            string chosen_path = paths[saved_path_pos];
+            saved_sub_pos = p;
+            if(add_npc_form(chosen_path, chosen_cat, chosen_sub)) return;
+            do_build = true;
+            continue;
+        }
+    }
+}
+
 void build_npc()
 {
     string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
@@ -830,7 +1461,7 @@ void build_npc()
             }
             sub_data = get_map_sound_folders("npc/"+categories[saved_cat_pos]+"/*");
             form.reset();
-            form.create_window("npc", false, true, last_cat_pos != -1);
+            form.create_window("spawn npc", false, true, last_cat_pos != -1);
             mx = form.create_input_box("x", saved_x);
             my = form.create_input_box("y", saved_y);
             lev = form.create_input_box("scale level", saved_lev);
