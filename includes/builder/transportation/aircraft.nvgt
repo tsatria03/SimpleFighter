@@ -5,6 +5,7 @@ class aircraft
 {
 bool landing, moveable;
 int altsound, defsound, hurtsound, loopsound, speedsound, landsound, plainsound, turnsound;
+bool left_announced, right_announced, up_announced, down_announced;
 double current_pitch = 100;
 double plainhealth;
 double plainmaxhealth;
@@ -14,7 +15,7 @@ int plaindir;
 int plainspeed;
 int aldtime, plaintime, speedtime;
 string plaintype;
-timer aldtimer, plaintimer, speedtimer;
+timer aldtimer, plaintimer, speedtimer, inputtimer;
 aircraft(int plx,int ply,double hp,double maxhp,string plt)
 {
 plainx=plx;
@@ -101,46 +102,102 @@ facing="right";
 aircrafts[i].plaindir=1;
 aircrafts[i].turnsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*turn*"),false);
 }
-if(key_down(KEY_LEFT) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].plainspeed!=1 and aircrafts[i].speedtimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true and paused==0)
+if(key_pressed(KEY_LEFT) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].plainspeed!=1 and aircrafts[i].inputtimer.elapsed>=500 and aircrafts[i].moveable==true and paused==0)
 {
 aircrafts[i].speedsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
 speak("speed: "+(aircrafts[i].plainspeed-1));
+aircrafts[i].inputtimer.restart();
+aircrafts[i].left_announced=true;
+}
+if(key_down(KEY_LEFT) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].plainspeed!=1 and aircrafts[i].speedtimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true and paused==0)
+{
 aircrafts[i].plainspeed-=1;
 aircrafts[i].speedtimer.restart();
 }
-if(key_down(KEY_RIGHT) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].plainspeed!=20 and aircrafts[i].speedtimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true and paused==0)
+if(key_released(KEY_LEFT) and aircrafts[i].left_announced and aircrafts[i].inputtimer.elapsed>=500 and aircrafts[i].moveable==true)
+{
+aircrafts[i].speedsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
+speak("speed: "+aircrafts[i].plainspeed);
+aircrafts[i].inputtimer.restart();
+aircrafts[i].left_announced=false;
+}
+if(key_pressed(KEY_RIGHT) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].plainspeed!=20 and aircrafts[i].inputtimer.elapsed>=500 and aircrafts[i].moveable==true and paused==0)
 {
 aircrafts[i].speedsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
 speak("speed: "+(aircrafts[i].plainspeed+1));
+aircrafts[i].inputtimer.restart();
+aircrafts[i].right_announced=true;
+}
+if(key_down(KEY_RIGHT) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].plainspeed!=20 and aircrafts[i].speedtimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true and paused==0)
+{
 aircrafts[i].plainspeed+=1;
 aircrafts[i].speedtimer.restart();
 }
-if(key_down(KEY_DOWN) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].aldtimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true and paused==0)
+if(key_released(KEY_RIGHT) and aircrafts[i].right_announced and aircrafts[i].inputtimer.elapsed>=500 and aircrafts[i].moveable==true)
+{
+aircrafts[i].speedsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
+speak("speed: "+aircrafts[i].plainspeed);
+aircrafts[i].inputtimer.restart();
+aircrafts[i].right_announced=false;
+}
+if(key_pressed(KEY_DOWN) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].inputtimer.elapsed>=500 and aircrafts[i].moveable==true and paused==0)
 {
 if(aircrafts[i].landing==false && me.y!=1 && aircrafts[i].plainy!=1)
 {
 aircrafts[i].altsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
 speak("altitude: "+(aircrafts[i].plainy-1));
+aircrafts[i].inputtimer.restart();
+aircrafts[i].down_announced=true;
+}
+else if(aircrafts[i].landing==true && me.y!=0 && aircrafts[i].plainy!=0)
+{
+aircrafts[i].altsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
+if (aircrafts[i].plainy - 1 > 0) speak("altitude: " + (aircrafts[i].plainy-1));
+aircrafts[i].inputtimer.restart();
+aircrafts[i].down_announced=true;
+}
+}
+if(key_down(KEY_DOWN) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].aldtimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true and paused==0)
+{
+if(aircrafts[i].landing==false && me.y!=1 && aircrafts[i].plainy!=1)
+{
 me.y-=1;
 aircrafts[i].plainy-=1;
 aircrafts[i].aldtimer.restart();
 }
 else if(aircrafts[i].landing==true && me.y!=0 && aircrafts[i].plainy!=0)
 {
-aircrafts[i].altsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
-if (aircrafts[i].plainy - 1 > 0) speak("altitude: " + (aircrafts[i].plainy-1));
 me.y-=1;
 aircrafts[i].plainy-=1;
 aircrafts[i].aldtimer.restart();
 }
 }
-if(key_down(KEY_UP) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].aldtimer.elapsed>=aircrafts[i].plaintime and me.y!=maxy and aircrafts[i].plainy!=maxy and aircrafts[i].moveable==true and paused==0)
+if(key_released(KEY_DOWN) and aircrafts[i].down_announced and aircrafts[i].inputtimer.elapsed>=500 and aircrafts[i].moveable==true)
+{
+aircrafts[i].altsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
+speak("altitude: "+aircrafts[i].plainy);
+aircrafts[i].inputtimer.restart();
+aircrafts[i].down_announced=false;
+}
+if(key_pressed(KEY_UP) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].inputtimer.elapsed>=500 and me.y!=maxy and aircrafts[i].plainy!=maxy and aircrafts[i].moveable==true and paused==0)
 {
 aircrafts[i].altsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
 speak("altitude: "+(aircrafts[i].plainy+1));
+aircrafts[i].inputtimer.restart();
+aircrafts[i].up_announced=true;
+}
+if(key_down(KEY_UP) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and aircrafts[i].aldtimer.elapsed>=aircrafts[i].plaintime and me.y!=maxy and aircrafts[i].plainy!=maxy and aircrafts[i].moveable==true and paused==0)
+{
 me.y+=1;
 aircrafts[i].plainy+=1;
 aircrafts[i].aldtimer.restart();
+}
+if(key_released(KEY_UP) and aircrafts[i].up_announced and aircrafts[i].inputtimer.elapsed>=500 and aircrafts[i].moveable==true)
+{
+aircrafts[i].altsound=plainpool.play_stationary(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*change*"),false);
+speak("altitude: "+aircrafts[i].plainy);
+aircrafts[i].inputtimer.restart();
+aircrafts[i].up_announced=false;
 }
 }
 if(paused==1)
