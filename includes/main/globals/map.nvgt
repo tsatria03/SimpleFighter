@@ -734,9 +734,24 @@ array<string> tiles;
 array<double> vols;
 array<double> pits;
 get_all_platform_tiles(me.x, me.y, tiles, vols, pits);
+if(!onbike)
+{
 for(uint i=0; i<tiles.length(); i++)
 {
 tileslot=p.play_stationary_extended(get_map_sound("objects/platforms/"+tiles[i]+"/*fall*"), false, 0, 0, vols[i], pits[i]);
+}
+}
+if(onbike)
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+if(bikes[i].moveable)
+{
+string biketile = identify_biketile(gmt(me.x, me.y));
+bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+biketile+"/*fall*"), false, 0, 0, 0, 100, false);
+break;
+}
+}
 }
 }
 void playland()
@@ -780,9 +795,24 @@ array<string> tiles;
 array<double> vols;
 array<double> pits;
 get_all_platform_tiles(me.x, me.y, tiles, vols, pits);
+if(!onbike)
+{
 for(uint i=0; i<tiles.length(); i++)
 {
 tileslot=p.play_stationary_extended(get_map_sound("objects/platforms/"+tiles[i]+"/*land*"), false, 0, 0, vols[i], pits[i]);
+}
+}
+if(onbike)
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+if(bikes[i].moveable)
+{
+string biketile = identify_biketile(gmt(me.x, me.y));
+bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+biketile+"/*land*"), false, 0, 0, 0, 100, false);
+break;
+}
+}
 }
 }
 
@@ -943,8 +973,29 @@ if(impact_dmg>0) platforms[i].hurtsound=p.play_stationary_extended(get_map_sound
         break;
     }
 }
+if(fallcounter>=8 and onbike)
+{
+int bdmg = max(1, fallcounter * fallmod);
+for(uint i=0; i<bikes.length(); i++)
+{
+if(bikes[i].moveable)
+{
+bikes[i].bikehealth -= bdmg;
+kombatlog.insert_last(bdmg+ " damage to "+bikes[i].biketype+", falling down.");
+if(bikes[i].bikehealth <= 0)
+{
+health -= bdmg;
+kombatlog.insert_last(bdmg+ " damage to player, falling down.");
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, bdmg, 10 * fallcounter, count);
+}
+break;
+}
+}
+}
 int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
-if(fallcounter>=8 and shieldon==1)
+if(fallcounter>=8 and shieldon==1 and !onbike)
 {
 shieldstrength-=sdm;
 kombatlog.insert_last(sdm+ " damage to "+shieldtype+", falling down.");
@@ -959,7 +1010,7 @@ break_charbones(ct, sdm, 10 * fallcounter, count);
 }
 }
 int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
-if(fallcounter>=8 and shieldon==0)
+if(fallcounter>=8 and shieldon==0 and !onbike)
 {
 health -= dmg;
 kombatlog.insert_last(dmg+ " damage to player, falling down.");

@@ -34,6 +34,7 @@ void bikeloop()
 {
 for(uint i=0; i<bikes.length(); i++)
 {
+if(onbike && bikes[i].moveable) bikes[i].bikey = me.y;
 if(key_down(KEY_RIGHT) and bikes[i].biketimer.elapsed>=bikes[i].biketime and bikes[i].moveable==true)
 {
 if(facing!="right")
@@ -56,7 +57,7 @@ return;
 }
 me.x+=5;
 bikes[i].bikex+=5;
-check_radar(bikes[i].bikedir, @bikes[i]);
+if(jumping!=1) check_radar(bikes[i].bikedir, @bikes[i]);
 string current_tile = identify_biketile(gmt(me.x, me.y));
 if (bikes[i].lasttile != current_tile)
 {
@@ -64,7 +65,7 @@ bikepool.destroy_sound(bikes[i].changesound);
 bikes[i].changesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/" + bikes[i].biketype + "/misc/*change*"), false, 0, 0, 0, 100, false);
 bikes[i].lasttile = current_tile;
 }
-bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,0,100,false);
+if(jumping!=1) bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,0,100,false);
 bikes[i].biketimer.restart();
 }
 }
@@ -90,7 +91,7 @@ return;
 }
 me.x-=5;
 bikes[i].bikex-=5;
-check_radar(bikes[i].bikedir, @bikes[i]);
+if(jumping!=1) check_radar(bikes[i].bikedir, @bikes[i]);
 string current_tile = identify_biketile(gmt(me.x, me.y));
 if (bikes[i].lasttile != current_tile)
 {
@@ -98,7 +99,7 @@ bikepool.destroy_sound(bikes[i].changesound);
 bikes[i].changesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/" + bikes[i].biketype + "/misc/*change*"), false, 0, 0, 0, 100, false);
 bikes[i].lasttile = current_tile;
 }
-bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,0,100,false);
+if(jumping!=1) bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,0,100,false);
 bikes[i].biketimer.restart();
 }
 }
@@ -108,7 +109,7 @@ if(bikes[i].moveable==false)
 {
 cammable=false;
 hookable=false;
-jumpable=false;
+jumpable=true;
 moveable=false;
 pauseable=false;
 quittable=false;
@@ -148,7 +149,7 @@ onbike=false;
 bikes[i].moveable=false;
 }
 }
-if(key_repeating(KEY_SPACE) and bikes[i].moveable==true and paused==0)
+if(shift_is_down() && key_repeating(KEY_SPACE) and bikes[i].moveable==true and paused==0)
 {
 bikepool.destroy_sound(bikes[i].bellsound);
 bikes[i].bellsound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*bell*"),false,0,0,0,100,false);
@@ -344,7 +345,7 @@ return;
 }
 bool is_bikable(string tile)
 {
-if (tile == "") return false;
+if (tile == "" || tile == "air") return true;
 for (uint i = 0; i < unbikable.length(); i++)
 {
 if (string_contains(tile, unbikable[i], 1) > -1)
@@ -357,7 +358,7 @@ bool check_wall_left(double x, double y, double speed)
 for (int offset = 1; offset <= speed; offset++)
 {
 double px = x - offset;
-if (string_contains(gmt(px, y), "wall", 1) > -1 || gmt(px, y) == "")
+if (string_contains(gmt(px, y), "wall", 1) > -1)
 return true;
 }
 return false;
@@ -367,7 +368,7 @@ bool check_wall_right(double x, double y, double speed)
 for (int offset = 1; offset <= speed; offset++)
 {
 double px = x + offset;
-if (string_contains(gmt(px, y), "wall", 1) > -1 || gmt(px, y) == "")
+if (string_contains(gmt(px, y), "wall", 1) > -1)
 return true;
 }
 return false;
