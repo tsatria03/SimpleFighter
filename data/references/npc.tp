@@ -33,7 +33,12 @@ Field reference.
 
 Every field in info.sif uses the form key=value, one per line.
 Numeric fields can take a single number for a constant, a colon delimited triple for state specific values, or a comma range for a randomized roll.
-The triple format is normal:wounded:healing, where leaving out the second or third part falls back to the first.
+The triple format is normal:wounded:healing for most numeric fields, where leaving out the second or third part falls back to the first.
+A few fields override this convention with their own slot meanings.
+Health uses a:b:c where a is max health, b is the wounded threshold, and c is the heal amount per tick.
+Chase mode uses trigger:wander, with each slot a string from a fixed enum.
+Chase time uses calm:random:pause, with each slot a per-purpose timer rather than a per-state value.
+Teleport time uses normal:wounded:healing like most fields, but each slot accepts the literal never to disable that state, since 0 also disables.
 The comma format is min,max for a fresh random roll on each use.
 Fields can mix the two: 5000,15000:1000,5000:5000,15000 gives a different range per state.
 
@@ -69,6 +74,12 @@ drop_item (bool): Whether the creature has a chance to drop a healing or stamina
 
 chase mode (string pair): Two parts joined with a colon as trigger:wander. The trigger part decides when the creature pursues and accepts sight, always, provoke, random, or never. Sight pursues whenever a valid target is in sight range. Always pursues regardless of sight. Provoke only pursues after the creature has been hit, and calms down after losing sight for chase time's first slot. Random flips between pursuing and not pursuing on a clock controlled by chase time's second slot. Never refuses to chase but still defends in attack range. The wander part decides what the creature does while not pursuing and accepts none, roam, or patrol. None stands still. Roam picks random destinations within move_x and move_y bounds and pauses between them for chase time's third slot. Patrol walks the corners of its move bounds in a fixed loop.
 chase time (triple range): Three timer slots joined with colons as calm:random:pause, all in milliseconds. Each slot supports comma ranges for a fresh random roll. Calm controls how long a provoked creature stays angry after losing sight. Random controls how long each phase of the random trigger lasts before flipping. Pause controls how long a roaming creature stops between destinations. Slots not relevant to the chosen chase mode are ignored.
+
+tel_x (bool): Whether a teleport tick is allowed to randomize the creature's x coordinate. With tel_y false this gives a horizontal only warp, matching the boss telleble flag.
+tel_y (bool): Whether a teleport tick is allowed to randomize the creature's y coordinate. Combined with tel_x both true the creature can jump to any tile on the map.
+With both bools false the teleport feature is off entirely, so the time field is ignored.
+
+teleport time (triple range): Three timer slots joined with colons as normal:wounded:healing, all in milliseconds. Each slot supports comma ranges for a fresh random roll on each tick, like 5000,15000 for a teleport every five to fifteen seconds. Each slot also accepts the literal never to disable teleporting in that state, so teleport time=5000:never:never makes the creature teleport on the normal clock but never while wounded or healing. The destination uses random(minx,maxx) and random(miny,maxy) gated by tel_x and tel_y, the creature's *tel* clip plays at the new tile, and the loop sound follows along.
 
 targets (csv list): What the creature attacks. The default is player, matching the original behavior. Other accepted values are animals, humans, robots, zombies, the shorthand all for everything, and the special value none for a fully passive creature that walks around without attacking anything. Multiple values can be combined with commas, like player,zombies for a creature that hunts you and zombies but ignores everyone else.
 

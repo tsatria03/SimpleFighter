@@ -40,6 +40,13 @@ class npc
     bool move_x;
     bool move_y;
     bool dropitem;
+    bool tel_x;
+    bool tel_y;
+    int tel_n_min, tel_n_max;
+    int tel_w_min, tel_w_max;
+    int tel_h_min, tel_h_max;
+    timer teltimer;
+    int telsound;
     double health;
     int currentlives;
     bool spotted;
@@ -91,6 +98,11 @@ class npc
         wander_paused = false;
         wander_pause_duration = 0;
         last_state = "normal";
+        tel_x = false;
+        tel_y = false;
+        tel_n_min = -1; tel_n_max = -1;
+        tel_w_min = -1; tel_w_max = -1;
+        tel_h_min = -1; tel_h_max = -1;
         npc_parse(this);
         if(scale_level > 0)
         {
@@ -185,6 +197,12 @@ void parse_range_int(string v, int &out a, int &out b)
     b = (parts.length() >= 2 && parts[1] != "") ? parse_int(parts[1]) : a;
 }
 
+void parse_tel_slot(string s, int &out a, int &out b)
+{
+    if(s == "" || s == "never") { a = -1; b = -1; return; }
+    parse_range_int(s, a, b);
+}
+
 int roll_range(int min_v, int max_v)
 {
     if(min_v >= max_v) return min_v;
@@ -253,6 +271,15 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "move_x") self.move_x = string_to_bool(v);
         else if(k == "move_y") self.move_y = string_to_bool(v);
         else if(k == "drop_item") self.dropitem = string_to_bool(v);
+        else if(k == "tel_x") self.tel_x = string_to_bool(v);
+        else if(k == "tel_y") self.tel_y = string_to_bool(v);
+        else if(k == "teleport time")
+        {
+            string[] parts = string_split(v, ":", true);
+            parse_tel_slot(parts.length() >= 1 ? parts[0] : "", self.tel_n_min, self.tel_n_max);
+            parse_tel_slot(parts.length() >= 2 ? parts[1] : "", self.tel_w_min, self.tel_w_max);
+            parse_tel_slot(parts.length() >= 3 ? parts[2] : "", self.tel_h_min, self.tel_h_max);
+        }
         else if(k == "chase mode")
         {
             string[] parts = string_split(v, ":", true);
@@ -466,6 +493,23 @@ void npcloop()
             npcs[i].health += npcs[i].heal_amount;
             if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
             npcs[i].heal_timer.restart();
+        }
+
+        // teleport tick
+        if(npcs[i].tel_x || npcs[i].tel_y)
+        {
+            int tel_min = in_normal ? npcs[i].tel_n_min : (in_wounded ? npcs[i].tel_w_min : npcs[i].tel_h_min);
+            int tel_max = in_normal ? npcs[i].tel_n_max : (in_wounded ? npcs[i].tel_w_max : npcs[i].tel_h_max);
+            if(tel_min > 0 && tel_max > 0 && npcs[i].teltimer.elapsed >= roll_range(tel_min, tel_max))
+            {
+                int new_x = npcs[i].tel_x ? random(minx, maxx) : npcs[i].x;
+                int new_y = npcs[i].tel_y ? random(miny, maxy) : npcs[i].y;
+                npcs[i].telsound = pool.play_extended_2d(get_map_sound(sound_base+"/*tel*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                npcs[i].x = new_x;
+                npcs[i].y = new_y;
+                pool.update_sound_2d(npcs[i].mainsound, npcs[i].x, npcs[i].y);
+                npcs[i].teltimer.restart();
+            }
         }
 
         // determine pursuing flag from chase trigger (only relevant in normal state)
@@ -844,7 +888,7 @@ void npc_chooser()
         if(form.is_pressed(b_edit)) { edit_npc(); do_build = true; continue; }
         if(form.is_pressed(b_remove)) { remove_npc(); do_build = true; continue; }
         if(form.is_pressed(b_view)) { view_npc(); do_build = true; continue; }
-        if(form.is_pressed(b_spawn)) { build_npc(); do_build = true; continue; }
+        if(form.is_pressed(b_spawn)) { build_npc(); return; }
     }
 }
 
@@ -853,8 +897,8 @@ bool add_npc_form(string path_choice, string category, string subtype)
     string target_path = (path_choice == "global")
         ? "sounds/"+soundpack+"/npc/"+category+"/"+subtype+"/info.sif"
         : "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/"+subtype+"/info.sif";
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "targets"};
-    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "targets"};
+    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item", "tel_x", "tel_y"};
     form.reset();
     form.create_window("add "+subtype, false, true, false);
     int[] inputs;
@@ -1147,8 +1191,8 @@ void remove_npc()
 
 bool edit_npc_form(string target_path, string subtype)
 {
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "targets"};
-    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "targets"};
+    string[] cb_keys = {"attacking", "move_x", "move_y", "drop_item", "tel_x", "tel_y"};
     dictionary existing;
     file fin;
     if(fin.open(target_path, "rb"))
