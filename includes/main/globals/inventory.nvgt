@@ -231,9 +231,27 @@ return;
 }
 }
 }
+
 int count_total_items()
 {
 return inv.get_keys().length();
+}
+int inv_count(string item)
+{
+if (!inv.exists(item)) return 0;
+int a = 0;
+inv.get(item, a);
+return a;
+}
+
+string find_inv(string pattern)
+{
+string[] keys = inv.get_keys();
+for (uint i = 0; i < keys.length(); i++)
+{
+if (glob_match(pattern, keys[i])) return keys[i];
+}
+return "";
 }
 string getitem()
 {
@@ -259,4 +277,15 @@ return ab;
 }
 else
 return -1;
+}
+void parse_item_spec(string spec, string &out item_id, int &out count)
+{
+count = 1;
+item_id = spec;
+int colon = spec.find(":");
+if (colon < 0) return;
+item_id = spec.substr(0, colon);
+string n = spec.substr(colon + 1);
+int parsed = string_to_int(n);
+if (parsed > 0) count = parsed;
 }

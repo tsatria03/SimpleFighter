@@ -222,16 +222,111 @@ return is_at_endpoint(x, y);
                 }
                 else if(lockmode == "key")
                 {
-                    if(inv.exists(doorid))
+                    string matched = find_inv(doorid);
+                    if(matched != "")
                     {
+                        give(matched, -1);
                         locksound = passagepool.play_stationary_extended(get_map_sound("objects/doors/lock/"+locktype+"/*grant*"),false,0,0,0,100,false);
-                        speak("Access granted.");
+                        speak("Access granted. Your "+matched+" was consumed.");
                         begin_open();
                     }
                     else
                     {
                         locksound = passagepool.play_stationary_extended(get_map_sound("objects/doors/lock/"+locktype+"/*deny*"),false,0,0,0,100,false);
-                        speak("This passage is locked. It requires a "+doorid+" from your inventory.");
+                        speak("This passage is locked. It requires an item matching "+doorid+" in your inventory.");
+                    }
+                }
+                else if(lockmode == "give")
+                {
+                    string item_id;
+                    int count;
+                    parse_item_spec(doorid, item_id, count);
+                    give(item_id, count);
+                    if(count==1) speak("You receive a "+item_id+".");
+                    else speak("You receive "+count+" "+item_id+"s.");
+                    begin_open();
+                }
+                else if(lockmode == "take")
+                {
+                    string item_id;
+                    int count;
+                    parse_item_spec(doorid, item_id, count);
+                    if(inv_count(item_id) >= count)
+                    {
+                        give(item_id, -count);
+                        if(count==1) speak("You hand over a "+item_id+".");
+                        else speak("You hand over "+count+" "+item_id+"s.");
+                        begin_open();
+                    }
+                    else
+                    {
+                        if(count==1) speak("This passage requires a "+item_id+".");
+                        else speak("This passage requires "+count+" "+item_id+"s.");
+                    }
+                }
+                else if(lockmode == "givepass" or lockmode == "takepass")
+                {
+                    if(passagesound != -1 && !is_sound_paused)
+                    {
+                        passagepool.pause_sound(passagesound);
+                        is_sound_paused = true;
+                    }
+                    string passprompt;
+                    if(last_pspass == "")
+                        passprompt = "This passage is locked. Enter the password to open it.";
+                    else
+                        passprompt = "This passage is locked. Enter the password to open it. Press enter to retype the last given password.";
+                    vd.set_disallowed_chars("", false, "This character is not allowed.");
+                    string pass = vd.input_box("", passprompt, last_pspass);
+                    last_pspass = pass;
+                    if(check_password(pass))
+                    {
+                        string item_id;
+                        int count;
+                        parse_item_spec(doorid, item_id, count);
+                        if(lockmode == "takepass" and inv_count(item_id) < count)
+                        {
+                            locksound = passagepool.play_stationary_extended(get_map_sound("objects/doors/lock/"+locktype+"/*deny*"),false,0,0,0,100,false);
+                            if(passagesound != -1 && is_sound_paused)
+                            {
+                                passagepool.resume_sound(passagesound);
+                                is_sound_paused = false;
+                            }
+                            if(count==1) speak("Password accepted, but this passage requires a "+item_id+".");
+                            else speak("Password accepted, but this passage requires "+count+" "+item_id+"s.");
+                        }
+                        else
+                        {
+                            if(lockmode == "givepass") give(item_id, count);
+                            else give(item_id, -count);
+                            locksound = passagepool.play_stationary_extended(get_map_sound("objects/doors/lock/"+locktype+"/*grant*"),false,0,0,0,100,false);
+                            if(lockmode == "givepass")
+                            {
+                                if(count==1) speak("Access granted. You receive a "+item_id+".");
+                                else speak("Access granted. You receive "+count+" "+item_id+"s.");
+                            }
+                            else
+                            {
+                                if(count==1) speak("Access granted. You hand over a "+item_id+".");
+                                else speak("Access granted. You hand over "+count+" "+item_id+"s.");
+                            }
+                            if(passagesound != -1 && is_sound_paused)
+                            {
+                                passagepool.resume_sound(passagesound);
+                                is_sound_paused = false;
+                            }
+                            begin_open();
+                        }
+                    }
+                    else
+                    {
+                        locksound = passagepool.play_stationary_extended(get_map_sound("objects/doors/lock/"+locktype+"/*deny*"),false,0,0,0,100,false);
+                        speak("Invalid password. Please try again.");
+                        if(passagesound != -1 && is_sound_paused)
+                        {
+                            passagepool.resume_sound(passagesound);
+                            is_sound_paused = false;
+                        }
                     }
                 }
                 else if(lockmode == "password")
@@ -327,7 +422,11 @@ mapper.write("\r\n"+"passage "+x+" "+y+" "+direction+" "+length+" "+tile+" "+loo
 mapper.close();
 }
 
-void build_passage()
+void build_item_passage()
+{
+build_passage(true);
+}
+void build_passage(bool item_mode = false)
 {
 string saved_sx = sel_left_set ? sel_left : "";
 string saved_sy = sel_bottom_set ? sel_bottom : "";
@@ -378,19 +477,26 @@ saved_tile_pos = max(0, form.get_list_position(tile_list));
 saved_loop_pos = max(0, form.get_list_position(loop_list));
 saved_open_pos = max(0, form.get_list_position(open_list));
 saved_close_pos = max(0, form.get_list_position(close_list));
-if(last_lockmode_pos == 1)
+bool show_item_field = item_mode || last_lockmode_pos == 1;
+bool show_pass_field = (!item_mode && last_lockmode_pos == 2) || (item_mode && (last_lockmode_pos == 2 || last_lockmode_pos == 3));
+if(show_item_field)
 {
 saved_did = form.get_text(fdid);
-if(plock.length() > 0) saved_lock_pos = max(0, form.get_list_position(lock_list));
 }
-else if(last_lockmode_pos == 2)
+if(show_pass_field)
 {
 saved_pass = form.get_text(fpass);
-if(plock.length() > 0) saved_lock_pos = max(0, form.get_list_position(lock_list));
+}
+bool show_lock_list_save = false;
+if(!item_mode && last_lockmode_pos != 0) show_lock_list_save = true;
+if(item_mode && (last_lockmode_pos == 2 || last_lockmode_pos == 3)) show_lock_list_save = true;
+if(show_lock_list_save && plock.length() > 0)
+{
+saved_lock_pos = max(0, form.get_list_position(lock_list));
 }
 }
 form.reset();
-form.create_window("passage", false, true, last_lockmode_pos != -1);
+form.create_window(item_mode ? "item passage" : "passage", false, true, last_lockmode_pos != -1);
 fsx = form.create_input_box("starting x", saved_sx);
 fsy = form.create_input_box("starting y", saved_sy);
 flength = form.create_input_box("length", saved_length);
@@ -410,11 +516,35 @@ form.add_list_item(tile_list, "air", "air");
 for(uint i = 0; i < ptiles.length(); i++)
 form.add_list_item(tile_list, ptiles[i], ptiles[i]);
 form.set_list_position(tile_list, saved_tile_pos, false);
-lockmode_list = form.create_list("lock mode");
+lockmode_list = form.create_list(item_mode ? "use mode" : "lock mode");
+if(item_mode)
+{
+form.add_list_item(lockmode_list, "give", "give");
+form.add_list_item(lockmode_list, "take", "take");
+form.add_list_item(lockmode_list, "givepass", "givepass");
+form.add_list_item(lockmode_list, "takepass", "takepass");
+}
+else
+{
 form.add_list_item(lockmode_list, "none", "none");
 form.add_list_item(lockmode_list, "key", "key");
 form.add_list_item(lockmode_list, "password", "password");
+}
 form.set_list_position(lockmode_list, saved_lockmode_pos, false);
+if(item_mode)
+{
+string item_label = "item to give";
+if(saved_lockmode_pos == 1) item_label = "item to take";
+else if(saved_lockmode_pos == 2) item_label = "item to give after password";
+else if(saved_lockmode_pos == 3) item_label = "item to take after password";
+fdid = form.create_input_box(item_label, saved_did);
+if(saved_lockmode_pos == 2 || saved_lockmode_pos == 3)
+{
+fpass = form.create_input_box("password required", saved_pass);
+}
+}
+else
+{
 if(saved_lockmode_pos == 1)
 {
 fdid = form.create_input_box("item id required", saved_did);
@@ -422,6 +552,7 @@ fdid = form.create_input_box("item id required", saved_did);
 else if(saved_lockmode_pos == 2)
 {
 fpass = form.create_input_box("password required", saved_pass);
+}
 }
 loop_list = form.create_list("loop sound");
 form.add_list_item(loop_list, "none", "none");
@@ -439,7 +570,10 @@ for(uint i = 0; i < pclose.length(); i++)
 form.add_list_item(close_list, pclose[i], pclose[i]);
 form.set_list_position(close_list, saved_close_pos, false);
 lock_list = -1;
-if(saved_lockmode_pos != 0 && plock.length() > 0)
+bool need_lock_list = false;
+if(!item_mode && saved_lockmode_pos != 0) need_lock_list = true;
+if(item_mode && (saved_lockmode_pos == 2 || saved_lockmode_pos == 3)) need_lock_list = true;
+if(need_lock_list && plock.length() > 0)
 {
 lock_list = form.create_list("lock sound");
 form.add_list_item(lock_list, "none", "none");
@@ -561,15 +695,27 @@ speak("Close time is required.");
 form.focus(fclosetime);
 continue;
 }
-if(saved_lockmode_pos == 1 && form.get_text(fdid) == "")
+if(!item_mode && saved_lockmode_pos == 1 && form.get_text(fdid) == "")
 {
 speak("Item ID is required for key mode.");
 form.focus(fdid);
 continue;
 }
-if(saved_lockmode_pos == 2 && form.get_text(fpass) == "")
+if(!item_mode && saved_lockmode_pos == 2 && form.get_text(fpass) == "")
 {
 speak("Password is required for password mode.");
+form.focus(fpass);
+continue;
+}
+if(item_mode && form.get_text(fdid) == "")
+{
+speak("Item is required.");
+form.focus(fdid);
+continue;
+}
+if(item_mode && (saved_lockmode_pos == 2 || saved_lockmode_pos == 3) && form.get_text(fpass) == "")
+{
+speak("Password is required for this mode.");
 form.focus(fpass);
 continue;
 }
@@ -583,12 +729,24 @@ int bdir = (dpos == 1) ? 2 : 1;
 int tp = form.get_list_position(tile_list);
 string btile = (tp == 0) ? "air" : (tp > 0 && ptiles.length() > 0) ? ptiles[tp-1] : "none";
 string lkmode = "none";
+string did = "none";
+string pass = "none";
+if(item_mode)
+{
+if(saved_lockmode_pos == 0) lkmode = "give";
+else if(saved_lockmode_pos == 1) lkmode = "take";
+else if(saved_lockmode_pos == 2) lkmode = "givepass";
+else if(saved_lockmode_pos == 3) lkmode = "takepass";
+did = form.get_text(fdid);
+if(saved_lockmode_pos == 2 || saved_lockmode_pos == 3) pass = form.get_text(fpass);
+}
+else
+{
 if(saved_lockmode_pos == 1) lkmode = "key";
 else if(saved_lockmode_pos == 2) lkmode = "password";
-string did = "none";
 if(saved_lockmode_pos == 1) did = form.get_text(fdid);
-string pass = "none";
 if(saved_lockmode_pos == 2) pass = form.get_text(fpass);
+}
 int lp = form.get_list_position(loop_list);
 int op = form.get_list_position(open_list);
 int cp = form.get_list_position(close_list);

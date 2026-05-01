@@ -73,10 +73,12 @@ doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/door
 }
 else if(doors[i].lockmode=="key")
 {
-if(inv.exists(doors[i].doorid))
+string matched=find_inv(doors[i].doorid);
+if(matched!="")
 {
+give(matched, -1);
 doors[i].locksound=doorpool.play_stationary_extended(get_map_sound("objects/doors/lock/"+doors[i].locktype+"/*grant*"),false,0,0,0,100,false);
-speak("Access granted.");
+speak("Access granted. Your "+matched+" was consumed.");
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("objects/doors/open/"+doors[i].opentype+"/*open*"),false,0,0,0,100,false);
@@ -85,7 +87,103 @@ doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/door
 else
 {
 doors[i].locksound=doorpool.play_stationary_extended(get_map_sound("objects/doors/lock/"+doors[i].locktype+"/*deny*"),false,0,0,0,100,false);
-speak("This door is locked. It requires a "+doors[i].doorid+" from your inventory.");
+speak("This door is locked. It requires an item matching "+doors[i].doorid+" in your inventory.");
+}
+}
+else if(doors[i].lockmode=="give")
+{
+string item_id;
+int count;
+parse_item_spec(doors[i].doorid, item_id, count);
+give(item_id, count);
+if(count==1) speak("You receive a "+item_id+".");
+else speak("You receive "+count+" "+item_id+"s.");
+doormove=true;
+doors[i].is_moving=true;
+doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("objects/doors/open/"+doors[i].opentype+"/*open*"),false,0,0,0,100,false);
+doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/doors/move/"+doors[i].movetype+"/*move*"),true,0,0,0,100,false);
+}
+else if(doors[i].lockmode=="take")
+{
+string item_id;
+int count;
+parse_item_spec(doors[i].doorid, item_id, count);
+if(inv_count(item_id) >= count)
+{
+give(item_id, -count);
+if(count==1) speak("You hand over a "+item_id+".");
+else speak("You hand over "+count+" "+item_id+"s.");
+doormove=true;
+doors[i].is_moving=true;
+doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("objects/doors/open/"+doors[i].opentype+"/*open*"),false,0,0,0,100,false);
+doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/doors/move/"+doors[i].movetype+"/*move*"),true,0,0,0,100,false);
+}
+else
+{
+if(count==1) speak("This door requires a "+item_id+".");
+else speak("This door requires "+count+" "+item_id+"s.");
+}
+}
+else if(doors[i].lockmode=="givepass" or doors[i].lockmode=="takepass")
+{
+doorpool.pause_sound(doors[i].doorsound);
+string passprompt;
+if(doors[i].last_drpass=="")
+{
+passprompt="This door is locked. Enter the password to open it.";
+}
+else
+{
+passprompt="This door is locked. Enter the password to open it. Press enter to retype the last given password.";
+}
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string pass=vd.input_box("", passprompt, doors[i].last_drpass);
+doors[i].last_drpass=pass;
+if(doors[i].check_password(pass))
+{
+string item_id;
+int count;
+parse_item_spec(doors[i].doorid, item_id, count);
+if(doors[i].lockmode=="takepass" and inv_count(item_id) < count)
+{
+doors[i].locksound=doorpool.play_stationary_extended(get_map_sound("objects/doors/lock/"+doors[i].locktype+"/*deny*"),false,0,0,0,100,false);
+doorpool.resume_sound(doors[i].doorsound);
+if(count==1) speak("Password accepted, but this door requires a "+item_id+".");
+else speak("Password accepted, but this door requires "+count+" "+item_id+"s.");
+}
+else
+{
+if(doors[i].lockmode=="givepass")
+{
+give(item_id, count);
+}
+else
+{
+give(item_id, -count);
+}
+doors[i].locksound=doorpool.play_stationary_extended(get_map_sound("objects/doors/lock/"+doors[i].locktype+"/*grant*"),false,0,0,0,100,false);
+if(doors[i].lockmode=="givepass")
+{
+if(count==1) speak("Access granted. You receive a "+item_id+".");
+else speak("Access granted. You receive "+count+" "+item_id+"s.");
+}
+else
+{
+if(count==1) speak("Access granted. You hand over a "+item_id+".");
+else speak("Access granted. You hand over "+count+" "+item_id+"s.");
+}
+doorpool.resume_sound(doors[i].doorsound);
+doormove=true;
+doors[i].is_moving=true;
+doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("objects/doors/open/"+doors[i].opentype+"/*open*"),false,0,0,0,100,false);
+doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/doors/move/"+doors[i].movetype+"/*move*"),true,0,0,0,100,false);
+}
+}
+else
+{
+doors[i].locksound=doorpool.play_stationary_extended(get_map_sound("objects/doors/lock/"+doors[i].locktype+"/*deny*"),false,0,0,0,100,false);
+speak("Invalid password. Please try again.");
+doorpool.resume_sound(doors[i].doorsound);
 }
 }
 else if(doors[i].lockmode=="password")
@@ -188,7 +286,11 @@ doors.resize(0);
 doormove=false;
 }
 
-void build_door()
+void build_item_door()
+{
+build_door(true);
+}
+void build_door(bool item_mode = false)
 {
 string saved_sx = sel_left_set ? sel_left : "";
 string saved_sy = sel_bottom_set ? sel_bottom : "";
@@ -246,22 +348,29 @@ saved_move_pos = max(0, form.get_list_position(move_list));
 saved_open_pos = max(0, form.get_list_position(open_list));
 saved_close_pos = max(0, form.get_list_position(close_list));
 saved_dest_pos = max(0, form.get_list_position(dest_list));
-if(last_lockmode_pos == 1)
+bool show_item_field = item_mode || last_lockmode_pos == 1;
+bool show_pass_field = (!item_mode && last_lockmode_pos == 2) || (item_mode && (last_lockmode_pos == 2 || last_lockmode_pos == 3));
+if(show_item_field)
 {
 saved_did = form.get_text(fdid);
-if(dlock.length() > 0) saved_lock_pos = max(0, form.get_list_position(lock_list));
 }
-else if(last_lockmode_pos == 2)
+if(show_pass_field)
 {
 saved_pass = form.get_text(fpass);
-if(dlock.length() > 0) saved_lock_pos = max(0, form.get_list_position(lock_list));
+}
+bool show_lock_list = false;
+if(!item_mode && last_lockmode_pos != 0) show_lock_list = true;
+if(item_mode && (last_lockmode_pos == 2 || last_lockmode_pos == 3)) show_lock_list = true;
+if(show_lock_list && dlock.length() > 0)
+{
+saved_lock_pos = max(0, form.get_list_position(lock_list));
 }
 saved_automatic = form.is_checked(automatic_cb);
 saved_destroyable = form.is_checked(destroyable_cb);
 saved_opposite = form.is_checked(opposite_cb);
 }
 form.reset();
-form.create_window("door", false, true, last_lockmode_pos != -1);
+form.create_window(item_mode ? "item door" : "door", false, true, last_lockmode_pos != -1);
 fsx = form.create_input_box("starting x", saved_sx);
 fsy = form.create_input_box("starting y", saved_sy);
 fex = form.create_input_box("finishing x", saved_ex);
@@ -274,11 +383,35 @@ form.set_disallowed_chars(fex, disallowed_nums, false, "This character is not al
 form.set_disallowed_chars(fey, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fhp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fsp, disallowed_nums, false, "This character is not allowed.");
-lockmode_list = form.create_list("lock mode");
+lockmode_list = form.create_list(item_mode ? "use mode" : "lock mode");
+if(item_mode)
+{
+form.add_list_item(lockmode_list, "give", "give");
+form.add_list_item(lockmode_list, "take", "take");
+form.add_list_item(lockmode_list, "givepass", "givepass");
+form.add_list_item(lockmode_list, "takepass", "takepass");
+}
+else
+{
 form.add_list_item(lockmode_list, "none", "none");
 form.add_list_item(lockmode_list, "key", "key");
 form.add_list_item(lockmode_list, "password", "password");
+}
 form.set_list_position(lockmode_list, saved_lockmode_pos, false);
+if(item_mode)
+{
+string item_label = "item to give";
+if(saved_lockmode_pos == 1) item_label = "item to take";
+else if(saved_lockmode_pos == 2) item_label = "item to give after password";
+else if(saved_lockmode_pos == 3) item_label = "item to take after password";
+fdid = form.create_input_box(item_label, saved_did);
+if(saved_lockmode_pos == 2 || saved_lockmode_pos == 3)
+{
+fpass = form.create_input_box("password required", saved_pass);
+}
+}
+else
+{
 if(saved_lockmode_pos == 1)
 {
 fdid = form.create_input_box("item id required", saved_did);
@@ -286,6 +419,7 @@ fdid = form.create_input_box("item id required", saved_did);
 else if(saved_lockmode_pos == 2)
 {
 fpass = form.create_input_box("password required", saved_pass);
+}
 }
 loop_list = form.create_list("loop sound");
 form.add_list_item(loop_list, "none", "none");
@@ -313,7 +447,10 @@ for(uint i = 0; i < ddest.length(); i++)
 form.add_list_item(dest_list, ddest[i], ddest[i]);
 form.set_list_position(dest_list, saved_dest_pos, false);
 lock_list = -1;
-if(saved_lockmode_pos != 0 && dlock.length() > 0)
+bool need_lock_list = false;
+if(!item_mode && saved_lockmode_pos != 0) need_lock_list = true;
+if(item_mode && (saved_lockmode_pos == 2 || saved_lockmode_pos == 3)) need_lock_list = true;
+if(need_lock_list && dlock.length() > 0)
 {
 lock_list = form.create_list("lock sound");
 form.add_list_item(lock_list, "none", "none");
@@ -426,15 +563,27 @@ speak("Speed is required.");
 form.focus(fsp);
 continue;
 }
-if(saved_lockmode_pos == 1 && form.get_text(fdid)=="")
+if(!item_mode && saved_lockmode_pos == 1 && form.get_text(fdid)=="")
 {
 speak("Item ID is required for key mode.");
 form.focus(fdid);
 continue;
 }
-if(saved_lockmode_pos == 2 && form.get_text(fpass)=="")
+if(!item_mode && saved_lockmode_pos == 2 && form.get_text(fpass)=="")
 {
 speak("Password is required for password mode.");
+form.focus(fpass);
+continue;
+}
+if(item_mode && form.get_text(fdid)=="")
+{
+speak("Item is required.");
+form.focus(fdid);
+continue;
+}
+if(item_mode && (saved_lockmode_pos == 2 || saved_lockmode_pos == 3) && form.get_text(fpass)=="")
+{
+speak("Password is required for this mode.");
 form.focus(fpass);
 continue;
 }
@@ -445,12 +594,24 @@ double by2 = string_to_number(form.get_text(fey));
 double bhp = string_to_number(form.get_text(fhp) != "" ? form.get_text(fhp) : "1");
 double bsp = string_to_number(form.get_text(fsp));
 string lkmode = "none";
+string did = "none";
+string pass = "none";
+if(item_mode)
+{
+if(saved_lockmode_pos == 0) lkmode = "give";
+else if(saved_lockmode_pos == 1) lkmode = "take";
+else if(saved_lockmode_pos == 2) lkmode = "givepass";
+else if(saved_lockmode_pos == 3) lkmode = "takepass";
+did = form.get_text(fdid);
+if(saved_lockmode_pos == 2 || saved_lockmode_pos == 3) pass = form.get_text(fpass);
+}
+else
+{
 if(saved_lockmode_pos == 1) lkmode = "key";
 else if(saved_lockmode_pos == 2) lkmode = "password";
-string did = "none";
 if(saved_lockmode_pos == 1) did = form.get_text(fdid);
-string pass = "none";
 if(saved_lockmode_pos == 2) pass = form.get_text(fpass);
+}
 int lp = form.get_list_position(loop_list);
 int mp = form.get_list_position(move_list);
 int op = form.get_list_position(open_list);

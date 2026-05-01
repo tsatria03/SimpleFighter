@@ -340,6 +340,29 @@ int string_find(const string&in text, const string&in term)
     return text.find(term);
 }
 
+bool glob_match(string pattern, string candidate)
+{
+if (pattern == "" || pattern == "*") return true;
+string[] parts = string_split(pattern, "*", true);
+bool starts_wild = pattern.substr(0, 1) == "*";
+bool ends_wild = pattern.substr(pattern.length() - 1, 1) == "*";
+string remaining = candidate;
+bool first = true;
+string last_part = "";
+for (uint i = 0; i < parts.length(); i++)
+{
+if (parts[i] == "") continue;
+int found = remaining.find(parts[i]);
+if (found < 0) return false;
+if (first && !starts_wild && found != 0) return false;
+first = false;
+remaining = remaining.substr(found + parts[i].length());
+last_part = parts[i];
+}
+if (!ends_wild && last_part != "" && remaining != "") return false;
+return true;
+}
+
 string int_to_string(int value)
 {
     if (value == 0)
