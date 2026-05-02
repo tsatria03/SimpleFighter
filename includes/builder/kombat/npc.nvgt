@@ -65,6 +65,8 @@ class npc
     int currentlives;
     bool spotted;
     bool step_active;
+    string use_steps;
+    string use_falls;
     int taunttime;
     int spawnsound, mainsound, defsound, hurtsound, stepsound, tilesound, wepsound, healsound;
     timer movetimer, firetimer, taunttimer;
@@ -100,6 +102,8 @@ class npc
         category = cat;
         subtype = sub;
         targets.insert_last("player");
+        use_steps = "auto";
+        use_falls = "auto";
         chase_trigger = "sight";
         chase_wander = "none";
         chase_calm_min = 15000; chase_calm_max = 15000;
@@ -196,6 +200,40 @@ sound_pool@ npc_pool(string category)
     if(category == "specials") return specialpool;
     if(category == "zombies") return zombpool;
     return animalpool;
+}
+
+string resolve_npc_step_sound(npc@ self)
+{
+    string mode = self.use_steps;
+    string platform_path = "objects/platforms/"+gmt(self.x, self.y)+"/*step*";
+    string own_path = "kombat/npc/"+self.category+"/"+self.subtype+"/*step*";
+    if(mode == "never") return "";
+    if(mode == "own") return get_map_sound(own_path);
+    if(mode == "player") return get_map_sound(platform_path);
+    string snd = get_map_sound(platform_path);
+    if(snd == "") snd = get_map_sound(own_path);
+    return snd;
+}
+
+string resolve_npc_fall_sound(npc@ self)
+{
+    string mode = self.use_falls;
+    string platform_path = "objects/platforms/"+gmt(self.x, self.y)+"/*fall*";
+    string own_path = "kombat/npc/"+self.category+"/"+self.subtype+"/*fall*";
+    if(mode == "never") return "skip";
+    if(mode == "own")
+    {
+        string snd = get_map_sound(own_path);
+        return snd == "" ? "skip" : snd;
+    }
+    if(mode == "player")
+    {
+        string snd = get_map_sound(platform_path);
+        return snd == "" ? "skip" : snd;
+    }
+    string snd = get_map_sound(platform_path);
+    if(snd == "") snd = get_map_sound(own_path);
+    return snd == "" ? "skip" : snd;
 }
 
 string get_npc_info_path(string category, string subtype, string path = "any")
@@ -316,6 +354,8 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "rest heal time") self.rest_heal_time = roll_slot_int(v);
         else if(k == "ambient heal time") self.ambient_heal_time = roll_slot_int(v);
         else if(k == "ambient heal") self.ambient_heal = string_to_bool(v);
+        else if(k == "use steps") self.use_steps = v;
+        else if(k == "use falls") self.use_falls = v;
         else if(k == "launching") self.launching = string_to_bool(v);
         else if(k == "launch path") self.launch_path = v;
         else if(k == "launch category") self.launch_category = v;
@@ -801,10 +841,16 @@ void npcloop()
                 }
                 if(moved)
                 {
-                    string step_resolved = get_map_sound("objects/platforms/"+gmt(npcs[i].x, npcs[i].y)+"/*step*");
-                    if(step_resolved == "") step_resolved = get_map_sound(sound_base+"/*step*");
-                    npcs[i].tilesound = pool.play_extended_2d(step_resolved, me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
-                    npcs[i].step_active = true;
+                    string step_resolved = resolve_npc_step_sound(npcs[i]);
+                    if(step_resolved != "")
+                    {
+                        npcs[i].tilesound = pool.play_extended_2d(step_resolved, me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+                        npcs[i].step_active = true;
+                    }
+                    else
+                    {
+                        npcs[i].step_active = false;
+                    }
                 }
                 else
                 {
@@ -969,7 +1015,7 @@ void npcloop()
                 }
                 kills += 1;
                 int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
-                spawn_bodyfall(npcs[i].x, npcs[i].y, (falldelay <= 0 ? random(500, 1000) : falldelay));
+                spawn_bodyfall(npcs[i].x, npcs[i].y, (falldelay <= 0 ? random(500, 1000) : falldelay), resolve_npc_fall_sound(npcs[i]));
                 string[] heal_folders = {"health", "stamina"};
                 string chosen_folder = random_string(heal_folders);
                 string[] healtypes = get_map_sound_folders("objects/items/"+chosen_folder+"/*");
@@ -1029,6 +1075,16 @@ bool add_npc_form(string path_choice, string category, string subtype)
     int[] inputs;
     for(uint i=0; i<keys.length(); i++)
         inputs.insert_last(form.create_input_box(keys[i]));
+    string[] mode_opts = {"auto", "own", "player", "never"};
+    int steps_list = form.create_list("use steps");
+    int falls_list = form.create_list("use falls");
+    for(uint i=0; i<mode_opts.length(); i++)
+    {
+        form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
+        form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
+    }
+    form.set_list_position(steps_list, 0, false);
+    form.set_list_position(falls_list, 0, false);
     int[] checkboxes;
     for(uint i=0; i<cb_keys.length(); i++)
         checkboxes.insert_last(form.create_checkbox(cb_keys[i]));
@@ -1075,6 +1131,8 @@ bool add_npc_form(string path_choice, string category, string subtype)
                 content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
             for(uint i=0; i<checkboxes.length(); i++)
                 content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
+            content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
+            content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
             file fout;
             if(!fout.open(target_path, "w"))
             {
@@ -1339,6 +1397,24 @@ bool edit_npc_form(string target_path, string subtype)
         if(existing.exists(keys[i])) existing.get(keys[i], preset);
         inputs.insert_last(form.create_input_box(keys[i], preset));
     }
+    string[] mode_opts = {"auto", "own", "player", "never"};
+    int steps_list = form.create_list("use steps");
+    int falls_list = form.create_list("use falls");
+    for(uint i=0; i<mode_opts.length(); i++)
+    {
+        form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
+        form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
+    }
+    string steps_pre = "auto"; if(existing.exists("use steps")) existing.get("use steps", steps_pre);
+    string falls_pre = "auto"; if(existing.exists("use falls")) existing.get("use falls", falls_pre);
+    int steps_idx = 0, falls_idx = 0;
+    for(uint i=0; i<mode_opts.length(); i++)
+    {
+        if(mode_opts[i] == steps_pre) steps_idx = i;
+        if(mode_opts[i] == falls_pre) falls_idx = i;
+    }
+    form.set_list_position(steps_list, steps_idx, false);
+    form.set_list_position(falls_list, falls_idx, false);
     int[] checkboxes;
     for(uint i=0; i<cb_keys.length(); i++)
     {
@@ -1377,6 +1453,8 @@ bool edit_npc_form(string target_path, string subtype)
                 content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
             for(uint i=0; i<checkboxes.length(); i++)
                 content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
+            content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
+            content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
             file fout;
             if(!fout.open(target_path, "w"))
             {
