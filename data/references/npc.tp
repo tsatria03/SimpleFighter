@@ -19,11 +19,7 @@ NPC stats live in info.sif files inside the sound pack.
 The engine looks for these files in two places: the current map's local pack at data/maps/decompiled/<map>/assets/npc/<category>/<subtype>/info.sif, and the global default pack at sounds/default/npc/<category>/<subtype>/info.sif.
 The map local copy wins if both exist, so a map can override a global creature's stats without affecting any other map.
 
-Two levels of info.sif exist for each NPC.
-The category level info.sif at npc/<category>/info.sif provides default stats for every creature in that category, and the creature level info.sif at npc/<category>/<subtype>/info.sif overrides those defaults for that specific creature.
-Anything left out of the creature level falls through to the category level, and anything left out of both falls through to the engine defaults.
-This lets you set health, attack, defense, and targets once at the category level for the ninety percent case, then only override the specific creatures that should differ.
-Both levels also follow the map local then global lookup independently, so a map can supply a category override of its own.
+Each creature has its own info.sif at npc/<category>/<subtype>/info.sif. The file is self contained: every stat the creature uses is written explicitly, and anything left out falls through to the engine defaults baked into the npc class.
 
 Sound paths are resolved automatically by the same get_map_sound lookup the rest of the game uses.
 Drop hurt, death, taunt, step, spawn, heal, and any other expected glob into the creature's folder and the engine will pick them up.
@@ -52,7 +48,7 @@ horizontal sight range (triple int): How far horizontally the creature can see a
 vertical sight range (triple int): The vertical equivalent of horizontal sight range.
 
 health (special triple): The creature's hit points. Written as a:b:c where a is the maximum starting health, b is the wounded threshold the creature drops below to enter wounded mode, and c is the amount of health restored on each tick of healing. Writing a single number leaves wounded and healing disabled. The wounded threshold is the gateway: leaving b at zero means the creature never enters wounded or healing mode no matter what other state specific values are set.
-heal speed (single int): Milliseconds between heal ticks while in healing mode. Only fires while the third value of health is set.
+heal speed (single int): Milliseconds between heal ticks while in healing mode. Accepts a comma range like 4000,8000 for a fresh roll on parse. Only fires while the third value of health is set.
 
 lives (triple int): How many lives the creature has. Each life refills health on death until the last one runs out.
 
@@ -110,7 +106,8 @@ Toggling subtypes with space adds them to the deletion set, and pressing remove 
 Only the info.sif files are removed; the audio folders themselves are left untouched.
 
 Spawn. Routes to the existing direct spawn flow, which is the same form that used to open before the chooser was added.
-Asks for x, y, scale level, and a category and subtype, then writes the spawn line into the map's info.sif and immediately spawns the creature.
+Asks for x, y, scale level, a path, and a category and subtype, then writes the spawn line into the map's info.sif and immediately spawns the creature.
+The path list here has three options: any, global, and map. Any merges both pools into the subtype list and lets the spawned creature use the map local copy when present and the global one otherwise. Global filters the subtype list to only what's in the global pack and pins the spawn to read from there. Map filters to only what's in the map's local pack and pins the spawn to read from there. The chosen path is stored on the spawn line so each creature remembers which source to use.
 
 View. Picks a path, category, and subtype like the others, with the subtype list filtered to configured creatures.
 Below the lists is a read only multiline contents box that shows the raw info.sif text for the focused subtype.
@@ -118,8 +115,9 @@ Arrowing through the subtype list updates the contents box in real time so you c
 
 Spawn line format.
 
-When the Spawn button writes a creature into a map, it appends a line to the map's info.sif at data/maps/decompiled/<map>/info.sif in the form npc x y scale category subtype.
-The five fields are space separated, where x and y are the tile coordinates the creature spawns at, scale is an integer scale level, and category and subtype name the folder under sounds/<pack>/npc/.
+When the Spawn button writes a creature into a map, it appends a line to the map's info.sif at data/maps/decompiled/<map>/info.sif in the form npc x y scale path category subtype.
+The six fields are space separated, where x and y are the tile coordinates the creature spawns at, scale is an integer scale level, path is one of any, global, or map, and category and subtype name the folder under sounds/<pack>/npc/.
+The path value decides where the creature reads its info.sif from. Any uses the map's local copy if it exists and falls back to the global pack otherwise. Global pins the lookup to sounds/<pack>/npc/ even if a map local copy is present. Map pins it to data/maps/decompiled/<map>/assets/npc/ and refuses the global fallback. This lets two creatures of the same name on the same map intentionally read different stats by pointing at different paths.
 A subtype of none places nothing and is silently ignored at parse time, which is useful as a placeholder when blocking out a map.
 The line is parsed back into spawn_npc on map load, so editing this file by hand is a valid way to bulk place creatures without going through the builder.
 
@@ -137,8 +135,8 @@ NPC zones.
 
 NPC zones are the auto respawn variant of a single spawn line.
 Instead of placing one creature once, a zone defines a horizontal range and a y coordinate that, when the player walks across it, spawns a creature on a timer.
-Zones live in the map info.sif as npc_zone minx maxx y spawntime scale category subtype, written by the npc zone builder under zones.
+Zones live in the map info.sif as npc_zone minx maxx y spawntime scale path category subtype, written by the npc zone builder under zones.
 Walking onto any tile in the zone's minx to maxx range at the matching y starts the spawn timer, and once spawntime milliseconds have elapsed a creature is spawned at a random x inside the range, the timer restarts, and the next spawn is queued.
 Setting subtype to random rolls a random folder from the chosen category on every spawn, so a single zone can spit out a different creature each time it fires.
-The scale field works the same as on spawn lines: zero uses static info.sif stats, one or higher auto scales to the player.
+The scale field works the same as on spawn lines: zero uses static info.sif stats, one or higher auto scales to the player. The path field works the same way too, with any, global, and map deciding which info.sif copy each spawned creature reads from.
 Combined with random subtype and a high scale, a zone becomes an open ended encounter generator that keeps producing fresh threats as long as you stand in it.

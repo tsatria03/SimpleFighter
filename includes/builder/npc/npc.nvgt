@@ -2,6 +2,7 @@ npc@[] npcs(0);
 class npc
 {
     int x, y;
+    string path;
     string category;
     string subtype;
     int hrange, vrange;
@@ -80,10 +81,11 @@ class npc
     int wander_pause_duration;
     timer wander_travel_timer;
     string last_state;
-    npc(int sx, int sy, int scale_level, string cat, string sub)
+    npc(int sx, int sy, int scale_level, string p, string cat, string sub)
     {
         x = sx;
         y = sy;
+        path = p;
         category = cat;
         subtype = sub;
         targets.insert_last("player");
@@ -176,20 +178,28 @@ sound_pool@ npc_pool(string category)
     return animalpool;
 }
 
-string get_npc_info_path(string category, string subtype)
+string get_npc_info_path(string category, string subtype, string path = "any")
 {
     string maplocal = "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/"+subtype+"/info.sif";
-    if(file_exists(maplocal)) return maplocal;
     string global_path = "sounds/"+soundpack+"/npc/"+category+"/"+subtype+"/info.sif";
+    if(path == "map")
+        return file_exists(maplocal) ? maplocal : "";
+    if(path == "global")
+        return file_exists(global_path) ? global_path : "";
+    if(file_exists(maplocal)) return maplocal;
     if(file_exists(global_path)) return global_path;
     return "";
 }
 
-string get_npc_category_info_path(string category)
+string get_npc_category_info_path(string category, string path = "any")
 {
     string maplocal = "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/info.sif";
-    if(file_exists(maplocal)) return maplocal;
     string global_path = "sounds/"+soundpack+"/npc/"+category+"/info.sif";
+    if(path == "map")
+        return file_exists(maplocal) ? maplocal : "";
+    if(path == "global")
+        return file_exists(global_path) ? global_path : "";
+    if(file_exists(maplocal)) return maplocal;
     if(file_exists(global_path)) return global_path;
     return "";
 }
@@ -222,19 +232,39 @@ int smart_int(string v)
     return parse_int(v);
 }
 
+int roll_slot_int(string slot)
+{
+    if(slot.find(",") < 0) return smart_int(slot);
+    string[] parts = string_split(slot, ",", true);
+    int a = smart_int(parts[0]);
+    int b = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : a;
+    if(a >= b) return a;
+    return random(a, b);
+}
+
+double roll_slot_double(string slot)
+{
+    if(slot.find(",") < 0) return parse_double(slot);
+    string[] parts = string_split(slot, ",", true);
+    double a = parse_double(parts[0]);
+    double b = (parts.length() >= 2 && parts[1] != "") ? parse_double(parts[1]) : a;
+    if(a >= b) return a;
+    return random(int(a), int(b));
+}
+
 void parse_triple_int(string v, int &out a, int &out b, int &out c)
 {
     string[] parts = string_split(v, ":", true);
-    a = smart_int(parts[0]);
-    b = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : a;
-    c = (parts.length() >= 3 && parts[2] != "") ? smart_int(parts[2]) : a;
+    a = roll_slot_int(parts[0]);
+    b = (parts.length() >= 2 && parts[1] != "") ? roll_slot_int(parts[1]) : a;
+    c = (parts.length() >= 3 && parts[2] != "") ? roll_slot_int(parts[2]) : a;
 }
 void parse_triple_double(string v, double &out a, double &out b, double &out c)
 {
     string[] parts = string_split(v, ":", true);
-    a = parse_double(parts[0]);
-    b = (parts.length() >= 2 && parts[1] != "") ? parse_double(parts[1]) : a;
-    c = (parts.length() >= 3 && parts[2] != "") ? parse_double(parts[2]) : a;
+    a = roll_slot_double(parts[0]);
+    b = (parts.length() >= 2 && parts[1] != "") ? roll_slot_double(parts[1]) : a;
+    c = (parts.length() >= 3 && parts[2] != "") ? roll_slot_double(parts[2]) : a;
 }
 
 void npc_parse_file(npc@ self, string path)
@@ -259,11 +289,11 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "health")
         {
             string[] parts = string_split(v, ":", true);
-            self.maxhealth = parse_double(parts[0]);
-            self.run_health = (parts.length() >= 2 && parts[1] != "") ? parse_double(parts[1]) : 0;
-            self.heal_amount = (parts.length() >= 3 && parts[2] != "") ? parse_double(parts[2]) : 0;
+            self.maxhealth = roll_slot_double(parts[0]);
+            self.run_health = (parts.length() >= 2 && parts[1] != "") ? roll_slot_double(parts[1]) : 0;
+            self.heal_amount = (parts.length() >= 3 && parts[2] != "") ? roll_slot_double(parts[2]) : 0;
         }
-        else if(k == "heal speed") self.heal_speed = parse_int(v);
+        else if(k == "heal speed") self.heal_speed = roll_slot_int(v);
         else if(k == "lives") parse_triple_int(v, self.lives, self.w_lives, self.h_lives);
         else if(k == "attack") parse_triple_int(v, self.attack, self.w_attack, self.h_attack);
         else if(k == "defense") parse_triple_int(v, self.defence, self.w_defence, self.h_defence);
@@ -323,8 +353,7 @@ void npc_parse_file(npc@ self, string path)
 
 void npc_parse(npc@ self)
 {
-    npc_parse_file(self, get_npc_category_info_path(self.category));
-    npc_parse_file(self, get_npc_info_path(self.category, self.subtype));
+    npc_parse_file(self, get_npc_info_path(self.category, self.subtype, self.path));
 }
 
 bool npc_below_threshold(npc@ self)
@@ -342,10 +371,10 @@ bool npc_targets(npc@ self, string cat)
     return false;
 }
 
-void spawn_npc(int x, int y, int scale_level, string category, string subtype)
+void spawn_npc(int x, int y, int scale_level, string path, string category, string subtype)
 {
     if(subtype == "" || subtype == "none") return;
-    npc n(x, y, scale_level, category, subtype);
+    npc n(x, y, scale_level, path, category, subtype);
     npcs.insert_last(n);
 }
 
@@ -365,16 +394,17 @@ void read_npc(string[] sd)
     int x = stn(sd[1]);
     int y = stn(sd[2]);
     int scale_level = stn(sd[3]);
-    string category = sd[4];
-    string subtype = sd[5];
-    spawn_npc(x, y, scale_level, category, subtype);
+    string path = sd[4];
+    string category = sd[5];
+    string subtype = sd[6];
+    spawn_npc(x, y, scale_level, path, category, subtype);
 }
 
-void write_npc(int x, int y, int scale_level, string category, string subtype)
+void write_npc(int x, int y, int scale_level, string path, string category, string subtype)
 {
     mapper.open("data/maps/decompiled/"+mapname+"/info.sif", "ab");
     mapdata = mapper.read();
-    mapper.write("\r\n"+"npc "+x+" "+y+" "+scale_level+" "+category+" "+subtype);
+    mapper.write("\r\n"+"npc "+x+" "+y+" "+scale_level+" "+path+" "+category+" "+subtype);
     mapper.close();
 }
 
@@ -1485,15 +1515,19 @@ void add_npc()
 void build_npc()
 {
     string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+    string[] paths = {"any", "global", "map"};
     string[] categories = {"animals", "humans", "robots", "zombies"};
     string saved_x = sel_left_set ? sel_left : "";
     string saved_y = sel_bottom_set ? sel_bottom : "";
     string saved_lev = "0";
+    int saved_path_pos = 0;
     int saved_cat_pos = 0;
     int saved_sub_pos = 0;
     bool do_build = true;
+    int last_path_pos = -1;
     int last_cat_pos = -1;
-    int mx, my, lev, cat_list, sub_list, ok, cn;
+    int focus_after_build = 0;
+    int mx, my, lev, path_list, cat_list, sub_list, ok, cn;
     string[] sub_data;
     while(true)
     {
@@ -1507,15 +1541,41 @@ void build_npc()
                 saved_y = form.get_text(my);
                 saved_lev = form.get_text(lev);
             }
-            sub_data = get_map_sound_folders("npc/"+categories[saved_cat_pos]+"/*");
+            string global_base = "sounds/"+soundpack+"/npc/"+categories[saved_cat_pos];
+            string map_base = "data/maps/decompiled/"+mapname+"/assets/npc/"+categories[saved_cat_pos];
+            sub_data.resize(0);
+            if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "global")
+            {
+                string[] gd = find_directories(global_base+"/*");
+                for(uint i=0; i<gd.length(); i++)
+                {
+                    if(file_exists(global_base+"/"+gd[i]+"/info.sif") && sub_data.find(gd[i]) < 0)
+                        sub_data.insert_last(gd[i]);
+                }
+            }
+            if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "map")
+            {
+                string[] md = find_directories(map_base+"/*");
+                for(uint i=0; i<md.length(); i++)
+                {
+                    if(file_exists(map_base+"/"+md[i]+"/info.sif") && sub_data.find(md[i]) < 0)
+                        sub_data.insert_last(md[i]);
+                }
+            }
+            if(sub_data.length() > 0) sort_naturally(sub_data);
             form.reset();
             form.create_window("spawn npc", false, true, last_cat_pos != -1);
             mx = form.create_input_box("x", saved_x);
             my = form.create_input_box("y", saved_y);
             lev = form.create_input_box("scale level", saved_lev);
             form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+            form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
+            path_list = form.create_list("path");
+            for(uint i = 0; i < paths.length(); i++)
+                form.add_list_item(path_list, paths[i], paths[i]);
+            form.set_list_position(path_list, saved_path_pos, false);
             cat_list = form.create_list("category");
             for(uint i = 0; i < categories.length(); i++)
                 form.add_list_item(cat_list, categories[i], categories[i]);
@@ -1532,11 +1592,25 @@ void build_npc()
             {
                 form.focus(mx);
             }
-            else
+            else if(focus_after_build == 1)
                 form.focus_silently(cat_list);
+            else
+                form.focus_silently(path_list);
+            last_path_pos = saved_path_pos;
             last_cat_pos = saved_cat_pos;
         }
         form.monitor();
+        int cur_path = form.get_list_position(path_list);
+        if(cur_path != -1 && cur_path != last_path_pos)
+        {
+            saved_path_pos = cur_path;
+            saved_sub_pos = 0;
+            t.destroy_sound(prevslot);
+            prevslot = -1;
+            focus_after_build = 0;
+            do_build = true;
+            continue;
+        }
         int cur_cat = form.get_list_position(cat_list);
         if(cur_cat != -1 && cur_cat != last_cat_pos)
         {
@@ -1544,6 +1618,7 @@ void build_npc()
             saved_sub_pos = 0;
             t.destroy_sound(prevslot);
             prevslot = -1;
+            focus_after_build = 1;
             do_build = true;
             continue;
         }
@@ -1587,12 +1662,13 @@ void build_npc()
             int bx = string_to_number(form.get_text(mx));
             int by = string_to_number(form.get_text(my));
             int blev = string_to_number(form.get_text(lev));
+            string bpath = paths[saved_path_pos];
             string bcat = categories[saved_cat_pos];
             string bsub = (p == 0) ? "none" : sub_data[p - 1];
             t.destroy_sound(prevslot);
             resume_pools();
-            write_npc(bx, by, blev, bcat, bsub);
-            spawn_npc(bx, by, blev, bcat, bsub);
+            write_npc(bx, by, blev, bpath, bcat, bsub);
+            spawn_npc(bx, by, blev, bpath, bcat, bsub);
             load_map(mapname, mapowner);
             mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
             speak("Map updated.");

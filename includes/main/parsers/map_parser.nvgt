@@ -50,9 +50,12 @@ void load_map(string name, string owner, bool instent_update=true, bool speak_pe
         dlg("Error: Map not found or missing info.sif.");
         mapmenu();
     }
+uint64 map_total_bytes = map_is_compiled ? file_get_size(compiled_path) : get_directory_size("data/maps/decompiled/" + mapname);
+string map_total_readable = measure_file_size(map_total_bytes);
+string load_help = "Loading map. Press Space for percentage, 1 2 and 3 keys for detailed progress, or escape to cancel. Press h to read this help message again.";
 sound mapload;
 timer maploadtimer;
-if(anounce_mapload==true) speak("loading map");
+if(anounce_mapload==true) speak(load_help);
 if(loadsounds==1) mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*start*"),false);
 if(loadsounds==1) mapload.load(get_pack_sound("characters/"+chartype+"/map/*load*"));
 if(loadsounds==1) mapload.play_looped();
@@ -61,21 +64,41 @@ double percent=0;
 double last_beep_percent=-1;
 for (uint i=0; i<lines.length(); i++)
 {
+double progress_l=lines.length(), progress_ind=i;
+double progress_percent_exact=progress_ind/progress_l*100;
+int progress_percent=int(progress_percent_exact);
+uint64 bytes_processed = uint64(progress_percent_exact/100.0*map_total_bytes);
+if(key_pressed(KEY_SPACE)) speak(round(progress_percent_exact, 2)+" percent loaded");
+if(key_pressed(KEY_1)) speak("Map size: "+map_total_readable);
+if(key_pressed(KEY_2)) speak("Total processed: "+measure_file_size(bytes_processed));
+if(key_pressed(KEY_3)) speak("Total remaining: "+measure_file_size(map_total_bytes - bytes_processed));
+if(key_pressed(KEY_H)) speak(load_help);
+if(key_pressed(KEY_ESCAPE))
+{
+if(loadsounds==1) mapload.stop();
+speak("Map load canceled.");
+clearmap();
+destroymap();
+mapmenu();
+return;
+}
 if(loadbeeps == 1)
 {
-double l=lines.length(), ind=i;
-int current_percent=int(ind/l*100);
-if(current_percent>last_beep_percent && maploadtimer.elapsed>=loadtime)
+if(progress_percent>last_beep_percent && maploadtimer.elapsed>=loadtime)
 {
-if(speak_percentage==true) speak(current_percent+" percent");
-beep_percentage(current_percent);
-last_beep_percent=current_percent;
+if(speak_percentage==true) speak(progress_percent+" percent");
+beep_percentage(progress_percent);
+last_beep_percent=progress_percent;
 maploadtimer.restart();
 }
-}        
+}
 if(!instent_update)
 {
 wait(5);
+}
+else if(i % 100 == 0)
+{
+wait(0);
 }
 string[] sd=string_split(lines[i], " ", true);
 if(sd[0]=="minx" && sd.length()==2)
@@ -184,7 +207,7 @@ else if(sd[0]=="aircraft" && sd.length()==5)
 read_aircraft(sd);
 else if(sd[0]=="airbeacon" && sd.length()==3)
 read_airbeacon(sd);
-else if(sd[0]=="npc" && sd.length()==6)
+else if(sd[0]=="npc" && sd.length()==7)
 read_npc(sd);
 else if(sd[0]=="camera" && sd.length()==11)
 read_camera(sd);
@@ -200,7 +223,7 @@ else if(sd[0]=="projectile" && sd.length()==13)
 read_projectile(sd);
 else if(sd[0]=="turret" && sd.length()==17)
 read_turret(sd);
-else if(sd[0]=="npc_zone" && sd.length()==8)
+else if(sd[0]=="npc_zone" && sd.length()==9)
 read_npc_zone(sd);
 else if(sd[0]=="bike" && sd.length()==6)
 read_bike(sd);

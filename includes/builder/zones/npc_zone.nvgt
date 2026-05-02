@@ -5,16 +5,18 @@ class npc_zone
     int y;
     int spawntime;
     int scale_level;
+    string path;
     string category;
     string subtype;
     timer spawntimer;
-    npc_zone(double mx, double mx2, int sy, int sp, int sl, string cat, string sub)
+    npc_zone(double mx, double mx2, int sy, int sp, int sl, string p, string cat, string sub)
     {
         minx = mx;
         maxx = mx2;
         y = sy;
         spawntime = sp;
         scale_level = sl;
+        path = p;
         category = cat;
         subtype = sub;
     }
@@ -33,15 +35,15 @@ void npc_zone_loop()
                 if(folders.length() > 0) sub = random_string(folders);
             }
             if(sub != "" && sub != "none")
-                spawn_npc(random(npc_zones[i].minx, npc_zones[i].maxx), npc_zones[i].y, npc_zones[i].scale_level, npc_zones[i].category, sub);
+                spawn_npc(random(npc_zones[i].minx, npc_zones[i].maxx), npc_zones[i].y, npc_zones[i].scale_level, npc_zones[i].path, npc_zones[i].category, sub);
             npc_zones[i].spawntimer.restart();
         }
     }
 }
 
-void spawn_npc_zone(double x1, double x2, int y, int sp, int sl, string category, string subtype)
+void spawn_npc_zone(double x1, double x2, int y, int sp, int sl, string path, string category, string subtype)
 {
-    npc_zone z(x1, x2, y, sp, sl, category, subtype);
+    npc_zone z(x1, x2, y, sp, sl, path, category, subtype);
     npc_zones.insert_last(z);
 }
 
@@ -57,33 +59,38 @@ void read_npc_zone(string[] sd)
     int y = stn(sd[3]);
     int sp = stn(sd[4]);
     int sl = stn(sd[5]);
-    string category = sd[6];
-    string subtype = sd[7];
-    spawn_npc_zone(mx, mx2, y, sp, sl, category, subtype);
+    string path = sd[6];
+    string category = sd[7];
+    string subtype = sd[8];
+    spawn_npc_zone(mx, mx2, y, sp, sl, path, category, subtype);
 }
 
-void write_npc_zone(double x1, double x2, int y, int sp, int sl, string category, string subtype)
+void write_npc_zone(double x1, double x2, int y, int sp, int sl, string path, string category, string subtype)
 {
     mapper.open("data/maps/decompiled/" + mapname + "/" + "info.sif", "ab");
     mapdata = mapper.read();
-    mapper.write("\r\n" + "npc_zone " + x1 + " " + x2 + " " + y + " " + sp + " " + sl + " " + category + " " + subtype);
+    mapper.write("\r\n" + "npc_zone " + x1 + " " + x2 + " " + y + " " + sp + " " + sl + " " + path + " " + category + " " + subtype);
     mapper.close();
 }
 
 void build_npc_zone()
 {
     string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+    string[] paths = {"any", "global", "map"};
     string[] categories = {"animals", "humans", "robots", "zombies"};
     string saved_x = sel_left_set ? sel_left : "";
     string saved_x2 = sel_right_set ? sel_right : "";
     string saved_y = sel_bottom_set ? sel_bottom : "";
     string saved_sp = "";
     string saved_lev = "0";
+    int saved_path_pos = 0;
     int saved_cat_pos = 0;
     int saved_sub_pos = 0;
     bool do_build = true;
+    int last_path_pos = -1;
     int last_cat_pos = -1;
-    int mx, mx2, my, sp, lev, cat_list, sub_list, ok, cn;
+    int focus_after_build = 0;
+    int mx, mx2, my, sp, lev, path_list, cat_list, sub_list, ok, cn;
     string[] sub_data;
     while(true)
     {
@@ -99,7 +106,28 @@ void build_npc_zone()
                 saved_sp = form.get_text(sp);
                 saved_lev = form.get_text(lev);
             }
-            sub_data = get_map_sound_folders("npc/" + categories[saved_cat_pos] + "/*");
+            string global_base = "sounds/"+soundpack+"/npc/"+categories[saved_cat_pos];
+            string map_base = "data/maps/decompiled/"+mapname+"/assets/npc/"+categories[saved_cat_pos];
+            sub_data.resize(0);
+            if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "global")
+            {
+                string[] gd = find_directories(global_base+"/*");
+                for(uint i=0; i<gd.length(); i++)
+                {
+                    if(file_exists(global_base+"/"+gd[i]+"/info.sif") && sub_data.find(gd[i]) < 0)
+                        sub_data.insert_last(gd[i]);
+                }
+            }
+            if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "map")
+            {
+                string[] md = find_directories(map_base+"/*");
+                for(uint i=0; i<md.length(); i++)
+                {
+                    if(file_exists(map_base+"/"+md[i]+"/info.sif") && sub_data.find(md[i]) < 0)
+                        sub_data.insert_last(md[i]);
+                }
+            }
+            if(sub_data.length() > 0) sort_naturally(sub_data);
             form.reset();
             form.create_window("npc zone", false, true, last_cat_pos != -1);
             mx = form.create_input_box("minimum x", saved_x);
@@ -112,6 +140,10 @@ void build_npc_zone()
             form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
+            path_list = form.create_list("path");
+            for(uint i = 0; i < paths.length(); i++)
+                form.add_list_item(path_list, paths[i], paths[i]);
+            form.set_list_position(path_list, saved_path_pos, false);
             cat_list = form.create_list("category");
             for(uint i = 0; i < categories.length(); i++)
                 form.add_list_item(cat_list, categories[i], categories[i]);
@@ -128,13 +160,26 @@ void build_npc_zone()
             if(last_cat_pos == -1)
             {
                 form.focus(mx);
-                spool.play_stationary(get_pack_sound("menus/" + menutype + "/*open*"), false);
             }
-            else
+            else if(focus_after_build == 1)
                 form.focus_silently(cat_list);
+            else
+                form.focus_silently(path_list);
+            last_path_pos = saved_path_pos;
             last_cat_pos = saved_cat_pos;
         }
         form.monitor();
+        int cur_path = form.get_list_position(path_list);
+        if(cur_path != -1 && cur_path != last_path_pos)
+        {
+            saved_path_pos = cur_path;
+            saved_sub_pos = 0;
+            t.destroy_sound(prevslot);
+            prevslot = -1;
+            focus_after_build = 0;
+            do_build = true;
+            continue;
+        }
         int cur_cat = form.get_list_position(cat_list);
         if(cur_cat != -1 && cur_cat != last_cat_pos)
         {
@@ -142,6 +187,7 @@ void build_npc_zone()
             saved_sub_pos = 0;
             t.destroy_sound(prevslot);
             prevslot = -1;
+            focus_after_build = 1;
             do_build = true;
             continue;
         }
@@ -181,11 +227,11 @@ void build_npc_zone()
         }
         if(form.is_pressed(ok))
         {
-            if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); spool.play_stationary(get_pack_sound("menus/" + menutype + "/*open*"), false); continue; }
-            if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); spool.play_stationary(get_pack_sound("menus/" + menutype + "/*open*"), false); continue; }
-            if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); spool.play_stationary(get_pack_sound("menus/" + menutype + "/*open*"), false); continue; }
-            if(form.get_text(sp) == "") { speak("Spawn time is required."); form.focus(sp); spool.play_stationary(get_pack_sound("menus/" + menutype + "/*open*"), false); continue; }
-            if(form.get_text(lev) == "") { speak("Scale level is required."); form.focus(lev); spool.play_stationary(get_pack_sound("menus/" + menutype + "/*open*"), false); continue; }
+            if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); continue; }
+            if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); continue; }
+            if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); continue; }
+            if(form.get_text(sp) == "") { speak("Spawn time is required."); form.focus(sp); continue; }
+            if(form.get_text(lev) == "") { speak("Scale level is required."); form.focus(lev); continue; }
             double bx = string_to_number(form.get_text(mx));
             double bx2 = string_to_number(form.get_text(mx2));
             int by = string_to_number(form.get_text(my));
@@ -196,11 +242,12 @@ void build_npc_zone()
             if(p == 0) bsub = "none";
             else if(p == int(sub_data.length()) + 1) bsub = "random";
             else bsub = sub_data[p - 1];
+            string bpath = paths[saved_path_pos];
             string bcat = categories[saved_cat_pos];
             t.destroy_sound(prevslot);
             resume_pools();
-            write_npc_zone(bx, bx2, by, bsp, blev, bcat, bsub);
-            spawn_npc_zone(bx, bx2, by, bsp, blev, bcat, bsub);
+            write_npc_zone(bx, bx2, by, bsp, blev, bpath, bcat, bsub);
+            spawn_npc_zone(bx, bx2, by, bsp, blev, bpath, bcat, bsub);
             load_map(mapname, mapowner);
             mpool.play_stationary(get_pack_sound("characters/" + chartype + "/map/*update*"), false);
             speak("Map updated.");
