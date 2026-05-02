@@ -3,9 +3,9 @@ bool doormove;
 door@[]doors(0);
 class door
 {
-bool automatic, destroyable, is_moving;
+bool automatic, destroyable, is_moving, is_ranged;
 int locksound, closesound, defsound, destsound, doorsound, hurtsound, movesound, opensound;
-int startx, starty;
+int minx, maxx, miny, maxy;
 int endx, endy;
 double doorhealth;
 double doormaxhealth;
@@ -21,10 +21,12 @@ string looptype;
 string movetype;
 string opentype;
 timer doortimer;
-door(int sx, int sy, int ex, int ey, double hp, double maxhp, int sp, string lsound, string mvsound, string osound, string clsound, string dsound, string lkmode, string did, string pass, string lktype, bool dcl, bool dtb)
+door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, double maxhp, int sp, string lsound, string mvsound, string osound, string clsound, string dsound, string lkmode, string did, string pass, string lktype, bool dcl, bool dtb, bool rng)
 {
-startx=sx;
-starty=sy;
+minx=mnx;
+maxx=mxx;
+miny=mny;
+maxy=mxy;
 endx=ex;
 endy=ey;
 doorhealth=hp;
@@ -41,9 +43,11 @@ drpass=pass;
 locktype=lktype;
 automatic=dcl;
 destroyable=dtb;
+is_ranged=rng;
 last_drpass="";
 is_moving=false;
-doorsound=doorpool.play_extended_2d(get_map_sound("objects/doors/loop/"+looptype+"/*loop*"),me.x,me.y,startx,starty,0,0,0,0,true,0,0,0,100,false);
+doorsound=doorpool.play_extended_2d(get_map_sound("objects/doors/loop/"+looptype+"/*loop*"),me.x,me.y,minx,miny,0,0,0,0,true,0,0,0,100,false);
+doorpool.update_sound_range_2d(doorsound, 0, maxx-minx, 0, maxy-miny);
 }
 bool check_password(string input)
 {
@@ -55,14 +59,14 @@ void doorcheck()
 {
 for(uint i=0; i<doors.length(); i++)
 {
-if(doors[i].startx==me.x and doors[i].starty==me.y and doors[i].automatic==true)
+if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and doors[i].automatic==true)
 {
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("objects/doors/open/"+doors[i].opentype+"/*open*"),false,0,0,0,100,false);
 doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("objects/doors/move/"+doors[i].movetype+"/*move*"),true,0,0,0,100,false);
 }
-if(doors[i].startx==me.x and doors[i].starty==me.y and doors[i].automatic==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and doors[i].automatic==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 if(doors[i].lockmode=="none")
 {
@@ -223,7 +227,7 @@ if(doors[i].doorhealth<=0)
 {
 doorpool.destroy_sound(doors[i].hurtsound);
 doorpool.destroy_sound(doors[i].doorsound);
-doors[i].defsound=doorpool.play_extended_2d(get_map_sound("objects/doors/dest/"+doors[i].desttype+"/*death*"),me.x,me.y,doors[i].startx,doors[i].starty,0,0,0,0,false,0,0,0,100,false);
+doors[i].defsound=doorpool.play_extended_2d(get_map_sound("objects/doors/dest/"+doors[i].desttype+"/*death*"),me.x,me.y,doors[i].minx,doors[i].miny,0,0,0,0,false,0,0,0,100,false);
 doors.remove_at(i);
 return;
 }
@@ -269,9 +273,9 @@ doors[i].is_moving=false;
 }
 }
 
-void spawn_door(int x, int y, int x2, int y2, double hp, double maxhp, int speed, string looptype, string movetype, string opentype, string closetype, string desttype, string lockmode, string doorid, string drpass, string locktype, bool automatic, bool destroyable)
+void spawn_door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, double maxhp, int speed, string looptype, string movetype, string opentype, string closetype, string desttype, string lockmode, string doorid, string drpass, string locktype, bool automatic, bool destroyable, bool ranged=false)
 {
-door dr1(x, y, x2, y2, hp, maxhp, speed, looptype, movetype, opentype, closetype, desttype, lockmode, doorid, drpass, locktype, automatic, destroyable);
+door dr1(mnx, mxx, mny, mxy, ex, ey, hp, maxhp, speed, looptype, movetype, opentype, closetype, desttype, lockmode, doorid, drpass, locktype, automatic, destroyable, ranged);
 doors.insert_last(dr1);
 }
 
@@ -288,9 +292,17 @@ doormove=false;
 
 void build_item_door()
 {
-build_door(true);
+build_door(true, false);
 }
-void build_door(bool item_mode = false)
+void build_ranged_door()
+{
+build_door(false, true);
+}
+void build_ranged_item_door()
+{
+build_door(true, true);
+}
+void build_door(bool item_mode = false, bool ranged = false)
 {
 string saved_sx = sel_left_set ? sel_left : "";
 string saved_sy = sel_bottom_set ? sel_bottom : "";
@@ -300,6 +312,10 @@ string saved_hp = "1";
 string saved_sp = "";
 string saved_did = "";
 string saved_pass = "";
+string saved_mnx = sel_left_set ? sel_left : "";
+string saved_mxx = sel_left_set ? sel_left : "";
+string saved_mny = sel_bottom_set ? sel_bottom : "";
+string saved_mxy = sel_bottom_set ? sel_bottom : "";
 int saved_lockmode_pos = 0;
 int saved_loop_pos = 0;
 int saved_move_pos = 0;
@@ -313,6 +329,7 @@ bool saved_opposite = false;
 bool do_build = true;
 int last_lockmode_pos = -1;
 int fsx, fsy, fex, fey, fhp, fsp;
+int fmnx, fmxx, fmny, fmxy;
 int fdid, fpass;
 int lockmode_list, loop_list, move_list, open_list, close_list, dest_list, lock_list;
 int automatic_cb, destroyable_cb, opposite_cb;
@@ -337,12 +354,22 @@ if(do_build)
 do_build = false;
 if(last_lockmode_pos != -1)
 {
-saved_sx = form.get_text(fsx);
-saved_sy = form.get_text(fsy);
 saved_ex = form.get_text(fex);
 saved_ey = form.get_text(fey);
 saved_hp = form.get_text(fhp);
 saved_sp = form.get_text(fsp);
+if(ranged)
+{
+saved_mnx = form.get_text(fmnx);
+saved_mxx = form.get_text(fmxx);
+saved_mny = form.get_text(fmny);
+saved_mxy = form.get_text(fmxy);
+}
+else
+{
+saved_sx = form.get_text(fsx);
+saved_sy = form.get_text(fsy);
+}
 saved_loop_pos = max(0, form.get_list_position(loop_list));
 saved_move_pos = max(0, form.get_list_position(move_list));
 saved_open_pos = max(0, form.get_list_position(open_list));
@@ -370,17 +397,37 @@ saved_destroyable = form.is_checked(destroyable_cb);
 saved_opposite = form.is_checked(opposite_cb);
 }
 form.reset();
-form.create_window(item_mode ? "item door" : "door", false, true, last_lockmode_pos != -1);
+string title = item_mode ? "item door" : "door";
+if(ranged) title = "ranged " + title;
+form.create_window(title, false, true, last_lockmode_pos != -1);
+if(ranged)
+{
+fmnx = form.create_input_box("minimum x", saved_mnx);
+fmxx = form.create_input_box("maximum x", saved_mxx);
+fmny = form.create_input_box("minimum y", saved_mny);
+fmxy = form.create_input_box("maximum y", saved_mxy);
+fex = form.create_input_box("destination x", saved_ex);
+fey = form.create_input_box("destination y", saved_ey);
+form.set_disallowed_chars(fmnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fmxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fmny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fmxy, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fex, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fey, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
 fsx = form.create_input_box("starting x", saved_sx);
 fsy = form.create_input_box("starting y", saved_sy);
 fex = form.create_input_box("finishing x", saved_ex);
 fey = form.create_input_box("finishing y", saved_ey);
-fhp = form.create_input_box("health", saved_hp);
-fsp = form.create_input_box("speed", saved_sp);
 form.set_disallowed_chars(fsx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fsy, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fex, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fey, disallowed_nums, false, "This character is not allowed.");
+}
+fhp = form.create_input_box("health", saved_hp);
+fsp = form.create_input_box("speed", saved_sp);
 form.set_disallowed_chars(fhp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fsp, disallowed_nums, false, "This character is not allowed.");
 lockmode_list = form.create_list(item_mode ? "use mode" : "lock mode");
@@ -465,7 +512,7 @@ fok = form.create_button("okay", true);
 fcn = form.create_button("cancel");
 if(last_lockmode_pos == -1)
 {
-form.focus(fsx);
+form.focus(ranged ? fmnx : fsx);
 }
 else
 form.focus_silently(lockmode_list);
@@ -532,29 +579,21 @@ return;
 }
 if(form.is_pressed(fok))
 {
-if(form.get_text(fsx)=="")
+if(ranged)
 {
-speak("Starting x is required.");
-form.focus(fsx);
-continue;
+if(form.get_text(fmnx)=="") { speak("Minimum x is required."); form.focus(fmnx); continue; }
+if(form.get_text(fmxx)=="") { speak("Maximum x is required."); form.focus(fmxx); continue; }
+if(form.get_text(fmny)=="") { speak("Minimum y is required."); form.focus(fmny); continue; }
+if(form.get_text(fmxy)=="") { speak("Maximum y is required."); form.focus(fmxy); continue; }
+if(form.get_text(fex)=="") { speak("Destination x is required."); form.focus(fex); continue; }
+if(form.get_text(fey)=="") { speak("Destination y is required."); form.focus(fey); continue; }
 }
-if(form.get_text(fsy)=="")
+else
 {
-speak("Starting y is required.");
-form.focus(fsy);
-continue;
-}
-if(form.get_text(fex)=="")
-{
-speak("Finishing x is required.");
-form.focus(fex);
-continue;
-}
-if(form.get_text(fey)=="")
-{
-speak("Finishing y is required.");
-form.focus(fey);
-continue;
+if(form.get_text(fsx)=="") { speak("Starting x is required."); form.focus(fsx); continue; }
+if(form.get_text(fsy)=="") { speak("Starting y is required."); form.focus(fsy); continue; }
+if(form.get_text(fex)=="") { speak("Finishing x is required."); form.focus(fex); continue; }
+if(form.get_text(fey)=="") { speak("Finishing y is required."); form.focus(fey); continue; }
 }
 if(form.get_text(fsp)=="")
 {
@@ -586,10 +625,24 @@ speak("Password is required for this mode.");
 form.focus(fpass);
 continue;
 }
-double bx = string_to_number(form.get_text(fsx));
-double by = string_to_number(form.get_text(fsy));
-double bx2 = string_to_number(form.get_text(fex));
-double by2 = string_to_number(form.get_text(fey));
+double bex = string_to_number(form.get_text(fex));
+double bey = string_to_number(form.get_text(fey));
+double bmnx, bmxx, bmny, bmxy;
+double bsx, bsy;
+if(ranged)
+{
+bmnx = string_to_number(form.get_text(fmnx));
+bmxx = string_to_number(form.get_text(fmxx));
+bmny = string_to_number(form.get_text(fmny));
+bmxy = string_to_number(form.get_text(fmxy));
+bsx = bmnx; bsy = bmny;
+}
+else
+{
+bsx = string_to_number(form.get_text(fsx));
+bsy = string_to_number(form.get_text(fsy));
+bmnx = bsx; bmxx = bsx; bmny = bsy; bmxy = bsy;
+}
 double bhp = string_to_number(form.get_text(fhp) != "" ? form.get_text(fhp) : "1");
 double bsp = string_to_number(form.get_text(fsp));
 string lkmode = "none";
@@ -632,12 +685,25 @@ bool bdmd = form.is_checked(destroyable_cb);
 bool opposite = form.is_checked(opposite_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_door(bx, by, bx2, by2, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
-spawn_door(bx, by, bx2, by2, bhp, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
+if(ranged)
+{
+write_ranged_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
+spawn_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd, true);
 if(opposite)
 {
-write_door(bx2, by2, bx, by, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
-spawn_door(bx2, by2, bx, by, bhp, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
+write_ranged_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
+spawn_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd, true);
+}
+}
+else
+{
+write_door(bsx, bsy, bex, bey, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
+spawn_door(bsx, bsx, bsy, bsy, bex, bey, bhp, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd, false);
+if(opposite)
+{
+write_door(bex, bey, bsx, bsy, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd);
+spawn_door(bex, bex, bey, bey, bsx, bsy, bhp, bhp, bsp, blooptyp, bmovtyp, bopentyp, bclostyp, bdesttyp, lkmode, did, pass, lktype, bdmt, bdmd, false);
+}
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
@@ -651,8 +717,8 @@ void read_door(string[] sd)
 {
 int sx=stn(sd[1]);
 int sy=stn(sd[2]);
-int sx2=stn(sd[3]);
-int sy2=stn(sd[4]);
+int ex=stn(sd[3]);
+int ey=stn(sd[4]);
 double hp=stn(sd[5]);
 int sp=stn(sd[6]);
 string lotype=sd[7];
@@ -666,7 +732,31 @@ string pass=sd[14];
 string lktype=sd[15];
 bool amt=string_to_bool(sd[16]);
 bool dbl=string_to_bool(sd[17]);
-spawn_door(sx, sy, sx2, sy2, hp, hp, sp, lotype, motype, optype, cotype, dotype, lkmode, did, pass, lktype, amt, dbl);
+spawn_door(sx, sx, sy, sy, ex, ey, hp, hp, sp, lotype, motype, optype, cotype, dotype, lkmode, did, pass, lktype, amt, dbl, false);
+}
+
+void read_ranged_door(string[] sd)
+{
+int mnx=stn(sd[1]);
+int mxx=stn(sd[2]);
+int mny=stn(sd[3]);
+int mxy=stn(sd[4]);
+int ex=stn(sd[5]);
+int ey=stn(sd[6]);
+double hp=stn(sd[7]);
+int sp=stn(sd[8]);
+string lotype=sd[9];
+string motype=sd[10];
+string optype=sd[11];
+string cotype=sd[12];
+string dotype=sd[13];
+string lkmode=sd[14];
+string did=sd[15];
+string pass=sd[16];
+string lktype=sd[17];
+bool amt=string_to_bool(sd[18]);
+bool dbl=string_to_bool(sd[19]);
+spawn_door(mnx, mxx, mny, mxy, ex, ey, hp, hp, sp, lotype, motype, optype, cotype, dotype, lkmode, did, pass, lktype, amt, dbl, true);
 }
 
 void write_door(int x, int y, int x2, int y2, double hp, int speed, string looptype, string movetype, string opentype, string closetype, string desttype, string lockmode, string doorid, string drpass, string locktype, bool automatic, bool destroyable)
@@ -674,5 +764,13 @@ void write_door(int x, int y, int x2, int y2, double hp, int speed, string loopt
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 mapper.write("\r\n"+"door "+x+" "+y+" "+x2+" "+y2+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" "+doorid+" "+drpass+" "+locktype+" "+automatic+" "+destroyable);
+mapper.close();
+}
+
+void write_ranged_door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, int speed, string looptype, string movetype, string opentype, string closetype, string desttype, string lockmode, string doorid, string drpass, string locktype, bool automatic, bool destroyable)
+{
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"ranged_door "+mnx+" "+mxx+" "+mny+" "+mxy+" "+ex+" "+ey+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" "+doorid+" "+drpass+" "+locktype+" "+automatic+" "+destroyable);
 mapper.close();
 }

@@ -84,9 +84,9 @@ in_passage = true;
 @current_passage = passages[j];
 string passage_dimensions;
 if (current_passage.direction == 1)
-passage_dimensions = current_passage.passagelength + " x 1";
+passage_dimensions = current_passage.passagelength + " x " + current_passage.passagewidth;
 else if (current_passage.direction == 2)
-passage_dimensions = "1 x " + current_passage.passagelength;
+passage_dimensions = current_passage.passagewidth + " x " + current_passage.passagelength;
 labels.insert_last(passage_dimensions + " tile passage");
 }
 if (found_object) break;
@@ -98,7 +98,9 @@ void spy_check_entities(double sx, double sy, string[] &inout labels, bool &inou
 {
 for (uint j = 0; j < blockages.length(); j++)
 {
-if (sx >= blockages[j].minx && sx <= blockages[j].maxx && sy >= blockages[j].miny && sy <= blockages[j].maxy)
+double cx = me.x < blockages[j].minx ? blockages[j].minx : (me.x > blockages[j].maxx ? blockages[j].maxx : me.x);
+double cy = me.y < blockages[j].miny ? blockages[j].miny : (me.y > blockages[j].maxy ? blockages[j].maxy : me.y);
+if (sx == cx && sy == cy)
 {
 labels.insert_last("blockage");
 found_object = true;
@@ -111,7 +113,9 @@ labels.insert_last("checkpoint");
 }
 for (uint j = 0; j < belts.length(); j++)
 {
-if (sx >= belts[j].minx && sx <= belts[j].maxx && sy >= belts[j].miny && sy <= belts[j].maxy)
+double cx = me.x < belts[j].minx ? belts[j].minx : (me.x > belts[j].maxx ? belts[j].maxx : me.x);
+double cy = me.y < belts[j].miny ? belts[j].miny : (me.y > belts[j].maxy ? belts[j].maxy : me.y);
+if (sx == cx && sy == cy)
 {
 labels.insert_last("conveyor belt");
 found_object = true;
@@ -119,17 +123,26 @@ found_object = true;
 }
 for (uint j = 0; j < doors.length(); j++)
 {
-if (sx == doors[j].startx && sy == doors[j].starty)
+double closest_x = me.x < doors[j].minx ? doors[j].minx : (me.x > doors[j].maxx ? doors[j].maxx : me.x);
+double closest_y = me.y < doors[j].miny ? doors[j].miny : (me.y > doors[j].maxy ? doors[j].maxy : me.y);
+if (sx == closest_x && sy == closest_y)
 {
-if (doors[j].lockmode == "none")
-labels.insert_last("door");
+string base = (doors[j].lockmode == "none") ? "door" : "locked door";
+if (doors[j].is_ranged)
+{
+int w = doors[j].maxx - doors[j].minx + 1;
+int h = doors[j].maxy - doors[j].miny + 1;
+labels.insert_last(w + " x " + h + " tile ranged " + base);
+}
 else
-labels.insert_last("locked door");
+labels.insert_last(base);
 }
 }
 for (uint j = 0; j < hazards.length(); j++)
 {
-if (sx >= hazards[j].minx && sx <= hazards[j].maxx && sy >= hazards[j].miny && sy <= hazards[j].maxy)
+double cx = me.x < hazards[j].minx ? hazards[j].minx : (me.x > hazards[j].maxx ? hazards[j].maxx : me.x);
+double cy = me.y < hazards[j].miny ? hazards[j].miny : (me.y > hazards[j].maxy ? hazards[j].maxy : me.y);
+if (sx == cx && sy == cy)
 {
 labels.insert_last((hazards[j].maxx - hazards[j].minx + 1) + " x " + (hazards[j].maxy - hazards[j].miny + 1) + " tile " + hazards[j].hazardtype + " hazard");
 found_object = true;
@@ -142,7 +155,9 @@ labels.insert_last("sign");
 }
 for (uint j = 0; j < spikes.length(); j++)
 {
-if (sx >= spikes[j].minx && sx <= spikes[j].maxx && sy >= spikes[j].miny && sy <= spikes[j].maxy)
+double cx = me.x < spikes[j].minx ? spikes[j].minx : (me.x > spikes[j].maxx ? spikes[j].maxx : me.x);
+double cy = me.y < spikes[j].miny ? spikes[j].miny : (me.y > spikes[j].maxy ? spikes[j].maxy : me.y);
+if (sx == cx && sy == cy)
 {
 labels.insert_last((spikes[j].maxx - spikes[j].minx + 1) + " x " + (spikes[j].maxy - spikes[j].miny + 1) + " tile " + spikes[j].spiketype);
 found_object = true;
@@ -150,7 +165,9 @@ found_object = true;
 }
 for (uint j = 0; j < travelpoints.length(); j++)
 {
-if (sx >= travelpoints[j].minx && sx <= travelpoints[j].maxx && sy >= travelpoints[j].miny && sy <= travelpoints[j].maxy)
+double cx = me.x < travelpoints[j].minx ? travelpoints[j].minx : (me.x > travelpoints[j].maxx ? travelpoints[j].maxx : me.x);
+double cy = me.y < travelpoints[j].miny ? travelpoints[j].miny : (me.y > travelpoints[j].maxy ? travelpoints[j].maxy : me.y);
+if (sx == cx && sy == cy)
 {
 labels.insert_last((travelpoints[j].maxx - travelpoints[j].minx + 1) + " x " + (travelpoints[j].maxy - travelpoints[j].miny + 1) + " tile travelpoint");
 found_object = true;
@@ -198,7 +215,9 @@ labels.insert_last(vehicles[j].vehtype);
 }
 for (uint j = 0; j < safezones.length(); j++)
 {
-if (sx >= safezones[j].minx && sx <= safezones[j].maxx && sy >= safezones[j].miny && sy <= safezones[j].maxy)
+double cx = me.x < safezones[j].minx ? safezones[j].minx : (me.x > safezones[j].maxx ? safezones[j].maxx : me.x);
+double cy = me.y < safezones[j].miny ? safezones[j].miny : (me.y > safezones[j].maxy ? safezones[j].maxy : me.y);
+if (sx == cx && sy == cy)
 {
 labels.insert_last((safezones[j].maxx - safezones[j].minx + 1) + " x " + (safezones[j].maxy - safezones[j].miny + 1) + " tile safe zone");
 found_object = true;
@@ -206,7 +225,9 @@ found_object = true;
 }
 for (uint j = 0; j < forcefields.length(); j++)
 {
-if (sx >= forcefields[j].minx && sx <= forcefields[j].maxx && sy >= forcefields[j].miny && sy <= forcefields[j].maxy)
+double cx = me.x < forcefields[j].minx ? forcefields[j].minx : (me.x > forcefields[j].maxx ? forcefields[j].maxx : me.x);
+double cy = me.y < forcefields[j].miny ? forcefields[j].miny : (me.y > forcefields[j].maxy ? forcefields[j].maxy : me.y);
+if (sx == cx && sy == cy)
 {
 string state = forcefields[j].forcefielded ? "active" : "inactive";
 labels.insert_last((forcefields[j].maxx - forcefields[j].minx + 1) + " x " + (forcefields[j].maxy - forcefields[j].miny + 1) + " tile " + state + " " + forcefields[j].forcetype + " force field");
@@ -252,7 +273,8 @@ if (include_lifts)
 {
 for (uint j = 0; j < lifts.length(); j++)
 {
-if (sx >= lifts[j].minx && sx <= lifts[j].maxx && sy == lifts[j].lifty)
+double cx = me.x < lifts[j].minx ? lifts[j].minx : (me.x > lifts[j].maxx ? lifts[j].maxx : me.x);
+if (sx == cx && sy == lifts[j].lifty)
 {
 labels.insert_last((lifts[j].maxx - lifts[j].minx + 1) + " x  tile lift");
 found_object = true;
@@ -271,7 +293,8 @@ labels.insert_last("floor breaker");
 }
 for (uint j = 0; j < el_floors.length(); j++)
 {
-if (sx >= el_floors[j].minx && sx <= el_floors[j].maxx && sy == el_floors[j].floory)
+double cx = me.x < el_floors[j].minx ? el_floors[j].minx : (me.x > el_floors[j].maxx ? el_floors[j].maxx : me.x);
+if (sx == cx && sy == el_floors[j].floory)
 labels.insert_last("elevator floor");
 }
 }

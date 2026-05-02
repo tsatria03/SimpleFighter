@@ -13,6 +13,7 @@ class passage
     int startx, starty;
     int direction;
     int passagelength;
+    int passagewidth;
     int opentime;
     int closetime;
     string tile;
@@ -25,12 +26,13 @@ class passage
     string opentype;
     string pspass;
     timer action_timer;
-    passage(int sx, int sy, int dr, int psl, string ty, string lsound, string osound, string clsound, string lkmode, string did, string pass, string lktype, int ot, int ct)
+    passage(int sx, int sy, int dr, int psl, int psw, string ty, string lsound, string osound, string clsound, string lkmode, string did, string pass, string lktype, int ot, int ct)
     {
         startx = sx;
         starty = sy;
         direction = dr;
         passagelength = psl;
+        passagewidth = psw;
         tile = ty;
         looptype = lsound;
         opentype = osound;
@@ -78,8 +80,8 @@ class passage
     {
         int sx = startx + (direction == 1 ? 1 : 0);
         int sy = starty + (direction == 2 ? 1 : 0);
-        int ex = startx + (direction == 1 ? passagelength : 0);
-        int ey = starty + (direction == 2 ? passagelength : 0);
+        int ex = startx + (direction == 1 ? passagelength : passagewidth - 1);
+        int ey = starty + (direction == 2 ? passagelength : passagewidth - 1);
         int rw = ex - sx;
         int rh = ey - sy;
         if (passagesound != -1)
@@ -106,8 +108,8 @@ class passage
             }
 int sx = startx + (direction == 1 ? 1 : 0);
 int sy = starty + (direction == 2 ? 1 : 0);
-int ex = startx + (direction == 1 ? passagelength : 0);
-int ey = starty + (direction == 2 ? passagelength : 0);
+int ex = startx + (direction == 1 ? passagelength : passagewidth - 1);
+int ey = starty + (direction == 2 ? passagelength : passagewidth - 1);
 int rw = ex - sx;
 int rh = ey - sy;
 opensound = passagepool.play_extended_2d(get_map_sound("objects/doors/open/" + opentype + "/*open*"), me.x, me.y, sx, sy, 0, rw, 0, rh, false, 0, 0, 0, 100, false);
@@ -119,8 +121,8 @@ opensound = passagepool.play_extended_2d(get_map_sound("objects/doors/open/" + o
         is_opening = false;
         int px1 = startx, py1 = starty;
         int px2 = startx, py2 = starty;
-        if (direction == 1) { px1 += 1; px2 += passagelength; }
-        else if (direction == 2) { py1 += 1; py2 += passagelength; }
+        if (direction == 1) { px1 += 1; px2 += passagelength; py2 += passagewidth - 1; }
+        else if (direction == 2) { py1 += 1; py2 += passagelength; px2 += passagewidth - 1; }
         platform_id = spawn_platform(px1, px2, py1, py2, 1, 1, tile, 0, 100, false, false, true);
     }
     void begin_close()
@@ -141,8 +143,8 @@ opensound = passagepool.play_extended_2d(get_map_sound("objects/doors/open/" + o
             }
 int sx = startx + (direction == 1 ? 1 : 0);
 int sy = starty + (direction == 2 ? 1 : 0);
-int ex = startx + (direction == 1 ? passagelength : 0);
-int ey = starty + (direction == 2 ? passagelength : 0);
+int ex = startx + (direction == 1 ? passagelength : passagewidth - 1);
+int ey = starty + (direction == 2 ? passagelength : passagewidth - 1);
 int rw = ex - sx;
 int rh = ey - sy;
 closesound = passagepool.play_extended_2d(get_map_sound("objects/doors/close/" + closetype + "/*close*"), me.x, me.y, sx, sy, 0, rw, 0, rh, false, 0, 0, 0, 100, false);
@@ -162,8 +164,8 @@ void finish_close()
         {
             int px1 = startx, py1 = starty;
             int px2 = startx, py2 = starty;
-            if (direction == 1) { px1 += 1; px2 += passagelength; }
-            else if (direction == 2) { py1 += 1; py2 += passagelength; }
+            if (direction == 1) { px1 += 1; px2 += passagelength; py2 += passagewidth - 1; }
+            else if (direction == 2) { py1 += 1; py2 += passagelength; px2 += passagewidth - 1; }
             for(uint i = 0; i < platforms.length(); i++)
             {
                 if(platforms[i].minx == px1 && platforms[i].maxx == px2 && platforms[i].miny == py1 && platforms[i].maxy == py2)
@@ -178,9 +180,18 @@ void finish_close()
 }
     bool is_at_endpoint(int x, int y)
     {
-        int endx = startx + (direction == 1 ? passagelength + 1 : 0);
-        int endy = starty + (direction == 2 ? passagelength + 1 : 0);
-        return (x == startx && y == starty) || (x == endx && y == endy);
+        if (direction == 1)
+        {
+            int endx = startx + passagelength + 1;
+            bool y_in = y >= starty && y <= starty + passagewidth - 1;
+            return ((x == startx) || (x == endx)) && y_in;
+        }
+        else
+        {
+            int endy = starty + passagelength + 1;
+            bool x_in = x >= startx && x <= startx + passagewidth - 1;
+            return ((y == starty) || (y == endy)) && x_in;
+        }
     }
     bool is_endpoint(int x, int y)
 {
@@ -189,7 +200,10 @@ return is_at_endpoint(x, y);
     bool is_within_passage(int x, int y)
     {
         if (!is_open) return false;
-        return (direction == 1 && x > startx && x < startx + passagelength) || (direction == 2 && y > starty && y < starty + passagelength);
+        if (direction == 1)
+            return x > startx && x < startx + passagelength + 1 && y >= starty && y <= starty + passagewidth - 1;
+        else
+            return y > starty && y < starty + passagelength + 1 && x >= startx && x <= startx + passagewidth - 1;
     }
     string get_endpoint_description(int x, int y)
     {
@@ -378,9 +392,9 @@ void checkpassages()
         passages[i].update_passage();
 }
 
-void spawn_passage(int x, int y, int dir, int plength, string tile, string looptype, string opentype, string closetype, string lockmode, string doorid, string pspass, string locktype, int opentime, int closetime)
+void spawn_passage(int x, int y, int dir, int plength, int pwidth, string tile, string looptype, string opentype, string closetype, string lockmode, string doorid, string pspass, string locktype, int opentime, int closetime)
 {
-    passage pg1(x, y, dir, plength, tile, looptype, opentype, closetype, lockmode, doorid, pspass, locktype, opentime, closetime);
+    passage pg1(x, y, dir, plength, pwidth, tile, looptype, opentype, closetype, lockmode, doorid, pspass, locktype, opentime, closetime);
     passages.insert_last(pg1);
 }
 
@@ -401,24 +415,25 @@ int sx=stn(sd[1]);
 int sy=stn(sd[2]);
 int dir=stn(sd[3]);
 int lt=stn(sd[4]);
-string tiletype=sd[5];
-string lotype=sd[6];
-string optype=sd[7];
-string cotype=sd[8];
-string lkmode=sd[9];
-string did=sd[10];
-string pass=sd[11];
-string lktype=sd[12];
-int sp=stn(sd[13]);
-int sp2=stn(sd[14]);
-spawn_passage(sx, sy, dir, lt, tiletype, lotype, optype, cotype, lkmode, did, pass, lktype, sp, sp2);
+int wd=stn(sd[5]);
+string tiletype=sd[6];
+string lotype=sd[7];
+string optype=sd[8];
+string cotype=sd[9];
+string lkmode=sd[10];
+string did=sd[11];
+string pass=sd[12];
+string lktype=sd[13];
+int sp=stn(sd[14]);
+int sp2=stn(sd[15]);
+spawn_passage(sx, sy, dir, lt, wd, tiletype, lotype, optype, cotype, lkmode, did, pass, lktype, sp, sp2);
 }
 
-void write_passage(int x, int y, int direction, int length, string tile, string looptype, string opentype, string closetype, string lockmode, string doorid, string pspass, string locktype, int opentime, int closetime)
+void write_passage(int x, int y, int direction, int length, int width, string tile, string looptype, string opentype, string closetype, string lockmode, string doorid, string pspass, string locktype, int opentime, int closetime)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"passage "+x+" "+y+" "+direction+" "+length+" "+tile+" "+looptype+" "+opentype+" "+closetype+" "+lockmode+" "+doorid+" "+pspass+" "+locktype+" "+opentime+" "+closetime);
+mapper.write("\r\n"+"passage "+x+" "+y+" "+direction+" "+length+" "+width+" "+tile+" "+looptype+" "+opentype+" "+closetype+" "+lockmode+" "+doorid+" "+pspass+" "+locktype+" "+opentime+" "+closetime);
 mapper.close();
 }
 
@@ -430,7 +445,8 @@ void build_passage(bool item_mode = false)
 {
 string saved_sx = sel_left_set ? sel_left : "";
 string saved_sy = sel_bottom_set ? sel_bottom : "";
-string saved_length = "";
+string saved_length = "1";
+string saved_width = "1";
 string saved_opentime = "";
 string saved_closetime = "";
 string saved_did = "";
@@ -444,7 +460,7 @@ int saved_close_pos = 0;
 int saved_lock_pos = 0;
 bool do_build = true;
 int last_lockmode_pos = -1;
-int fsx, fsy, flength, fopentime, fclosetime;
+int fsx, fsy, flength, fwidth, fopentime, fclosetime;
 int fdid, fpass;
 int dir_list, tile_list, lockmode_list, loop_list, open_list, close_list, lock_list;
 int fok, fcn;
@@ -470,6 +486,7 @@ if(last_lockmode_pos != -1)
 saved_sx = form.get_text(fsx);
 saved_sy = form.get_text(fsy);
 saved_length = form.get_text(flength);
+saved_width = form.get_text(fwidth);
 saved_opentime = form.get_text(fopentime);
 saved_closetime = form.get_text(fclosetime);
 saved_dir_pos = max(0, form.get_list_position(dir_list));
@@ -500,11 +517,13 @@ form.create_window(item_mode ? "item passage" : "passage", false, true, last_loc
 fsx = form.create_input_box("starting x", saved_sx);
 fsy = form.create_input_box("starting y", saved_sy);
 flength = form.create_input_box("length", saved_length);
+fwidth = form.create_input_box("width", saved_width);
 fopentime = form.create_input_box("open time", saved_opentime);
 fclosetime = form.create_input_box("close time", saved_closetime);
 form.set_disallowed_chars(fsx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fsy, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(flength, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fwidth, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fopentime, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fclosetime, disallowed_nums, false, "This character is not allowed.");
 dir_list = form.create_list("direction");
@@ -682,6 +701,24 @@ speak("Length is required.");
 form.focus(flength);
 continue;
 }
+if(string_to_number(form.get_text(flength)) < 1)
+{
+speak("Length must be at least 1.");
+form.focus(flength);
+continue;
+}
+if(form.get_text(fwidth) == "")
+{
+speak("Width is required.");
+form.focus(fwidth);
+continue;
+}
+if(string_to_number(form.get_text(fwidth)) < 1)
+{
+speak("Width must be at least 1.");
+form.focus(fwidth);
+continue;
+}
 if(form.get_text(fopentime) == "")
 {
 speak("Open time is required.");
@@ -721,6 +758,7 @@ continue;
 int bx = string_to_number(form.get_text(fsx));
 int by = string_to_number(form.get_text(fsy));
 int blen = string_to_number(form.get_text(flength));
+int bwd = string_to_number(form.get_text(fwidth));
 int bot = string_to_number(form.get_text(fopentime));
 int bct = string_to_number(form.get_text(fclosetime));
 int dpos = form.get_list_position(dir_list);
@@ -760,8 +798,8 @@ lktype = (lkp > 0) ? plock[lkp-1] : "none";
 }
 t.destroy_sound(prevslot);
 resume_pools();
-write_passage(bx, by, bdir, blen, btile, blooptyp, bopentyp, bclostyp, lkmode, did, pass, lktype, bot, bct);
-spawn_passage(bx, by, bdir, blen, btile, blooptyp, bopentyp, bclostyp, lkmode, did, pass, lktype, bot, bct);
+write_passage(bx, by, bdir, blen, bwd, btile, blooptyp, bopentyp, bclostyp, lkmode, did, pass, lktype, bot, bct);
+spawn_passage(bx, by, bdir, blen, bwd, btile, blooptyp, bopentyp, bclostyp, lkmode, did, pass, lktype, bot, bct);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
