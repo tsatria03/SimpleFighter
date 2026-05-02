@@ -17,8 +17,11 @@ class npc
     double xpvalue;
     double run_health;
     double heal_amount;
-    int heal_speed;
-    timer heal_timer;
+    int rest_heal_time;
+    int ambient_heal_time;
+    bool ambient_heal;
+    timer rest_heal_timer;
+    timer ambient_heal_timer;
     int w_hrange, w_vrange;
     int w_hsight, w_vsight;
     int w_lives;
@@ -43,6 +46,12 @@ class npc
     bool dropitem;
     bool tel_x;
     bool tel_y;
+    bool launching;
+    string launch_category;
+    string launch_subtype;
+    int launch_time;
+    timer launch_timer;
+    int launchsound;
     int tel_n_min, tel_n_max;
     int tel_w_min, tel_w_max;
     int tel_h_min, tel_h_max;
@@ -104,6 +113,11 @@ class npc
         last_state = "normal";
         tel_x = false;
         tel_y = false;
+        ambient_heal = false;
+        launching = false;
+        launch_category = "";
+        launch_subtype = "";
+        launch_time = 0;
         tel_n_min = -1; tel_n_max = -1;
         tel_w_min = -1; tel_w_max = -1;
         tel_h_min = -1; tel_h_max = -1;
@@ -129,7 +143,8 @@ class npc
             dropitem = random_bool();
             run_health = 0;
             heal_amount = 0;
-            heal_speed = 0;
+            rest_heal_time = 0;
+            ambient_heal_time = 0;
             w_hrange = hrange; w_vrange = vrange;
             w_hsight = hsight; w_vsight = vsight;
             w_lives = lives;
@@ -293,7 +308,13 @@ void npc_parse_file(npc@ self, string path)
             self.run_health = (parts.length() >= 2 && parts[1] != "") ? roll_slot_double(parts[1]) : 0;
             self.heal_amount = (parts.length() >= 3 && parts[2] != "") ? roll_slot_double(parts[2]) : 0;
         }
-        else if(k == "heal speed") self.heal_speed = roll_slot_int(v);
+        else if(k == "rest heal time") self.rest_heal_time = roll_slot_int(v);
+        else if(k == "ambient heal time") self.ambient_heal_time = roll_slot_int(v);
+        else if(k == "ambient heal") self.ambient_heal = string_to_bool(v);
+        else if(k == "launching") self.launching = string_to_bool(v);
+        else if(k == "launch category") self.launch_category = v;
+        else if(k == "launch subtype") self.launch_subtype = v;
+        else if(k == "launch time") self.launch_time = roll_slot_int(v);
         else if(k == "lives") parse_triple_int(v, self.lives, self.w_lives, self.h_lives);
         else if(k == "attack") parse_triple_int(v, self.attack, self.w_attack, self.h_attack);
         else if(k == "defense") parse_triple_int(v, self.defence, self.w_defence, self.h_defence);
@@ -385,6 +406,9 @@ void destroy_all_npcs()
         sound_pool@ pool = npc_pool(npcs[i].category);
         pool.destroy_sound(npcs[i].mainsound);
         pool.destroy_sound(npcs[i].spawnsound);
+        pool.destroy_sound(npcs[i].refsound);
+        pool.destroy_sound(npcs[i].refsound2);
+        pool.destroy_sound(npcs[i].launchsound);
     }
     npcs.resize(0);
 }
@@ -532,13 +556,49 @@ void npcloop()
         int eff_lives_cap = in_normal ? npcs[i].lives : (in_wounded ? npcs[i].w_lives : npcs[i].h_lives);
         if(npcs[i].currentlives > eff_lives_cap) npcs[i].currentlives = eff_lives_cap;
 
-        // heal tick (only fires while in healing state)
-        if(in_healing && npcs[i].heal_speed > 0 && npcs[i].heal_amount > 0 && npcs[i].heal_timer.elapsed >= npcs[i].heal_speed)
+        // rest heal tick (fires while in healing state)
+        if(in_healing && npcs[i].rest_heal_time > 0 && npcs[i].heal_amount > 0 && npcs[i].rest_heal_timer.elapsed >= npcs[i].rest_heal_time)
         {
             npcs[i].healsound = pool.play_extended_2d(get_map_sound(sound_base+"/*heal*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             npcs[i].health += npcs[i].heal_amount;
             if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
-            npcs[i].heal_timer.restart();
+            npcs[i].rest_heal_timer.restart();
+        }
+        // ambient heal tick (fires regardless of state when enabled)
+        if(npcs[i].ambient_heal && npcs[i].ambient_heal_time > 0 && npcs[i].heal_amount > 0 && npcs[i].ambient_heal_timer.elapsed >= npcs[i].ambient_heal_time)
+        {
+            npcs[i].healsound = pool.play_extended_2d(get_map_sound(sound_base+"/*heal*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            npcs[i].health += npcs[i].heal_amount;
+            if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
+            npcs[i].ambient_heal_timer.restart();
+        }
+
+        // launch tick (summons an npc on its own clock, paused while resting in healing state)
+        if(npcs[i].launching && !in_healing && npcs[i].launch_time > 0 && npcs[i].launch_timer.elapsed >= npcs[i].launch_time)
+        {
+            int dx = 1;
+            if(combat_found && combat_tx < npcs[i].x) dx = -1;
+            string lcat = npcs[i].launch_category;
+            string lsub = npcs[i].launch_subtype;
+            if(lsub.find(",") >= 0)
+            {
+                string[] picks = string_split(lsub, ",", true);
+                string[] cleaned;
+                for(uint k = 0; k < picks.length(); k++) if(picks[k] != "") cleaned.insert_last(picks[k]);
+                if(cleaned.length() > 0) lsub = random_string(cleaned);
+            }
+            else if(lsub == "random")
+            {
+                string[] folders = get_map_sound_folders("npc/"+lcat+"/*");
+                if(folders.length() > 0) lsub = random_string(folders);
+            }
+            if(lsub != "" && lsub != "none" && lsub != "random" && (lcat == "animals" || lcat == "humans" || lcat == "robots" || lcat == "zombies"))
+            {
+                npcs[i].launchsound = pool.play_extended_2d(get_map_sound(sound_base+"/*launch*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                spawn_npc(npcs[i].x + dx, npcs[i].y, int(npcs[i].level), "any", lcat, lsub);
+                if(npcs.length() > 0) npcs[npcs.length()-1].launching = false;
+            }
+            npcs[i].launch_timer.restart();
         }
 
         // teleport tick
@@ -879,6 +939,9 @@ void npcloop()
             {
                 pool.destroy_sound(npcs[i].hurtsound);
                 pool.destroy_sound(npcs[i].mainsound);
+                pool.destroy_sound(npcs[i].refsound);
+                pool.destroy_sound(npcs[i].refsound2);
+                pool.destroy_sound(npcs[i].launchsound);
                 npcs[i].defsound = pool.play_extended_2d(get_map_sound(sound_base+"/*death*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 if(xpmod >= 1)
                 {
@@ -942,8 +1005,8 @@ bool add_npc_form(string path_choice, string category, string subtype)
     string target_path = (path_choice == "global")
         ? "sounds/"+soundpack+"/npc/"+category+"/"+subtype+"/info.sif"
         : "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/"+subtype+"/info.sif";
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch category", "launch subtype", "launch time"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching"};
     form.reset();
     form.create_window("add "+subtype, false, true, false);
     int[] inputs;
@@ -1231,8 +1294,8 @@ void remove_npc()
 
 bool edit_npc_form(string target_path, string subtype)
 {
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "heal speed", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch category", "launch subtype", "launch time"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching"};
     dictionary existing;
     file fin;
     if(fin.open(target_path, "rb"))
