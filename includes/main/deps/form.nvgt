@@ -121,6 +121,7 @@ form_background_callback@ audioform_default_background_callback = null;
 //main window class
 class audio_form {
 	bool active;
+	bool wrap_lists = true;
 	bool speak_control_attributes_separately;
 	int subform_control_index = -1;
 	on_control_event_callback@ event_callback = null;
@@ -140,6 +141,8 @@ class audio_form {
 		if (!active)
 			get_characters();
 		active = true;
+		if (!silent)
+			spool.play_stationary(get_pack_sound("menus/"+menutype+"/*open*"), false);
 		if (!silent && change_screen_title && window_title != "")
 			show_window(window_title);
 		/*if(@ui_speech==null)
@@ -301,7 +304,7 @@ class audio_form {
 		@c_form[control_counter].ui_speech = ui_speech;
 		return control_counter;
 	}
-	int create_list(string caption, int maximum_items = 0, bool multiselect = false, bool repeat_boundary_items = false) {
+	int create_list(string caption, int maximum_items = 0, bool multiselect = false, bool repeat_boundary_items = true) {
 		form_error = 0;
 		if (active_controls >= 50) {
 			form_error = form_error_window_full;
@@ -324,7 +327,7 @@ class audio_form {
 		@c_form[control_counter].ui_speech = ui_speech;
 		return control_counter;
 	}
-	int create_tab_panel(string caption, int maximum_items = 0, bool repeat_boundary_items = false) {
+	int create_tab_panel(string caption, int maximum_items = 0, bool repeat_boundary_items = true) {
 		form_error = 0;
 		if (active_controls >= 50) {
 			form_error = form_error_window_full;
@@ -347,6 +350,40 @@ class audio_form {
 		c_form[control_counter].speech_output = speech_output;
 		@c_form[control_counter].ui_speech = ui_speech;
 		return control_counter;
+	}
+	bool assign_to_tab(int control_index, int tab_panel_index, int tab_position) {
+		form_error = 0;
+		if (control_index < 0 || control_index > control_counter) {
+			form_error = form_error_invalid_control;
+			return false;
+		}
+		if (tab_position < 0) {
+			c_form[control_index].tab_assigned = false;
+			c_form[control_index].visible = true;
+			return true;
+		}
+		if (tab_panel_index < 0 || tab_panel_index > control_counter) {
+			form_error = form_error_invalid_control;
+			return false;
+		}
+		if (c_form[tab_panel_index].type != ct_list || !c_form[tab_panel_index].list_is_tab_panel) {
+			form_error = form_error_invalid_control;
+			return false;
+		}
+		c_form[control_index].tab_assigned = true;
+		c_form[control_index].tab_panel_owner = tab_panel_index;
+		c_form[control_index].tab_panel_slot = tab_position;
+		c_form[control_index].visible = (c_form[tab_panel_index].list_position == tab_position);
+		return true;
+	}
+	void update_tab_visibility() {
+		for (int i = 0; i <= control_counter; i++) {
+			if (!c_form[i].tab_assigned) continue;
+			int owner = c_form[i].tab_panel_owner;
+			if (owner < 0 || owner > control_counter) continue;
+			if (c_form[owner].type != ct_list || !c_form[owner].list_is_tab_panel) continue;
+			c_form[i].visible = (c_form[owner].list_position == c_form[i].tab_panel_slot);
+		}
 	}
 	int create_button(string caption, bool primary = false, bool cancel = false, bool overwrite = true) {
 		form_error = 0;
@@ -604,6 +641,7 @@ class audio_form {
 			utility_form.monitor();
 			return 0;
 		}
+		update_tab_visibility();
 		int start = control_focus;
 		int defaults = get_default_button();
 		int cancels = get_cancel_button();
@@ -632,6 +670,7 @@ spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
 						return -1;
 					}
 					control_focus = control_counter;
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*wrap*"), false);
 				}
 				while ((c_form[control_focus].visible == false) || (c_form[control_focus].active == false) || (@c_form[control_focus].subform != null && c_form[control_focus].subform.get_control_count() < 1)) {
 					control_focus--;
@@ -657,6 +696,7 @@ spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
 						return 1;
 					}
 					control_focus = 0;
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*wrap*"), false);
 				}
 				while ((c_form[control_focus].visible == false) || (c_form[control_focus].active == false) || (@c_form[control_focus].subform != null && c_form[control_focus].subform.get_control_count() < 1)) {
 					control_focus++;
@@ -831,6 +871,8 @@ spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*return*"),fal
 		}
 		temp = c_form[control_index].pressed;
 		c_form[control_index].pressed = false;
+		if (temp)
+			spool.play_stationary(get_pack_sound("menus/"+menutype+"/*close*"), false);
 		return temp;
 	}
 	bool is_checked(int control_index) {
@@ -2603,6 +2645,9 @@ class control {
 	bool list_repeat_boundary_items;
 	bool list_is_tab_panel;
 	bool list_nav_translate;
+	bool tab_assigned;
+	int tab_panel_owner;
+	int tab_panel_slot;
 	int type;
 	int progress;
 	double slider_value;
@@ -3086,6 +3131,17 @@ spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*space*"),fals
 			if (key_repeating(list_is_tab_panel ? KEY_LEFT : KEY_UP) || (!list_is_tab_panel && key_repeating(KEY_LEFT))) {
 if(list_position >0) spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
 				if (list_position <= 0) {
+					if (f.wrap_lists && list.length() > 1) {
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*wrap*"),false);
+						list_position = list.length() - 1;
+						dictionary args = {{"key", KEY_UP}, {"wrap", true}};
+						if (@event_callback != null and event_callback(f, tab_index, event_list_cursor, args) == 1) {
+							list_position = 0;
+							return;
+						}
+						if (!args.exists("silent")) speak_list_item();
+						return;
+					}
 					if (list_repeat_boundary_items && list_position == 0) {
 						dictionary args = {{"key", KEY_UP}, {"boundary", true}};
 						if (@event_callback != null and event_callback(f, tab_index, event_list_cursor, args) == 1) return;
@@ -3104,6 +3160,17 @@ if(list_position >0) spool.play_stationary(get_pack_sound("menus/"+menutype+"/*c
 			if (key_repeating(list_is_tab_panel ? KEY_RIGHT : KEY_DOWN) || (!list_is_tab_panel && key_repeating(KEY_RIGHT))) {
 if (list_position <list_length) spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
 				if (list_position >= list_length) {
+					if (f.wrap_lists && list.length() > 1) {
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*wrap*"),false);
+						list_position = 0;
+						dictionary args = {{"key", KEY_DOWN}, {"wrap", true}};
+						if (@event_callback != null and event_callback(f, tab_index, event_list_cursor, args) == 1) {
+							list_position = list_length;
+							return;
+						}
+						if (!args.exists("silent")) speak_list_item();
+						return;
+					}
 					if (list_repeat_boundary_items && list_position == list.length() - 1) {
 						dictionary args = {{"key", KEY_DOWN}, {"boundary", true}};
 						if (@event_callback != null and event_callback(f, tab_index, event_list_cursor, args) == 1) return;
@@ -3121,7 +3188,7 @@ if (list_position <list_length) spool.play_stationary(get_pack_sound("menus/"+me
 			}
 			if (key_repeating(KEY_HOME) && (list_position > 0 || list_repeat_boundary_items)) {
 				int old_list_position = list_position;
-if (list_position >0) spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
 				list_position = 0;
 				dictionary args = {{"key", KEY_HOME}};
 				if (@event_callback != null and event_callback(f, tab_index, event_list_cursor, args) == 1) {
@@ -3132,7 +3199,7 @@ if (list_position >0) spool.play_stationary(get_pack_sound("menus/"+menutype+"/*
 			}
 			if (key_repeating(KEY_END) && (list_position < list.length() - 1 || list_repeat_boundary_items)) {
 				int old_list_position = list_position;
-if (list_position<list.length()-1) spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
+spool.play_stationary(get_pack_sound("menus/"+menutype+"/*click*"),false);
 				list_position = list.length() - 1;
 				dictionary args = {{"key", KEY_END}};
 				if (@event_callback != null and event_callback(f, tab_index, event_list_cursor, args) == 1) {
