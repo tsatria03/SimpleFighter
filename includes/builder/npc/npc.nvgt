@@ -46,7 +46,9 @@ class npc
     bool dropitem;
     bool tel_x;
     bool tel_y;
+    int facing_dx;
     bool launching;
+    string launch_path;
     string launch_category;
     string launch_subtype;
     int launch_time;
@@ -114,9 +116,11 @@ class npc
         tel_x = false;
         tel_y = false;
         ambient_heal = false;
+        facing_dx = 1;
         launching = false;
-        launch_category = "";
-        launch_subtype = "";
+        launch_path = "any";
+        launch_category = "none";
+        launch_subtype = "none";
         launch_time = 0;
         tel_n_min = -1; tel_n_max = -1;
         tel_w_min = -1; tel_w_max = -1;
@@ -312,6 +316,7 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "ambient heal time") self.ambient_heal_time = roll_slot_int(v);
         else if(k == "ambient heal") self.ambient_heal = string_to_bool(v);
         else if(k == "launching") self.launching = string_to_bool(v);
+        else if(k == "launch path") self.launch_path = v;
         else if(k == "launch category") self.launch_category = v;
         else if(k == "launch subtype") self.launch_subtype = v;
         else if(k == "launch time") self.launch_time = roll_slot_int(v);
@@ -576,10 +581,12 @@ void npcloop()
         // launch tick (summons an npc on its own clock, paused while resting in healing state)
         if(npcs[i].launching && !in_healing && npcs[i].launch_time > 0 && npcs[i].launch_timer.elapsed >= npcs[i].launch_time)
         {
-            int dx = 1;
-            if(combat_found && combat_tx < npcs[i].x) dx = -1;
+            int dx;
+            if(combat_found) dx = (combat_tx < npcs[i].x) ? -1 : 1;
+            else dx = npcs[i].facing_dx;
             string lcat = npcs[i].launch_category;
             string lsub = npcs[i].launch_subtype;
+            int eff_scale = int(npcs[i].level);
             if(lsub.find(",") >= 0)
             {
                 string[] picks = string_split(lsub, ",", true);
@@ -587,7 +594,14 @@ void npcloop()
                 for(uint k = 0; k < picks.length(); k++) if(picks[k] != "") cleaned.insert_last(picks[k]);
                 if(cleaned.length() > 0) lsub = random_string(cleaned);
             }
-            else if(lsub == "random")
+            int colon = lsub.find(":");
+            if(colon >= 0)
+            {
+                string scale_part = string_mid(lsub, colon+2, lsub.length()-colon-1);
+                if(scale_part != "") eff_scale = smart_int(scale_part);
+                lsub = string_left(lsub, colon);
+            }
+            if(lsub == "random")
             {
                 string[] folders = get_map_sound_folders("npc/"+lcat+"/*");
                 if(folders.length() > 0) lsub = random_string(folders);
@@ -595,7 +609,7 @@ void npcloop()
             if(lsub != "" && lsub != "none" && lsub != "random" && (lcat == "animals" || lcat == "humans" || lcat == "robots" || lcat == "zombies"))
             {
                 npcs[i].launchsound = pool.play_extended_2d(get_map_sound(sound_base+"/*launch*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                spawn_npc(npcs[i].x + dx, npcs[i].y, int(npcs[i].level), "any", lcat, lsub);
+                spawn_npc(npcs[i].x + dx, npcs[i].y, eff_scale, npcs[i].launch_path, lcat, lsub);
                 if(npcs.length() > 0) npcs[npcs.length()-1].launching = false;
             }
             npcs[i].launch_timer.restart();
@@ -767,6 +781,8 @@ void npcloop()
                         next_x = npcs[i].x - dx_intent;
                     if(next_x >= minx && next_x <= maxx)
                     {
+                        int actual_dx = next_x - npcs[i].x;
+                        if(actual_dx != 0) npcs[i].facing_dx = (actual_dx > 0) ? 1 : -1;
                         npcs[i].x = next_x;
                         moved = true;
                     }
@@ -1005,7 +1021,7 @@ bool add_npc_form(string path_choice, string category, string subtype)
     string target_path = (path_choice == "global")
         ? "sounds/"+soundpack+"/npc/"+category+"/"+subtype+"/info.sif"
         : "data/maps/decompiled/"+mapname+"/assets/npc/"+category+"/"+subtype+"/info.sif";
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch category", "launch subtype", "launch time"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time"};
     string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching"};
     form.reset();
     form.create_window("add "+subtype, false, true, false);
@@ -1294,7 +1310,7 @@ void remove_npc()
 
 bool edit_npc_form(string target_path, string subtype)
 {
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch category", "launch subtype", "launch time"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time"};
     string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching"};
     dictionary existing;
     file fin;
