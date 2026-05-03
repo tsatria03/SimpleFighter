@@ -647,7 +647,7 @@ class audio_form {
 		int cancels = get_cancel_button();
 		int focused = get_current_focus();
 		form_error = 0;
-		if ((key_pressed(KEY_LCTRL)) || (key_pressed(KEY_RCTRL)))
+		if ((key_repeating(KEY_LCTRL)) || (key_repeating(KEY_RCTRL)))
 			stop_speech();
 		if (!active) {
 			form_error = form_error_no_window;
@@ -725,7 +725,7 @@ spool.play_stationary(get_pack_sound("menus/"+menutype+"/*wrap*"), false);
 			if (subform)
 				return 2;
 		}
-		if ((focused < 0 || c_form[focused].type != ct_keyboard_area) && (focused < 0 || ((!c_form[focused].multiline_enter || !c_form[focused].multiline) && c_form[focused].type == ct_input || c_form[focused].type == ct_button || c_form[focused].type == ct_list) && key_up(KEY_LCTRL) && key_up(KEY_RCTRL) && key_up(KEY_LSHIFT) && key_up(KEY_RSHIFT)) && (key_pressed(KEY_RETURN) || key_pressed(KEY_NUMPAD_ENTER) || (autotab == 3))) {
+		if ((focused < 0 || c_form[focused].type != ct_keyboard_area) && (focused < 0 || ((!c_form[focused].multiline_enter || !c_form[focused].multiline) && c_form[focused].type == ct_input || c_form[focused].type == ct_button || c_form[focused].type == ct_list) && key_up(KEY_LCTRL) && key_up(KEY_RCTRL) && key_up(KEY_LSHIFT) && key_up(KEY_RSHIFT)) && (key_repeating(KEY_RETURN) || key_repeating(KEY_NUMPAD_ENTER) || (autotab == 3))) {
 spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*return*"),false);
 			stop_speech();
 			if ((defaults == -1) && (focused > -1)) {
@@ -2420,11 +2420,11 @@ spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*return*"),fal
 	}
 	private void check(int tab_index) {
 		if (c_form[tab_index].type == ct_input or c_form[tab_index].type == ct_list) {
-			if (keyboard_modifiers & KEYMOD_CTRL != 0 and key_pressed(KEY_G) and c_form[tab_index].enable_go_to_index)
+			if (keyboard_modifiers & KEYMOD_CTRL != 0 and key_repeating(KEY_G) and c_form[tab_index].enable_go_to_index)
 				go_to_index(this, tab_index);
 		}
 		if (c_form[tab_index].enable_search && ((c_form[tab_index].type == ct_input && c_form[tab_index].multiline && c_form[tab_index].text != "") or c_form[tab_index].type == ct_list)) {
-			if (keyboard_modifiers & KEYMOD_CTRL != 0 and key_pressed(KEY_F))
+			if (keyboard_modifiers & KEYMOD_CTRL != 0 and key_repeating(KEY_F))
 				search_for(this, tab_index);
 			else if (key_repeating(KEY_F3)) {
 				string last_search = "";
@@ -2854,7 +2854,7 @@ if(char!=" " && char.is_upper()) spool.play_stationary(get_pack_sound("keyboards
 				}
 				if ((clipboard_flags & clipboard_flag_cut > 0) && (keyboard_modifiers & KEYMOD_CTRL > 0) && (key_repeating(KEY_X)) && password_mask == "")
 					cut_highlighted();
-				if ((clipboard_flags & clipboard_flag_paste > 0) && (keyboard_modifiers & KEYMOD_CTRL > 0) && (key_repeating(KEY_V)) || key_pressed(KEY_PASTE))
+				if ((clipboard_flags & clipboard_flag_paste > 0) && (keyboard_modifiers & KEYMOD_CTRL > 0) && (key_repeating(KEY_V)) || key_repeating(KEY_PASTE))
 					paste_text();
 				if (key_repeating(KEY_BACK)) {
 					if (!enable_delete) {
@@ -3230,7 +3230,7 @@ spool.play_stationary(get_pack_sound("keyboards/"+keyboardtheme+"/*space*"),fals
 			}
 		}
 		if (type == ct_link) {
-			if (!key_pressed(KEY_SPACE) && !pressed)
+			if (!key_repeating(KEY_SPACE) && !pressed)
 				return;
 			pressed = false;
 			if (link_url.empty()) {
@@ -4323,19 +4323,19 @@ class search_for : utility_form {
 //key_repeating globals and function
 //This is global because it can be used in the application.
 timer key_repeating_timer;
-int key_repeating_last_key_pressed;
+int key_repeating_last_key_repeating;
 int key_repeating_status;
 bool key_repeating(int key, int repeat_delay, int prerepeat_delay) {
-	if (key_pressed(key)) {
+	if (key_repeating(key)) {
 		key_repeating_status = 1;
-		key_repeating_last_key_pressed = key;
+		key_repeating_last_key_repeating = key;
 		key_repeating_timer.restart();
 		return true;
 	}
-	if (key_repeating_last_key_pressed == key) {
+	if (key_repeating_last_key_repeating == key) {
 		if (key_up(key) or !is_window_active()) {
 			key_repeating_status = 0;
-			key_repeating_last_key_pressed = 0;
+			key_repeating_last_key_repeating = 0;
 			return false;
 		} else {
 			if (key_repeating_status == 1 && key_repeating_timer.elapsed >= prerepeat_delay || key_repeating_status == 2 && key_repeating_timer.elapsed >= repeat_delay) {
