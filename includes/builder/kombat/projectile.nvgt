@@ -10,9 +10,10 @@ class projectile
     double projhealth, maxprojhealth;
     int damage;
     int speed;
+    int stun;
     string projtype;
     timer projtimer;
-    projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su)
+    projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0)
     {
         prox = px;
         proy = py;
@@ -30,6 +31,7 @@ class projectile
         projhealth = hp;
         maxprojhealth = hp;
         destroyable = dest;
+        stun = sn;
         cur_x_step = 0;
         cur_y_step = 0;
         if(direction == 0) { cur_x_step = 1; }
@@ -184,6 +186,7 @@ void projloop()
                 npcs[j].hurtsound = npool.play_extended_2d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 npcs[j].health -= projectiles[i].damage;
                 kombatlog.insert_last(projectiles[i].damage + " damage to " + npcs[j].subtype + " by " + projectiles[i].projtype + ".");
+                if(projectiles[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=projectiles[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; }
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
             }
@@ -299,9 +302,9 @@ void projloop()
     }
 }
 
-void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su)
+void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0)
 {
-    projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su);
+    projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, sn);
     projectiles.insert_last(p1);
 }
 
