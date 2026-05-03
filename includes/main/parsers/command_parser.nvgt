@@ -126,9 +126,9 @@ string entity=parsed[1];
 string id=parsed[2];
 double x=stn(parsed[3]);
 double y=stn(parsed[4]);
-if(entity=="animal" || entity=="human" || entity=="robot" || entity=="zombie")
+if(entity=="animal" || entity=="boss" || entity=="helper" || entity=="human" || entity=="robot" || entity=="special" || entity=="zombie")
 {
-string target_cat = entity + "s";
+string target_cat = (entity == "boss") ? "bosses" : (entity + "s");
 for(uint i=0; i<npcs.length(); i++)
 {
 if(npcs[i].category==target_cat && npcs[i].subtype==id && npcs[i].x==x && npcs[i].y==y)
@@ -152,92 +152,7 @@ return;
 }
 }
 }
-else if(entity=="helper")
-{
-for(uint i=0; i<helpers.length(); i++)
-{
-if(helpers[i].helpertype==id && helpers[i].helpx==x && helpers[i].helpy==y)
-{
-helperpool.destroy_sound(helpers[i].helpersound);
-helpers[i].defsound=helperpool.play_extended_2d(get_map_sound("kombat/helpers/"+helpers[i].helpertype+"/*death*"),me.x,me.y,helpers[i].helpx,helpers[i].helpy,0,0,0,0,false,0,0,0,100,false);
-int falldelay = round(helperpool.get_sound_length(helpers[i].defsound), 0);
-spawn_bodyfall(helpers[i].helpx, helpers[i].helpy, (falldelay <= 0 ? random(500, 1000) : falldelay));
-p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,helpers[i].helpx,helpers[i].helpy,false);
-speak("Killed the helper " + id + " at position " + x + ", " + y + ".");
-helpers.remove_at(i);
-return;
-}
-}
-}
-else if(entity=="projectile")
-{
-for(uint i=0; i<projectiles.length(); i++)
-{
-if(projectiles[i].projtype==id && projectiles[i].prox==x && projectiles[i].proy==y)
-{
-projpool.destroy_sound(projectiles[i].projsound);
-p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,projectiles[i].prox,projectiles[i].proy,false);
-speak("Removed the projectile " + id + " at position " + x + ", " + y + ".");
-projectiles.remove_at(i);
-return;
-}
-}
-}
-else if(entity=="bike")
-{
-for(uint i=0; i<bikes.length(); i++)
-{
-if(bikes[i].biketype==id && bikes[i].bikex==x && bikes[i].bikey==y)
-{
-cammable=true;
-jumpable=true;
-moveable=true;
-quittable=true;
-speedable=true;
-spiable=true;
-turnable=true;
-telable=true;
-bikepool.destroy_sound(bikes[i].bellsound);
-bikepool.destroy_sound(bikes[i].bikesound);
-bikes[i].defsound=bikepool.play_extended_2d(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*death*"),me.x,me.y,bikes[i].bikex,bikes[i].bikey,0,0,0,0,false,0,0,0,100,false);
-bikes[i].bikespeed=5;
-onbike=false;
-bikes[i].moveable=false;
-p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,bikes[i].bikex,bikes[i].bikey,false);
-speak("Killed the bike " + id + " at position " + x + ", " + y + ".");
-bikes.remove_at(i);
-return;
-}
-}
-}
-else if(entity=="vehicle")
-{
-for(uint i=0; i<vehicles.length(); i++)
-{
-if(vehicles[i].vehtype==id && vehicles[i].vehx==x && vehicles[i].vehy==y)
-{
-cammable=true;
-jumpable=true;
-moveable=true;
-quittable=true;
-speedable=true;
-spiable=true;
-turnable=true;
-telable=true;
-vehpool.destroy_sound(vehicles[i].beepsound);
-vehpool.destroy_sound(vehicles[i].vehsound);
-vehicles[i].defsound=vehpool.play_extended_2d(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*death*"),me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,0,0,0,0,false,0,0,0,100,false);
-vehicles[i].vehspeed=5;
-invehicle=false;
-vehicles[i].moveable=false;
-p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,false);
-speak("Killed the vehicle " + id + " at position " + x + ", " + y + ".");
-vehicles.remove_at(i);
-return;
-}
-}
-}
-else 
+else
 {
 speak("Invalid entity type: "+entity+".");
 }
@@ -280,71 +195,7 @@ p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,npcs[i].x,npcs[i].y,false);
 total_kills++;
 }
 npcs.resize(0);
-for(uint i=0; i<helpers.length(); i++)
-{
-if(helpers[i].helperhealth>0)
-{
-helperpool.destroy_sound(helpers[i].helpersound);
-helpers[i].defsound=helperpool.play_extended_2d(get_map_sound("kombat/helpers/"+helpers[i].helpertype+"/*death*"),me.x,me.y,helpers[i].helpx,helpers[i].helpy,0,0,0,0,false,0,0,0,100,false);
-int falldelay = round(helperpool.get_sound_length(helpers[i].defsound), 0);
-spawn_bodyfall(helpers[i].helpx, helpers[i].helpy, (falldelay <= 0 ? random(500, 1000) : falldelay));
-p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,helpers[i].helpx,helpers[i].helpy,false);
-}
-total_kills++;
-}
-helpers.resize(0);
-for(uint i=0; i<projectiles.length(); i++)
-{
-projpool.destroy_sound(projectiles[i].projsound);
-}
-projectiles.resize(0);
-for(uint i=0; i<bikes.length(); i++)
-{
-if(bikes[i].bikehealth>0)
-{
-cammable=true;
-jumpable=true;
-moveable=true;
-quittable=true;
-speedable=true;
-spiable=true;
-turnable=true;
-telable=true;
-bikepool.destroy_sound(bikes[i].bellsound);
-bikepool.destroy_sound(bikes[i].bikesound);
-bikes[i].defsound=bikepool.play_extended_2d(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*death*"),me.x,me.y,bikes[i].bikex,bikes[i].bikey,0,0,0,0,false,0,0,0,100,false);
-bikes[i].bikespeed=5;
-onbike=false;
-bikes[i].moveable=false;
-p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,bikes[i].bikex,bikes[i].bikey,false);
-}
-total_kills++;
-}
-bikes.resize(0);
-for(uint i=0; i<vehicles.length(); i++)
-{
-if(vehicles[i].vehhealth>0)
-{
-cammable=true;
-jumpable=true;
-moveable=true;
-quittable=true;
-speedable=true;
-spiable=true;
-turnable=true;
-telable=true;
-vehpool.destroy_sound(vehicles[i].beepsound);
-vehpool.destroy_sound(vehicles[i].vehsound);
-vehicles[i].defsound=vehpool.play_extended_2d(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*death*"),me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,0,0,0,0,false,0,0,0,100,false);
-vehicles[i].vehspeed=5;
-invehicle=false;
-vehicles[i].moveable=false;
-p.play_2d(get_pack_sound("misc/*punch*"),me.x,me.y,vehicles[i].vehx,vehicles[i].vehy,false);
-}
-total_kills++;
-}
-vehicles.resize(0);
-speak("Killed all entities.");
+speak("Killed all npcs.");
 }
 else
 {

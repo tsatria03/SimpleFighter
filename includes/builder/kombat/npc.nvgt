@@ -114,6 +114,7 @@ class npc
         category = cat;
         subtype = sub;
         targets.insert_last("player");
+        if(cat == "helpers") targets.insert_last("helpers");
         use_steps = "auto";
         use_falls = "auto";
         terrain.insert_last("any");
@@ -234,6 +235,7 @@ class npc
 sound_pool@ npc_pool(string category)
 {
     if(category == "animals") return animalpool;
+    if(category == "bosses") return bosspool;
     if(category == "humans") return humanpool;
     if(category == "robots") return robpool;
     if(category == "specials") return specialpool;
@@ -509,6 +511,24 @@ bool npc_below_threshold(npc@ self)
 
 bool npc_targets(npc@ self, string cat)
 {
+    bool listed = false;
+    bool has_all = false;
+    for(uint j=0; j<self.targets.length(); j++)
+    {
+        if(self.targets[j] == "all") has_all = true;
+        if(self.targets[j] == cat) listed = true;
+    }
+    if(self.category == "helpers")
+    {
+        if(has_all) return false;
+        return !listed;
+    }
+    return has_all || listed;
+}
+
+bool npc_protects(npc@ self, string cat)
+{
+    if(self.category != "helpers") return false;
     for(uint j=0; j<self.targets.length(); j++)
     {
         if(self.targets[j] == "all") return true;
@@ -562,6 +582,8 @@ void destroy_all_npcs()
     for(uint i=0; i<npcs.length(); i++)
     {
         sound_pool@ pool = npc_pool(npcs[i].category);
+        if(npcs[i].category == "helpers")
+            pool.play_2d(get_map_sound("kombat/npc/helpers/"+npcs[i].subtype+"/*remove*"), me.x, me.y, npcs[i].x, npcs[i].y, false);
         pool.destroy_sound(npcs[i].mainsound);
         pool.destroy_sound(npcs[i].spawnsound);
         pool.destroy_sound(npcs[i].refsound);
@@ -772,7 +794,7 @@ void npcloop()
                 string[] folders = get_map_sound_folders("kombat/npc/"+lcat+"/*");
                 if(folders.length() > 0) lsub = random_string(folders);
             }
-            if(lsub != "" && lsub != "none" && lsub != "random" && (lcat == "animals" || lcat == "humans" || lcat == "robots" || lcat == "specials" || lcat == "zombies"))
+            if(lsub != "" && lsub != "none" && lsub != "random" && (lcat == "animals" || lcat == "bosses" || lcat == "helpers" || lcat == "humans" || lcat == "robots" || lcat == "specials" || lcat == "zombies"))
             {
                 npcs[i].launchsound = pool.play_extended_2d(get_map_sound(sound_base+"/*launch*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 spawn_npc(npcs[i].x + dx, npcs[i].y, eff_scale, npcs[i].launch_path, lcat, lsub);
@@ -849,6 +871,26 @@ void npcloop()
             tx = combat_tx; ty = combat_ty;
             has_move = true;
             sight_required = (npcs[i].chase_trigger != "always");
+        }
+        else if(in_normal && !pursuing && npcs[i].category == "helpers" && npc_protects(npcs[i], "player"))
+        {
+            int best_obj = -1;
+            int best_obj_d = 0;
+            for(uint k = 0; k < objs.length(); k++)
+            {
+                int d = absolute(objs[k].itx - npcs[i].x) + absolute(objs[k].ity - npcs[i].y);
+                if(best_obj < 0 || d < best_obj_d) { best_obj = int(k); best_obj_d = d; }
+            }
+            if(best_obj >= 0)
+            {
+                tx = objs[best_obj].itx; ty = objs[best_obj].ity;
+            }
+            else
+            {
+                tx = int(me.x); ty = int(me.y);
+            }
+            has_move = true;
+            sight_required = false;
         }
         else if(in_normal && !pursuing)
         {
@@ -984,6 +1026,19 @@ void npcloop()
                 else
                 {
                     npcs[i].step_active = false;
+                }
+                if(npcs[i].category == "helpers" && npc_protects(npcs[i], "player"))
+                {
+                    for(uint k = 0; k < objs.length(); k++)
+                    {
+                        if(npcs[i].x == objs[k].itx && npcs[i].y == objs[k].ity)
+                        {
+                            objs[k].getsound = itempool.play_stationary_extended(get_map_sound("objects/items/"+objs[k].objtype+"/"+objs[k].objtype2+"/*get*"), false, 0, 0, 0, 100, false);
+                            give(objs[k].objtype2, 1);
+                            objs.remove_at(k);
+                            break;
+                        }
+                    }
                 }
                 pool.update_sound_2d(npcs[i].mainsound, npcs[i].x, npcs[i].y);
                 npcs[i].movetimer.restart();
@@ -1297,7 +1352,7 @@ string read_npc_info_file(string base, string subtype)
 void view_npc()
 {
     string[] paths = {"global", "map"};
-    string[] categories = {"animals", "humans", "robots", "specials", "zombies"};
+    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
     int saved_path_pos = 0;
     int saved_cat_pos = 0;
     int saved_sub_pos = 0;
@@ -1395,7 +1450,7 @@ void view_npc()
 void remove_npc()
 {
     string[] paths = {"global", "map"};
-    string[] categories = {"animals", "humans", "robots", "specials", "zombies"};
+    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
     int saved_path_pos = 0;
     int saved_cat_pos = 0;
     bool do_build = true;
@@ -1609,7 +1664,7 @@ bool edit_npc_form(string target_path, string subtype)
 void edit_npc()
 {
     string[] paths = {"global", "map"};
-    string[] categories = {"animals", "humans", "robots", "specials", "zombies"};
+    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
     int saved_path_pos = 0;
     int saved_cat_pos = 0;
     int saved_sub_pos = 0;
@@ -1713,7 +1768,7 @@ void edit_npc()
 void add_npc()
 {
     string[] paths = {"global", "map"};
-    string[] categories = {"animals", "humans", "robots", "specials", "zombies"};
+    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
     int saved_path_pos = 0;
     int saved_cat_pos = 0;
     int saved_sub_pos = 0;
@@ -1810,7 +1865,7 @@ void build_npc()
 {
     string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
     string[] paths = {"any", "global", "map"};
-    string[] categories = {"animals", "humans", "robots", "specials", "zombies"};
+    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
     string saved_x = sel_left_set ? sel_left : "";
     string saved_y = sel_bottom_set ? sel_bottom : "";
     string saved_lev = "0";

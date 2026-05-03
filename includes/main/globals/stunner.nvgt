@@ -1,0 +1,79 @@
+void stun_target(string entity, string id, int st)
+{
+stundir=st;
+if(entity=="me")
+{
+stuntimer.restart();
+stunned=true;
+cammable=false;
+fireable=false;
+jumpable=false;
+moveable=false;
+speedable=false;
+spiable=false;
+turnable=false;
+telable=false;
+wepref=false;
+}
+else if(entity=="animal" || entity=="human" || entity=="robot" || entity=="zombie")
+{
+string target_cat = entity + "s";
+for(uint i=0; i<npcs.length(); i++)
+{
+if(npcs[i].category==target_cat && npcs[i].subtype==id)
+{
+stuntimer.restart();
+stunned=true;
+npcs[i].fireable=false;
+npcs[i].move_x=false;
+npcs[i].move_y=false;
+}
+}
+}
+else if(entity=="projectile")
+{
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(projectiles[i].projtype==id)
+{
+stuntimer.restart();
+stunned=true;
+projectiles[i].fireable=false;
+}
+}
+}
+}
+void stuncheck()
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned = false;
+cammable = true;
+fireable = true;
+jumpable = true;
+moveable = true;
+speedable = true;
+spiable = true;
+turnable = true;
+telable = true;
+wepref=true;
+}
+for(uint i=0; i<npcs.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+npcs[i].fireable=true;
+npcs[i].move_x=true;
+npcs[i].move_y=true;
+}
+}
+for(uint i=0; i<projectiles.length(); i++)
+{
+if(stunned==true && stuntimer.elapsed>=stundir)
+{
+stunned=false;
+projectiles[i].fireable=true;
+}
+}
+}
