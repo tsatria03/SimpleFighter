@@ -82,7 +82,7 @@ class npc
     int taunttime;
     int spawnsound, mainsound, defsound, hurtsound, stepsound, tilesound, wepsound, healsound;
     timer movetimer, firetimer, taunttimer;
-    string weapontype, weapontype2;
+    weapon wephum;
     int drawsound, refsound, refsound2, firesound, hitsound, shellsound;
     bool refon;
     timer reftimer;
@@ -217,15 +217,18 @@ class npc
         currentlives = lives;
         sound_pool@ pool = npc_pool(category);
         spawnsound = pool.play_extended_2d(get_map_sound("kombat/npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+        wephum.cad = "";
+        wephum.sub = "";
         if(category == "humans" && fireable && targets.length() > 0)
         {
             string[] wepcads = {"archery", "artillery", "explosive", "melee"};
-            weapontype = random_string(wepcads);
-            string[] weapons = get_pack_sound_folders("equipments/weapons/"+weapontype+"/*");
+            string rolled_cat = random_string(wepcads);
+            string[] weapons = get_pack_sound_folders("equipments/weapons/"+rolled_cat+"/*");
             if(weapons.length() > 0)
             {
-                weapontype2 = random_string(weapons);
-                drawsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*draw*"), me.x, me.y, x, y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                string rolled_sub = random_string(weapons);
+                wephum.parse(rolled_cat, rolled_sub);
+                wephum.play_draw(x, y);
             }
             refon = false;
         }
@@ -640,21 +643,24 @@ void npcloop()
     {
         sound_pool@ pool = npc_pool(npcs[i].category);
         string sound_base = "kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype;
-        bool human_armed = (npcs[i].category == "humans" && npcs[i].weapontype != "");
+        bool human_armed = (npcs[i].category == "humans" && npcs[i].wephum.cad != "");
+
+        // tick the human's reload timer
+        if(human_armed) npcs[i].wephum.check_reload(npcs[i].x, npcs[i].y);
 
         // human melee reflection toggle
-        if(human_armed && npcs[i].fireable && npcs[i].weapontype == "melee" && npcs[i].reftimer.elapsed >= random(5000, 10000))
+        if(human_armed && npcs[i].fireable && npcs[i].wephum.cad == "melee" && npcs[i].reftimer.elapsed >= random(5000, 10000))
         {
             pool.destroy_sound(npcs[i].refsound2);
             if(!npcs[i].refon)
             {
-                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*on*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                npcs[i].refsound2 = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*ref*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].wephum.cad+"/"+npcs[i].wephum.sub+"/*on*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                npcs[i].refsound2 = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].wephum.cad+"/"+npcs[i].wephum.sub+"/*ref*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
                 npcs[i].refon = true;
             }
             else
             {
-                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*off*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                npcs[i].refsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].wephum.cad+"/"+npcs[i].wephum.sub+"/*off*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 npcs[i].refon = false;
             }
             npcs[i].reftimer.restart();
@@ -1061,7 +1067,6 @@ void npcloop()
             npcs[i].step_active = false;
             if(human_armed)
             {
-                npcs[i].firesound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*fire*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 int dx_aim = combat_tx - npcs[i].x;
                 int dy_aim = combat_ty - npcs[i].y;
                 string h_dir = "right";
@@ -1076,9 +1081,15 @@ void npcloop()
                     if(dy_aim >= 0) { h_dir = "up"; sy = npcs[i].y + 1; }
                     else { h_dir = "down"; sy = npcs[i].y - 1; }
                 }
-                int dmg = int(eff_attack * eff_level);
-                spawn_bullet(sx, sy, eff_hrange, eff_vrange, dmg, 50, h_dir, npcs[i].weapontype, npcs[i].weapontype2, 0);
-                kombatlog.insert_last(npcs[i].subtype + " fired " + npcs[i].weapontype2 + ".");
+                if(!npcs[i].wephum.is_melee() && npcs[i].wephum.loaded_ammo <= 0 && !npcs[i].wephum.is_reloading)
+                {
+                    npcs[i].wephum.start_reload(npcs[i].x, npcs[i].y);
+                }
+                else if(!npcs[i].wephum.is_reloading)
+                {
+                    npcs[i].wephum.fire(sx, sy, h_dir, int(eff_attack * eff_level));
+                    kombatlog.insert_last(npcs[i].subtype + " fired " + npcs[i].wephum.sub + ".");
+                }
             }
             else if(target_is_player)
             {

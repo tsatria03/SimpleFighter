@@ -344,14 +344,14 @@ m.add_item_tts("You're currently on level"+level+"with"+xp+"experience. Your nex
 m.add_item_tts("You have"+points+"points available to spend");
 m.add_item_tts("upgrade maximum character attack,"+"currently set to;"+attack, "umat");
 m.add_item_tts("upgrade maximum character defence,"+"currently set to;"+defence, "umd");
-if(melee==false) m.add_item_tts("upgrade maximum weapon ammo,"+"currently set to;"+maxammo, "uma");
+if(melee==false) m.add_item_tts("upgrade maximum weapon ammo,"+"currently set to;"+wepchar.max_ammo, "uma");
 m.add_item_tts("upgrade maximum character health,"+"currently set to;"+maxhealth, "umh");
 m.add_item_tts("upgrade maximum character stamina,"+"currently set to;"+maxstamina, "umt");
 m.add_item_tts("upgrade maximum character lives,"+"currently set to;"+lifecard, "umlf");
 if(drawnshield==true) m.add_item_tts("upgrade maximum shield strength,"+"currently set to;"+maxshieldstrength, "umst");
 if(drawnshield==true) m.add_item_tts("upgrade maximum shield defence,"+"currently set to;"+shielddefence, "umsd");
-m.add_item_tts("upgrade maximum horizontal weapon range,"+"currently set to;"+weprange, "umra1");
-m.add_item_tts("upgrade maximum vertical weapon range,"+"currently set to;"+weprange2, "umra2");
+m.add_item_tts("upgrade maximum horizontal weapon range,"+"currently set to;"+wepchar.range, "umra1");
+m.add_item_tts("upgrade maximum vertical weapon range,"+"currently set to;"+wepchar.range2, "umra2");
 m.add_item_tts("back", "back");
 int mres=m.run("Points menu. ",true);
 string ptmem=m.get_item_name(mres);
@@ -418,15 +418,15 @@ else if(points>=1)
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
 string amm=vd.input_box("","How much ammo would you like to buy?");
-if(ammo=="")
+if(amm=="")
 return;
 double tempstat=string_to_number(amm);
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*buy*"),false);
 resume_pools();
 speak("Perchis completed.");
-ammo+=tempstat;
+wepchar.ammo+=tempstat;
 points-=tempstat;
-update_wep_ammo(ammo);
+wepchar.update_ammo(wepchar.ammo);
 }
 }
 if(ptmem=="umh")
@@ -556,15 +556,15 @@ else if(points>=1)
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
 string rg1=vd.input_box("","How much horizontal weapon range would you like to buy?");
-if(weprange=="")
+if(wepchar.range=="")
 return;
 double tempstat=string_to_number(rg1);
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*buy*"),false);
 resume_pools();
 speak("Perchis completed.");
-weprange+=tempstat;
+wepchar.range+=tempstat;
 points-=tempstat;
-update_wep_hl_range(weprange);
+wepchar.update_hl_range(wepchar.range);
 }
 }
 if(ptmem=="umra2")
@@ -579,15 +579,15 @@ else if(points>=2)
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
 string rg2=vd.input_box("","How much vertical weapon range would you like to buy?");
-if(weprange2=="")
+if(wepchar.range2=="")
 return;
 double tempstat=string_to_number(rg2);
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*buy*"),false);
 resume_pools();
 speak("Perchis completed.");
-weprange2+=tempstat;
+wepchar.range2+=tempstat;
 points-=tempstat;
-update_wep_vl_range(weprange2);
+wepchar.update_vl_range(wepchar.range2);
 }
 }
 if(ptmem=="back")
@@ -622,17 +622,18 @@ return;
 }
 else
 {
-weaponparse();
+wepchar.parse(wepchar.cad, wepchar.sub);
 string res=archersmenu();
 if(res!="")
 {
 melee=false;
 p.destroy_sound(refslot);
 wepdef=0;
-weapontype="archery";
+wepchar.cad="archery";
 t.destroy_sound(prevslot);
-weapontype2=res;
-draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+wepchar.sub=res;
+wepchar.play_draw(int(me.x), int(me.y));
+speak(wepchar.sub + " equipped");
 }
 }
 }
@@ -647,17 +648,18 @@ return;
 }
 else
 {
-weaponparse();
+wepchar.parse(wepchar.cad, wepchar.sub);
 string res=gunsmenu();
 if(res!="")
 {
 melee=false;
 p.destroy_sound(refslot);
 wepdef=0;
-weapontype="artillery";
+wepchar.cad="artillery";
 t.destroy_sound(prevslot);
-weapontype2=res;
-draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+wepchar.sub=res;
+wepchar.play_draw(int(me.x), int(me.y));
+speak(wepchar.sub + " equipped");
 }
 }
 }
@@ -672,17 +674,18 @@ return;
 }
 else
 {
-weaponparse();
+wepchar.parse(wepchar.cad, wepchar.sub);
 string res=explosesmenu();
 if(res!="")
 {
 melee=false;
 p.destroy_sound(refslot);
 wepdef=0;
-weapontype="explosive";
+wepchar.cad="explosive";
 t.destroy_sound(prevslot);
-weapontype2=res;
-draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+wepchar.sub=res;
+wepchar.play_draw(int(me.x), int(me.y));
+speak(wepchar.sub + " equipped");
 }
 }
 }
@@ -697,17 +700,18 @@ return;
 }
 else
 {
-weaponparse();
+wepchar.parse(wepchar.cad, wepchar.sub);
 string res=meleesmenu();
 if(res!="")
 {
 melee=true;
 p.destroy_sound(refslot);
 wepdef=0;
-weapontype="melee";
+wepchar.cad="melee";
 t.destroy_sound(prevslot);
-weapontype2=res;
-draw_weapon(weapontype, weapontype2, weprange, weprange2, wepdamage, wepspeed, maxammo, melee);
+wepchar.sub=res;
+wepchar.play_draw(int(me.x), int(me.y));
+speak(wepchar.sub + " equipped");
 }
 }
 }

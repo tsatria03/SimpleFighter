@@ -22,7 +22,7 @@ update_sound_pools();
 checkdeath();
 checkloc();
 checkpassages();
-check_weapon_reload();
+wepchar.check_reload(int(me.x), int(me.y));
 
 calandercheck();
 clockcheck();
@@ -84,14 +84,14 @@ game_input();
 
 if(modspeed>=1)
 {
-airtime=125/modspeed+shieldweight+wepweight;
-camtime=250/modspeed+shieldweight+wepweight;
-falltime=250/modspeed-shieldweight-wepweight;
-apextime  = 100-shieldweight-wepweight;
-jumptime  = 100-shieldweight-wepweight;
-jumptime2 = 100-shieldweight-wepweight;
-runtime=(500-stamina+max(1000, stamina))/modspeed+shieldweight+wepweight;
-walktime=(1000-stamina+max(1000, stamina))/modspeed+shieldweight+wepweight;
+airtime=125/modspeed+shieldweight+wepchar.weight;
+camtime=250/modspeed+shieldweight+wepchar.weight;
+falltime=250/modspeed-shieldweight-wepchar.weight;
+apextime  = 100-shieldweight-wepchar.weight;
+jumptime  = 100-shieldweight-wepchar.weight;
+jumptime2 = 100-shieldweight-wepchar.weight;
+runtime=(500-stamina+max(1000, stamina))/modspeed+shieldweight+wepchar.weight;
+walktime=(1000-stamina+max(1000, stamina))/modspeed+shieldweight+wepchar.weight;
 }
 if(xp>=xprequiered)
 {
@@ -187,13 +187,13 @@ if(points<=0)
 {
 points=0;
 }
-if(weprange<=0)
+if(wepchar.range<=0)
 {
-weprange=0;
+wepchar.range=0;
 }
-if(weprange2<=0)
+if(wepchar.range2<=0)
 {
-weprange2=0;
+wepchar.range2=0;
 }
 if(health>=maxhealth and hprestoration==1)
 {
@@ -1136,64 +1136,66 @@ atapex=true;
 }
 if(key_pressed(KEY_X))
 {
-if(melee==false and weapontype=="archery")
+if(melee==false and wepchar.cad=="archery")
 {
-speak(loadedammo+" out of "+maxammo+" ammo loaded, and "+ammo+" ammo in reserve");
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
 }
-if(melee==false and weapontype=="artillery")
+if(melee==false and wepchar.cad=="artillery")
 {
-speak(loadedammo+" out of "+maxammo+" ammo loaded, and "+ammo+" ammo in reserve");
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
 }
-if(melee==false and weapontype=="explosive")
+if(melee==false and wepchar.cad=="explosive")
 {
-speak(loadedammo+" out of "+maxammo+" ammo loaded, and "+ammo+" ammo in reserve");
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
 }
-if(melee==true and weapontype=="melee")
+if(melee==true and wepchar.cad=="melee")
 {
 speak("This weapon does not take any ammo.");
 }
 }
 if(key_repeating(KEY_R) and fireable==true)
 {
-if(melee==true and weapontype=="melee")
+if(melee==true and wepchar.cad=="melee")
 {
 speak("This weapon does not take any ammo.");
 }
 else
 {
-if(melee==false and loadedammo>=1)
+if(melee==false and wepchar.loaded_ammo>=1)
 {
 speak("This weapon is already loaded with ammo.");
 }
-else if(melee==false and loadedammo<=0)
+else if(melee==false and wepchar.loaded_ammo<=0)
 {
-reload_weapon();
+if(wepchar.is_reloading) speak("This weapon is still reloading.");
+else if(wepchar.ammo <= 0) { wepchar.start_reload(int(me.x), int(me.y)); speak("No ammo."); }
+else wepchar.start_reload(int(me.x), int(me.y));
 }
 }
 }
 if(key_repeating(KEY_T) and wepref==true and useable==true)
 {
-if(melee==false and weapontype!="melee")
+if(melee==false and wepchar.cad!="melee")
 {
 speak("This weapon does not support reflection mode.");
 }
-else if(melee==true and weapontype=="melee" and wepdef==0)
+else if(melee==true and wepchar.cad=="melee" and wepdef==0)
 {
 wepdef = 1;
 bonecheck();
 p.destroy_sound(refslot);
-weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*on*"),false,0,0,0,100,false);
-refslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*ref*"),true,0,0,0,100,false);
+wepchar.sound_slot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*on*"),false,0,0,0,100,false);
+refslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*ref*"),true,0,0,0,100,false);
 speak("Reflection mode on.");
 }
 else
 {
-if(melee==true and weapontype=="melee" and wepdef==1)
+if(melee==true and wepchar.cad=="melee" and wepdef==1)
 {
 wepdef = 0;
 bonecheck();
 p.destroy_sound(refslot);
-weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*off*"),false,0,0,0,100,false);
+wepchar.sound_slot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*off*"),false,0,0,0,100,false);
 speak("Reflection mode off.");
 }
 }
@@ -1287,12 +1289,12 @@ speak("shield strength,"+round(shieldstrength/maxshieldstrength*100,2)+"percent"
 if(control_is_down() and fireable==true and doormove==false and elvmove==false)
 {
 drawable=true;
-auto_fire_weapon();
+wepchar.auto_fire(int(me.x), int(me.y), facing, int(attack * 2));
 }
 if(key_pressed(KEY_LCONTROL) and fireable==true and doormove==false and elvmove==false or key_pressed(KEY_RCONTROL) and fireable==true and doormove==false and elvmove==false)
 {
 drawable=true;
-manule_fire_weapon();
+wepchar.manual_fire(int(me.x), int(me.y), facing, int(attack * 2));
 }
 if(!shift_is_down() and key_repeating(KEY_E))
 {
