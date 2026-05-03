@@ -1,0 +1,179 @@
+string tracking_type = "";
+int tracking_index = -1;
+string tracking_label = "";
+
+bool tracking_active()
+{
+    return tracking_type != "" && tracking_index >= 0;
+}
+
+bool tracking_get_anchor(double &out x, double &out y)
+{
+    if (!tracking_active()) return false;
+    if (tracking_type == "aircraft")
+    {
+        if (tracking_index >= int(aircrafts.length())) return false;
+        x = aircrafts[tracking_index].plainx; y = aircrafts[tracking_index].plainy; return true;
+    }
+    if (tracking_type == "bike")
+    {
+        if (tracking_index >= int(bikes.length())) return false;
+        x = bikes[tracking_index].bikex; y = bikes[tracking_index].bikey; return true;
+    }
+    if (tracking_type == "door")
+    {
+        if (tracking_index >= int(doors.length())) return false;
+        x = doors[tracking_index].minx; y = doors[tracking_index].miny; return true;
+    }
+    if (tracking_type == "helper")
+    {
+        if (tracking_index >= int(helpers.length())) return false;
+        x = helpers[tracking_index].helpx; y = helpers[tracking_index].helpy; return true;
+    }
+    if (tracking_type == "npc")
+    {
+        if (tracking_index >= int(npcs.length())) return false;
+        x = npcs[tracking_index].x; y = npcs[tracking_index].y; return true;
+    }
+    if (tracking_type == "platform")
+    {
+        if (tracking_index >= int(platforms.length())) return false;
+        x = platforms[tracking_index].minx; y = platforms[tracking_index].miny; return true;
+    }
+    if (tracking_type == "projectile")
+    {
+        if (tracking_index >= int(projectiles.length())) return false;
+        x = projectiles[tracking_index].prox; y = projectiles[tracking_index].proy; return true;
+    }
+    if (tracking_type == "spike")
+    {
+        if (tracking_index >= int(spikes.length())) return false;
+        x = spikes[tracking_index].minx; y = spikes[tracking_index].miny; return true;
+    }
+    if (tracking_type == "staircase")
+    {
+        if (tracking_index >= int(staircases.length())) return false;
+        x = staircases[tracking_index].minx; y = staircases[tracking_index].miny; return true;
+    }
+    if (tracking_type == "security camera")
+    {
+        if (tracking_index >= int(sucams.length())) return false;
+        x = sucams[tracking_index].sucamx; y = sucams[tracking_index].sucamy; return true;
+    }
+    if (tracking_type == "vehicle")
+    {
+        if (tracking_index >= int(vehicles.length())) return false;
+        x = vehicles[tracking_index].vehx; y = vehicles[tracking_index].vehy; return true;
+    }
+    if (tracking_type == "wall")
+    {
+        if (tracking_index >= int(walls.length())) return false;
+        x = walls[tracking_index].minx; y = walls[tracking_index].miny; return true;
+    }
+    return false;
+}
+
+bool tracking_player_at_target()
+{
+    if (!tracking_active()) return false;
+    if (tracking_type == "door")
+    {
+        if (tracking_index >= int(doors.length())) return false;
+        return me.x >= doors[tracking_index].minx && me.x <= doors[tracking_index].maxx && me.y >= doors[tracking_index].miny && me.y <= doors[tracking_index].maxy;
+    }
+    if (tracking_type == "platform")
+    {
+        if (tracking_index >= int(platforms.length())) return false;
+        return me.x >= platforms[tracking_index].minx && me.x <= platforms[tracking_index].maxx && me.y >= platforms[tracking_index].miny && me.y <= platforms[tracking_index].maxy;
+    }
+    if (tracking_type == "spike")
+    {
+        if (tracking_index >= int(spikes.length())) return false;
+        return me.x >= spikes[tracking_index].minx && me.x <= spikes[tracking_index].maxx && me.y >= spikes[tracking_index].miny && me.y <= spikes[tracking_index].maxy;
+    }
+    if (tracking_type == "staircase")
+    {
+        if (tracking_index >= int(staircases.length())) return false;
+        return me.x >= staircases[tracking_index].minx && me.x <= staircases[tracking_index].maxx && me.y >= staircases[tracking_index].miny && me.y <= staircases[tracking_index].maxy;
+    }
+    if (tracking_type == "wall")
+    {
+        if (tracking_index >= int(walls.length())) return false;
+        return me.x >= walls[tracking_index].minx && me.x <= walls[tracking_index].maxx && me.y >= walls[tracking_index].miny && me.y <= walls[tracking_index].maxy;
+    }
+    double tx, ty;
+    if (!tracking_get_anchor(tx, ty)) return false;
+    return int(me.x) == int(tx) && int(me.y) == int(ty);
+}
+
+void start_tracking(string type, int index, string label)
+{
+    tracking_type = type;
+    tracking_index = index;
+    tracking_label = label;
+    p.play_stationary(get_pack_sound("misc/*trackon*"), false);
+    speak("tracking " + label);
+}
+
+void stop_tracking()
+{
+    if (!tracking_active())
+    {
+        speak("nothing is being tracked");
+        return;
+    }
+    tracking_type = "";
+    tracking_index = -1;
+    tracking_label = "";
+    p.play_stationary(get_pack_sound("misc/*trackoff*"), false);
+    speak("tracking stopped");
+}
+
+void auto_stop_tracking_on_reach()
+{
+    tracking_type = "";
+    tracking_index = -1;
+    tracking_label = "";
+    p.play_stationary(get_pack_sound("misc/*tracked*"), false);
+    speak("target reached");
+}
+
+void tracking_speak_position()
+{
+    if (!tracking_active())
+    {
+        speak("nothing is being tracked");
+        return;
+    }
+    double tx, ty;
+    if (!tracking_get_anchor(tx, ty))
+    {
+        stop_tracking();
+        return;
+    }
+    int dx = int(tx - me.x);
+    int dy = int(ty - me.y);
+    int distance = absolute(dx) + absolute(dy);
+    string direction = "";
+    if (dy < 0) direction += "below";
+    else if (dy > 0) direction += "above";
+    if (dx < 0) direction += (direction == "" ? "to the left" : " and to the left");
+    else if (dx > 0) direction += (direction == "" ? "to the right" : " and to the right");
+    if (direction == "") direction = "right here";
+    p.play_stationary(get_pack_sound("misc/*tracking*"), false);
+    speak(direction + ", " + distance + " feet away.");
+}
+
+void tracker_loop()
+{
+    if (!tracking_active()) return;
+    double tx, ty;
+    if (!tracking_get_anchor(tx, ty))
+    {
+        tracking_type = "";
+        tracking_index = -1;
+        tracking_label = "";
+        return;
+    }
+    if (tracking_player_at_target()) auto_stop_tracking_on_reach();
+}

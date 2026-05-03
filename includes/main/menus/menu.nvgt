@@ -239,21 +239,27 @@ resume_pools();
 return;
 }
 setupmenu();
+string[] entry_types;
+int[] entry_indices;
+string[] entry_labels;
 m.add_item_tts("total objects " + total_objes);
 for(uint i=0; i<aircrafts.length(); i++)
 {
 if(is_obscured("aircraft", "menu")) continue;
 m.add_item_tts(aircrafts[i].plaintype+" "+"at "+aircrafts[i].plainx+" "+aircrafts[i].plainy+" "+"HP"+round(aircrafts[i].plainhealth/aircrafts[i].plainmaxhealth*100,2)+"percent");
+entry_types.insert_last("aircraft"); entry_indices.insert_last(i); entry_labels.insert_last(aircrafts[i].plaintype);
 }
 for(uint i=0; i<npcs.length(); i++)
 {
 if(is_obscured("npc", "menu")) continue;
 m.add_item_tts(npcs[i].subtype+" "+"at;"+npcs[i].x+" "+npcs[i].y+" "+"HP"+round(npcs[i].health/npcs[i].maxhealth*100,2)+"percent"+" "+"level"+npcs[i].level);
+entry_types.insert_last("npc"); entry_indices.insert_last(i); entry_labels.insert_last(npcs[i].subtype);
 }
 for(uint i=0; i<bikes.length(); i++)
 {
 if(is_obscured("bike", "menu")) continue;
 m.add_item_tts(bikes[i].biketype+" "+"at;"+bikes[i].bikex+" "+bikes[i].bikey+" "+"HP"+round(bikes[i].bikehealth/bikes[i].bikemaxhealth*100,2)+"percent");
+entry_types.insert_last("bike"); entry_indices.insert_last(i); entry_labels.insert_last(bikes[i].biketype);
 }
 for(uint i=0; i<doors.length(); i++)
 {
@@ -261,11 +267,13 @@ if(is_obscured("door", "menu")) continue;
 string base = (doors[i].lockmode=="none") ? "door" : "locked door";
 string prefix = doors[i].is_ranged ? "ranged " : "";
 m.add_item_tts(prefix+base+" at;"+doors[i].minx+" "+doors[i].miny+" "+"HP"+round(doors[i].doorhealth/doors[i].doormaxhealth*100,2)+"percent");
+entry_types.insert_last("door"); entry_indices.insert_last(i); entry_labels.insert_last(prefix+base);
 }
 for(uint i=0; i<helpers.length(); i++)
 {
 if(is_obscured("helper", "menu")) continue;
 m.add_item_tts(helpers[i].helpertype+" "+"at;"+helpers[i].helpx+" "+helpers[i].helpy+" "+"HP"+round(helpers[i].helperhealth/helpers[i].helpermaxhealth*100,2)+"percent"+" "+"level"+helpers[i].helplevel);
+entry_types.insert_last("helper"); entry_indices.insert_last(i); entry_labels.insert_last(helpers[i].helpertype);
 }
 for(uint i=0; i<platforms.length(); i++)
 {
@@ -273,43 +281,53 @@ for(uint i=0; i<platforms.length(); i++)
         continue;
     if(is_obscured("platform", "menu")) continue;
     m.add_item_tts(platforms[i].tile+" platform at "+ platforms[i].minx+" "+platforms[i].miny+ " HP"+ round(platforms[i].plathealth/platforms[i].platmaxhealth*100,2)+ " percent");
+    entry_types.insert_last("platform"); entry_indices.insert_last(i); entry_labels.insert_last(platforms[i].tile+" platform");
 }
 for(uint i=0; i<projectiles.length(); i++)
 {
 if(is_obscured("projectile", "menu")) continue;
 m.add_item_tts(projectiles[i].projtype+" "+"at;"+projectiles[i].prox+" "+projectiles[i].proy+" "+"HP"+round(projectiles[i].projhealth/projectiles[i].maxprojhealth*100,2)+"percent");
+entry_types.insert_last("projectile"); entry_indices.insert_last(i); entry_labels.insert_last(projectiles[i].projtype);
 }
 for(uint i=0; i<spikes.length(); i++)
 {
 if(is_obscured("spike", "menu")) continue;
 m.add_item_tts(spikes[i].spiketype+" "+"at;"+spikes[i].minx+" "+spikes[i].miny+" "+"HP"+round(spikes[i].spikehealth/spikes[i].spikemaxhealth*100,2)+"percent");
+entry_types.insert_last("spike"); entry_indices.insert_last(i); entry_labels.insert_last(spikes[i].spiketype);
 }
 for(uint i=0; i<staircases.length(); i++)
 {
 if(is_obscured("staircase", "menu")) continue;
 m.add_item_tts(staircases[i].tile+" staircase "+"at;"+staircases[i].minx+" "+staircases[i].miny+" "+"HP"+round(staircases[i].stairshealth/staircases[i].stairsmaxhealth*100,2)+"percent");
+entry_types.insert_last("staircase"); entry_indices.insert_last(i); entry_labels.insert_last(staircases[i].tile+" staircase");
 }
 for(uint i=0; i<sucams.length(); i++)
 {
 if(is_obscured("security camera", "menu")) continue;
 m.add_item_tts(sucams[i].cameratype + " at " + sucams[i].sucamx + " " + sucams[i].sucamy + " facing " + (sucams[i].camdir == 1 ? "left" : "right") + " HP " + round(sucams[i].camhealth / sucams[i].cammaxhealth * 100, 2) + " percent" + " level " + sucams[i].camlevel);
+entry_types.insert_last("security camera"); entry_indices.insert_last(i); entry_labels.insert_last(sucams[i].cameratype);
 }
 for(uint i=0; i<vehicles.length(); i++)
 {
 if(is_obscured("vehicle", "menu")) continue;
 m.add_item_tts(vehicles[i].vehtype+" "+"at;"+vehicles[i].vehx+" "+vehicles[i].vehy+" "+"HP"+round(vehicles[i].vehhealth/vehicles[i].vehmaxhealth*100,2)+"percent");
+entry_types.insert_last("vehicle"); entry_indices.insert_last(i); entry_labels.insert_last(vehicles[i].vehtype);
 }
 for(uint i=0; i<walls.length(); i++)
 {
 if(is_obscured("wall", "menu")) continue;
 m.add_item_tts(string_replace(walls[i].wall, "wall", "", true)+" wall "+"at;"+walls[i].minx+" "+walls[i].miny+" "+"HP"+round(walls[i].wallhealth/walls[i].wallmaxhealth*100,2)+"percent");
+entry_types.insert_last("wall"); entry_indices.insert_last(i); entry_labels.insert_last(string_replace(walls[i].wall, "wall", "", true)+" wall");
 }
 int mres=m.run("Object info", true);
-if(mres>=0)
-{
 resume_pools();
-return;
+if(mres > 1)
+{
+int entry_idx = mres - 2;
+if(entry_idx >= 0 && entry_idx < int(entry_types.length()))
+start_tracking(entry_types[entry_idx], entry_indices[entry_idx], entry_labels[entry_idx]);
 }
+return;
 }
 void komlogmenu()
 {
