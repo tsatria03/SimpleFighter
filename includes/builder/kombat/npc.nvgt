@@ -68,10 +68,17 @@ class npc
     bool hit_and_run;
     int flee_time;
     int flee_speed;
+    int provoke_speed;
     bool fleeing;
     timer flee_timer;
     string use_steps;
     string use_falls;
+    string[] terrain;
+    int[] terrain_speeds;
+    int active_terrain_speed;
+    bool patrol_x_terrain;
+    bool patrol_y_terrain;
+    bool chase_terrains;
     int taunttime;
     int spawnsound, mainsound, defsound, hurtsound, stepsound, tilesound, wepsound, healsound;
     timer movetimer, firetimer, taunttimer;
@@ -109,9 +116,14 @@ class npc
         targets.insert_last("player");
         use_steps = "auto";
         use_falls = "auto";
+        terrain.insert_last("any");
+        terrain_speeds.insert_last(0);
+        active_terrain_speed = 0;
+        chase_terrains = false;
         hit_and_run = false;
         flee_time = 0;
         flee_speed = 0;
+        provoke_speed = 0;
         fleeing = false;
         chase_trigger = "sight";
         chase_wander = "none";
@@ -140,7 +152,25 @@ class npc
         tel_h_min = -1; tel_h_max = -1;
         patrol_x_min = minx; patrol_x_max = maxx;
         patrol_y_min = miny; patrol_y_max = maxy;
+        patrol_x_terrain = false;
+        patrol_y_terrain = false;
         npc_parse(this);
+        if(patrol_x_terrain)
+        {
+            int lx = sx, rx = sx;
+            while(lx > minx && npc_terrain_allows(this, lx - 1, sy)) lx--;
+            while(rx < maxx && npc_terrain_allows(this, rx + 1, sy)) rx++;
+            patrol_x_min = lx;
+            patrol_x_max = rx;
+        }
+        if(patrol_y_terrain)
+        {
+            int ly = sy, ry = sy;
+            while(ly > miny && npc_terrain_allows(this, sx, ly - 1)) ly--;
+            while(ry < maxy && npc_terrain_allows(this, sx, ry + 1)) ry++;
+            patrol_y_min = ly;
+            patrol_y_max = ry;
+        }
         if(scale_level > 0)
         {
             hrange = 0;
@@ -365,9 +395,38 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "ambient heal") self.ambient_heal = string_to_bool(v);
         else if(k == "use steps") self.use_steps = v;
         else if(k == "use falls") self.use_falls = v;
+        else if(k == "terrain")
+        {
+            self.terrain.resize(0);
+            self.terrain_speeds.resize(0);
+            string[] parts = string_split(v, ",", true);
+            for(uint j=0; j<parts.length(); j++)
+            {
+                if(parts[j] == "") continue;
+                int colon = string_contains(parts[j], ":", 1);
+                if(colon < 0)
+                {
+                    self.terrain.insert_last(parts[j]);
+                    self.terrain_speeds.insert_last(0);
+                }
+                else
+                {
+                    self.terrain.insert_last(string_left(parts[j], colon));
+                    string num = string_mid(parts[j], colon+2, parts[j].length()-colon-1);
+                    self.terrain_speeds.insert_last(roll_slot_int(num));
+                }
+            }
+            if(self.terrain.length() == 0)
+            {
+                self.terrain.insert_last("any");
+                self.terrain_speeds.insert_last(0);
+            }
+        }
         else if(k == "hit_and_run") self.hit_and_run = string_to_bool(v);
         else if(k == "flee_time") self.flee_time = roll_slot_int(v);
         else if(k == "flee_speed") self.flee_speed = roll_slot_int(v);
+        else if(k == "provoke_speed") self.provoke_speed = roll_slot_int(v);
+        else if(k == "chase_terrains") self.chase_terrains = string_to_bool(v);
         else if(k == "launching") self.launching = string_to_bool(v);
         else if(k == "launch path") self.launch_path = v;
         else if(k == "launch category") self.launch_category = v;
@@ -388,15 +447,23 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "tel y") self.tel_y = string_to_bool(v);
         else if(k == "patrol x range")
         {
-            string[] parts = string_split(v, ",", true);
-            self.patrol_x_min = smart_int(parts[0]);
-            self.patrol_x_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_x_min;
+            if(v == "terrain") self.patrol_x_terrain = true;
+            else
+            {
+                string[] parts = string_split(v, ",", true);
+                self.patrol_x_min = smart_int(parts[0]);
+                self.patrol_x_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_x_min;
+            }
         }
         else if(k == "patrol y range")
         {
-            string[] parts = string_split(v, ",", true);
-            self.patrol_y_min = smart_int(parts[0]);
-            self.patrol_y_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_y_min;
+            if(v == "terrain") self.patrol_y_terrain = true;
+            else
+            {
+                string[] parts = string_split(v, ",", true);
+                self.patrol_y_min = smart_int(parts[0]);
+                self.patrol_y_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_y_min;
+            }
         }
         else if(k == "teleport time")
         {
@@ -448,6 +515,39 @@ bool npc_targets(npc@ self, string cat)
         if(self.targets[j] == cat) return true;
     }
     return false;
+}
+
+bool npc_terrain_allows(npc@ self, int tx, int ty)
+{
+    if(self.terrain.length() == 0) return true;
+    for(uint j=0; j<self.terrain.length(); j++)
+    {
+        if(self.terrain[j] == "any") return true;
+    }
+    string tile = gmt(tx, ty);
+    for(uint j=0; j<self.terrain.length(); j++)
+    {
+        if(self.terrain[j] == "" || self.terrain[j] == "any") continue;
+        if(string_contains(tile, self.terrain[j], 1) > -1) return true;
+    }
+    return false;
+}
+
+int npc_territory_speed_at(npc@ self, int tx, int ty)
+{
+    string tile = gmt(tx, ty);
+    int speed = 0;
+    for(uint j=0; j<self.terrain.length(); j++)
+    {
+        if(self.terrain[j] == "" || self.terrain[j] == "any") continue;
+        if(j >= self.terrain_speeds.length()) continue;
+        if(self.terrain_speeds[j] <= 0) continue;
+        if(string_contains(tile, self.terrain[j], 1) > -1)
+        {
+            if(speed == 0 || self.terrain_speeds[j] < speed) speed = self.terrain_speeds[j];
+        }
+    }
+    return speed;
 }
 
 void spawn_npc(int x, int y, int scale_level, string path, string category, string subtype)
@@ -546,6 +646,19 @@ void npcloop()
             npcs[i].provoke_lost_timer.restart();
         }
         npcs[i].last_health = npcs[i].health;
+
+        // territorial trigger: player standing on a defended tile provokes the creature
+        npcs[i].active_terrain_speed = 0;
+        if(npc_targets(npcs[i], "player") && inplain == false && invehicle == false)
+        {
+            int tspd = npc_territory_speed_at(npcs[i], int(me.x), int(me.y));
+            if(tspd > 0)
+            {
+                npcs[i].active_terrain_speed = tspd;
+                npcs[i].provoked = true;
+                npcs[i].provoke_lost_timer.restart();
+            }
+        }
 
         // pick nearest valid combat target (player or another npc)
         bool combat_found = false;
@@ -803,7 +916,7 @@ void npcloop()
         }
 
         // movement / spotting
-        int eff_move_step = (npcs[i].fleeing && npcs[i].flee_speed > 0) ? npcs[i].flee_speed : eff_movetime;
+        int eff_move_step = (npcs[i].fleeing && npcs[i].flee_speed > 0) ? npcs[i].flee_speed : ((npcs[i].active_terrain_speed > 0) ? npcs[i].active_terrain_speed : ((npcs[i].provoked && npcs[i].provoke_speed > 0) ? npcs[i].provoke_speed : eff_movetime));
         if(has_move && npcs[i].movetimer.elapsed >= eff_move_step)
         {
             bool h = absolute(tx - npcs[i].x) <= eff_hsight;
@@ -828,12 +941,15 @@ void npcloop()
                     if(dy_intent == 0) dy_intent = (random(0, 1) == 0) ? -1 : 1;
                     else dy_intent = -dy_intent;
                 }
+                bool ignore_terrain = npcs[i].chase_terrains && (npcs[i].provoked || npcs[i].fleeing);
+                bool stuck_terrain = !ignore_terrain && !npc_terrain_allows(npcs[i], npcs[i].x, npcs[i].y);
+                bool terrain_off = ignore_terrain || stuck_terrain;
                 if(dx_intent != 0 && npcs[i].move_x && paused == 0)
                 {
                     int next_x = npcs[i].x + dx_intent;
-                    if(string_contains(gmt(next_x, npcs[i].y), "wall", 1) > -1 or is_in_safe(next_x, npcs[i].y))
-                        next_x = npcs[i].x - dx_intent;
-                    if(next_x >= minx && next_x <= maxx)
+                    bool blocked = string_contains(gmt(next_x, npcs[i].y), "wall", 1) > -1 or is_in_safe(next_x, npcs[i].y) or (!terrain_off && !npc_terrain_allows(npcs[i], next_x, npcs[i].y));
+                    if(blocked) next_x = npcs[i].x - dx_intent;
+                    if(next_x >= minx && next_x <= maxx && (terrain_off || npc_terrain_allows(npcs[i], next_x, npcs[i].y)))
                     {
                         int actual_dx = next_x - npcs[i].x;
                         if(actual_dx != 0) npcs[i].facing_dx = (actual_dx > 0) ? 1 : -1;
@@ -844,9 +960,9 @@ void npcloop()
                 if(dy_intent != 0 && npcs[i].move_y && paused == 0)
                 {
                     int next_y = npcs[i].y + dy_intent;
-                    if(string_contains(gmt(npcs[i].x, next_y), "wall", 1) > -1 or is_in_safe(npcs[i].x, next_y))
-                        next_y = npcs[i].y - dy_intent;
-                    if(next_y >= miny && next_y <= maxy)
+                    bool blocked = string_contains(gmt(npcs[i].x, next_y), "wall", 1) > -1 or is_in_safe(npcs[i].x, next_y) or (!terrain_off && !npc_terrain_allows(npcs[i], npcs[i].x, next_y));
+                    if(blocked) next_y = npcs[i].y - dy_intent;
+                    if(next_y >= miny && next_y <= maxy && (terrain_off || npc_terrain_allows(npcs[i], npcs[i].x, next_y)))
                     {
                         npcs[i].y = next_y;
                         moved = true;
@@ -1088,8 +1204,8 @@ bool add_npc_form(string path_choice, string category, string subtype)
     string target_path = (path_choice == "global")
         ? "sounds/"+soundpack+"/kombat/npc/"+category+"/"+subtype+"/info.sif"
         : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+category+"/"+subtype+"/info.sif";
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed", "provoke_speed", "terrain"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run", "chase_terrains"};
     form.reset();
     form.create_window("add "+subtype, false, true, false);
     int[] inputs;
@@ -1389,8 +1505,8 @@ void remove_npc()
 
 bool edit_npc_form(string target_path, string subtype)
 {
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed", "provoke_speed", "terrain"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run", "chase_terrains"};
     dictionary existing;
     file fin;
     if(fin.open(target_path, "rb"))
