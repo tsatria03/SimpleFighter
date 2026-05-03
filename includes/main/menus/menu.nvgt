@@ -213,65 +213,95 @@ settingsmenu();
 }
 void infomenu()
 {
-setupmenu();
 uint real_platforms = 0;
 for(uint i = 0; i < platforms.length(); i++)
 {
     if(!platforms[i].is_backing)
         real_platforms++;
 }
-uint total_objes =aircrafts.length() + bikes.length() + doors.length() + helpers.length() + npcs.length() + real_platforms + projectiles.length() + spikes.length() + staircases.length() + sucams.length() + vehicles.length() + walls.length();
+uint total_objes = 0;
+if(!is_obscured("aircraft", "menu")) total_objes += aircrafts.length();
+if(!is_obscured("bike", "menu")) total_objes += bikes.length();
+if(!is_obscured("door", "menu")) total_objes += doors.length();
+if(!is_obscured("helper", "menu")) total_objes += helpers.length();
+if(!is_obscured("npc", "menu")) total_objes += npcs.length();
+if(!is_obscured("platform", "menu")) total_objes += real_platforms;
+if(!is_obscured("projectile", "menu")) total_objes += projectiles.length();
+if(!is_obscured("spike", "menu")) total_objes += spikes.length();
+if(!is_obscured("staircase", "menu")) total_objes += staircases.length();
+if(!is_obscured("security camera", "menu")) total_objes += sucams.length();
+if(!is_obscured("vehicle", "menu")) total_objes += vehicles.length();
+if(!is_obscured("wall", "menu")) total_objes += walls.length();
+if(total_objes == 0)
+{
+speak("there are no objects on the field to view.");
+resume_pools();
+return;
+}
+setupmenu();
 m.add_item_tts("total objects " + total_objes);
 for(uint i=0; i<aircrafts.length(); i++)
 {
+if(is_obscured("aircraft", "menu")) continue;
 m.add_item_tts(aircrafts[i].plaintype+" "+"at "+aircrafts[i].plainx+" "+aircrafts[i].plainy+" "+"HP"+round(aircrafts[i].plainhealth/aircrafts[i].plainmaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<npcs.length(); i++)
 {
+if(is_obscured("npc", "menu")) continue;
 m.add_item_tts(npcs[i].subtype+" "+"at;"+npcs[i].x+" "+npcs[i].y+" "+"HP"+round(npcs[i].health/npcs[i].maxhealth*100,2)+"percent"+" "+"level"+npcs[i].level);
 }
 for(uint i=0; i<bikes.length(); i++)
 {
+if(is_obscured("bike", "menu")) continue;
 m.add_item_tts(bikes[i].biketype+" "+"at;"+bikes[i].bikex+" "+bikes[i].bikey+" "+"HP"+round(bikes[i].bikehealth/bikes[i].bikemaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<doors.length(); i++)
 {
+if(is_obscured("door", "menu")) continue;
 string base = (doors[i].lockmode=="none") ? "door" : "locked door";
 string prefix = doors[i].is_ranged ? "ranged " : "";
 m.add_item_tts(prefix+base+" at;"+doors[i].minx+" "+doors[i].miny+" "+"HP"+round(doors[i].doorhealth/doors[i].doormaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<helpers.length(); i++)
 {
+if(is_obscured("helper", "menu")) continue;
 m.add_item_tts(helpers[i].helpertype+" "+"at;"+helpers[i].helpx+" "+helpers[i].helpy+" "+"HP"+round(helpers[i].helperhealth/helpers[i].helpermaxhealth*100,2)+"percent"+" "+"level"+helpers[i].helplevel);
 }
 for(uint i=0; i<platforms.length(); i++)
 {
     if (platforms[i].is_backing)
         continue;
+    if(is_obscured("platform", "menu")) continue;
     m.add_item_tts(platforms[i].tile+" platform at "+ platforms[i].minx+" "+platforms[i].miny+ " HP"+ round(platforms[i].plathealth/platforms[i].platmaxhealth*100,2)+ " percent");
 }
 for(uint i=0; i<projectiles.length(); i++)
 {
+if(is_obscured("projectile", "menu")) continue;
 m.add_item_tts(projectiles[i].projtype+" "+"at;"+projectiles[i].prox+" "+projectiles[i].proy+" "+"HP"+round(projectiles[i].projhealth/projectiles[i].maxprojhealth*100,2)+"percent");
 }
 for(uint i=0; i<spikes.length(); i++)
 {
+if(is_obscured("spike", "menu")) continue;
 m.add_item_tts(spikes[i].spiketype+" "+"at;"+spikes[i].minx+" "+spikes[i].miny+" "+"HP"+round(spikes[i].spikehealth/spikes[i].spikemaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<staircases.length(); i++)
 {
+if(is_obscured("staircase", "menu")) continue;
 m.add_item_tts(staircases[i].tile+" staircase "+"at;"+staircases[i].minx+" "+staircases[i].miny+" "+"HP"+round(staircases[i].stairshealth/staircases[i].stairsmaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<sucams.length(); i++)
 {
+if(is_obscured("security camera", "menu")) continue;
 m.add_item_tts(sucams[i].cameratype + " at " + sucams[i].sucamx + " " + sucams[i].sucamy + " facing " + (sucams[i].camdir == 1 ? "left" : "right") + " HP " + round(sucams[i].camhealth / sucams[i].cammaxhealth * 100, 2) + " percent" + " level " + sucams[i].camlevel);
 }
 for(uint i=0; i<vehicles.length(); i++)
 {
+if(is_obscured("vehicle", "menu")) continue;
 m.add_item_tts(vehicles[i].vehtype+" "+"at;"+vehicles[i].vehx+" "+vehicles[i].vehy+" "+"HP"+round(vehicles[i].vehhealth/vehicles[i].vehmaxhealth*100,2)+"percent");
 }
 for(uint i=0; i<walls.length(); i++)
 {
+if(is_obscured("wall", "menu")) continue;
 m.add_item_tts(string_replace(walls[i].wall, "wall", "", true)+" wall "+"at;"+walls[i].minx+" "+walls[i].miny+" "+"HP"+round(walls[i].wallhealth/walls[i].wallmaxhealth*100,2)+"percent");
 }
 int mres=m.run("Object info", true);

@@ -1,0 +1,157 @@
+obscurity_zone@[]obscurity_zones(0);
+class obscurity_zone
+{
+double minx, maxx, miny, maxy;
+bool affects_spier, affects_menu, whitelist;
+string[] entity_types;
+obscurity_zone(double mx, double mx2, double my, double my2, bool aspier, bool amenu, string[] etypes, bool wtl)
+{
+minx = mx;
+maxx = mx2;
+miny = my;
+maxy = my2;
+affects_spier = aspier;
+affects_menu = amenu;
+entity_types = etypes;
+whitelist = wtl;
+}
+bool covers(double x, double y)
+{
+return x >= minx && x <= maxx && y >= miny && y <= maxy;
+}
+bool hides(string entity_type)
+{
+bool listed = false;
+for (uint i = 0; i < entity_types.length(); i++)
+{
+if (entity_types[i] == entity_type) { listed = true; break; }
+}
+return whitelist ? !listed : listed;
+}
+}
+
+bool is_obscured(string entity_type, string target)
+{
+for (uint i = 0; i < obscurity_zones.length(); i++)
+{
+obscurity_zone@ z = obscurity_zones[i];
+if (!z.covers(me.x, me.y)) continue;
+if (target == "spier" && !z.affects_spier) continue;
+if (target == "menu" && !z.affects_menu) continue;
+if (z.hides(entity_type)) return true;
+}
+return false;
+}
+
+void spawn_obscurity_zone(double x1, double x2, double y1, double y2, bool aspier, bool amenu, string[] etypes, bool wtl)
+{
+obscurity_zone oz1(x1, x2, y1, y2, aspier, amenu, etypes, wtl);
+obscurity_zones.insert_last(oz1);
+}
+
+void destroy_all_obscurity_zones()
+{
+obscurity_zones.resize(0);
+}
+
+void read_obscurity_zone(string[] sd)
+{
+double mx = stn(sd[1]);
+double mx2 = stn(sd[2]);
+double my = stn(sd[3]);
+double my2 = stn(sd[4]);
+bool aspier = string_to_bool(sd[5]);
+bool amenu = string_to_bool(sd[6]);
+string[] etypes = string_split(join_string_array(sd, 7, sd.length() - 1), ", ", true);
+bool wtl = string_to_bool(sd[sd.length() - 1]);
+spawn_obscurity_zone(mx, mx2, my, my2, aspier, amenu, etypes, wtl);
+}
+
+void write_obscurity_zone(double x1, double x2, double y1, double y2, bool aspier, bool amenu, string[] etypes, bool wtl)
+{
+mapper.open("data/maps/decompiled/" + mapname + "/" + "info.sif", "ab");
+mapdata = mapper.read();
+mapper.write("\r\n" + "obscurity_zone " + x1 + " " + x2 + " " + y1 + " " + y2 + " " + aspier + " " + amenu + " " + string_join(etypes, ", ") + " " + wtl);
+mapper.close();
+}
+
+void build_obscurity_zone()
+{
+form.reset();
+form.create_window("obscurity zone", false);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
+int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+int target_list = form.create_list("Select what this zone affects", 0, true);
+string[] alltargets = {"spier", "info menu"};
+for (uint i = 0; i < alltargets.length(); i++)
+form.add_list_item(target_list, alltargets[i], "", -1, false);
+int entity_list = form.create_list("Select the things to show or hide", 0, true);
+string[] allentities = {"aircraft", "bike", "blockage", "calendar", "checkpoint", "clock", "conveyor belt", "door", "elevator", "elevator floor", "fire", "floor breaker", "force field", "hazard", "helper", "item", "lift", "mine", "npc", "passage", "platform", "projectile", "safe zone", "security camera", "sign", "spike", "staircase", "switch", "teleporter", "time bomb", "travelpoint", "vehicle", "wall"};
+for (uint i = 0; i < allentities.length(); i++)
+form.add_list_item(entity_list, allentities[i], "", -1, false);
+int wl = form.create_checkbox("Enable whitelist", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+while (true)
+{
+wait(5);
+form.monitor();
+if (key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if (form.is_pressed(ok))
+{
+if (form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); continue; }
+if (form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); continue; }
+if (form.get_text(my) == "") { speak("Minimum y is required."); form.focus(my); continue; }
+if (form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); continue; }
+int[] selected_targets = form.get_checked_list_items(target_list);
+if (selected_targets.length() == 0)
+{
+speak("You must select at least one target.");
+form.focus(target_list);
+continue;
+}
+int[] selected_entities = form.get_checked_list_items(entity_list);
+if (selected_entities.length() == 0)
+{
+speak("You must select at least one entity type.");
+form.focus(entity_list);
+continue;
+}
+bool aspier = false, amenu = false;
+for (uint i = 0; i < selected_targets.length(); i++)
+{
+string t = form.get_list_item(target_list, selected_targets[i]);
+if (t == "spier") aspier = true;
+else if (t == "info menu") amenu = true;
+}
+string[] etypes;
+for (uint i = 0; i < selected_entities.length(); i++)
+etypes.insert_last(form.get_list_item(entity_list, selected_entities[i]));
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+bool bwl = form.is_checked(wl);
+resume_pools();
+write_obscurity_zone(bx, bx2, by, by2, aspier, amenu, etypes, bwl);
+spawn_obscurity_zone(bx, bx2, by, by2, aspier, amenu, etypes, bwl);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("characters/" + chartype + "/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
