@@ -614,7 +614,6 @@ void write_npc(int x, int y, int scale_level, string path, string category, stri
 
 void npc_play_pain(int dmg)
 {
-    if(charhurtsound != 1) return;
     int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
     string painfile;
     if(damage_percent >= 10)
@@ -1061,61 +1060,38 @@ void npcloop()
         {
             npcs[i].step_active = false;
             if(human_armed)
-                npcs[i].firesound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*fire*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-
-            if(target_is_player)
             {
-                if(melee == true and weapontype == "melee" and wepdef == 1)
+                npcs[i].firesound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*fire*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                int dx_aim = combat_tx - npcs[i].x;
+                int dy_aim = combat_ty - npcs[i].y;
+                string h_dir = "right";
+                int sx = npcs[i].x, sy = npcs[i].y;
+                if(absolute(dx_aim) >= absolute(dy_aim))
                 {
-                    int refchance = random(0, 100);
-                    int refprob = 80;
-                    if(refchance < refprob)
-                    {
-                        weaponslot = p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*block*"), false, 0, 0, 0, 100, false);
-                    }
-                    else if(shieldon == 1)
-                    {
-                        if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
-                        int sdm = max(1, ((eff_attack * 0.5) * eff_level) - (shielddefence * 3));
-                        shieldstrength -= sdm;
-                        kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
-                    }
-                    else
-                    {
-                        if(human_armed)
-                        {
-                            npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, 0, 100, false);
-                            npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, 0, 100, false);
-                        }
-                        else
-                        {
-                            npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
-                        }
-                        int dmg = max(1, ((eff_attack * 0.5) * eff_level) - (defence * 3));
-                        health -= dmg;
-                        kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
-                        npc_play_pain(dmg);
-                        npc_apply_break_charbones(dmg, npcs[i].category);
-                    }
+                    if(dx_aim >= 0) { h_dir = "right"; sx = npcs[i].x + 1; }
+                    else { h_dir = "left"; sx = npcs[i].x - 1; }
                 }
-                else if(shieldon == 1)
+                else
                 {
-                    if(shieldhitsound == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
+                    if(dy_aim >= 0) { h_dir = "up"; sy = npcs[i].y + 1; }
+                    else { h_dir = "down"; sy = npcs[i].y - 1; }
+                }
+                int dmg = int(eff_attack * eff_level);
+                spawn_bullet(sx, sy, eff_hrange, eff_vrange, dmg, 50, h_dir, npcs[i].weapontype, npcs[i].weapontype2, 0);
+                kombatlog.insert_last(npcs[i].subtype + " fired " + npcs[i].weapontype2 + ".");
+            }
+            else if(target_is_player)
+            {
+                if(shieldon == 1)
+                {
+                    shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
                     int sdm = max(1, (eff_attack * eff_level) - (shielddefence * 3));
                     shieldstrength -= sdm;
                     kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
                 }
                 else
                 {
-                    if(human_armed)
-                    {
-                        npcs[i].hitsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), false, 0, 0, 0, 100, false);
-                        npcs[i].shellsound = pool.play_stationary_extended(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), false, 0, 0, 0, 100, false);
-                    }
-                    else
-                    {
-                        npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
-                    }
+                    npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
                     int dmg = max(1, (eff_attack * eff_level) - (defence * 3));
                     health -= dmg;
                     kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
@@ -1126,15 +1102,7 @@ void npcloop()
             else
             {
                 int j = target_npc;
-                if(human_armed)
-                {
-                    npcs[i].hitsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                    npcs[i].shellsound = pool.play_extended_2d(get_pack_sound("equipments/weapons/"+npcs[i].weapontype+"/"+npcs[i].weapontype2+"/*shell*"), me.x, me.y, npcs[i].x, npcs[i].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                }
-                else
-                {
-                    npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                }
+                npcs[i].wepsound = pool.play_extended_2d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 sound_pool@ vpool = npc_pool(npcs[j].category);
                 vpool.play_extended_2d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 int j_defence = npcs[j].defence;
@@ -1211,7 +1179,7 @@ void npcloop()
                 string chosen_folder = random_string(heal_folders);
                 string[] healtypes = get_map_sound_folders("objects/items/"+chosen_folder+"/*");
                 if(healtypes.length() != 0 and npcs[i].dropitem) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true);
-                if(charkillsound == 1) p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*kill*"), false);
+                p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*kill*"), false);
                 npcs.remove_at(i);
                 return;
             }
