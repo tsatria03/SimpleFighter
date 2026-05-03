@@ -1,7 +1,7 @@
 projectile@[]projectiles(0);
 class projectile
 {
-    bool destroyable, fireable, single_use;
+    bool bounce_at_edge, destroyable, fireable, single_use;
     int projsound, wepsound;
     int prox, proy;
     int minx, maxx, miny, maxy;
@@ -12,7 +12,7 @@ class projectile
     int speed;
     string projtype;
     timer projtimer;
-    projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool dest, bool pf, bool su)
+    projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su)
     {
         prox = px;
         proy = py;
@@ -26,6 +26,7 @@ class projectile
         projtype = pt;
         fireable = pf;
         single_use = su;
+        bounce_at_edge = bae;
         projhealth = hp;
         maxprojhealth = hp;
         destroyable = dest;
@@ -62,6 +63,11 @@ bool projectile_blocked(int nx, int ny, int mn_x, int mx_x, int mn_y, int mx_y)
     return false;
 }
 
+bool projectile_at_edge(int nx, int ny, int mn_x, int mx_x, int mn_y, int mx_y)
+{
+    return nx < mn_x || nx > mx_x || ny < mn_y || ny > mx_y;
+}
+
 void projloop()
 {
     for(uint i = 0; i < projectiles.length(); i++)
@@ -74,7 +80,15 @@ void projloop()
         {
             int next_x = projectiles[i].prox + projectiles[i].cur_x_step;
             if(projectile_blocked(next_x, projectiles[i].proy, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy))
+            {
+                if(!projectiles[i].bounce_at_edge && projectile_at_edge(next_x, projectiles[i].proy, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy))
+                {
+                    projpool.play_extended_2d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    destroy_projectile(i);
+                    return;
+                }
                 projectiles[i].cur_x_step = -projectiles[i].cur_x_step;
+            }
             else
                 projectiles[i].prox = next_x;
         }
@@ -82,7 +96,15 @@ void projloop()
         {
             int next_y = projectiles[i].proy + projectiles[i].cur_y_step;
             if(projectile_blocked(projectiles[i].prox, next_y, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy))
+            {
+                if(!projectiles[i].bounce_at_edge && projectile_at_edge(projectiles[i].prox, next_y, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy))
+                {
+                    projpool.play_extended_2d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    destroy_projectile(i);
+                    return;
+                }
                 projectiles[i].cur_y_step = -projectiles[i].cur_y_step;
+            }
             else
                 projectiles[i].proy = next_y;
         }
@@ -290,9 +312,9 @@ void projloop()
     }
 }
 
-void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool dest, bool pf, bool su)
+void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su)
 {
-    projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, dest, pf, su);
+    projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su);
     projectiles.insert_last(p1);
 }
 
@@ -350,6 +372,7 @@ void build_projectile()
     for(uint i = 0; i < projs_list.length(); i++)
         form.add_list_item(proj_list, projs_list[i], projs_list[i]);
     form.set_list_position(proj_list, 0, false);
+    int bounce_cb = form.create_checkbox("bounce at edge", true);
     int dest_cb = form.create_checkbox("destroyable", false);
     int attack_cb = form.create_checkbox("fireable", false);
     int single_cb = form.create_checkbox("single use", false);
@@ -415,13 +438,14 @@ void build_projectile()
             int bdir = string_to_number(form.get_list_item_id(dir_list, form.get_list_position(dir_list)));
             int p = form.get_list_position(proj_list);
             string btype = (p > 0) ? projs_list[p-1] : "none";
+            bool bbounce = form.is_checked(bounce_cb);
             bool bdest = form.is_checked(dest_cb);
             bool battack = form.is_checked(attack_cb);
             bool bsingle = form.is_checked(single_cb);
             t.destroy_sound(prevslot);
             resume_pools();
-            write_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bdest, battack, bsingle);
-            spawn_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bdest, battack, bsingle);
+            write_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle);
+            spawn_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle);
             load_map(mapname, mapowner);
             mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
             speak("Map updated.");
@@ -443,16 +467,17 @@ void read_projectile(string[] sd)
     int dm = stn(sd[9]);
     int sp = stn(sd[10]);
     string pt = sd[11];
-    bool dest = string_to_bool(sd[12]);
-    bool pf = string_to_bool(sd[13]);
-    bool su = string_to_bool(sd[14]);
-    spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, dest, pf, su);
+    bool bae = string_to_bool(sd[12]);
+    bool dest = string_to_bool(sd[13]);
+    bool pf = string_to_bool(sd[14]);
+    bool su = string_to_bool(sd[15]);
+    spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su);
 }
 
-void write_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool dest, bool pf, bool su)
+void write_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su)
 {
     mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "ab");
     mapdata = mapper.read();
-    mapper.write("\r\n"+"projectile "+x+" "+y+" "+mnx+" "+mxx+" "+mny+" "+mxy+" "+dir+" "+hp+" "+dm+" "+sp+" "+pt+" "+dest+" "+pf+" "+su);
+    mapper.write("\r\n"+"projectile "+x+" "+y+" "+mnx+" "+mxx+" "+mny+" "+mxy+" "+dir+" "+hp+" "+dm+" "+sp+" "+pt+" "+bae+" "+dest+" "+pf+" "+su);
     mapper.close();
 }

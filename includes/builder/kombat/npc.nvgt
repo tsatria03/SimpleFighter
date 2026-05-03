@@ -65,6 +65,11 @@ class npc
     int currentlives;
     bool spotted;
     bool step_active;
+    bool hit_and_run;
+    int flee_time;
+    int flee_speed;
+    bool fleeing;
+    timer flee_timer;
     string use_steps;
     string use_falls;
     int taunttime;
@@ -104,6 +109,10 @@ class npc
         targets.insert_last("player");
         use_steps = "auto";
         use_falls = "auto";
+        hit_and_run = false;
+        flee_time = 0;
+        flee_speed = 0;
+        fleeing = false;
         chase_trigger = "sight";
         chase_wander = "none";
         chase_calm_min = 15000; chase_calm_max = 15000;
@@ -356,6 +365,9 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "ambient heal") self.ambient_heal = string_to_bool(v);
         else if(k == "use steps") self.use_steps = v;
         else if(k == "use falls") self.use_falls = v;
+        else if(k == "hit_and_run") self.hit_and_run = string_to_bool(v);
+        else if(k == "flee_time") self.flee_time = roll_slot_int(v);
+        else if(k == "flee_speed") self.flee_speed = roll_slot_int(v);
         else if(k == "launching") self.launching = string_to_bool(v);
         else if(k == "launch path") self.launch_path = v;
         else if(k == "launch category") self.launch_category = v;
@@ -791,7 +803,8 @@ void npcloop()
         }
 
         // movement / spotting
-        if(has_move && npcs[i].movetimer.elapsed >= eff_movetime)
+        int eff_move_step = (npcs[i].fleeing && npcs[i].flee_speed > 0) ? npcs[i].flee_speed : eff_movetime;
+        if(has_move && npcs[i].movetimer.elapsed >= eff_move_step)
         {
             bool h = absolute(tx - npcs[i].x) <= eff_hsight;
             bool v = absolute(ty - npcs[i].y) <= eff_vsight;
@@ -802,7 +815,7 @@ void npcloop()
                 int dx_intent = 0;
                 if(npcs[i].x < tx) dx_intent = 1;
                 else if(npcs[i].x > tx) dx_intent = -1;
-                if(in_wounded)
+                if(in_wounded || npcs[i].fleeing)
                 {
                     if(dx_intent == 0) dx_intent = (random(0, 1) == 0) ? -1 : 1;
                     else dx_intent = -dx_intent;
@@ -810,7 +823,7 @@ void npcloop()
                 int dy_intent = 0;
                 if(npcs[i].y < ty) dy_intent = 1;
                 else if(npcs[i].y > ty) dy_intent = -1;
-                if(in_wounded)
+                if(in_wounded || npcs[i].fleeing)
                 {
                     if(dy_intent == 0) dy_intent = (random(0, 1) == 0) ? -1 : 1;
                     else dy_intent = -dy_intent;
@@ -871,7 +884,9 @@ void npcloop()
         }
 
         // attack chosen target
-        if(combat_found && absolute(combat_tx - npcs[i].x) <= eff_hrange && absolute(combat_ty - npcs[i].y) <= eff_vrange && npcs[i].firetimer.elapsed >= eff_firetime && npcs[i].fireable && paused == 0)
+        if(npcs[i].fleeing && npcs[i].flee_time > 0 && npcs[i].flee_timer.elapsed >= npcs[i].flee_time)
+            npcs[i].fleeing = false;
+        if(combat_found && absolute(combat_tx - npcs[i].x) <= eff_hrange && absolute(combat_ty - npcs[i].y) <= eff_vrange && npcs[i].firetimer.elapsed >= eff_firetime && npcs[i].fireable && paused == 0 && !npcs[i].fleeing)
         {
             npcs[i].step_active = false;
             if(human_armed)
@@ -962,6 +977,11 @@ void npcloop()
                 kombatlog.insert_last(npcs[i].subtype + " attacked " + npcs[j].subtype + " for " + dmg + " damage.");
             }
             npcs[i].firetimer.restart();
+            if(npcs[i].hit_and_run && npcs[i].flee_time > 0)
+            {
+                npcs[i].fleeing = true;
+                npcs[i].flee_timer.restart();
+            }
         }
 
         // hit nearby items
@@ -1068,8 +1088,8 @@ bool add_npc_form(string path_choice, string category, string subtype)
     string target_path = (path_choice == "global")
         ? "sounds/"+soundpack+"/kombat/npc/"+category+"/"+subtype+"/info.sif"
         : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+category+"/"+subtype+"/info.sif";
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run"};
     form.reset();
     form.create_window("add "+subtype, false, true, false);
     int[] inputs;
@@ -1369,8 +1389,8 @@ void remove_npc()
 
 bool edit_npc_form(string target_path, string subtype)
 {
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching"};
+    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed"};
+    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run"};
     dictionary existing;
     file fin;
     if(fin.open(target_path, "rb"))

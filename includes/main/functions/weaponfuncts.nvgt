@@ -82,6 +82,25 @@ void reload_weapon()
     }
 }
 
+void launch_weapon_shot()
+{
+int dmg = wepdamage + (attack * 2);
+if(weplaunchtype == "projectile" && weplaunchsubtype != "")
+{
+int pmnx = int(me.x), pmxx = int(me.x), pmny = int(me.y), pmxy = int(me.y);
+int pdir = 0;
+if(facing == "right") { pmxx = int(me.x) + weprange; pdir = 0; }
+else if(facing == "left") { pmnx = int(me.x) - weprange; pdir = 4; }
+else if(facing == "up") { pmxy = int(me.y) + weprange2; pdir = 1; }
+else if(facing == "down") { pmny = int(me.y) - weprange2; pdir = 5; }
+spawn_projectile(int(me.x), int(me.y), pmnx, pmxx, pmny, pmxy, pdir, 1, dmg, wepspeed, weplaunchsubtype, false, false, true, true);
+}
+else
+{
+spawn_bullet(me.x, me.y, weprange, weprange2, dmg, wepspeed, facing, weapontype, weapontype2);
+}
+}
+
 void auto_fire_weapon()
 {
 if(weapontype2==""==false and wephold==1 and weapontimer.elapsed>=weapontime)
@@ -96,7 +115,7 @@ else
 {
 bonecheck();
 if(wepfiresound==1) weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,0,100,false);
-spawn_bullet(me.x, me.y, weprange, weprange2, wepdamage+(attack * 2), wepspeed, facing, weapontype, weapontype2);
+launch_weapon_shot();
 if(melee==false)
 {
 loadedammo-=1;
@@ -119,7 +138,7 @@ else
 bonecheck();
 if(charswingsound==1 and weapontype=="melee") weaponslot=p.play_stationary_extended(get_pack_sound("characters/"+chartype+"/general/*swing*"),false,0,0,0,100,false);
 if(wepfiresound==1) weaponslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+weapontype+"/"+weapontype2+"/*fire*"),false,0,0,0,100,false);
-spawn_bullet(me.x, me.y, weprange, weprange2, wepdamage+(attack * 2), wepspeed, facing, weapontype, weapontype2);
+launch_weapon_shot();
 if(melee==false)
 {
 loadedammo-=1;
