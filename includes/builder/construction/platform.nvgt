@@ -6,16 +6,18 @@ bool overlap;
 bool is_backing;
 int defsound,hurtsound;
 double minx, maxx, miny, maxy;
+double z;
 double plathealth, platmaxhealth;
 double volume;
 double pitch;
 string tile;
-platform(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool vlp,bool bkg)
+platform(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool vlp,bool bkg,double zv=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+z=zv;
 plathealth=hp;
 platmaxhealth=maxhp;
 tile=ty;
@@ -26,13 +28,14 @@ overlap=vlp;
 is_backing=bkg;
 }
 }
-void get_all_platform_tiles(double x, double y, array<string>@ tiles, array<double>@ volumes, array<double>@ pitches)
+void get_all_platform_tiles(double x, double y, array<string>@ tiles, array<double>@ volumes, array<double>@ pitches, double z=0)
 {
     array<int> stack;
     for(uint i = 0; i < platforms.length(); i++)
     {
         if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
         {
+            if(mapmode == "3d" && platforms[i].z != z) continue;
             stack.insert_last(i);
         }
     }
@@ -74,17 +77,17 @@ for(uint i=0; i<platforms.length(); i++)
 if(platforms[i].plathealth<=0)
 {
 p.destroy_sound(platforms[i].hurtsound);
-platforms[i].defsound=p.play_extended_3d(get_map_sound("objects/platforms/"+platforms[i].tile+"/*death*"),me.x,me.y,me.z,platforms[i].minx,platforms[i].miny,0,0,0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
-p.update_sound_3d(platforms[i].defsound,platforms[i].minx,platforms[i].miny, 0);
+platforms[i].defsound=p.play_extended_3d(get_map_sound("objects/platforms/"+platforms[i].tile+"/*death*"),me.x,me.y,me.z,platforms[i].minx,platforms[i].miny,platforms[i].z,0,0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
+p.update_sound_3d(platforms[i].defsound,platforms[i].minx,platforms[i].miny,platforms[i].z);
 p.update_sound_range_3d(platforms[i].defsound,0,platforms[i].maxx-platforms[i].minx,0,platforms[i].maxy-platforms[i].miny, 0, 0);
 platforms.remove_at(i);
 return;
 }
 }
 }
-int spawn_platform(double x1, double x2, double y1, double y2, double hp, double maxhp, string tile, double tilevol, double tilepitch, bool destroyable, bool overlap, bool backing=false)
+int spawn_platform(double x1, double x2, double y1, double y2, double hp, double maxhp, string tile, double tilevol, double tilepitch, bool destroyable, bool overlap, bool backing=false, double z=0)
 {
-    platform pl1(x1, x2, y1, y2, hp, maxhp, tile, tilevol, tilepitch, destroyable, overlap, backing);
+    platform pl1(x1, x2, y1, y2, hp, maxhp, tile, tilevol, tilepitch, destroyable, overlap, backing, z);
     platforms.insert_last(pl1);
     return platforms.length() - 1;
 }
@@ -125,10 +128,14 @@ form.create_window("platform", false);
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d")
+mz = form.create_input_box("z", "");
 int hp = form.create_input_box("health", "1");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 int tile_list = form.create_list("tile sound");
 form.add_list_item(tile_list, "air", "air");
@@ -241,6 +248,7 @@ if(form.is_pressed(ok))
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
+double bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int p = form.get_list_position(tile_list);
 string btile = (p > 0) ? tiles_list[p-1] : "air";
@@ -250,8 +258,8 @@ bool bdest = form.is_checked(dest_cb);
 bool boverlap = form.is_checked(overlap_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_platform(bx, bx2, by, bhp, btile, bvol, bpit, bdest, boverlap);
-spawn_platform(bx, bx2, by, by, bhp, bhp, btile, bvol, bpit, bdest, boverlap);
+write_platform(bx, bx2, by, bhp, btile, bvol, bpit, bdest, boverlap, bz);
+spawn_platform(bx, bx2, by, by, bhp, bhp, btile, bvol, bpit, bdest, boverlap, false, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -265,20 +273,29 @@ void read_platform(string[] sd)
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
-double hp=stn(sd[4]);
-string tiletype=sd[5];
-double tilevol=stn(sd[6]);
-double tilepitch=stn(sd[7]);
-bool dbl=string_to_bool(sd[8]);
-bool rps=string_to_bool(sd[9]);
-spawn_platform(mx, mx2, my, my, hp, hp, tiletype, tilevol, tilepitch, dbl, rps);
+double z=0;
+int o=4;
+if(sd.length()==11)
+{
+z=stn(sd[4]);
+o=5;
+}
+double hp=stn(sd[o]);
+string tiletype=sd[o+1];
+double tilevol=stn(sd[o+2]);
+double tilepitch=stn(sd[o+3]);
+bool dbl=string_to_bool(sd[o+4]);
+bool rps=string_to_bool(sd[o+5]);
+spawn_platform(mx, mx2, my, my, hp, hp, tiletype, tilevol, tilepitch, dbl, rps, false, z);
 }
 
-void write_platform(double x, double x2, double y, double hp, string tiletype, double vol, double pitch, bool destroyable, bool overlap)
+void write_platform(double x, double x2, double y, double hp, string tiletype, double vol, double pitch, bool destroyable, bool overlap, double z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"platform "+x+" "+x2+" "+y+" "+hp+" "+tiletype+" "+vol+" "+pitch+" "+destroyable+" "+overlap);
+string coords=x+" "+x2+" "+y;
+if(mapmode=="3d") coords+=" "+z;
+mapper.write("\r\n"+"platform "+coords+" "+hp+" "+tiletype+" "+vol+" "+pitch+" "+destroyable+" "+overlap);
 mapper.close();
 }
 

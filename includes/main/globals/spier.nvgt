@@ -20,10 +20,11 @@ in_passage = true;
 break;
 }
 }
-vector spyage(me.x, me.y);
+vector spyage(me.x, me.y, me.z);
 string materials;
-string current_tile = gmt(me.x, me.y);
-if (direction == "down")
+string current_tile = (mapmode == "3d") ? platform_tile_at(me.x, me.y, me.z) : gmt(me.x, me.y);
+bool zero_feet_dir = (mapmode == "3d" && direction == "down") || (mapmode != "3d" && direction == "backward");
+if (zero_feet_dir)
 {
 string[] zero_labels;
 bool zero_found = false;
@@ -35,8 +36,10 @@ for (uint i = 1; i <= distance; i++)
 {
 if (direction == "left") spyage.x--;
 else if (direction == "right") spyage.x++;
-else if (direction == "down") spyage.y--;
-else if (direction == "up") spyage.y++;
+else if (direction == "forward") spyage.y++;
+else if (direction == "backward") spyage.y--;
+else if (direction == "up") spyage.z++;
+else if (direction == "down") spyage.z--;
 bool found_object = false;
 string[] labels;
 spy_check_passages(spyage.x, spyage.y, labels, in_passage, current_passage, found_object);
@@ -45,7 +48,7 @@ if (!found_object)
 bool include_lifts = !(on_lift && (direction == "left" || direction == "right"));
 spy_check_entities(spyage.x, spyage.y, labels, found_object, include_lifts);
 }
-spy_check_tile(spyage.x, spyage.y, labels, current_tile);
+spy_check_tile(spyage.x, spyage.y, spyage.z, labels, current_tile);
 if (labels.length() > 0)
 materials += string_join(labels, ", ") + ": " + i + " feet. ";
 if (found_object) break;
@@ -288,11 +291,22 @@ labels.insert_last("floor breaker");
 }
 }
 
-void spy_check_tile(double sx, double sy, string[] &inout labels, string &inout current_tile)
+string platform_tile_at(double x, double y, double z)
 {
-if (current_tile == gmt(sx, sy)) return;
-current_tile = gmt(sx, sy);
+for (uint i = 0; i < platforms.length(); i++)
+{
+if (platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y && platforms[i].z == z)
+return platforms[i].tile;
+}
+return "";
+}
+void spy_check_tile(double sx, double sy, double sz, string[] &inout labels, string &inout current_tile)
+{
+string tile_here = (mapmode == "3d") ? platform_tile_at(sx, sy, sz) : gmt(sx, sy);
+if (current_tile == tile_here) return;
+current_tile = tile_here;
 if (sx < minx || sx > maxx || sy < miny || sy > maxy) return;
+if (mapmode == "3d" && (sz < minz || sz > maxz)) return;
 if (is_obscured("platform", "spier")) return;
 if (current_tile == "" || current_tile == "air")
 labels.insert_last("air");
