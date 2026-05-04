@@ -144,37 +144,40 @@ return;
 
 void speakcoordinates()
 {
+bool is_3d = mapmode == "3d";
+string coords = is_3d ? (me.x+", "+me.y+", "+me.z) : (me.x+", "+me.y);
+string elevation_suffix = is_3d ? (" at elevation "+me.z) : "";
 if(locspeech==1 and gmt(me.x,me.y)=="")
 {
-speak("In the air. "+"Facing "+facing+".");
+speak("In the air"+elevation_suffix+". Facing "+facing+".");
 }
 else if(locspeech==1)
 {
-speak("On "+gmt(me.x,me.y)+". "+"Facing "+facing+".");
+speak("On "+gmt(me.x,me.y)+elevation_suffix+". Facing "+facing+".");
 }
-if(locspeech==2 )
+if(locspeech==2)
 {
-speak(me.x+", "+me.y+". "+"Facing "+facing+".");
+speak(coords+". Facing "+facing+".");
 }
 if(locspeech==3 and gmt(me.x,me.y)=="")
 {
-speak(me.x+", "+me.y+" "+"in the air. "+"Facing "+facing+".");
+speak(coords+" in the air. Facing "+facing+".");
 }
 else if(locspeech==3)
 {
-speak(me.x+", "+me.y+" "+"on "+gmt(me.x,me.y)+". "+"Facing "+facing+".");
+speak(coords+" on "+gmt(me.x,me.y)+". Facing "+facing+".");
 }
 if(locspeech==4 and gmt(me.x,me.y)=="")
 {
-speak("current location, "+me.x+", "+me.y+". "+"You're currently in the air. "+"Facing "+facing+".");
+speak("current location, "+coords+". You're currently in the air. Facing "+facing+".");
 }
 else if(locspeech==4)
 {
-speak("current location, "+me.x+", "+me.y+". "+"You're walking on "+gmt(me.x,me.y)+". "+"Facing "+facing+".");
+speak("current location, "+coords+". You're walking on "+gmt(me.x,me.y)+". Facing "+facing+".");
 }
 }
 
-void create_map(string name, string owner, string mode, double mx, double mx2, double my, double my2)
+void create_map(string name, string owner, string mode, double mx, double mx2, double my, double my2, double mz=0, double mz2=0)
 {
 mapname=name;
 mapowner=owner;
@@ -183,6 +186,8 @@ minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mz;
+maxz=mz2;
 
 string base = "data/maps/decompiled/" + mapname;
 string[] mapdirs ={"/assets", "/assets/kombat", "/assets/kombat/projectiles", "/assets/kombat/npc", "/assets/kombat/npc/animals", "/assets/kombat/npc/bosses", "/assets/kombat/npc/helpers", "/assets/kombat/npc/humans", "/assets/kombat/npc/robots", "/assets/kombat/npc/specials", "/assets/kombat/npc/zombies", "/assets/objects", "/assets/objects/aircrafts", "/assets/objects/belts", "/assets/objects/bikes", "/assets/objects/bombs", "/assets/objects/calendars", "/assets/objects/cameras", "/assets/objects/checkpoints", "/assets/objects/clocks", "/assets/objects/dialogs", "/assets/objects/doors", "/assets/objects/doors/close", "/assets/objects/doors/dest", "/assets/objects/doors/loop", "/assets/objects/doors/move", "/assets/objects/doors/open", "/assets/objects/elevators", "/assets/objects/elevators/beep", "/assets/objects/elevators/close", "/assets/objects/elevators/loop", "/assets/objects/elevators/move", "/assets/objects/elevators/open", "/assets/objects/fires", "/assets/objects/floor breakers", "/assets/objects/force fields", "/assets/objects/hazards", "/assets/objects/heal zones", "/assets/objects/items", "/assets/objects/items/health", "/assets/objects/items/other", "/assets/objects/items/stamina", "/assets/objects/lifts", "/assets/objects/mines", "/assets/objects/moving platforms", "/assets/objects/platforms", "/assets/objects/safe zones", "/assets/objects/signs", "/assets/objects/spikes", "/assets/objects/switches", "/assets/objects/teleporters", "/assets/objects/time bombs", "/assets/objects/vanishing platforms", "/assets/objects/vehicles", "/assets/objects/walls", "/assets/soundtracks", "/assets/soundtracks/musics", "/assets/soundtracks/sources"};
@@ -195,7 +200,10 @@ for (uint i = 0; i < mapdirs.length(); i++)
 
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","wb");
 mapdata=mapper.read();
-mapper.write("mode "+mode+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2+"\r\n"+"owner "+owner);
+string header = "mode "+mode+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2;
+if(mode == "3d") header += "\r\nminz "+mz+"\r\nmaxz "+mz2;
+header += "\r\nowner "+owner;
+mapper.write(header);
 mapper.close();
 me.x=0;
 me.y=0;
@@ -222,22 +230,42 @@ playcam();
 camtimer.restart();
 }
 }
-void cam_down()
+void cam_backward()
 {
 if(cam.y-1>=miny and camtimer.elapsed>=camtime and cammable==true)
 {
-camdir="down";
+camdir="backward";
 cam.y-=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_forward()
+{
+if(cam.y+1<=maxy and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="forward";
+cam.y+=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_down()
+{
+if(cam.z-1>=minz and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="down";
+cam.z-=1;
 playcam();
 camtimer.restart();
 }
 }
 void cam_up()
 {
-if(cam.y+1<=maxx and camtimer.elapsed>=camtime and cammable==true)
+if(cam.z+1<=maxz and camtimer.elapsed>=camtime and cammable==true)
 {
 camdir="up";
-cam.y+=1;
+cam.z+=1;
 playcam();
 camtimer.restart();
 }
@@ -261,6 +289,26 @@ facing="right";
 bonecheck();
 if(spokenturns==1) speak(facing);
 if(facing=="right") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x+1,me.y,0,me.x+1,me.y,0,0,false);
+}
+}
+void face_backward()
+{
+if(facing=="backward"==false and turnable==true)
+{
+facing="backward";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="backward") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y-1,0,me.x,me.y-1,0,0,false);
+}
+}
+void face_forward()
+{
+if(facing=="forward"==false and turnable==true)
+{
+facing="forward";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="forward") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y+1,0,me.x,me.y+1,0,0,false);
 }
 }
 void face_down()
@@ -318,6 +366,40 @@ bonecheck();
 playstep();
 }
 }
+void step_backward()
+{
+if(facing=="backward"==false and turnmode==1)
+{
+facing="backward";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="backward") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y-1,0,me.x,me.y-1,0,0,false);
+}
+else if (!gmt(me.x,me.y-1).is_empty())
+{
+if(turnmode==0) facing="backward";
+me.y--;
+bonecheck();
+playstep();
+}
+}
+void step_forward()
+{
+if(facing=="forward"==false and turnmode==1)
+{
+facing="forward";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="forward") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y+1,0,me.x,me.y+1,0,0,false);
+}
+else if (!gmt(me.x,me.y+1).is_empty())
+{
+if(turnmode==0) facing="forward";
+me.y++;
+bonecheck();
+playstep();
+}
+}
 void step_down()
 {
 if(facing=="down"==false and turnmode==1)
@@ -325,12 +407,12 @@ if(facing=="down"==false and turnmode==1)
 facing="down";
 bonecheck();
 if(spokenturns==1) speak(facing);
-if(facing=="down") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y-1,0,me.x,me.y-1,0,0,false);
+if(facing=="down") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.z-1,0,me.x,me.z-1,0,0,false);
 }
-else if (!gmt(me.x,me.y-1).is_empty())
+else if (!gmt(me.x,me.z-1).is_empty())
 {
 if(turnmode==0) facing="down";
-me.y--;
+me.z--;
 bonecheck();
 playstep();
 }
@@ -342,12 +424,12 @@ if(facing=="up"==false and turnmode==1)
 facing="up";
 bonecheck();
 if(spokenturns==1) speak(facing);
-if(facing=="up") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y+1,0,me.x,me.y+1,0,0,false);
+if(facing=="up") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.z+1,0,me.x,me.z+1,0,0,false);
 }
-else if (!gmt(me.x,me.y+1).is_empty())
+else if (!gmt(me.x,me.z+1).is_empty())
 {
 if(turnmode==0) facing="up";
-me.y++;
+me.z++;
 bonecheck();
 playstep();
 }
@@ -680,10 +762,14 @@ if(camdir=="right")
 cam.x--;
 else if(camdir=="left")
 cam.x++;
-else if(camdir=="up")
+else if(camdir=="forward")
 cam.y--;
-else if(camdir=="down")
+else if(camdir=="backward")
 cam.y++;
+else if(camdir=="up")
+cam.z--;
+else if(camdir=="down")
+cam.z++;
 }
 void pbounce(int steps = 1)
 {
@@ -691,10 +777,46 @@ if (facing == "right")
 me.x -= steps;
 else if (facing == "left")
 me.x += steps;
-else if (facing == "up")
+else if (facing == "forward")
 me.y -= steps;
-else if (facing == "down")
+else if (facing == "backward")
 me.y += steps;
+else if (facing == "up")
+me.z -= steps;
+else if (facing == "down")
+me.z += steps;
+}
+void key_step_up()
+{
+step_forward();
+}
+void key_step_down()
+{
+step_backward();
+}
+void key_step_pgup()
+{
+if(mapmode == "3d") step_up();
+}
+void key_step_pgdown()
+{
+if(mapmode == "3d") step_down();
+}
+void key_cam_up()
+{
+cam_forward();
+}
+void key_cam_down()
+{
+cam_backward();
+}
+void key_cam_pgup()
+{
+if(mapmode == "3d") cam_up();
+}
+void key_cam_pgdown()
+{
+if(mapmode == "3d") cam_down();
 }
 void checkforplatforms()
 {

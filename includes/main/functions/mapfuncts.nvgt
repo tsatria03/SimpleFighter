@@ -38,8 +38,10 @@ bool load_map_pack(const string&in name, const string&in key)
 bool validate_map_data(string[] lines)
 {
 bool has_minx = false, has_maxx = false, has_miny = false, has_maxy = false, has_owner = false;
+bool has_minz = false, has_maxz = false;
 int mode_count = 0;
 bool mode_valid = false;
+string mode_val = "";
 for (uint i = 0; i < lines.length(); i++)
 {
 string[] parts = string_split(lines[i], " ", true);
@@ -49,15 +51,19 @@ if (key == "minx") has_minx = true;
 if (key == "maxx") has_maxx = true;
 if (key == "miny") has_miny = true;
 if (key == "maxy") has_maxy = true;
+if (key == "minz") has_minz = true;
+if (key == "maxz") has_maxz = true;
 if (key == "owner") has_owner = true;
 if (key == "mode")
 {
 mode_count++;
-string val = string_trim_sides(parts[1]);
-if (val == "2d" || val == "topdown" || val == "3d") mode_valid = true;
+mode_val = string_trim_sides(parts[1]);
+if (mode_val == "2d" || mode_val == "topdown" || mode_val == "3d") mode_valid = true;
 }
 }
-return has_minx && has_maxx && has_miny && has_maxy && has_owner && mode_count == 1 && mode_valid;
+if (!(has_minx && has_maxx && has_miny && has_maxy && has_owner && mode_count == 1 && mode_valid)) return false;
+if (mode_val == "3d" && !(has_minz && has_maxz)) return false;
+return true;
 }
 
 float stn(string str)
@@ -153,16 +159,6 @@ for(uint i=0; i<platforms.length(); i++)
 if(platforms[i].minx<=x and platforms[i].maxx>=x and platforms[i].miny<=y and platforms[i].maxy>=y)
 {
 ct=platforms[i].tile;
-tilevolume=platforms[i].volume;
-tilepitch=platforms[i].pitch;
-}
-}
-for(uint i=0; i<walls.length(); i++)
-{
-if(walls[i].minx<=x and walls[i].maxx>=x and walls[i].miny<=y and walls[i].maxy>=y)
-{
-wallvolume=walls[i].volume;
-wallpitch=walls[i].pitch;
 }
 }
 return ct;
