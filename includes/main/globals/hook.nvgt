@@ -11,17 +11,21 @@ int hook_extencions=98;
     int hook_direction = 0;
 double hook_start_x;
 double hook_start_y;
+double hook_start_z;
     double hook_target_x;
     double hook_target_y;
-    int hook_type = 0; 
+    double hook_target_z;
+    int hook_type = 0;
     int hook_target_index = -1;
 int throw_dx = 0;
 int throw_dy = 0;
+int throw_dz = 0;
 int throw_aim_x = 0;
     bool hook_pending = false;
     bool hook_catch = false;
     double pending_x;
     double pending_y;
+    double pending_z;
     int pending_type;
     int pending_index;
     timer hooktimer;
@@ -29,8 +33,9 @@ int throw_aim_x = 0;
     {
         hook_direction = dir;
     }
-    bool tile_valid(double tx, double ty)
+    bool tile_valid(double tx, double ty, double tz=0)
     {
+        pending_z = tz;
         string t = gmt(tx, ty);
         if(t != "" && t != "air")
         {
@@ -117,7 +122,7 @@ void throw_hook()
     }
     if(base_hook_delay <= 0)
     {
-        apply_hook(throw_dx, throw_dy);
+        apply_hook(throw_dx, throw_dy, throw_dz);
     }
     else
     {
@@ -132,19 +137,21 @@ void update_hook()
     if(hooktimer.elapsed >= current_hook_delay)
     {
         hook_pending = false;
-        apply_hook(throw_dx, throw_dy);
+        apply_hook(throw_dx, throw_dy, throw_dz);
     }
 }
-    void apply_hook(int dx, int dy)
+    void apply_hook(int dx, int dy, int dz=0)
     {
         if(hook_catch)
         {
             hook_target_x = pending_x;
             hook_target_y = pending_y;
+            hook_target_z = pending_z;
             hook_type = pending_type;
             hook_target_index = pending_index;
 hook_start_x = me.x;
 hook_start_y = me.y;
+hook_start_z = me.z;
 if(dx == 0 && throw_aim_x != 0)
     me.x += throw_aim_x;
 if(dx != 0)
@@ -172,7 +179,7 @@ p.destroy_sound(fallslot);
         hook_target_index = -1;
         hookslot = hookpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*hookrelease*"), false);
     }
-void move_hook(int dx, int dy)
+void move_hook(int dx, int dy, int dz=0)
 {
     if(!onhook) return;
     double nx = me.x + dx;
