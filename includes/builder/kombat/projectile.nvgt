@@ -42,7 +42,7 @@ class projectile
         else if(direction == 5) { cur_y_step = -1; }
         else if(direction == 6) { cur_x_step = -1; cur_y_step = -1; }
         else if(direction == 7) { cur_x_step = 1; cur_y_step = -1; }
-        projsound = projpool.play_extended_2d(get_map_sound("kombat/projectiles/"+projtype+"/*loop*"), me.x, me.y, prox, proy, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+        projsound = projpool.play_extended_3d(get_map_sound("kombat/projectiles/"+projtype+"/*loop*"), me.x, me.y, 0, prox, proy, 0, 0, 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
     }
 }
 
@@ -54,7 +54,7 @@ void destroy_projectile(uint i)
 
 void play_projectile_hit_2d(uint i)
 {
-    projectiles[i].wepsound = projpool.play_extended_2d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), me.x, me.y, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+    projectiles[i].wepsound = projpool.play_extended_3d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), me.x, me.y, 0, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 }
 
 bool projectile_blocked(int nx, int ny, int mn_x, int mx_x, int mn_y, int mx_y)
@@ -75,7 +75,7 @@ void projloop()
     for(uint i = 0; i < projectiles.length(); i++)
     {
         if(projectiles[i].projtimer.elapsed < projectiles[i].speed) continue;
-        projpool.update_sound_2d(projectiles[i].projsound, projectiles[i].prox, projectiles[i].proy);
+        projpool.update_sound_3d(projectiles[i].projsound, projectiles[i].prox, projectiles[i].proy, 0);
         projectiles[i].projtimer.restart();
         if(paused != 0) continue;
         if(projectiles[i].cur_x_step != 0)
@@ -85,7 +85,7 @@ void projloop()
             {
                 if(!projectiles[i].bounce_at_edge && projectile_at_edge(next_x, projectiles[i].proy, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy))
                 {
-                    projpool.play_extended_2d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    projpool.play_extended_3d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, 0, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                     destroy_projectile(i);
                     return;
                 }
@@ -101,7 +101,7 @@ void projloop()
             {
                 if(!projectiles[i].bounce_at_edge && projectile_at_edge(projectiles[i].prox, next_y, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy))
                 {
-                    projpool.play_extended_2d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    projpool.play_extended_3d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, 0, projectiles[i].prox, projectiles[i].proy, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                     destroy_projectile(i);
                     return;
                 }
@@ -183,7 +183,7 @@ void projloop()
             {
                 play_projectile_hit_2d(i);
                 sound_pool@ npool = npc_pool(npcs[j].category);
-                npcs[j].hurtsound = npool.play_extended_2d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, npcs[j].x, npcs[j].y, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, 0, npcs[j].x, npcs[j].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 npcs[j].health -= projectiles[i].damage;
                 kombatlog.insert_last(projectiles[i].damage + " damage to " + npcs[j].subtype + " by " + projectiles[i].projtype + ".");
                 if(projectiles[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=projectiles[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; }
@@ -198,7 +198,7 @@ void projloop()
             if(vehicles[j].vehx == projectiles[i].prox && vehicles[j].vehy == projectiles[i].proy)
             {
                 play_projectile_hit_2d(i);
-                vehicles[j].hurtsound = vehpool.play_extended_2d(get_map_sound("objects/vehicles/"+vehicles[j].vehtype+"/*hurt*"), me.x, me.y, vehicles[j].vehx, vehicles[j].vehy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                vehicles[j].hurtsound = vehpool.play_extended_3d(get_map_sound("objects/vehicles/"+vehicles[j].vehtype+"/*hurt*"), me.x, me.y, 0, vehicles[j].vehx, vehicles[j].vehy, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 vehicles[j].vehhealth -= projectiles[i].damage;
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
@@ -212,7 +212,7 @@ void projloop()
             {
                 play_projectile_hit_2d(i);
                 itempool.destroy_sound(objs[j].objsound);
-                objs[j].hurtsound = itempool.play_extended_2d(get_map_sound("objects/items/"+objs[j].objtype+"/"+objs[j].objtype2+"/*break*"), me.x, me.y, objs[j].itx, objs[j].ity, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                objs[j].hurtsound = itempool.play_extended_3d(get_map_sound("objects/items/"+objs[j].objtype+"/"+objs[j].objtype2+"/*break*"), me.x, me.y, 0, objs[j].itx, objs[j].ity, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 objs.remove_at(j);
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
@@ -225,7 +225,7 @@ void projloop()
             if(doors[j].minx <= projectiles[i].prox && doors[j].maxx >= projectiles[i].prox && doors[j].miny <= projectiles[i].proy && doors[j].maxy >= projectiles[i].proy && doors[j].destroyable == true)
             {
                 play_projectile_hit_2d(i);
-                doors[j].hurtsound = doorpool.play_extended_2d(get_map_sound("objects/doors/dest/"+doors[j].desttype+"/*hurt*"), me.x, me.y, doors[j].minx, doors[j].miny, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                doors[j].hurtsound = doorpool.play_extended_3d(get_map_sound("objects/doors/dest/"+doors[j].desttype+"/*hurt*"), me.x, me.y, 0, doors[j].minx, doors[j].miny, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 doors[j].doorhealth -= projectiles[i].damage;
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
@@ -239,7 +239,7 @@ void projloop()
             {
                 play_projectile_hit_2d(i);
                 signpool.destroy_sound(signs[j].signsound);
-                signs[j].hurtsound = signpool.play_extended_2d(get_map_sound("objects/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, signs[j].signx, signs[j].signy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                signs[j].hurtsound = signpool.play_extended_3d(get_map_sound("objects/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, 0, signs[j].signx, signs[j].signy, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 signs.remove_at(j);
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
@@ -253,7 +253,7 @@ void projloop()
             {
                 play_projectile_hit_2d(i);
                 calpool.destroy_sound(calanders[j].calandersound);
-                calanders[j].hurtsound = calpool.play_extended_2d(get_map_sound("objects/calendars/"+calanders[j].calandertype+"/*break*"), me.x, me.y, calanders[j].calanderx, calanders[j].calandery, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                calanders[j].hurtsound = calpool.play_extended_3d(get_map_sound("objects/calendars/"+calanders[j].calandertype+"/*break*"), me.x, me.y, 0, calanders[j].calanderx, calanders[j].calandery, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 calanders.remove_at(j);
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
@@ -267,7 +267,7 @@ void projloop()
             {
                 play_projectile_hit_2d(i);
                 clockpool.destroy_sound(clocks[j].clocksound);
-                clocks[j].hurtsound = clockpool.play_extended_2d(get_map_sound("objects/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, clocks[j].clockx, clocks[j].clocky, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                clocks[j].hurtsound = clockpool.play_extended_3d(get_map_sound("objects/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, 0, clocks[j].clockx, clocks[j].clocky, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 clocks.remove_at(j);
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
@@ -280,7 +280,7 @@ void projloop()
             if(walls[j].minx <= projectiles[i].prox && walls[j].maxx >= projectiles[i].prox && walls[j].miny <= projectiles[i].proy && walls[j].maxy >= projectiles[i].proy && walls[j].destroyable == true)
             {
                 play_projectile_hit_2d(i);
-                walls[j].hurtsound = p.play_extended_2d(get_map_sound("objects/walls/"+walls[j].wall+"/*hurt*"), me.x, me.y, walls[j].minx, walls[j].miny, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                walls[j].hurtsound = p.play_extended_3d(get_map_sound("objects/walls/"+walls[j].wall+"/*hurt*"), me.x, me.y, 0, walls[j].minx, walls[j].miny, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 walls[j].wallhealth -= projectiles[i].damage;
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
@@ -293,7 +293,7 @@ void projloop()
             if(spikes[j].minx <= projectiles[i].prox && spikes[j].maxx >= projectiles[i].prox && spikes[j].miny <= projectiles[i].proy && spikes[j].maxy >= projectiles[i].proy && spikes[j].destroyable == true)
             {
                 play_projectile_hit_2d(i);
-                spikes[j].hurtsound = spikepool.play_extended_2d(get_map_sound("objects/spikes/"+spikes[j].spiketype+"/*hurt*"), me.x, me.y, spikes[j].minx, spikes[j].miny, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                spikes[j].hurtsound = spikepool.play_extended_3d(get_map_sound("objects/spikes/"+spikes[j].spiketype+"/*hurt*"), me.x, me.y, 0, spikes[j].minx, spikes[j].miny, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 spikes[j].spikehealth -= projectiles[i].damage;
                 if(projectiles[i].single_use) { destroy_projectile(i); return; }
                 break;
