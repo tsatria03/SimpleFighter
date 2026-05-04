@@ -84,7 +84,7 @@ mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "wb");
 mapdata=mapper.read();
 mapper.write(final);
 mapper.close();
-load_map(mapname, mapowner);(mapname);
+load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
 }
@@ -115,7 +115,13 @@ if(mres>0 and mres<=filtered_lines.length())
 uint original_index=original_lines[mres-1];
 vd.set_disallowed_chars("", false, "This character is not allowed.");
 string final=vd.input_box("","line editor", lines[original_index]);
-lines[original_index]=final; 
+if(final == "")
+{
+resume_pools();
+speak("canceled");
+return;
+}
+lines[original_index]=final;
 string mapline;
 for (uint i=0; i<lines.length(); i++)
 {
@@ -126,7 +132,7 @@ resume_pools();
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "wb");
 mapper.write(mapline);
 mapper.close();
-load_map(mapname, mapowner);(mapname);
+load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
 }
@@ -159,7 +165,8 @@ me.y=0;
 me.z=0;
 clearmap();
 destroymap();
-mapmenu();
+exit_game = true;
+return;
 }
 if(mres==2)
 {
@@ -413,13 +420,13 @@ if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
 speak("canceled");
-game();
+return;
 }
 if(form.is_pressed(cn))
 {
 resume_pools();
 speak("canceled");
-game();
+return;
 }
 if(form.is_pressed(ok))
 {
@@ -451,7 +458,7 @@ spawn_menuzone(x, paxx, y, paxy);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
-game();
+return;
 }
 }
 }
