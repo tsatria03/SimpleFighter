@@ -82,6 +82,185 @@ return;
 }
 }
 }
+bool new_map_form()
+{
+string disallowed_name = "";
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+string saved_name = "";
+string saved_owner = defowner;
+string saved_minx = "";
+string saved_maxx = "";
+string saved_miny = "";
+string saved_maxy = "";
+string saved_minz = "0";
+string saved_maxz = "0";
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+bool do_build = true;
+int nm_name, nm_owner, nm_mode, nm_minx, nm_maxx, nm_miny, nm_maxy, nm_minz, nm_maxz, nm_ok, nm_cn;
+while(true)
+{
+if(do_build)
+{
+do_build = false;
+if(last_mode_pos != -2)
+{
+saved_name = form.get_text(nm_name);
+saved_owner = form.get_text(nm_owner);
+saved_minx = form.get_text(nm_minx);
+saved_maxx = form.get_text(nm_maxx);
+saved_miny = form.get_text(nm_miny);
+saved_maxy = form.get_text(nm_maxy);
+if(last_mode_pos == 2)
+{
+saved_minz = form.get_text(nm_minz);
+saved_maxz = form.get_text(nm_maxz);
+}
+}
+form.reset();
+form.create_window("new map", false, true, last_mode_pos != -2);
+nm_mode = form.create_list("map mode");
+form.add_list_item(nm_mode, "2d - side-view platformer", "2d");
+form.add_list_item(nm_mode, "topdown - bird's-eye view", "topdown");
+form.add_list_item(nm_mode, "3d - full three-dimensional", "3d");
+form.set_list_position(nm_mode, saved_mode_pos, false);
+nm_name = form.create_input_box("name", saved_name);
+nm_owner = form.create_input_box("owner", saved_owner);
+form.set_disallowed_chars(nm_name, disallowed_name, false, "This character is not allowed.");
+nm_minx = form.create_input_box("minimum length", saved_minx);
+nm_maxx = form.create_input_box("maximum length", saved_maxx);
+form.set_disallowed_chars(nm_minx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(nm_maxx, disallowed_nums, false, "This character is not allowed.");
+if(saved_mode_pos == 0)
+{
+nm_miny = form.create_input_box("minimum height", saved_miny);
+nm_maxy = form.create_input_box("maximum height", saved_maxy);
+}
+else if(saved_mode_pos == 1)
+{
+nm_miny = form.create_input_box("minimum width", saved_miny);
+nm_maxy = form.create_input_box("maximum width", saved_maxy);
+}
+else if(saved_mode_pos == 2)
+{
+nm_miny = form.create_input_box("minimum width", saved_miny);
+nm_maxy = form.create_input_box("maximum width", saved_maxy);
+nm_minz = form.create_input_box("minimum height", saved_minz);
+nm_maxz = form.create_input_box("maximum height", saved_maxz);
+form.set_disallowed_chars(nm_minz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(nm_maxz, disallowed_nums, false, "This character is not allowed.");
+}
+if(saved_mode_pos != -1)
+{
+form.set_disallowed_chars(nm_miny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(nm_maxy, disallowed_nums, false, "This character is not allowed.");
+}
+nm_ok = form.create_button("&okay", true);
+nm_cn = form.create_button("&cancel");
+if(last_mode_pos == -2)
+form.focus(nm_mode);
+else
+form.focus_silently(nm_mode);
+last_mode_pos = saved_mode_pos;
+}
+wait(5);
+form.monitor();
+int cur_mode_pos = form.get_list_position(nm_mode);
+if(cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(nm_cn))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(nm_ok))
+{
+if(saved_mode_pos == -1)
+{
+speak("Map mode is required.");
+form.focus(nm_mode);
+continue;
+}
+if(form.get_text(nm_name) == "")
+{
+speak("Name is required.");
+form.focus(nm_name);
+continue;
+}
+if(form.get_text(nm_owner) == "")
+{
+speak("Owner is required.");
+form.focus(nm_owner);
+continue;
+}
+if(form.get_text(nm_minx) == "")
+{
+speak("Minimum length is required.");
+form.focus(nm_minx);
+continue;
+}
+if(form.get_text(nm_maxx) == "")
+{
+speak("Maximum length is required.");
+form.focus(nm_maxx);
+continue;
+}
+if(form.get_text(nm_miny) == "")
+{
+speak((saved_mode_pos == 0) ? "Minimum height is required." : "Minimum width is required.");
+form.focus(nm_miny);
+continue;
+}
+if(form.get_text(nm_maxy) == "")
+{
+speak((saved_mode_pos == 0) ? "Maximum height is required." : "Maximum width is required.");
+form.focus(nm_maxy);
+continue;
+}
+if(saved_mode_pos == 2)
+{
+if(form.get_text(nm_minz) == "")
+{
+speak("Minimum height is required.");
+form.focus(nm_minz);
+continue;
+}
+if(form.get_text(nm_maxz) == "")
+{
+speak("Maximum height is required.");
+form.focus(nm_maxz);
+continue;
+}
+}
+string new_name = form.get_text(nm_name);
+string new_owner = form.get_text(nm_owner);
+string new_mode = (saved_mode_pos == 0) ? "2d" : (saved_mode_pos == 1 ? "topdown" : "3d");
+double new_minx = string_to_number(form.get_text(nm_minx));
+double new_maxx = string_to_number(form.get_text(nm_maxx));
+double new_miny = string_to_number(form.get_text(nm_miny));
+double new_maxy = string_to_number(form.get_text(nm_maxy));
+if(directory_exists("data/maps/decompiled/"+new_name))
+{
+dlg("Error. A map with this name already exists. Press enter to continue.");
+form.focus(nm_name);
+continue;
+}
+create_map(new_name, new_owner, new_mode, new_minx, new_maxx, new_miny, new_maxy);
+load_map(new_name, new_owner);
+return true;
+}
+}
+return false;
+}
 void mapmenu()
 {
 setupmenu(true);
@@ -223,33 +402,11 @@ decompile_map();
 if(buildem=="nm")
 {
 m.fade_music();
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string name=vd.input_box("","Enter the name of this map.");
-string name2=vd.input_box("","Enter the owner of this map. Press enter to use the default owner.", defowner);
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum length of this map.");
-string mx2=vd.input_box("","Enter the maximum length of this map.");
-string my=vd.input_box("","Enter the minimum height of this map.");
-string my2=vd.input_box("","Enter the maximum height of this map.");
-if(mapname=="" and mapowner=="" and minx=="" and maxx=="" and miny=="" and maxy=="")
-return;
-string mapname=name;
-string mapowner=name2;
-double minx=string_to_number(mx);
-double maxx=string_to_number(mx2);
-double miny=string_to_number(my);
-double maxy=string_to_number(my2);
-if(directory_exists("data/maps/decompiled/"+mapname))
-{
-dlg("Error. A map with this name already exists. Press enter to continue.");
-mapmenu();
-}
-else
-{
-create_map(mapname, mapowner, minx, maxx, miny, maxy);
-load_map(mapname, mapowner);
+if(new_map_form())
 game();
-}
+else
+mapmenu();
+return;
 }
 if(buildem=="back")
 {
@@ -280,10 +437,15 @@ return;
 if(mapem=="addline")
 {
 resume_pools();
-mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "ab");
-mapdata=mapper.read();
 vd.set_disallowed_chars("", false, "This character is not allowed.");
 string newline=vd.input_box("","Enter the line you'd like to add.");
+if(string_starts_with(newline, "mode "))
+{
+speak("Mode lines cannot be added. The map already has one.");
+return;
+}
+mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "ab");
+mapdata=mapper.read();
 mapper.write("\r\n"+newline);
 mapper.close();
 load_map(mapname, mapowner);
@@ -310,13 +472,13 @@ resume_pools();
 speak("canceled");
 return;
 }
-if(mres>=1 and mres<=5)
+if(mres>=1 and mres<=6)
 {
 resume_pools();
 speak("This line cannot be removed.");
 return;
 }
-if(mres>5 and mres<=filtered_lines.length())
+if(mres>6 and mres<=filtered_lines.length())
 {
 uint original_index=original_lines[mres-1];
 lines.remove_at(original_index);
@@ -360,6 +522,12 @@ return;
 if(mres>0 and mres<=filtered_lines.length())
 {
 uint original_index=original_lines[mres-1];
+if(string_starts_with(filtered_lines[mres-1], "mode "))
+{
+resume_pools();
+speak("The mode line cannot be edited.");
+return;
+}
 vd.set_disallowed_chars("", false, "This character is not allowed.");
 string final=vd.input_box("","line editor", lines[original_index]);
 lines[original_index]=final; 
@@ -570,32 +738,7 @@ load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
 if(mapem=="nm")
 {
 resume_pools();
-vd.set_disallowed_chars("", false, "This character is not allowed.");
-string name=vd.input_box("","Enter the name of this map.");
-string name2=vd.input_box("","Enter the owner of this map. Press enter to use the default owner.", defowner);
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string mx=vd.input_box("","Enter the minimum length of this map.");
-string mx2=vd.input_box("","Enter the maximum length of this map.");
-string my=vd.input_box("","Enter the minimum height of this map.");
-string my2=vd.input_box("","Enter the maximum height of this map.");
-if(mapname=="" and mapowner=="" and minx=="" and maxx=="" and miny=="" and maxy=="")
-return;
-string mapname=name;
-string mapowner=name2;
-double minx=string_to_number(mx);
-double maxx=string_to_number(mx2);
-double miny=string_to_number(my);
-double maxy=string_to_number(my2);
-if(directory_exists("data/maps/decompiled/"+mapname))
-{
-dlg("Error. A map with this name already exists. Press enter to continue.");
-return;
-}
-else
-{
-create_map(mapname, mapowner, minx, maxx, miny, maxy);
-load_map(mapname, mapowner);
-}
+new_map_form();
 }
 if(mapem=="rcm")
 {

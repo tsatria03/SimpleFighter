@@ -117,7 +117,7 @@ Shift plus letter V: Opens the points menu, if pressed.
 Creating sound packs.
 This game allows you to create customizeable global and map-based sound packs that you can use in various situations.
 
-Character sound listing, general: 30 total.
+Character sound listing, general: 27 total.
 bleed.ogg: This sound is played when your character bleeds.
 buy.ogg: This sound is played when your character purchases upgrades.
 break.ogg: This sound is played when a character breaks a certain bone in their body.
@@ -144,10 +144,7 @@ resume.ogg: This sound is played when your character resumes the game.
 take.ogg: This sound is played when your character recycles an item from their inventory.
 rise.ogg: This sound is played when your character is jumping.
 swing.ogg: This sound is played when your character swings a melee weapon.
-telxy.ogg: This sound is played when your character teleports on the x and y axes of a map.
 turn.ogg: This sound is played when your character turns on the spot.
-xtel.ogg: This sound is played when your character teleports on the x axes of a map.
-ytel.ogg: This sound is played when your character teleports on the y axes of a map.
 
 Keyboard sound listing: 5 total.
 cap.ogg: This sound is played when a capital letter is being typed on the keyboard.
