@@ -45,6 +45,32 @@ return;
 }
 if (base_command == "go" && !map_is_compiled)
 {
+if (mapmode == "3d")
+{
+if (parsed.length() == 4)
+{
+double x = stn(parsed[1]);
+double y = stn(parsed[2]);
+double z = stn(parsed[3]);
+gop("me", "", x, y, z);
+}
+else if (parsed.length() == 6)
+{
+string entity = parsed[1];
+string id = parsed[2];
+double x = stn(parsed[3]);
+double y = stn(parsed[4]);
+double z = stn(parsed[5]);
+gop(entity, id, x, y, z);
+}
+else
+{
+speak("Invalid command syntax. Usage: /go x y z, or /go entity id x y z.");
+if(!in_commandstack) game();
+}
+}
+else
+{
 if (parsed.length() == 3)
 {
 double x = stn(parsed[1]);
@@ -63,6 +89,7 @@ else
 {
 speak("Invalid command syntax. Usage: /go x y, or /go entity id x y.");
 if(!in_commandstack) game();
+}
 }
 }
 else if (base_command == "draw" || base_command == "dr")
@@ -139,7 +166,7 @@ if(npcs[i].category==target_cat && npcs[i].subtype==id && npcs[i].x==x && npcs[i
 {
 sound_pool@ pool = npc_pool(npcs[i].category);
 pool.destroy_sound(npcs[i].mainsound);
-npcs[i].defsound=pool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype+"/*death*"),me.x,me.y,0,npcs[i].x,npcs[i].y,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
+npcs[i].defsound=pool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype+"/*death*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
 if(xpmod>=1) xp+=npcs[i].xpvalue*npcs[i].level*xpmod;
 kills+=1;
 int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
@@ -149,7 +176,7 @@ string chosen_folder = random_string(heal_folders);
 string[] healtypes = get_map_sound_folders("objects/items/" + chosen_folder + "/*");
 if(healtypes.length()!=0 and npcs[i].dropitem==true) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true);
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*kill*"),false);
-p.play_3d(get_pack_sound("misc/*punch*"),me.x,me.y,0,npcs[i].x,npcs[i].y,0,0,false);
+p.play_3d(get_pack_sound("misc/*punch*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,0,0,false);
 speak("Killed the "+entity+" " + id + " at position " + x + ", " + y + ".");
 clean_dead_npc_bullets(int(i));
 npcs.remove_at(i);
@@ -185,7 +212,7 @@ pool.destroy_sound(npcs[i].refsound);
 pool.destroy_sound(npcs[i].refsound2);
 pool.destroy_sound(npcs[i].hurtsound);
 }
-npcs[i].defsound=pool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype+"/*death*"),me.x,me.y,0,npcs[i].x,npcs[i].y,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
+npcs[i].defsound=pool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype+"/*death*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
 if(xpmod>=1) xp+=npcs[i].xpvalue*npcs[i].level*xpmod;
 kills+=1;
 int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
@@ -195,7 +222,7 @@ string chosen_folder = random_string(heal_folders);
 string[] healtypes = get_map_sound_folders("objects/items/" + chosen_folder + "/*");
 if(healtypes.length()!=0 and npcs[i].dropitem==true) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true);
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*kill*"),false);
-p.play_3d(get_pack_sound("misc/*punch*"),me.x,me.y,0,npcs[i].x,npcs[i].y,0,0,false);
+p.play_3d(get_pack_sound("misc/*punch*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,0,0,false);
 }
 total_kills++;
 }
@@ -454,11 +481,49 @@ if(!in_commandstack) game();
 }
 else if (base_command == "cm"  && !map_is_compiled || base_command == "changemap" && !map_is_compiled)
 {
+if (mapmode == "3d")
+{
+if (parsed.length() == 5)
+{
+string mapname=parsed[1];
+double x = stn(parsed[2]);
+double y = stn(parsed[3]);
+double z = stn(parsed[4]);
+if (directory_exists("data/maps/decompiled/" + mapname))
+{
+if (x >= minx && x <= maxx && y >= miny && y <= maxy && z >= minz && z <= maxz)
+{
+load_map(mapname, mapowner, force_compiled:map_is_compiled, force_spawned:true);
+}
+}
+else
+{
+speak("Map " + mapname + " not found. Please check the name and try again.");
+if(!in_commandstack) game();
+}
+if(x >= minx && x <= maxx && y >= miny && y <= maxy && z >= minz && z <= maxz)
+{
+gop("me", "", x, y, z);
+}
+else
+{
+speak("Invalid coordinates. Please make sure x, y, and z are within the map boundaries.");
+if(!in_commandstack) game();
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /changemap mapname x y z, or /cm mapname x y z.");
+if(!in_commandstack) game();
+}
+}
+else
+{
 if (parsed.length() == 4)
 {
 string mapname=parsed[1];
-int x = stn(parsed[2]);
-int y = stn(parsed[3]);
+double x = stn(parsed[2]);
+double y = stn(parsed[3]);
 if (directory_exists("data/maps/decompiled/" + mapname))
 {
 if (x >= minx && x <= maxx && y >= miny && y <= maxy)
@@ -485,6 +550,7 @@ else
 {
 speak("Invalid command syntax. Usage: /changemap mapname x y, or /cm mapname x y.");
 if(!in_commandstack) game();
+}
 }
 }
 else if (base_command == "nm"  && !map_is_compiled || base_command == "newmap" && !map_is_compiled)

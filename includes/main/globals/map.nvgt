@@ -99,9 +99,14 @@ destroy_all_vanishing_platforms();
 destroy_all_vehicles();
 }
 
-void gop(string entity,string id,double x,double y)
+void gop(string entity,string id,double x,double y,double z=0)
 {
 if(x<minx or x>maxx or y<miny or y>maxy)
+{
+speak("You can't move yourself or an entity out of map boundries.");
+return;
+}
+if(mapmode == "3d" and (z<minz or z>maxz))
 {
 speak("You can't move yourself or an entity out of map boundries.");
 return;
@@ -110,12 +115,14 @@ if (entity == "me")
 {
 me.x=x;
 me.y=y;
+me.z=z;
 fallcounter=0;
 jumping=0;
 falling=false;
 if(fallcounter>=0) p.destroy_sound(fallslot);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*move*"),false);
-speak("Player moved to "+me.x+", "+me.y+".");
+if(mapmode == "3d") speak("Player moved to "+me.x+", "+me.y+", "+me.z+".");
+else speak("Player moved to "+me.x+", "+me.y+".");
 }
 else if(entity=="animal" || entity=="boss" || entity=="helper" || entity=="human" || entity=="robot" || entity=="special" || entity=="zombie")
 {
