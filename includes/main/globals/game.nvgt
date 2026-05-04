@@ -372,27 +372,27 @@ komlogmenu();
 }
 if(key_repeating(KEY_LEFT) and spiable==true)
 {
-spy("left");
+key_spy_left();
 }
 if(key_repeating(KEY_RIGHT) and spiable==true)
 {
-spy("right");
+key_spy_right();
 }
 if(key_repeating(KEY_DOWN) and spiable==true)
 {
-spy("backward");
+key_spy_down();
 }
 if(key_repeating(KEY_UP) and spiable==true)
 {
-spy("forward");
+key_spy_up();
 }
-if(key_repeating(KEY_PAGEDOWN) and spiable==true)
+if(shift_is_down() and key_repeating(KEY_PAGEDOWN) and spiable==true)
 {
-spy("down");
+key_spy_pgdown();
 }
-if(key_repeating(KEY_PAGEUP) and spiable==true)
+if(shift_is_down() and key_repeating(KEY_PAGEUP) and spiable==true)
 {
-spy("up");
+key_spy_pgup();
 }
 }
 if((key_down(KEY_G) || camdext) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
@@ -412,7 +412,7 @@ if(key_repeating(KEY_Y) and cammable==true)
     else
         speak("Dexterity camera disabled.");
 }
-if (key_pressed(KEY_J) and cammable==true)
+if ((key_down(KEY_G) || camdext) and key_pressed(KEY_J) and cammable==true)
 {
     if (sel_left_set)
         speak("Left marker is already set to " + sel_left);
@@ -424,7 +424,7 @@ camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"
         speak("Left marker set to " + cam.x);
     }
 }
-if (key_pressed(KEY_L) and cammable==true)
+if ((key_down(KEY_G) || camdext) and key_pressed(KEY_L) and cammable==true)
 {
     if (sel_right_set)
         speak("Right marker is already set to " + sel_right);
@@ -436,28 +436,82 @@ camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"
         speak("Right marker set to " + cam.x);
     }
 }
-if (key_pressed(KEY_K) and cammable==true)
+if ((key_down(KEY_G) || camdext) and !shift_is_down() and key_pressed(KEY_K) and cammable==true)
+{
+    if (mapmode == "3d")
+    {
+        if (sel_back_set)
+            speak("Back marker is already set to " + sel_back);
+        else
+        {
+            sel_back = cam.y;
+            sel_back_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Back marker set to " + cam.y);
+        }
+    }
+    else
+    {
+        if (sel_bottom_set)
+            speak("Bottom marker is already set to " + sel_bottom);
+        else
+        {
+            sel_bottom = cam.y;
+            sel_bottom_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Bottom marker set to " + cam.y);
+        }
+    }
+}
+if ((key_down(KEY_G) || camdext) and !shift_is_down() and key_pressed(KEY_I) and cammable==true)
+{
+    if (mapmode == "3d")
+    {
+        if (sel_front_set)
+            speak("Front marker is already set to " + sel_front);
+        else
+        {
+            sel_front = cam.y;
+            sel_front_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Front marker set to " + cam.y);
+        }
+    }
+    else
+    {
+        if (sel_top_set)
+            speak("Top marker is already set to " + sel_top);
+        else
+        {
+            sel_top = cam.y;
+            sel_top_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Top marker set to " + cam.y);
+        }
+    }
+}
+if ((key_down(KEY_G) || camdext) and shift_is_down() and key_pressed(KEY_K) and cammable==true and mapmode == "3d")
 {
     if (sel_bottom_set)
         speak("Bottom marker is already set to " + sel_bottom);
     else
     {
-        sel_bottom = cam.y;
+        sel_bottom = cam.z;
         sel_bottom_set = true;
-camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
-        speak("Bottom marker set to " + cam.y);
+        camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+        speak("Bottom marker set to " + cam.z);
     }
 }
-if (key_pressed(KEY_I) and cammable==true)
+if ((key_down(KEY_G) || camdext) and shift_is_down() and key_pressed(KEY_I) and cammable==true and mapmode == "3d")
 {
     if (sel_top_set)
         speak("Top marker is already set to " + sel_top);
     else
     {
-        sel_top = cam.y;
+        sel_top = cam.z;
         sel_top_set = true;
-camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
-        speak("Top marker set to " + cam.y);
+        camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+        speak("Top marker set to " + cam.z);
     }
 }
 if (key_pressed(KEY_SEMICOLON) and cammable==true)
@@ -923,7 +977,7 @@ if(key_pressed(KEY_PERIOD))
 {
 speak("Your maximum y position is"+maxy+"tiles");
 }
-if(key_down(KEY_SPACE) and key_up(KEY_G)  and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and autojump==1 and jumping==0 and jumpable==true and falling==false and doormove==false  and elvmove==false)
+if(key_down(KEY_SPACE) and key_up(KEY_G)  and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and autojump==1 and jumping==0 and jumpable==true and falling==false and doormove==false  and elvmove==false and mapmode != "topdown")
 {
 if(onhook && hk.hook_direction == 3)
 {
@@ -1029,7 +1083,7 @@ atapex=true;
 }
 }
 }
-if(key_pressed(KEY_SPACE) and key_up(KEY_G)  and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and autojump==0 and jumping==0 and jumpable==true and falling==false and doormove==false  and elvmove==false)
+if(key_pressed(KEY_SPACE) and key_up(KEY_G)  and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and autojump==0 and jumping==0 and jumpable==true and falling==false and doormove==false  and elvmove==false and mapmode != "topdown")
 {
 if(onhook && hk.hook_direction == 3)
 {
