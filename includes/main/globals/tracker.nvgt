@@ -7,8 +7,9 @@ bool tracking_active()
     return tracking_type != "" && tracking_index >= 0;
 }
 
-bool tracking_get_anchor(double &out x, double &out y)
+bool tracking_get_anchor(double &out x, double &out y, double &out z)
 {
+    z = 0;
     if (!tracking_active()) return false;
     if (tracking_type == "aircraft")
     {
@@ -33,7 +34,7 @@ bool tracking_get_anchor(double &out x, double &out y)
     if (tracking_type == "platform")
     {
         if (tracking_index >= int(platforms.length())) return false;
-        x = platforms[tracking_index].minx; y = platforms[tracking_index].miny; return true;
+        x = platforms[tracking_index].minx; y = platforms[tracking_index].miny; z = platforms[tracking_index].z; return true;
     }
     if (tracking_type == "projectile")
     {
@@ -79,7 +80,9 @@ bool tracking_player_at_target()
     if (tracking_type == "platform")
     {
         if (tracking_index >= int(platforms.length())) return false;
-        return me.x >= platforms[tracking_index].minx && me.x <= platforms[tracking_index].maxx && me.y >= platforms[tracking_index].miny && me.y <= platforms[tracking_index].maxy;
+        bool xy_match = me.x >= platforms[tracking_index].minx && me.x <= platforms[tracking_index].maxx && me.y >= platforms[tracking_index].miny && me.y <= platforms[tracking_index].maxy;
+        if (mapmode == "3d") return xy_match && me.z == platforms[tracking_index].z;
+        return xy_match;
     }
     if (tracking_type == "spike")
     {
@@ -96,9 +99,11 @@ bool tracking_player_at_target()
         if (tracking_index >= int(walls.length())) return false;
         return me.x >= walls[tracking_index].minx && me.x <= walls[tracking_index].maxx && me.y >= walls[tracking_index].miny && me.y <= walls[tracking_index].maxy;
     }
-    double tx, ty;
-    if (!tracking_get_anchor(tx, ty)) return false;
-    return int(me.x) == int(tx) && int(me.y) == int(ty);
+    double tx, ty, tz;
+    if (!tracking_get_anchor(tx, ty, tz)) return false;
+    bool xy_eq = int(me.x) == int(tx) && int(me.y) == int(ty);
+    if (mapmode == "3d") return xy_eq && int(me.z) == int(tz);
+    return xy_eq;
 }
 
 void start_tracking(string type, int index, string label)
@@ -153,20 +158,34 @@ void tracking_speak_position()
         speak("nothing to track");
         return;
     }
-    double tx, ty;
-    if (!tracking_get_anchor(tx, ty))
+    double tx, ty, tz;
+    if (!tracking_get_anchor(tx, ty, tz))
     {
         stop_tracking();
         return;
     }
     int dx = int(tx - me.x);
     int dy = int(ty - me.y);
-    int distance = absolute(dx) + absolute(dy);
+    int dz = int(tz - me.z);
+    int distance = absolute(dx) + absolute(dy) + (mapmode == "3d" ? absolute(dz) : 0);
     string direction = "";
-    if (dy < 0) direction += "below";
-    else if (dy > 0) direction += "above";
-    if (dx < 0) direction += (direction == "" ? "to the left" : " and to the left");
-    else if (dx > 0) direction += (direction == "" ? "to the right" : " and to the right");
+    if (mapmode == "3d")
+    {
+        if (dy < 0) direction += "behind";
+        else if (dy > 0) direction += "in front";
+        if (dz != 0)
+        {
+            string altitude = (dz < 0) ? "below" : "above";
+            direction = (direction == "") ? altitude : (direction + " and " + altitude);
+        }
+    }
+    else
+    {
+        if (dy < 0) direction += "below";
+        else if (dy > 0) direction += "above";
+    }
+    if (dx < 0) direction = (direction == "") ? "to the left" : (direction + " and to the left");
+    else if (dx > 0) direction = (direction == "") ? "to the right" : (direction + " and to the right");
     if (direction == "") direction = "right here";
     p.play_stationary(get_pack_sound("misc/*tracking*"), false);
     speak(direction + ", " + distance + " feet away.");
@@ -175,8 +194,8 @@ void tracking_speak_position()
 void tracker_loop()
 {
     if (!tracking_active()) return;
-    double tx, ty;
-    if (!tracking_get_anchor(tx, ty))
+    double tx, ty, tz;
+    if (!tracking_get_anchor(tx, ty, tz))
     {
         tracking_type = "";
         tracking_index = -1;
