@@ -2,16 +2,19 @@ objzone@[]objzones(0);
 class objzone
 {
 double minx, maxx, miny, maxy;
+double minz, maxz;
 int spawntime;
 string objtype;
 string objtype2;
 timer spawntimer;
-objzone(double mx,double mx2,double my,double my2,int sp,string it,string it2)
+objzone(double mx,double mx2,double my,double my2,int sp,string it,string it2,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 spawntime=sp;
 objtype=it;
 objtype2=it2;
@@ -21,16 +24,18 @@ void objzoneloop()
 {
 for(uint i=0; i<objzones.length(); i++)
 {
-if(objzones[i].minx<=me.x and objzones[i].maxx>=me.x and objzones[i].miny<=me.y and objzones[i].maxy>=me.y and objzones[i].spawntimer.elapsed>=objzones[i].spawntime)
+bool in_zone = objzones[i].minx<=me.x and objzones[i].maxx>=me.x and objzones[i].miny<=me.y and objzones[i].maxy>=me.y;
+if(mapmode == "3d") in_zone = in_zone and me.z >= objzones[i].minz and me.z <= objzones[i].maxz;
+if(in_zone and objzones[i].spawntimer.elapsed>=objzones[i].spawntime)
 {
 spawn_obj(random(objzones[i].minx, objzones[i].maxx), random(objzones[i].miny, objzones[i].maxy), objzones[i].spawntime, objzones[i].objtype, objzones[i].objtype2, true);
 objzones[i].spawntimer.restart();
 }
 }
 }
-void spawn_objzone(double x1,double x2,double y1,double y2,int sp,string objtype,string objtype2)
+void spawn_objzone(double x1,double x2,double y1,double y2,int sp,string objtype,string objtype2,double minz=0,double maxz=0)
 {
-objzone oz1(x1,x2,y1,y2,sp,objtype,objtype2);
+objzone oz1(x1,x2,y1,y2,sp,objtype,objtype2,minz,maxz);
 objzones.insert_last(oz1);
 }
 void destroy_all_objzones()
@@ -50,16 +55,19 @@ resume_pools();
 return;
 }
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+bool y_uses_back_front = mapmode != "2d";
 string saved_x = sel_left_set ? sel_left : "";
 string saved_x2 = sel_right_set ? sel_right : "";
-string saved_y = sel_bottom_set ? sel_bottom : "";
-string saved_y2 = sel_top_set ? sel_top : "";
+string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_y2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+string saved_mnz = sel_bottom_set ? sel_bottom : "";
+string saved_mxz = sel_top_set ? sel_top : "";
 string saved_sp = "";
 int saved_cat_pos = 0;
 int saved_sub_pos = 0;
 bool do_build = true;
 int last_cat_pos = -1;
-int mx, mx2, my, my2, sp, cat_list, sub_list, ok, cn;
+int mx, mx2, my, my2, mnz, mxz, sp, cat_list, sub_list, ok, cn;
 while(true)
 {
 if(do_build)
@@ -71,6 +79,11 @@ saved_x = form.get_text(mx);
 saved_x2 = form.get_text(mx2);
 saved_y = form.get_text(my);
 saved_y2 = form.get_text(my2);
+if(mapmode == "3d")
+{
+saved_mnz = form.get_text(mnz);
+saved_mxz = form.get_text(mxz);
+}
 saved_sp = form.get_text(sp);
 }
 form.reset();
@@ -79,11 +92,19 @@ mx = form.create_input_box("minimum x", saved_x);
 mx2 = form.create_input_box("maximum x", saved_x2);
 my = form.create_input_box("minimum y", saved_y);
 my2 = form.create_input_box("maximum y", saved_y2);
+mnz = -1; mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", saved_mnz);
+mxz = form.create_input_box("maximum z", saved_mxz);
+}
 sp = form.create_input_box("spawn time", saved_sp);
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 cat_list = form.create_list("category");
 form.add_list_item(cat_list, "health", "health");
@@ -187,6 +208,18 @@ speak("Maximum y is required.");
 form.focus(my2);
 continue;
 }
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
 if(form.get_text(sp) == "")
 {
 speak("Spawn time is required.");
@@ -197,6 +230,8 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(sub_list);
 string btype = (saved_cat_pos == 1) ? "stamina" : (saved_cat_pos == 2 ? "other" : "health");
@@ -207,8 +242,8 @@ else
 btype2 = "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_item_zone(bx, bx2, by, by2, bsp, btype, btype2);
-spawn_objzone(bx, bx2, by, by2, bsp, btype, btype2);
+write_item_zone(bx, bx2, by, by2, bsp, btype, btype2, bmnz, bmxz);
+spawn_objzone(bx, bx2, by, by2, bsp, btype, btype2, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -223,17 +258,27 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-int sp=stn(sd[5]);
-string objtype=sd[6];
-string objtype2=sd[7];
-spawn_objzone(mx, mx2, my, my2, sp, objtype, objtype2);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==10)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+int sp=stn(sd[o]);
+string objtype=sd[o+1];
+string objtype2=sd[o+2];
+spawn_objzone(mx, mx2, my, my2, sp, objtype, objtype2, mnz, mxz);
 }
 
-void write_item_zone(double x1, double x2, double y1, double y2, int speed, string objtype, string objtype2)
+void write_item_zone(double x1, double x2, double y1, double y2, int speed, string objtype, string objtype2, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"item_zone "+x1+" "+x2+" "+y1+" "+y2+" "+speed+" "+objtype+" "+objtype2);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"item_zone "+coords+" "+speed+" "+objtype+" "+objtype2);
 mapper.close();
 }
 
