@@ -2,18 +2,21 @@ dialog@[] dialogs(0);
 class dialog
 {
 double minx, maxx, miny, maxy;
+double minz, maxz;
 string text;
 string dlgtype;
 string mode;
 bool retriggerable;
 bool fired;
 bool was_inside;
-dialog(double mx,double mx2,double my,double my2,string txt,string dlt,string md,bool retrig)
+dialog(double mx,double mx2,double my,double my2,string txt,string dlt,string md,bool retrig,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 text=txt;
 dlgtype=dlt;
 mode=md;
@@ -27,6 +30,7 @@ void dlgloop()
 for(uint i=0; i<dialogs.length(); i++)
 {
 bool inside = (dialogs[i].minx<=me.x and dialogs[i].maxx>=me.x and dialogs[i].miny<=me.y and dialogs[i].maxy>=me.y);
+if(mapmode == "3d") inside = inside and me.z >= dialogs[i].minz and me.z <= dialogs[i].maxz;
 bool can_fire = dialogs[i].retriggerable or !dialogs[i].fired;
 bool step_trigger = (dialogs[i].mode == "step" or dialogs[i].mode == "both");
 bool press_trigger = (dialogs[i].mode == "press" or dialogs[i].mode == "both");
@@ -47,9 +51,9 @@ resume_pools();
 dialogs[i].was_inside = inside;
 }
 }
-void spawn_dialog(double x1,double x2,double y1,double y2,string text,string dlgtype,string mode,bool retriggerable)
+void spawn_dialog(double x1,double x2,double y1,double y2,string text,string dlgtype,string mode,bool retriggerable,double minz=0,double maxz=0)
 {
-dialog dlg1(x1,x2,y1,y2,text,dlgtype,mode,retriggerable);
+dialog dlg1(x1,x2,y1,y2,text,dlgtype,mode,retriggerable,minz,maxz);
 dialogs.insert_last(dlg1);
 }
 void destroy_all_dialogs()
@@ -69,15 +73,26 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("dialog", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int text = form.create_input_box("text");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 int dlg_list = form.create_list("dialog sound");
 form.add_list_item(dlg_list, "none", "none");
 for(uint i = 0; i < dlgs.length(); i++)
@@ -165,6 +180,18 @@ speak("Maximum y is required.");
 form.focus(my2);
 continue;
 }
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
 if(form.get_text(text) == "")
 {
 speak("Text is required.");
@@ -175,6 +202,8 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 string btxt = form.get_text(text);
 bool bretrig = form.is_checked(retrigger_cb);
 int p = form.get_list_position(dlg_list);
@@ -185,8 +214,8 @@ if(mp == 1) bmode = "press";
 else if(mp == 2) bmode = "both";
 t.destroy_sound(prevslot);
 resume_pools();
-write_dialog(bx, bx2, by, by2, btxt, btype, bmode, bretrig);
-spawn_dialog(bx, bx2, by, by2, btxt, btype, bmode, bretrig);
+write_dialog(bx, bx2, by, by2, btxt, btype, bmode, bretrig, bmnz, bmxz);
+spawn_dialog(bx, bx2, by, by2, btxt, btype, bmode, bretrig, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -201,17 +230,27 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string txt=join_string_array(sd, 5, sd.length()-3);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string txt=join_string_array(sd, o, sd.length()-3);
 string dlgtype=sd[sd.length()-3];
 string mode=sd[sd.length()-2];
 bool retrig=string_to_bool(sd[sd.length()-1]);
-spawn_dialog(mx, mx2, my, my2, txt, dlgtype, mode, retrig);
+spawn_dialog(mx, mx2, my, my2, txt, dlgtype, mode, retrig, mnz, mxz);
 }
 
-void write_dialog(double x1, double x2, double y1, double y2, string txt, string dlgtype, string mode, bool retriggerable)
+void write_dialog(double x1, double x2, double y1, double y2, string txt, string dlgtype, string mode, bool retriggerable, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"dialog "+x1+" "+x2+" "+y1+" "+y2+" "+txt+" "+dlgtype+" "+mode+" "+retriggerable);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") coords += " "+minz+" "+maxz;
+mapper.write("\r\n"+"dialog "+coords+" "+txt+" "+dlgtype+" "+mode+" "+retriggerable);
 mapper.close();
 }

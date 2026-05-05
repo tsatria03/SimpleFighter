@@ -3,18 +3,22 @@ class travelpoint
 {
 int travsound;
 double minx,maxx,miny,maxy;
-int destx,desty;
+double minz,maxz;
+int destx,desty,destz;
 string destmap;
 string endtext;
-travelpoint(double mx,double mx2,double my,double my2,string dm,int dx,int dy,string et)
+travelpoint(double mx,double mx2,double my,double my2,string dm,int dx,int dy,string et,double mnz=0,double mxz=0,int dz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 destmap=dm;
 destx=dx;
 desty=dy;
+destz=dz;
 endtext=et;
 }
 }
@@ -22,19 +26,22 @@ void travelcheck()
 {
 for(uint i=0; i<travelpoints.length(); i++)
 {
-if(travelpoints[i].minx<=me.x and travelpoints[i].maxx>=me.x and travelpoints[i].miny<=me.y and travelpoints[i].maxy>=me.y and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool in_trigger = travelpoints[i].minx<=me.x and travelpoints[i].maxx>=me.x and travelpoints[i].miny<=me.y and travelpoints[i].maxy>=me.y;
+if(mapmode == "3d") in_trigger = in_trigger and me.z >= travelpoints[i].minz and me.z <= travelpoints[i].maxz;
+if(in_trigger and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 me.x=travelpoints[i].destx;
 me.y=travelpoints[i].desty;
+if(mapmode == "3d") me.z = travelpoints[i].destz;
 travelpoints[i].travsound=mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*finish*"),false);
 speak(travelpoints[i].endtext);
 load_map(travelpoints[i].destmap,mapowner);
 }
 }
 }
-void spawn_travelpoint(double minx,double maxx,double miny,double maxy,string destmap,int destx,int desty,string endtext)
+void spawn_travelpoint(double minx,double maxx,double miny,double maxy,string destmap,int destx,int desty,string endtext,double mnz=0,double mxz=0,int dz=0)
 {
-travelpoint tp1(minx,maxx,miny,maxy,destmap,destx,desty,endtext);
+travelpoint tp1(minx,maxx,miny,maxy,destmap,destx,desty,endtext,mnz,mxz,dz);
 travelpoints.insert_last(tp1);
 }
 void destroy_all_travelpoints()
@@ -46,21 +53,35 @@ void build_travelpoint()
 {
 form.reset();
 form.create_window("travelpoint", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my=form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2=form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my=form.create_input_box("minimum y", saved_my);
+int my2=form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int dmap=form.create_input_box("destination map");
 int dx=form.create_input_box("destination x", sel_left_set ? sel_left : "");
-int dy=form.create_input_box("destination y", sel_bottom_set ? sel_bottom : "");
+int dy=form.create_input_box("destination y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int dz=-1;
+if(mapmode == "3d") dz=form.create_input_box("destination z", sel_bottom_set ? sel_bottom : "");
 int dtext=form.create_input_box("destination text");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(dx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(dy, disallowed_chars, false, "This character is not allowed.");
+if(dz != -1) form.set_disallowed_chars(dz, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -110,6 +131,16 @@ else if(form.get_text(my2)=="")
 speak("Maximum y is required.");
 form.focus(my2);
 }
+else if(mnz != -1 && form.get_text(mnz)=="")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+}
+else if(mxz != -1 && form.get_text(mxz)=="")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+}
 else if(form.get_text(dmap)=="")
 {
 speak("Destenation map is required.");
@@ -125,6 +156,11 @@ else if(form.get_text(dy)=="")
 speak("Destenation y is required.");
 form.focus(dy);
 }
+else if(dz != -1 && form.get_text(dz)=="")
+{
+speak("Destenation z is required.");
+form.focus(dz);
+}
 else if(form.get_text(dtext)=="")
 {
 speak("Destenation text is required.");
@@ -132,9 +168,12 @@ form.focus(dtext);
 }
 else
 {
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+int bdz = (dz != -1) ? int(string_to_number(form.get_text(dz))) : 0;
 resume_pools();
-write_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2);
-spawn_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2);
+write_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2, bmnz, bmxz, bdz);
+spawn_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2, bmnz, bmxz, bdz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -150,17 +189,36 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string destmap=sd[5];
-int destx=stn(sd[6]);
-int desty=stn(sd[7]);
-string endtext=sd[8];
-spawn_travelpoint(mx, mx2, my, my2, destmap, destx, desty, endtext);
+double mnz=0, mxz=0;
+int dz=0;
+int o=5;
+if(sd.length()==12)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string destmap=sd[o];
+int destx=stn(sd[o+1]);
+int desty=stn(sd[o+2]);
+int extra = 0;
+if(sd.length()==12)
+{
+dz=stn(sd[o+3]);
+extra = 1;
+}
+string endtext=sd[o+3+extra];
+spawn_travelpoint(mx, mx2, my, my2, destmap, destx, desty, endtext, mnz, mxz, dz);
 }
 
-void write_travelpoint(double x1, double x2, double y1, double y2, string destmap, int destx, int desty, string endtext)
+void write_travelpoint(double x1, double x2, double y1, double y2, string destmap, int destx, int desty, string endtext, double minz=0, double maxz=0, int destz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"travelpoint "+x1+" "+x2+" "+y1+" "+y2+" "+destmap+" "+destx+" "+desty+" "+endtext);
+string trigger=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") trigger += " "+minz+" "+maxz;
+string dest=destmap+" "+destx+" "+desty;
+if(mapmode == "3d") dest += " "+destz;
+mapper.write("\r\n"+"travelpoint "+trigger+" "+dest+" "+endtext);
 mapper.close();
 }
