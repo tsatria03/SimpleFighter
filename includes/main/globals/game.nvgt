@@ -502,10 +502,13 @@ if (key_pressed(KEY_APOSTROPHE) and cammable==true)
 if(key_pressed(KEY_R) and cammable==true)
 {
     bool is_3d = mapmode == "3d";
+    bool is_topdown = mapmode == "topdown";
     bool y_is_depth = mapmode != "2d";
     bool hazard_found = false;
     string tile_lookup = is_3d ? platform_tile_at(cam.x, cam.y, cam.z) : gct(cam.x, cam.y);
-    string tiletype = (tile_lookup == "") ? "air" : tile_lookup;
+    bool no_tile = tile_lookup == "";
+    bool suppress_air = is_topdown && no_tile;
+    string tiletype = no_tile ? "air" : tile_lookup;
     int dx = cam.x - me.x;
     int dy = cam.y - me.y;
     int dz = int(cam.z - me.z);
@@ -561,7 +564,8 @@ if(key_pressed(KEY_R) and cammable==true)
         if(cam_in_hazard(i))
         {
             hazard_found = true;
-            speak(tiletype + " with " + hazards[i].hazardtype + " hazard, " + coords + ". " + pos);
+            if(suppress_air) speak(hazards[i].hazardtype + " hazard, " + coords + ". " + pos);
+            else speak(tiletype + " with " + hazards[i].hazardtype + " hazard, " + coords + ". " + pos);
             break;
         }
     }
@@ -569,9 +573,15 @@ if(key_pressed(KEY_R) and cammable==true)
     {
         bool on_player = is_3d ? (me.x == cam.x && me.y == cam.y && me.z == cam.z) : (me.x == cam.x && me.y == cam.y);
         if(on_player)
-            speak(tiletype + " with player, " + coords + ". " + pos);
+        {
+            if(suppress_air) speak("player, " + coords + ". " + pos);
+            else speak(tiletype + " with player, " + coords + ". " + pos);
+        }
         else
-            speak(tiletype + ", " + coords + ". " + pos);
+        {
+            if(suppress_air) speak(coords + ". " + pos);
+            else speak(tiletype + ", " + coords + ". " + pos);
+        }
     }
 }
 if(key_repeating(KEY_M) and cammable==true)
