@@ -5,21 +5,38 @@ bool cam_in_zone;
 bool player_in_zone;
 int safesound;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 string safetype;
-safezone(double mx,double mx2,double my,double my2,string sft)
+safezone(double mx,double mx2,double my,double my2,string sft,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 safetype=sft;
-player_in_zone = (minx <= me.x && maxx >= me.x && miny <= me.y && maxy >= me.y);
+bool xy_in = (minx <= me.x && maxx >= me.x && miny <= me.y && maxy >= me.y);
+bool z_in = (mapmode != "3d") || (me.z >= minz && me.z <= maxz);
+player_in_zone = xy_in && z_in;
 cam_in_zone=true;
 if (player_in_zone)
 {
 safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safetype+"/*in*"),false);
 }
 }
+}
+bool player_in_safezone(uint i)
+{
+if(!(safezones[i].minx<=me.x and safezones[i].maxx>=me.x and safezones[i].miny<=me.y and safezones[i].maxy>=me.y)) return false;
+if(mapmode == "3d" and (me.z < safezones[i].minz or me.z > safezones[i].maxz)) return false;
+return true;
+}
+bool cam_in_safezone(uint i)
+{
+if(!(safezones[i].minx<=cam.x and safezones[i].maxx>=cam.x and safezones[i].miny<=cam.y and safezones[i].maxy>=cam.y)) return false;
+if(mapmode == "3d" and (cam.z < safezones[i].minz or cam.z > safezones[i].maxz)) return false;
+return true;
 }
 bool is_in_safe(double x,double y)
 {
@@ -32,9 +49,9 @@ return true;
 }
 return false;
 }
-void spawn_safezone(double x1,double x2,double y1,double y2,string safetype)
+void spawn_safezone(double x1,double x2,double y1,double y2,string safetype,double minz=0,double maxz=0)
 {
-safezone sz1(x1,x2,y1,y2,safetype);
+safezone sz1(x1,x2,y1,y2,safetype,minz,maxz);
 safezones.insert_last(sz1);
 }
 void destroy_all_safezones()
@@ -58,14 +75,25 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("safe zone", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 int safe_list = form.create_list("safe sound");
 form.add_list_item(safe_list, "none", "none");
 for(uint i = 0; i < safes.length(); i++)
@@ -138,16 +166,30 @@ speak("Maximum y is required.");
 form.focus(my2);
 continue;
 }
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int p = form.get_list_position(safe_list);
 string btype = (p > 0) ? safes[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_safe_zone(bx, bx2, by, by2, btype);
-spawn_safezone(bx, bx2, by, by2, btype);
+write_safe_zone(bx, bx2, by, by2, btype, bmnz, bmxz);
+spawn_safezone(bx, bx2, by, by2, btype, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -162,15 +204,25 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string safetype=sd[5];
-spawn_safezone(mx, mx2, my, my2, safetype);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==8)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string safetype=sd[o];
+spawn_safezone(mx, mx2, my, my2, safetype, mnz, mxz);
 }
 
-void write_safe_zone(double x1, double x2, double y1, double y2, string safetype)
+void write_safe_zone(double x1, double x2, double y1, double y2, string safetype, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"safe_zone "+x1+" "+x2+" "+y1+" "+y2+" "+safetype);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"safe_zone "+coords+" "+safetype);
 mapper.close();
 }
 

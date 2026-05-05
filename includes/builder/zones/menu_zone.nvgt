@@ -2,12 +2,15 @@ menuzone@[]menuzones(0);
 class menuzone
 {
 double minx, maxx, miny, maxy;
-menuzone(double mx,double mx2,double my,double my2)
+double minz, maxz;
+menuzone(double mx,double mx2,double my,double my2,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 }
 void menzmenu()
 {
@@ -330,7 +333,9 @@ void menuzoneloop()
 {
 for(uint i=0; i<menuzones.length(); i++)
 {
-if(menuzones[i].minx<=me.x and menuzones[i].maxx>=me.x and menuzones[i].miny<=me.y and menuzones[i].maxy>=me.y and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool in_zone = menuzones[i].minx<=me.x and menuzones[i].maxx>=me.x and menuzones[i].miny<=me.y and menuzones[i].maxy>=me.y;
+if(mapmode == "3d") in_zone = in_zone and me.z >= menuzones[i].minz and me.z <= menuzones[i].maxz;
+if(in_zone and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 if(!map_is_compiled)
 {
@@ -344,9 +349,9 @@ speak("You cannot edit anything on this compiled map.");
 }
 }
 }
-void spawn_menuzone(double x1,double x2,double y1,double y2)
+void spawn_menuzone(double x1,double x2,double y1,double y2,double minz=0,double maxz=0)
 {
-menuzone menz1(x1,x2,y1,y2);
+menuzone menz1(x1,x2,y1,y2,minz,maxz);
 menuzones.insert_last(menz1);
 }
 void destroy_all_menuzones()
@@ -358,15 +363,26 @@ void build_menu_zone()
 {
 form.reset();
 form.create_window("menu zone", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my=form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2=form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my=form.create_input_box("minimum y", saved_my);
+int my2=form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -378,6 +394,8 @@ double x=string_to_number(form.get_text(mx));
 double paxx=string_to_number(form.get_text(mx2));
 double y=string_to_number(form.get_text(my));
 double paxy=string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
@@ -412,11 +430,21 @@ else if(form.get_text(my2)=="")
 speak("Maximum y is required.");
 form.focus(my2);
 }
+else if(mnz != -1 && form.get_text(mnz)=="")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+}
+else if(mxz != -1 && form.get_text(mxz)=="")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+}
 else
 {
 resume_pools();
-write_menu_zone(x, paxx, y, paxy);
-spawn_menuzone(x, paxx, y, paxy);
+write_menu_zone(x, paxx, y, paxy, bmnz, bmxz);
+spawn_menuzone(x, paxx, y, paxy, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -432,13 +460,21 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-spawn_menuzone(mx, mx2, my, my2);
+double mnz=0, mxz=0;
+if(sd.length()==7)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+}
+spawn_menuzone(mx, mx2, my, my2, mnz, mxz);
 }
 
-void write_menu_zone(double x1, double x2, double y1, double y2)
+void write_menu_zone(double x1, double x2, double y1, double y2, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"menu_zone "+x1+" "+x2+" "+y1+" "+y2);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"menu_zone "+coords);
 mapper.close();
 }
