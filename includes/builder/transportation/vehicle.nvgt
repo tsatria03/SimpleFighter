@@ -4,7 +4,7 @@ vehicle@[]vehicles(0);
 class vehicle
 {
 bool fireable, moveable;
-int beepsound, hurtsound, defsound, speedsound, vehsound, turnsound, wepsound;
+int beepsound, hurtsound, defsound, speedsound, vehsound, turnsound, wepsound, stucksound, crashsound;
 double current_pitch = 100;
 double vehhealth;
 double vehmaxhealth;
@@ -45,17 +45,62 @@ void vehloop()
 {
 for(uint i=0; i<vehicles.length(); i++)
 {
-if(vehicles[i].vehdir==1 and vehicles[i].vehtimer.elapsed>=vehicles[i].vehtime and vehicles[i].vehspeed2>0 and vehicles[i].moveable==true)
+if(vehicles[i].vehtimer.elapsed>=vehicles[i].vehtime and vehicles[i].vehspeed2>0 and vehicles[i].moveable==true)
 {
-me.x++;
-vehicles[i].vehx++;
+int dx = 0, dy = 0;
+if(vehicles[i].vehdir == 1) dx = 1;
+else if(vehicles[i].vehdir == 0) dx = -1;
+else if(mapmode != "2d" && vehicles[i].vehdir == 3) dy = 1;
+else if(mapmode != "2d" && vehicles[i].vehdir == 2) dy = -1;
+if(dx != 0 || dy != 0)
+{
+double next_x = me.x + dx;
+double next_y = me.y + dy;
+bool past_edge = (next_x < minx || next_x > maxx || next_y < miny || next_y > maxy);
+bool wall_ahead = !past_edge && (string_contains(gmt(next_x, next_y), "wall", 1) > -1);
+if(past_edge || wall_ahead)
+{
+if(vehicles[i].vehspeed2>=1 and vehicles[i].vehspeed2<=5)
+{
+vehicles[i].stucksound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*hurt*"),false,0,0,0,100,false);
+if(vehicles[i].vehdir == 1) { vehicles[i].vehdir = 0; facing = "left"; }
+else if(vehicles[i].vehdir == 0) { vehicles[i].vehdir = 1; facing = "right"; }
+else if(vehicles[i].vehdir == 3) { vehicles[i].vehdir = 2; facing = "backward"; }
+else if(vehicles[i].vehdir == 2) { vehicles[i].vehdir = 3; facing = "forward"; }
+vehicles[i].vehspeed2 = 0;
 vehicles[i].vehtimer.restart();
 }
-else if(vehicles[i].vehdir==0 and vehicles[i].vehtimer.elapsed>=vehicles[i].vehtime and vehicles[i].vehspeed2>0 and vehicles[i].moveable==true)
+else if(vehicles[i].vehspeed2>=6 and vehicles[i].vehspeed2<=10)
 {
-me.x--;
-vehicles[i].vehx--;
+cammable=true;
+hookable=true;
+jumpable=true;
+moveable=true;
+pauseable=true;
+quittable=true;
+speedable=true;
+spiable=true;
+turnable=true;
+vehpool.destroy_sound(vehicles[i].beepsound);
+vehpool.destroy_sound(vehicles[i].stucksound);
+vehpool.destroy_sound(vehicles[i].vehsound);
+vehicles[i].crashsound=vehpool.play_extended_3d(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*death*"),me.x,me.y,me.z,vehicles[i].vehx,vehicles[i].vehy,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
+vehicles[i].vehspeed2=0;
+invehicle=false;
+vehicles[i].moveable=false;
+vehicles.remove_at(i);
+return;
+}
+}
+else
+{
+me.x += dx;
+me.y += dy;
+vehicles[i].vehx += dx;
+vehicles[i].vehy += dy;
 vehicles[i].vehtimer.restart();
+}
+}
 }
 if(me.x==vehicles[i].vehx and me.y==vehicles[i].vehy and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
@@ -126,17 +171,42 @@ speak(facing);
 vehicles[i].turnsound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*turn*"),false,0,0,0,100,false);
 vehicles[i].vehdir=1;
 }
-if (key_down(KEY_UP) && vehicles[i].vehspeed2 < 10 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].accel_delay && vehicles[i].moveable==true && paused==0)
+if(mapmode != "2d" and key_pressed(KEY_UP) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and vehicles[i].vehdir!=3 and vehicles[i].moveable==true and paused==0)
+{
+facing="forward";
+speak(facing);
+vehicles[i].turnsound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*turn*"),false,0,0,0,100,false);
+vehicles[i].vehdir=3;
+}
+if(mapmode != "2d" and key_pressed(KEY_DOWN) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and vehicles[i].vehdir!=2 and vehicles[i].moveable==true and paused==0)
+{
+facing="backward";
+speak(facing);
+vehicles[i].turnsound=vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*turn*"),false,0,0,0,100,false);
+vehicles[i].vehdir=2;
+}
+bool accel_held, brake_held;
+if(mapmode == "2d")
+{
+accel_held = key_down(KEY_UP);
+brake_held = key_down(KEY_DOWN);
+}
+else
+{
+accel_held = key_down(KEY_W) || key_down(KEY_PAGEUP);
+brake_held = key_down(KEY_S) || key_down(KEY_PAGEDOWN);
+}
+if (accel_held && vehicles[i].vehspeed2 < 10 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].accel_delay && vehicles[i].moveable==true && paused==0)
     {
         vehicles[i].vehspeed2++;
         vehicles[i].slowdown_timer.restart();
     }
-    else if (key_down(KEY_DOWN) && vehicles[i].vehspeed2 > 0 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].brake_delay && vehicles[i].moveable==true && paused==0)
+    else if (brake_held && vehicles[i].vehspeed2 > 0 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].brake_delay && vehicles[i].moveable==true && paused==0)
     {
         vehicles[i].vehspeed2--;
         vehicles[i].slowdown_timer.restart();
     }
-    else if (key_up(KEY_UP) && key_up(KEY_DOWN) && vehicles[i].vehspeed2 > 0 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].accel_delay *2 && vehicles[i].moveable==true && paused==0)
+    else if (!accel_held && !brake_held && vehicles[i].vehspeed2 > 0 && vehicles[i].slowdown_timer.elapsed >= vehicles[i].accel_delay *2 && vehicles[i].moveable==true && paused==0)
     {
         vehicles[i].vehspeed2--;
         vehicles[i].slowdown_timer.restart();
