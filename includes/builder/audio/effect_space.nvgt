@@ -4,16 +4,19 @@ string effect_id;
 class effect_zone
 {
 double minx, maxx, miny, maxy;
+double minz, maxz;
 string zone_id;
 string fx_string;
 string clear_tag;
 effect_zone() {}
-effect_zone(double x1, double x2, double y1, double y2, string id, string fx, string ctag)
+effect_zone(double x1, double x2, double y1, double y2, string id, string fx, string ctag, double mnz=0, double mxz=0)
 {
 minx = x1;
 maxx = x2;
 miny = y1;
 maxy = y2;
+minz = mnz;
+maxz = mxz;
 zone_id = id;
 fx_string = fx;
 clear_tag = ctag;
@@ -22,9 +25,9 @@ clear_tag = ctag;
 
 effect_zone@[] effect_spaces(0);
 
-void spawn_effect_space(double x1, double x2, double y1, double y2, string id, string fx, string ctag)
+void spawn_effect_space(double x1, double x2, double y1, double y2, string id, string fx, string ctag, double mnz=0, double mxz=0)
 {
-effect_spaces.insert_last(effect_zone(x1, x2, y1, y2, id, fx, ctag));
+effect_spaces.insert_last(effect_zone(x1, x2, y1, y2, id, fx, ctag, mnz, mxz));
 }
 
 void destroy_all_effect_spaces()
@@ -36,10 +39,13 @@ void build_effect_space()
 {
 double x, paxx, y, paxy;
 string tiletype;
+bool y_uses_back_front = mapmode != "2d";
 string saved_x1 = sel_left_set ? sel_left : "";
 string saved_x2 = sel_right_set ? sel_right : "";
-string saved_y1 = sel_bottom_set ? sel_bottom : "";
-string saved_y2 = sel_top_set ? sel_top : "";
+string saved_y1 = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_y2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+string saved_z1 = sel_bottom_set ? sel_bottom : "";
+string saved_z2 = sel_top_set ? sel_top : "";
 string saved_id = generate_custom_token(random(5, 10), "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 int saved_effect_pos = 0;
 float[] rev_s = {0.5, 1.5, 0.5, 0.5, 0.5};
@@ -53,7 +59,8 @@ float[] flanger_s = {1.0, 1.0, 0.5, 10, 10, 5};
 bool do_build = true;
 int last_effect_pos = -1;
 int saved_plat_pos = 0;
-int mx, mx2, my, my2, rd, effect_list;
+int mx, mx2, my, my2, mnz, mxz, rd, effect_list;
+mnz = -1; mxz = -1;
 int s1, s2, s3, s4, s5, s6;
 int platile, efok, efcn;
 while (true)
@@ -68,6 +75,8 @@ saved_x1 = form.get_text(mx);
 saved_x2 = form.get_text(mx2);
 saved_y1 = form.get_text(my);
 saved_y2 = form.get_text(my2);
+if(mnz != -1) saved_z1 = form.get_text(mnz);
+if(mxz != -1) saved_z2 = form.get_text(mxz);
 saved_id = form.get_text(rd);
 int sp = form.get_list_position(platile);
 if (sp >= 0) saved_plat_pos = sp;
@@ -140,12 +149,20 @@ mx = form.create_input_box("minimum x", saved_x1);
 mx2 = form.create_input_box("maximum x", saved_x2);
 my = form.create_input_box("minimum y", saved_y1);
 my2 = form.create_input_box("maximum y", saved_y2);
+mnz = -1; mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", saved_z1);
+mxz = form.create_input_box("maximum z", saved_z2);
+}
 rd = form.create_input_box("id", saved_id);
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
 effect_list = form.create_list("e&ffect type");
 form.add_list_item(effect_list, "echo", "echo");
 form.add_list_item(effect_list, "reverb", "reverb");
@@ -373,8 +390,21 @@ else if (form.get_text(rd) == "")
 speak("Id is required.");
 form.focus(rd);
 }
+else if (mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+}
+else if (mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+}
 else
 {
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+string zcoord = (mapmode == "3d") ? (" "+bmnz+" "+bmxz) : "";
 resume_pools();
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif", "ab");
 mapdata = mapper.read();
@@ -385,9 +415,9 @@ effect_params[0] = form.get_slider(s1);
 effect_params[1] = form.get_slider(s2);
 effect_params[2] = form.get_slider(s3);
 effect_params[3] = form.get_slider(s4);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" echo "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 3));
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" echo "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 3));
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$echo:echo4:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":0", "$echo");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$echo:echo4:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":0", "$echo", bmnz, bmxz);
 
 }
 else if (saved_effect_pos == 1)
@@ -398,9 +428,9 @@ effect_params[1] = form.get_slider(s2);
 effect_params[2] = form.get_slider(s3);
 effect_params[3] = form.get_slider(s4);
 effect_params[4] = form.get_slider(s5);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" reverb "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2));
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" reverb "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2));
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$reverb:freeverb:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4], "$reverb");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$reverb:freeverb:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4], "$reverb", bmnz, bmxz);
 }
 else if (saved_effect_pos == 2)
 {
@@ -408,9 +438,9 @@ effect_params.resize(3);
 effect_params[0] = form.get_slider(s1);
 effect_params[1] = form.get_slider(s2);
 effect_params[2] = form.get_slider(s3);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" lowpass "+effect_params[0]+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2));
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" lowpass "+effect_params[0]+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2));
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$lowpass:lowpass:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2], "$lowpass");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$lowpass:lowpass:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2], "$lowpass", bmnz, bmxz);
 }
 else if (saved_effect_pos == 3)
 {
@@ -418,9 +448,9 @@ effect_params.resize(3);
 effect_params[0] = form.get_slider(s1);
 effect_params[1] = form.get_slider(s2);
 effect_params[2] = form.get_slider(s3);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" highpass "+effect_params[0]+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2));
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" highpass "+effect_params[0]+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2));
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$highpass:highpass:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2], "$highpass");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$highpass:highpass:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2], "$highpass", bmnz, bmxz);
 }
 else if (saved_effect_pos == 4)
 {
@@ -431,9 +461,9 @@ effect_params[2] = form.get_slider(s3);
 effect_params[3] = form.get_slider(s4);
 effect_params[4] = form.get_slider(s5);
 effect_params[5] = form.get_slider(s6);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" chorus "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+effect_params[3]+" "+effect_params[4]+" "+effect_params[5]);
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" chorus "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+effect_params[3]+" "+effect_params[4]+" "+effect_params[5]);
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$chorus:chorus:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$chorus");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$chorus:chorus:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$chorus", bmnz, bmxz);
 }
 else if (saved_effect_pos == 5)
 {
@@ -443,9 +473,9 @@ effect_params[1] = form.get_slider(s2);
 effect_params[2] = form.get_slider(s3);
 effect_params[3] = form.get_slider(s4);
 effect_params[4] = form.get_slider(s5);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" distortion "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2));
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" distortion "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2));
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$distortion:distortion:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4], "$distortion");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$distortion:distortion:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4], "$distortion", bmnz, bmxz);
 }
 else if (saved_effect_pos == 6)
 {
@@ -456,9 +486,9 @@ effect_params[2] = form.get_slider(s3);
 effect_params[3] = form.get_slider(s4);
 effect_params[4] = form.get_slider(s5);
 effect_params[5] = form.get_slider(s6);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" phaser "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+effect_params[2]+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2)+" "+effect_params[5]);
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" phaser "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+effect_params[2]+" "+round(effect_params[3], 2)+" "+round(effect_params[4], 2)+" "+effect_params[5]);
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$phaser:phaser:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$phaser");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$phaser:phaser:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$phaser", bmnz, bmxz);
 }
 else if (saved_effect_pos == 7)
 {
@@ -469,9 +499,9 @@ effect_params[2] = form.get_slider(s3);
 effect_params[3] = form.get_slider(s4);
 effect_params[4] = form.get_slider(s5);
 effect_params[5] = form.get_slider(s6);
-mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+" "+effect_id+" flanger "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+effect_params[3]+" "+effect_params[4]+" "+effect_params[5]);
+mapper.write("\r\n"+"effect_space "+x+" "+paxx+" "+y+" "+paxy+zcoord+" "+effect_id+" flanger "+round(effect_params[0], 2)+" "+round(effect_params[1], 2)+" "+round(effect_params[2], 2)+" "+effect_params[3]+" "+effect_params[4]+" "+effect_params[5]);
 mapper.close();
-spawn_effect_space(x, paxx, y, paxy, effect_id, "$flanger:flanger:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$flanger");
+spawn_effect_space(x, paxx, y, paxy, effect_id, "$flanger:flanger:"+effect_params[0]+":"+effect_params[1]+":"+effect_params[2]+":"+effect_params[3]+":"+effect_params[4]+":"+effect_params[5], "$flanger", bmnz, bmxz);
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
@@ -488,81 +518,90 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string id=sd[5];
-string type=sd[6];
-if(type=="reverb" && sd.length()==12)
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
 {
-float dry=stn(sd[7]);
-float wet=stn(sd[8]);
-float size=stn(sd[9]);
-float damp=stn(sd[10]);
-float width=stn(sd[11]);
-spawn_effect_space(mx, mx2, my, my2, id, "$reverb:freeverb:"+dry+":"+wet+":"+size+":"+damp+":"+width, "$reverb");
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
 }
-else if(type=="echo" && sd.length()==11)
+string id=sd[o];
+string type=sd[o+1];
+int p=o+2;
+if(type=="reverb" && int(sd.length())==p+5)
 {
-float dry=stn(sd[7]);
-float wet=stn(sd[8]);
-float feedback=stn(sd[9]);
-float delay=stn(sd[10]);
-spawn_effect_space(mx, mx2, my, my2, id, "$echo:echo4:"+dry+":"+wet+":"+feedback+":"+delay+":0", "$echo");
+float dry=stn(sd[p]);
+float wet=stn(sd[p+1]);
+float size=stn(sd[p+2]);
+float damp=stn(sd[p+3]);
+float width=stn(sd[p+4]);
+spawn_effect_space(mx, mx2, my, my2, id, "$reverb:freeverb:"+dry+":"+wet+":"+size+":"+damp+":"+width, "$reverb", mnz, mxz);
 }
-else if(type=="lowpass" && sd.length()==10)
+else if(type=="echo" && int(sd.length())==p+4)
 {
-float freq=stn(sd[7]);
-float bw=stn(sd[8]);
-float q=stn(sd[9]);
-spawn_effect_space(mx, mx2, my, my2, id, "$lowpass:lowpass:"+freq+":"+bw+":"+q, "$lowpass");
+float dry=stn(sd[p]);
+float wet=stn(sd[p+1]);
+float feedback=stn(sd[p+2]);
+float delay=stn(sd[p+3]);
+spawn_effect_space(mx, mx2, my, my2, id, "$echo:echo4:"+dry+":"+wet+":"+feedback+":"+delay+":0", "$echo", mnz, mxz);
 }
-else if(type=="highpass" && sd.length()==10)
+else if(type=="lowpass" && int(sd.length())==p+3)
 {
-float freq=stn(sd[7]);
-float bw=stn(sd[8]);
-float q=stn(sd[9]);
-spawn_effect_space(mx, mx2, my, my2, id, "$highpass:highpass:"+freq+":"+bw+":"+q, "$highpass");
+float freq=stn(sd[p]);
+float bw=stn(sd[p+1]);
+float q=stn(sd[p+2]);
+spawn_effect_space(mx, mx2, my, my2, id, "$lowpass:lowpass:"+freq+":"+bw+":"+q, "$lowpass", mnz, mxz);
 }
-else if(type=="chorus" && sd.length()==13)
+else if(type=="highpass" && int(sd.length())==p+3)
 {
-float dry=stn(sd[7]);
-float wet=stn(sd[8]);
-float feedback=stn(sd[9]);
-float minsweep=stn(sd[10]);
-float maxsweep=stn(sd[11]);
-float rate=stn(sd[12]);
-spawn_effect_space(mx, mx2, my, my2, id, "$chorus:chorus:"+dry+":"+wet+":"+feedback+":"+minsweep+":"+maxsweep+":"+rate, "$chorus");
+float freq=stn(sd[p]);
+float bw=stn(sd[p+1]);
+float q=stn(sd[p+2]);
+spawn_effect_space(mx, mx2, my, my2, id, "$highpass:highpass:"+freq+":"+bw+":"+q, "$highpass", mnz, mxz);
 }
-else if(type=="distortion" && sd.length()==12)
+else if(type=="chorus" && int(sd.length())==p+6)
 {
-float drive=stn(sd[7]);
-float dry=stn(sd[8]);
-float wet=stn(sd[9]);
-float feedback=stn(sd[10]);
-float volume=stn(sd[11]);
-spawn_effect_space(mx, mx2, my, my2, id, "$distortion:distortion:"+drive+":"+dry+":"+wet+":"+feedback+":"+volume, "$distortion");
+float dry=stn(sd[p]);
+float wet=stn(sd[p+1]);
+float feedback=stn(sd[p+2]);
+float minsweep=stn(sd[p+3]);
+float maxsweep=stn(sd[p+4]);
+float rate=stn(sd[p+5]);
+spawn_effect_space(mx, mx2, my, my2, id, "$chorus:chorus:"+dry+":"+wet+":"+feedback+":"+minsweep+":"+maxsweep+":"+rate, "$chorus", mnz, mxz);
 }
-else if(type=="phaser" && sd.length()==13)
+else if(type=="distortion" && int(sd.length())==p+5)
 {
-float dry=stn(sd[7]);
-float wet=stn(sd[8]);
-float rate=stn(sd[9]);
-float depth=stn(sd[10]);
-float feedback=stn(sd[11]);
-float phase=stn(sd[12]);
-spawn_effect_space(mx, mx2, my, my2, id, "$phaser:phaser:"+dry+":"+wet+":"+rate+":"+depth+":"+feedback+":"+phase, "$phaser");
+float drive=stn(sd[p]);
+float dry=stn(sd[p+1]);
+float wet=stn(sd[p+2]);
+float feedback=stn(sd[p+3]);
+float volume=stn(sd[p+4]);
+spawn_effect_space(mx, mx2, my, my2, id, "$distortion:distortion:"+drive+":"+dry+":"+wet+":"+feedback+":"+volume, "$distortion", mnz, mxz);
 }
-else if(type=="flanger" && sd.length()==13)
+else if(type=="phaser" && int(sd.length())==p+6)
 {
-float dry=stn(sd[7]);
-float wet=stn(sd[8]);
-float feedback=stn(sd[9]);
-float mindelay=stn(sd[10]);
-float maxdelay=stn(sd[11]);
-float rate=stn(sd[12]);
-spawn_effect_space(mx, mx2, my, my2, id, "$flanger:flanger:"+dry+":"+wet+":"+feedback+":"+mindelay+":"+maxdelay+":"+rate, "$flanger");
+float dry=stn(sd[p]);
+float wet=stn(sd[p+1]);
+float rate=stn(sd[p+2]);
+float depth=stn(sd[p+3]);
+float feedback=stn(sd[p+4]);
+float phase=stn(sd[p+5]);
+spawn_effect_space(mx, mx2, my, my2, id, "$phaser:phaser:"+dry+":"+wet+":"+rate+":"+depth+":"+feedback+":"+phase, "$phaser", mnz, mxz);
+}
+else if(type=="flanger" && int(sd.length())==p+6)
+{
+float dry=stn(sd[p]);
+float wet=stn(sd[p+1]);
+float feedback=stn(sd[p+2]);
+float mindelay=stn(sd[p+3]);
+float maxdelay=stn(sd[p+4]);
+float rate=stn(sd[p+5]);
+spawn_effect_space(mx, mx2, my, my2, id, "$flanger:flanger:"+dry+":"+wet+":"+feedback+":"+mindelay+":"+maxdelay+":"+rate, "$flanger", mnz, mxz);
 }
 }
 
-void apply_all_effects(double x, double y, sound_pool@ pool)
+void apply_all_effects(double x, double y, sound_pool@ pool, double z=0)
 {
 string[] tags = {"$reverb", "$echo", "$lowpass", "$highpass", "$chorus", "$distortion", "$phaser", "$flanger"};
 for (uint t = 0; t < tags.length(); t++)
@@ -573,6 +612,7 @@ for (uint i = 0; i < effect_spaces.length(); i++)
 if (effect_spaces[i].clear_tag != tags[t]) continue;
 if (effect_spaces[i].minx <= x && effect_spaces[i].maxx >= x && effect_spaces[i].miny <= y && effect_spaces[i].maxy >= y)
 {
+if(mapmode == "3d" && (z < effect_spaces[i].minz || z > effect_spaces[i].maxz)) continue;
 pool.mixer.set_fx(effect_spaces[i].fx_string);
 found = true;
 break;
@@ -584,10 +624,10 @@ if (!found) pool.mixer.set_fx(tags[t]);
 
 void apply_effect_pools()
 {
-apply_all_effects(me.x, me.y, p);
-apply_all_effects(me.x, me.y, hookpool);
-apply_all_effects(me.x, me.y, sonarpool);
-apply_all_effects(cam.x, cam.y, campool);
+apply_all_effects(me.x, me.y, p, me.z);
+apply_all_effects(me.x, me.y, hookpool, me.z);
+apply_all_effects(me.x, me.y, sonarpool, me.z);
+apply_all_effects(cam.x, cam.y, campool, cam.z);
 for (uint i = 0; i < npcs.length(); i++)
 apply_all_effects(npcs[i].x, npcs[i].y, npc_pool(npcs[i].category));
 for (uint i = 0; i < bodyfalls.length(); i++)
@@ -609,7 +649,7 @@ apply_all_effects(sucams[i].sucamx, sucams[i].sucamy, sucampool);
 for (uint i = 0; i < checkpoints.length(); i++)
 apply_all_effects(checkpoints[i].checkx, checkpoints[i].checky, checkpool);
 for (uint i = 0; i < belts.length(); i++)
-apply_all_effects(belts[i].minx, belts[i].miny, beltpool);
+apply_all_effects(belts[i].minx, belts[i].miny, beltpool, belts[i].minz);
 for (uint i = 0; i < bikes.length(); i++)
 apply_all_effects(bikes[i].bikex, bikes[i].bikey, bikepool);
 for (uint i = 0; i < doors.length(); i++)
@@ -621,11 +661,11 @@ apply_all_effects(floorbreakers[i].breakerx, floorbreakers[i].breakery, breakerp
 for (uint i = 0; i < fires.length(); i++)
 apply_all_effects(fires[i].firex, fires[i].firey, firepool);
 for (uint i = 0; i < forcefields.length(); i++)
-apply_all_effects(forcefields[i].minx, forcefields[i].miny, forcepool);
+apply_all_effects(forcefields[i].minx, forcefields[i].miny, forcepool, forcefields[i].minz);
 for (uint i = 0; i < hazards.length(); i++)
-apply_all_effects(hazards[i].minx, hazards[i].miny, hazardpool);
+apply_all_effects(hazards[i].minx, hazards[i].miny, hazardpool, hazards[i].minz);
 for (uint i = 0; i < healzones.length(); i++)
-apply_all_effects(healzones[i].minx, healzones[i].miny, healpool);
+apply_all_effects(healzones[i].minx, healzones[i].miny, healpool, healzones[i].minz);
 for (uint i = 0; i < objs.length(); i++)
 apply_all_effects(objs[i].itx, objs[i].ity, itempool);
 for (uint i = 0; i < moving_platforms.length(); i++)
@@ -637,21 +677,21 @@ apply_all_effects(mines[i].minex, mines[i].miney, minepool);
 for (uint i = 0; i < passages.length(); i++)
 apply_all_effects(passages[i].startx, passages[i].starty, passagepool);
 for (uint i = 0; i < ambsources.length(); i++)
-apply_all_effects(ambsources[i].minx, ambsources[i].miny, sourceambpool);
+apply_all_effects(ambsources[i].minx, ambsources[i].miny, sourceambpool, ambsources[i].minz);
 for (uint i = 0; i < soundsources.length(); i++)
-apply_all_effects(soundsources[i].minx, soundsources[i].miny, sourcepool);
+apply_all_effects(soundsources[i].minx, soundsources[i].miny, sourcepool, soundsources[i].minz);
 for (uint i = 0; i < timedambs.length(); i++)
-apply_all_effects(timedambs[i].minx, timedambs[i].miny, timeambpool);
+apply_all_effects(timedambs[i].minx, timedambs[i].miny, timeambpool, timedambs[i].minz);
 for (uint i = 0; i < timedsources.length(); i++)
-apply_all_effects(timedsources[i].minx, timedsources[i].miny, timesourcepool);
+apply_all_effects(timedsources[i].minx, timedsources[i].miny, timesourcepool, timedsources[i].minz);
 for (uint i = 0; i < signs.length(); i++)
 apply_all_effects(signs[i].signx, signs[i].signy, signpool);
 for (uint i = 0; i < spikes.length(); i++)
-apply_all_effects(spikes[i].minx, spikes[i].miny, spikepool);
+apply_all_effects(spikes[i].minx, spikes[i].miny, spikepool, spikes[i].minz);
 for (uint i = 0; i < teleporters.length(); i++)
 apply_all_effects(teleporters[i].telx, teleporters[i].tely, telpool);
 for (uint i = 0; i < vanishing_platforms.length(); i++)
-apply_all_effects(vanishing_platforms[i].minx, vanishing_platforms[i].miny, vanpool);
+apply_all_effects(vanishing_platforms[i].minx, vanishing_platforms[i].miny, vanpool, vanishing_platforms[i].z);
 for (uint i = 0; i < aircrafts.length(); i++)
 apply_all_effects(aircrafts[i].plainx, aircrafts[i].plainy, plainpool);
 for (uint i = 0; i < vehicles.length(); i++)

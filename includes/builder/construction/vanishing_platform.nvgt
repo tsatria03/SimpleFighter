@@ -4,6 +4,7 @@ class vanishing_platform
 bool vanished;
 int vplatsound;
 double minx, maxx, miny, maxy;
+double z;
 double tilevolume;
 double tilepitch;
 double vplatvolume;
@@ -12,12 +13,13 @@ int vplattime;
 string tile;
 string vptype;
 timer vplattimer;
-vanishing_platform(double mx,double mx2,double my,double my2,double vol,double semitone,double vol2,double semitone2,int vtime,string ty,string vtype)
+vanishing_platform(double mx,double mx2,double my,double my2,double vol,double semitone,double vol2,double semitone2,int vtime,string ty,string vtype,double zp=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+z=zp;
 tilevolume=vol;
 tilepitch=semitone;
 vplatvolume=vol2;
@@ -25,9 +27,10 @@ vplatpitch=semitone2;
 vplattime=vtime;
 tile=ty;
 vptype=vtype;
-spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true);
-vplatsound=vanpool.play_extended_3d(get_map_sound("objects/vanishing platforms/"+vptype+"/*loop*"),me.x,me.y,me.z,minx,miny,0,0,0,0,0,0,0,0,true,0,0,vplatvolume,vplatpitch,false);
-vanpool.update_sound_3d(vplatsound,minx,miny, 0);
+double sz = (mapmode == "3d") ? z : 0;
+spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true, sz);
+vplatsound=vanpool.play_extended_3d(get_map_sound("objects/vanishing platforms/"+vptype+"/*loop*"),me.x,me.y,me.z,minx,miny,sz,0,0,0,0,0,0,0,true,0,0,vplatvolume,vplatpitch,false);
+vanpool.update_sound_3d(vplatsound,minx,miny, sz);
 vanpool.update_sound_range_3d(vplatsound, 0, maxx-minx, 0, maxy-miny, 0, 0);
 }
 }
@@ -38,24 +41,26 @@ for(uint i=0; i<vanishing_platforms.length(); i++)
 if(vanishing_platforms[i].vanished==false and vanishing_platforms[i].vplattimer.elapsed>=vanishing_platforms[i].vplattime)
 {
 vanpool.destroy_sound(vanishing_platforms[i].vplatsound);
-spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, "", vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true);
+double sz = (mapmode == "3d") ? vanishing_platforms[i].z : 0;
+spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, "", vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true, sz);
 vanishing_platforms[i].vanished=true;
 vanishing_platforms[i].vplattimer.restart();
 }
 else if(vanishing_platforms[i].vanished==true and vanishing_platforms[i].vplattimer.elapsed>=vanishing_platforms[i].vplattime)
 {
-spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, vanishing_platforms[i].tile, vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true);
-vanishing_platforms[i].vplatsound=vanpool.play_extended_3d(get_map_sound("objects/vanishing platforms/"+vanishing_platforms[i].vptype+"/*loop*"),me.x,me.y,me.z,vanishing_platforms[i].minx,vanishing_platforms[i].miny,0,0,0,0,0,0,0,0,true,0,0,vanishing_platforms[i].vplatvolume,vanishing_platforms[i].vplatpitch,false);
-vanpool.update_sound_3d(vanishing_platforms[i].vplatsound,vanishing_platforms[i].minx,vanishing_platforms[i].miny, 0);
+double sz = (mapmode == "3d") ? vanishing_platforms[i].z : 0;
+spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, vanishing_platforms[i].tile, vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true, sz);
+vanishing_platforms[i].vplatsound=vanpool.play_extended_3d(get_map_sound("objects/vanishing platforms/"+vanishing_platforms[i].vptype+"/*loop*"),me.x,me.y,me.z,vanishing_platforms[i].minx,vanishing_platforms[i].miny,sz,0,0,0,0,0,0,0,true,0,0,vanishing_platforms[i].vplatvolume,vanishing_platforms[i].vplatpitch,false);
+vanpool.update_sound_3d(vanishing_platforms[i].vplatsound,vanishing_platforms[i].minx,vanishing_platforms[i].miny, sz);
 vanpool.update_sound_range_3d(vanishing_platforms[i].vplatsound, 0, vanishing_platforms[i].maxx-vanishing_platforms[i].minx, 0, vanishing_platforms[i].maxy-vanishing_platforms[i].miny, 0, 0);
 vanishing_platforms[i].vanished=false;
 vanishing_platforms[i].vplattimer.restart();
 }
 }
 }
-void spawn_vanishing_platform(double x1,double x2,double y1,double y2,double tilevol,double tilepitch,double vplatvol,double vplatpitch,int vtime,string tile,string vtype)
+void spawn_vanishing_platform(double x1,double x2,double y1,double y2,double tilevol,double tilepitch,double vplatvol,double vplatpitch,int vtime,string tile,string vtype,double z=0)
 {
-vanishing_platform vp1(x1,x2,y1,y2,tilevol,tilepitch,vplatvol,vplatpitch,vtime,tile,vtype);
+vanishing_platform vp1(x1,x2,y1,y2,tilevol,tilepitch,vplatvol,vplatpitch,vtime,tile,vtype,z);
 vanishing_platforms.insert_last(vp1);
 }
 void destroy_all_vanishing_platforms()
@@ -86,13 +91,18 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("vanishing platform", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my = form.create_input_box("y", saved_my);
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int tile_list = form.create_list("tile sound");
 form.add_list_item(tile_list, "air", "air");
@@ -244,9 +254,15 @@ return;
 }
 if(form.is_pressed(ok))
 {
+if(form.get_text(mx)=="") { speak("Minimum x is required."); form.focus(mx); continue; }
+if(form.get_text(mx2)=="") { speak("Maximum x is required."); form.focus(mx2); continue; }
+if(form.get_text(my)=="") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz)=="") { speak("Z is required."); form.focus(mz); continue; }
+if(form.get_text(sp)=="") { speak("Speed is required."); form.focus(sp); continue; }
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
+double bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int pt = form.get_list_position(tile_list);
 string btile = (pt > 0) ? tiles_list[pt-1] : "air";
@@ -258,8 +274,8 @@ double bvvol = form.get_slider(vplat_vol);
 double bvpit = form.get_slider(vplat_pit);
 t.destroy_sound(prevslot);
 resume_pools();
-write_vanishing_platform(bx, bx2, by, btvol, btpit, bvvol, bvpit, bsp, btile, bvtype);
-spawn_vanishing_platform(bx, bx2, by, by, btvol, btpit, bvvol, bvpit, bsp, btile, bvtype);
+write_vanishing_platform(bx, bx2, by, btvol, btpit, bvvol, bvpit, bsp, btile, bvtype, bz);
+spawn_vanishing_platform(bx, bx2, by, by, btvol, btpit, bvvol, bvpit, bsp, btile, bvtype, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -273,20 +289,29 @@ void read_vanishing_platform(string[] sd)
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
-double tilevol=stn(sd[4]);
-double tilepitch=stn(sd[5]);
-double vplatvol=stn(sd[6]);
-double vplatpitch=stn(sd[7]);
-int sp=stn(sd[8]);
-string tiletype=sd[9];
-string vplattype=sd[10];
-spawn_vanishing_platform(mx, mx2, my, my, tilevol, tilepitch, vplatvol, vplatpitch, sp, tiletype, vplattype);
+double z=0;
+int o=4;
+if(mapmode == "3d")
+{
+z=stn(sd[4]);
+o=5;
+}
+double tilevol=stn(sd[o]);
+double tilepitch=stn(sd[o+1]);
+double vplatvol=stn(sd[o+2]);
+double vplatpitch=stn(sd[o+3]);
+int sp=stn(sd[o+4]);
+string tiletype=sd[o+5];
+string vplattype=sd[o+6];
+spawn_vanishing_platform(mx, mx2, my, my, tilevol, tilepitch, vplatvol, vplatpitch, sp, tiletype, vplattype, z);
 }
 
-void write_vanishing_platform(double x1, double x2, double y1, double tilevol, double tilepitch, double vplatvol, double vplatpitch, int speed, string tile, string vplattype)
+void write_vanishing_platform(double x1, double x2, double y1, double tilevol, double tilepitch, double vplatvol, double vplatpitch, int speed, string tile, string vplattype, double z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"vanishing_platform "+x1+" "+x2+" "+y1+" "+tilevol+" "+tilepitch+" "+vplatvol+" "+vplatpitch+" "+speed+" "+tile+" "+vplattype);
+string coords=x1+" "+x2+" "+y1;
+if(mapmode == "3d") coords += " "+z;
+mapper.write("\r\n"+"vanishing_platform "+coords+" "+tilevol+" "+tilepitch+" "+vplatvol+" "+vplatpitch+" "+speed+" "+tile+" "+vplattype);
 mapper.close();
 }
