@@ -2,13 +2,16 @@ blockage@[]blockages(0);
 class blockage
 {
 double minx, maxx, miny, maxy;
+double minz, maxz;
 string text;
-blockage(double mx,double mx2,double my,double my2,string txt)
+blockage(double mx,double mx2,double my,double my2,string txt,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 text=txt;
 }
 }
@@ -18,15 +21,16 @@ for(uint i=0; i<blockages.length(); i++)
 {
 if(blockages[i].minx<=me.x and blockages[i].maxx>=me.x and blockages[i].miny<=me.y and blockages[i].maxy>=me.y)
 {
+if(mapmode == "3d" && (me.z < blockages[i].minz || me.z > blockages[i].maxz)) continue;
 text = blockages[i].text;
 return true;
 }
 }
 return false;
 }
-void spawn_blockage(double x1,double x2,double y1,double y2,string text)
+void spawn_blockage(double x1,double x2,double y1,double y2,string text,double minz=0,double maxz=0)
 {
-blockage bk1(x1,x2,y1,y2,text);
+blockage bk1(x1,x2,y1,y2,text,minz,maxz);
 blockages.insert_last(bk1);
 }
 void destroy_all_blockages()
@@ -38,16 +42,27 @@ void build_blockage()
 {
 form.reset();
 form.create_window("blockage", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my=form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2=form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my=form.create_input_box("minimum y", saved_my);
+int my2=form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int bltext=form.create_input_box("text");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -59,6 +74,8 @@ double x=string_to_number(form.get_text(mx));
 double paxx=string_to_number(form.get_text(mx2));
 double y=string_to_number(form.get_text(my));
 double paxy=string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 string txt=form.get_text(bltext);
 if(key_pressed(KEY_ESCAPE))
 {
@@ -94,6 +111,16 @@ else if(form.get_text(my2)=="")
 speak("Maximum y is required.");
 form.focus(my2);
 }
+else if(mnz != -1 && form.get_text(mnz)=="")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+}
+else if(mxz != -1 && form.get_text(mxz)=="")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+}
 else if(form.get_text(bltext)=="")
 {
 speak("Blockage text is required.");
@@ -102,8 +129,8 @@ form.focus(bltext);
 else
 {
 resume_pools();
-write_blockage(x, paxx, y, paxy, txt);
-spawn_blockage(x, paxx, y, paxy, txt);
+write_blockage(x, paxx, y, paxy, txt, bmnz, bmxz);
+spawn_blockage(x, paxx, y, paxy, txt, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -119,14 +146,24 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string txt=join_string_array(sd, 5, sd.length());
-spawn_blockage(mx, mx2, my, my2, txt);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string txt=join_string_array(sd, o, sd.length());
+spawn_blockage(mx, mx2, my, my2, txt, mnz, mxz);
 }
 
-void write_blockage(double x1, double x2, double y1, double y2, string txt)
+void write_blockage(double x1, double x2, double y1, double y2, string txt, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"blockage "+x1+" "+x2+" "+y1+" "+y2+" "+txt);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"blockage "+coords+" "+txt);
 mapper.close();
 }

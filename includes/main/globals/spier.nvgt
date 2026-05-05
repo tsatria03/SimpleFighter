@@ -28,7 +28,7 @@ if (zero_feet_dir)
 {
 string[] zero_labels;
 bool zero_found = false;
-spy_check_entities(me.x, me.y, zero_labels, zero_found, true);
+spy_check_entities(me.x, me.y, me.z, zero_labels, zero_found, true);
 if (zero_labels.length() > 0)
 materials += string_join(zero_labels, ", ") + ": 0 feet. ";
 }
@@ -46,7 +46,7 @@ spy_check_passages(spyage.x, spyage.y, labels, in_passage, current_passage, foun
 if (!found_object)
 {
 bool include_lifts = !(on_lift && (direction == "left" || direction == "right"));
-spy_check_entities(spyage.x, spyage.y, labels, found_object, include_lifts);
+spy_check_entities(spyage.x, spyage.y, spyage.z, labels, found_object, include_lifts);
 }
 spy_check_tile(spyage.x, spyage.y, spyage.z, labels, current_tile);
 if (labels.length() > 0)
@@ -97,10 +97,11 @@ if (found_object) break;
 }
 }
 
-void spy_check_entities(double sx, double sy, string[] &inout labels, bool &inout found_object, bool include_lifts)
+void spy_check_entities(double sx, double sy, double sz, string[] &inout labels, bool &inout found_object, bool include_lifts)
 {
 for (uint j = 0; j < blockages.length(); j++)
 {
+if(mapmode == "3d" && (sz < blockages[j].minz || sz > blockages[j].maxz)) continue;
 double cx = me.x < blockages[j].minx ? blockages[j].minx : (me.x > blockages[j].maxx ? blockages[j].maxx : me.x);
 double cy = me.y < blockages[j].miny ? blockages[j].miny : (me.y > blockages[j].maxy ? blockages[j].maxy : me.y);
 if (sx == cx && sy == cy && !is_obscured("blockage", "spier"))
