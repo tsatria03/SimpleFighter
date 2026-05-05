@@ -1,32 +1,40 @@
 teleporter@[]teleporters(0);
 class teleporter
 {
-bool moveable, moveable2, spotted, singleuse;
+bool moveable, moveable2, moveable3, spotted, singleuse;
 int telsound, wepsound;
 int telx;
 int tely;
+int telz;
 int dtelx;
 int dtely;
+int dtelz;
 int telerange;
 int telerange2;
+int telerange3;
 int teltime;
 string teltype;
 timer teltimer;
-teleporter(int tx,int ty,int dtx,int dty,int trange,int trange2,int sp,string tt,bool tm,bool tm2,bool ss)
+teleporter(int tx,int ty,int dtx,int dty,int trange,int trange2,int sp,string tt,bool tm,bool tm2,bool ss,int tz=0,int dtz=0,int trange3=0,bool tm3=false)
 {
 telx=tx;
 tely=ty;
+telz=tz;
 dtelx=dtx;
 dtely=dty;
+dtelz=dtz;
 telerange=trange;
 telerange2=trange2;
+telerange3=trange3;
 teltime=sp;
 teltype=tt;
 moveable=tm;
 moveable2=tm2;
+moveable3=tm3;
 singleuse=ss;
 spotted=false;
-telsound=telpool.play_extended_3d(get_map_sound("objects/teleporters/"+teltype+"/*loop*"),me.x,me.y,me.z,telx,tely,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
+double sz = (mapmode == "3d") ? telz : 0;
+telsound=telpool.play_extended_3d(get_map_sound("objects/teleporters/"+teltype+"/*loop*"),me.x,me.y,me.z,telx,tely,sz,0,0,0,0,0,0,0,true,0,0,0,100,false);
 }
 }
 void telloop()
@@ -35,13 +43,17 @@ for(uint i=0; i<teleporters.length(); i++)
 {
 if(teleporters[i].teltimer.elapsed>=teleporters[i].teltime)
 {
-if(absolute(me.x-teleporters[i].telx)<=teleporters[i].telerange and absolute(me.y-teleporters[i].tely)<=teleporters[i].telerange2)
+bool in_xy = absolute(me.x-teleporters[i].telx)<=teleporters[i].telerange and absolute(me.y-teleporters[i].tely)<=teleporters[i].telerange2;
+bool in_spot = in_xy;
+if(mapmode == "3d") in_spot = in_spot and absolute(me.z-teleporters[i].telz)<=teleporters[i].telerange3;
+if(in_spot)
 {
 teleporters[i].spotted=true;
 }
 if(teleporters[i].spotted)
 {
-telpool.update_sound_3d(teleporters[i].telsound,teleporters[i].telx,teleporters[i].tely, 0);
+double usz = (mapmode == "3d") ? teleporters[i].telz : 0;
+telpool.update_sound_3d(teleporters[i].telsound,teleporters[i].telx,teleporters[i].tely, usz);
 teleporters[i].teltimer.restart();
 if(teleporters[i].telx<me.x and teleporters[i].moveable==true and paused==0)
 {
@@ -59,22 +71,33 @@ if(teleporters[i].tely>me.y and teleporters[i].moveable2==true and paused==0)
 {
 teleporters[i].tely--;
 }
+if(mapmode == "3d" and teleporters[i].telz<me.z and teleporters[i].moveable3==true and paused==0)
+{
+teleporters[i].telz++;
+}
+if(mapmode == "3d" and teleporters[i].telz>me.z and teleporters[i].moveable3==true and paused==0)
+{
+teleporters[i].telz--;
 }
 }
-if(me.x==teleporters[i].telx and me.y==teleporters[i].tely and paused==0)
+}
+bool on_tel = me.x==teleporters[i].telx and me.y==teleporters[i].tely;
+if(mapmode == "3d") on_tel = on_tel and me.z==teleporters[i].telz;
+if(on_tel and paused==0)
 {
 if(teleporters[i].singleuse==true) telpool.destroy_sound(teleporters[i].telsound);
 teleporters[i].wepsound=telpool.play_stationary_extended(get_map_sound("objects/teleporters/"+teleporters[i].teltype+"/*hit*"),false,0,0,0,100,false);
 me.x=teleporters[i].dtelx;
 me.y=teleporters[i].dtely;
+if(mapmode == "3d") me.z=teleporters[i].dtelz;
 if(teleporters[i].singleuse==true) teleporters.remove_at(i);
 return;
 }
 }
 }
-void spawn_teleporter(int x,int y,int dx,int dy,int telrange,int telrange2,int teltime,string teltype,bool moveable,bool moveable2,bool singleuse)
+void spawn_teleporter(int x,int y,int dx,int dy,int telrange,int telrange2,int teltime,string teltype,bool moveable,bool moveable2,bool singleuse,int z=0,int dz=0,int telrange3=0,bool moveable3=false)
 {
-teleporter tp1(x,y,dx,dy,telrange,telrange2,teltime,teltype,moveable,moveable2,singleuse);
+teleporter tp1(x,y,dx,dy,telrange,telrange2,teltime,teltype,moveable,moveable2,singleuse,z,dz,telrange3,moveable3);
 teleporters.insert_last(tp1);
 }
 void destroy_all_teleporters()
@@ -98,19 +121,29 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("teleporter", false);
+bool y_uses_back_front = mapmode != "2d";
 int sx = form.create_input_box("starting x", sel_left_set ? sel_left : "");
-int sy = form.create_input_box("starting y", sel_bottom_set ? sel_bottom : "");
+int sy = form.create_input_box("starting y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int sz = -1;
+if(mapmode == "3d") sz = form.create_input_box("starting z", sel_bottom_set ? sel_bottom : "");
 int nx = form.create_input_box("finishing x", sel_right_set ? sel_right : "");
-int ny = form.create_input_box("finishing y", sel_top_set ? sel_top : "");
-int rng = form.create_input_box("horizontal seeing range", "" + maxx);
-int rng2 = form.create_input_box("vertical seeing range", "" + maxy);
+int ny = form.create_input_box("finishing y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+int nz = -1;
+if(mapmode == "3d") nz = form.create_input_box("finishing z", sel_top_set ? sel_top : "");
+int rng = form.create_input_box("x seeing range", "" + maxx);
+int rng2 = form.create_input_box("y seeing range", "" + maxy);
+int rng3 = -1;
+if(mapmode == "3d") rng3 = form.create_input_box("z seeing range", "" + maxz);
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(sx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sy, disallowed_nums, false, "This character is not allowed.");
+if(sz != -1) form.set_disallowed_chars(sz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(nx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(ny, disallowed_nums, false, "This character is not allowed.");
+if(nz != -1) form.set_disallowed_chars(nz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(rng, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(rng2, disallowed_nums, false, "This character is not allowed.");
+if(rng3 != -1) form.set_disallowed_chars(rng3, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int tel_list = form.create_list("teleporter sound");
 form.add_list_item(tel_list, "none", "none");
@@ -119,6 +152,8 @@ form.add_list_item(tel_list, tels_list[i], tels_list[i]);
 form.set_list_position(tel_list, 0, false);
 int movex_cb = form.create_checkbox("move on x axis", false);
 int movey_cb = form.create_checkbox("move on y axis", false);
+int movez_cb = -1;
+if(mapmode == "3d") movez_cb = form.create_checkbox("move on z axis", false);
 int single_cb = form.create_checkbox("single use", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
@@ -189,14 +224,32 @@ continue;
 }
 if(form.get_text(rng) == "")
 {
-speak("Horizontal seeing range is required.");
+speak("X seeing range is required.");
 form.focus(rng);
 continue;
 }
 if(form.get_text(rng2) == "")
 {
-speak("Vertical seeing range is required.");
+speak("Y seeing range is required.");
 form.focus(rng2);
+continue;
+}
+if(sz != -1 && form.get_text(sz) == "")
+{
+speak("Starting z is required.");
+form.focus(sz);
+continue;
+}
+if(nz != -1 && form.get_text(nz) == "")
+{
+speak("Finishing z is required.");
+form.focus(nz);
+continue;
+}
+if(rng3 != -1 && form.get_text(rng3) == "")
+{
+speak("Z seeing range is required.");
+form.focus(rng3);
 continue;
 }
 if(form.get_text(sp) == "")
@@ -207,20 +260,24 @@ continue;
 }
 int bsx = string_to_number(form.get_text(sx));
 int bsy = string_to_number(form.get_text(sy));
+int bsz = (sz != -1) ? string_to_number(form.get_text(sz)) : 0;
 int bnx = string_to_number(form.get_text(nx));
 int bny = string_to_number(form.get_text(ny));
+int bnz = (nz != -1) ? string_to_number(form.get_text(nz)) : 0;
 int brng = string_to_number(form.get_text(rng));
 int brng2 = string_to_number(form.get_text(rng2));
+int brng3 = (rng3 != -1) ? string_to_number(form.get_text(rng3)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(tel_list);
 string btype = (p > 0) ? tels_list[p-1] : "none";
 bool bmx = form.is_checked(movex_cb);
 bool bmy = form.is_checked(movey_cb);
+bool bmz = (movez_cb != -1) ? form.is_checked(movez_cb) : false;
 bool bsse = form.is_checked(single_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_teleporter(bsx, bsy, bnx, bny, brng, brng2, bsp, btype, bmx, bmy, bsse);
-spawn_teleporter(bsx, bsy, bnx, bny, brng, brng2, bsp, btype, bmx, bmy, bsse);
+write_teleporter(bsx, bsy, bnx, bny, brng, brng2, bsp, btype, bmx, bmy, bsse, bsz, bnz, brng3, bmz);
+spawn_teleporter(bsx, bsy, bnx, bny, brng, brng2, bsp, btype, bmx, bmy, bsse, bsz, bnz, brng3, bmz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -231,24 +288,38 @@ return;
 
 void read_teleporter(string[] sd)
 {
+bool is_3d = mapmode == "3d";
 int sx=stn(sd[1]);
 int sy=stn(sd[2]);
-int sx2=stn(sd[3]);
-int sy2=stn(sd[4]);
-int telrange=stn(sd[5]);
-int telrange2=stn(sd[6]);
-int sp=stn(sd[7]);
-string teltype=sd[8];
-bool mb=string_to_bool(sd[9]);
-bool mb2=string_to_bool(sd[10]);
-bool ss=string_to_bool(sd[11]);
-spawn_teleporter(sx, sy, sx2, sy2, telrange, telrange2, sp, teltype, mb, mb2, ss);
+int o=3;
+int sz_v=0;
+if(is_3d) { sz_v=stn(sd[3]); o=4; }
+int sx2=stn(sd[o]);
+int sy2=stn(sd[o+1]);
+int sz2=0;
+if(is_3d) { sz2=stn(sd[o+2]); o+=3; } else o+=2;
+int telrange=stn(sd[o]);
+int telrange2=stn(sd[o+1]);
+int telrange3=0;
+if(is_3d) { telrange3=stn(sd[o+2]); o+=3; } else o+=2;
+int sp=stn(sd[o]);
+string teltype=sd[o+1];
+bool mb=string_to_bool(sd[o+2]);
+bool mb2=string_to_bool(sd[o+3]);
+bool mb3=false;
+if(is_3d) { mb3=string_to_bool(sd[o+4]); o+=5; } else o+=4;
+bool ss=string_to_bool(sd[o]);
+spawn_teleporter(sx, sy, sx2, sy2, telrange, telrange2, sp, teltype, mb, mb2, ss, sz_v, sz2, telrange3, mb3);
 }
 
-void write_teleporter(int x, int y, int x2, int y2, int telrange, int telrange2, int speed, string teltype, bool moveable, bool moveable2, bool singleuse)
+void write_teleporter(int x, int y, int x2, int y2, int telrange, int telrange2, int speed, string teltype, bool moveable, bool moveable2, bool singleuse, int z=0, int z2=0, int telrange3=0, bool moveable3=false)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"teleporter "+x+" "+y+" "+x2+" "+y2+" "+telrange+" "+telrange2+" "+speed+" "+teltype+" "+moveable+" "+moveable2+" "+singleuse);
+string zsrc = (mapmode == "3d") ? (" "+z) : "";
+string zdst = (mapmode == "3d") ? (" "+z2) : "";
+string zrng = (mapmode == "3d") ? (" "+telrange3) : "";
+string zmov = (mapmode == "3d") ? (" "+moveable3) : "";
+mapper.write("\r\n"+"teleporter "+x+" "+y+zsrc+" "+x2+" "+y2+zdst+" "+telrange+" "+telrange2+zrng+" "+speed+" "+teltype+" "+moveable+" "+moveable2+zmov+" "+singleuse);
 mapper.close();
 }
