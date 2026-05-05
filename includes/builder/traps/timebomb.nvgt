@@ -4,20 +4,22 @@ class timebomb
 int hitsound,loopsound,landsound,spawnsound;
 int timbombx;
 int timbomby;
+int timbombz;
 int damage;
 int timbombtime;
 string timbombtype;
 timer beeptimer, timbombtimer;
-timebomb(int bx,int by,int dmg,int btime,string bt)
+timebomb(int bx,int by,int dmg,int btime,string bt,int bz=0)
 {
 timbombx=bx;
 timbomby=by;
+timbombz=bz;
 damage=dmg;
 timbombtime=btime;
 timbombtype=bt;
-spawnsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timbombtype+"/*drop*"),me.x, me.y, me.z,timbombx, timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
-loopsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timbombtype+"/*tick*"),me.x, me.y, me.z,timbombx, timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
-bombpool.update_sound_3d(loopsound, timbombx, timbomby, 0);
+spawnsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timbombtype+"/*drop*"),me.x, me.y, me.z,timbombx, timbomby,timbombz,0,0,0,0,0,0,0,false,0,0,0,100,false);
+loopsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timbombtype+"/*tick*"),me.x, me.y, me.z,timbombx, timbomby,timbombz,0,0,0,0,0,0,0,false,0,0,0,100,false);
+bombpool.update_sound_3d(loopsound, timbombx, timbomby, timbombz);
 }
 }
 void timebombloop()
@@ -58,7 +60,7 @@ return;
 }
 for(uint i2=0; i2<calendars.length(); i2++)
 {
-if(calendars[i2].calendarx==timebombs[i].timbombx and calendars[i2].calendary==timebombs[i].timbomby and calendars[i2].destroyable==true)
+if(calendars[i2].calendarx==timebombs[i].timbombx and calendars[i2].calendary==timebombs[i].timbomby and (mapmode != "3d" or calendars[i2].calendarz==timebombs[i].timbombz) and calendars[i2].destroyable==true)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 calpool.destroy_sound(calendars[i2].calendarsound);
@@ -72,7 +74,7 @@ return;
 }
 for(uint i3=0; i3<clocks.length(); i3++)
 {
-if(clocks[i3].clockx==timebombs[i].timbombx and clocks[i3].clocky==timebombs[i].timbomby and clocks[i3].destroyable==true)
+if(clocks[i3].clockx==timebombs[i].timbombx and clocks[i3].clocky==timebombs[i].timbomby and (mapmode != "3d" or clocks[i3].clockz==timebombs[i].timbombz) and clocks[i3].destroyable==true)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 clockpool.destroy_sound(clocks[i].clocksound);
@@ -86,7 +88,7 @@ return;
 }
 for(uint i4=0; i4<doors.length(); i4++)
 {
-if(doors[i4].minx<=timebombs[i].timbombx and doors[i4].maxx>=timebombs[i].timbombx and doors[i4].miny<=timebombs[i].timbomby and doors[i4].maxy>=timebombs[i].timbomby and doors[i4].destroyable==true)
+if(doors[i4].minx<=timebombs[i].timbombx and doors[i4].maxx>=timebombs[i].timbombx and doors[i4].miny<=timebombs[i].timbomby and doors[i4].maxy>=timebombs[i].timbomby and (mapmode != "3d" or (doors[i4].minz<=timebombs[i].timbombz and doors[i4].maxz>=timebombs[i].timbombz)) and doors[i4].destroyable==true)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 timebombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timebombs[i].timbombtype+"/*land*"),me.x,me.y,me.z,timebombs[i].timbombx,timebombs[i].timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -99,7 +101,7 @@ return;
 }
 for(uint i6=0; i6<objs.length(); i6++)
 {
-if(objs[i6].itx==timebombs[i].timbombx and objs[i6].ity==timebombs[i].timbomby)
+if(objs[i6].itx==timebombs[i].timbombx and objs[i6].ity==timebombs[i].timbomby and (mapmode != "3d" or objs[i6].itz==timebombs[i].timbombz))
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 timebombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timebombs[i].timbombtype+"/*land*"),me.x,me.y,me.z,timebombs[i].timbombx,timebombs[i].timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -112,7 +114,7 @@ return;
 }
 for(uint i9=0; i9<signs.length(); i9++)
 {
-if(signs[i9].signx==timebombs[i].timbombx and signs[i9].signy==timebombs[i].timbomby and signs[i9].destroyable==true)
+if(signs[i9].signx==timebombs[i].timbombx and signs[i9].signy==timebombs[i].timbomby and (mapmode != "3d" or signs[i9].signz==timebombs[i].timbombz) and signs[i9].destroyable==true)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 signpool.destroy_sound(signs[i9].signsound);
@@ -126,7 +128,7 @@ return;
 }
 for(uint i10=0; i10<spikes.length(); i10++)
 {
-if(spikes[i10].minx<=timebombs[i].timbombx and spikes[i10].maxx>=timebombs[i].timbombx and spikes[i10].miny<=timebombs[i].timbomby and spikes[i10].maxy>=timebombs[i].timbomby and spikes[i10].destroyable==true)
+if(spikes[i10].minx<=timebombs[i].timbombx and spikes[i10].maxx>=timebombs[i].timbombx and spikes[i10].miny<=timebombs[i].timbomby and spikes[i10].maxy>=timebombs[i].timbomby and (mapmode != "3d" or (spikes[i10].minz<=timebombs[i].timbombz and spikes[i10].maxz>=timebombs[i].timbombz)) and spikes[i10].destroyable==true)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 timebombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timebombs[i].timbombtype+"/*land*"),me.x,me.y,me.z,timebombs[i].timbombx,timebombs[i].timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -154,7 +156,7 @@ return;
 }
 for(uint i13=0; i13<walls.length(); i13++)
 {
-if(walls[i13].minx<=timebombs[i].timbombx and walls[i13].maxx>=timebombs[i].timbombx and walls[i13].miny<=timebombs[i].timbomby and walls[i13].maxy>=timebombs[i].timbomby and walls[i13].destroyable==true)
+if(walls[i13].minx<=timebombs[i].timbombx and walls[i13].maxx>=timebombs[i].timbombx and walls[i13].miny<=timebombs[i].timbomby and walls[i13].maxy>=timebombs[i].timbomby and (mapmode != "3d" or (walls[i13].minz<=timebombs[i].timbombz and walls[i13].maxz>=timebombs[i].timbombz)) and walls[i13].destroyable==true)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 timebombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timebombs[i].timbombtype+"/*land*"),me.x,me.y,me.z,timebombs[i].timbombx,timebombs[i].timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -169,7 +171,7 @@ return;
 }
 for(uint i15=0; i15<doors.length(); i15++)
 {
-if(doors[i15].minx<=timebombs[i].timbombx and doors[i15].maxx>=timebombs[i].timbombx and doors[i15].miny<=timebombs[i].timbomby and doors[i15].maxy>=timebombs[i].timbomby and doors[i15].destroyable==true)
+if(doors[i15].minx<=timebombs[i].timbombx and doors[i15].maxx>=timebombs[i].timbombx and doors[i15].miny<=timebombs[i].timbomby and doors[i15].maxy>=timebombs[i].timbomby and (mapmode != "3d" or (doors[i15].minz<=timebombs[i].timbombz and doors[i15].maxz>=timebombs[i].timbombz)) and doors[i15].destroyable==true)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 timebombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timebombs[i].timbombtype+"/*land*"),me.x,me.y,me.z,timebombs[i].timbombx,timebombs[i].timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -194,7 +196,7 @@ timebombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/time bom
 timebombs.remove_at(i);
 return;
 }
-if(me.x==timebombs[i].timbombx and me.y==timebombs[i].timbomby and shieldon==1 and paused==0)
+if(me.x==timebombs[i].timbombx and me.y==timebombs[i].timbomby and (mapmode != "3d" or me.z==timebombs[i].timbombz) and shieldon==1 and paused==0)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
@@ -204,7 +206,7 @@ kombatlog.insert_last(timebombs[i].timbombtype + "'s attack took " + shieldtype 
 timebombs.remove_at(i);
 return;
 }
-else if(me.x==timebombs[i].timbombx and me.y==timebombs[i].timbomby and shieldon==0 and paused==0)
+else if(me.x==timebombs[i].timbombx and me.y==timebombs[i].timbomby and (mapmode != "3d" or me.z==timebombs[i].timbombz) and shieldon==0 and paused==0)
 {
 bombpool.destroy_sound(timebombs[i].loopsound);
 timebombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/time bombs/"+timebombs[i].timbombtype+"/*land*"),me.x,me.y,me.z,timebombs[i].timbombx,timebombs[i].timbomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -235,9 +237,9 @@ return;
 }
 }
 }
-void spawn_timebomb(int x,int y,int dmg,int timbombtime,string timbombtype)
+void spawn_timebomb(int x,int y,int dmg,int timbombtime,string timbombtype,int z=0)
 {
-timebomb tb1(x,y,dmg,timbombtime,timbombtype);
+timebomb tb1(x,y,dmg,timbombtime,timbombtype,z);
 timebombs.insert_last(tb1);
 }
 void destroy_all_timebombs()
@@ -263,10 +265,13 @@ form.reset();
 form.create_window("time bomb", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int dm = form.create_input_box("maximum attack");
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int tbomb_list = form.create_list("time bomb sound");
@@ -329,6 +334,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(dm) == "")
 {
 speak("Maximum attack is required.");
@@ -343,14 +354,15 @@ continue;
 }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int bdm = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(tbomb_list);
 string btype = (p > 0) ? tbombs[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_timebomb(bx, by, bdm, bsp, btype);
-spawn_timebomb(bx, by, bdm, bsp, btype);
+write_timebomb(bx, by, bdm, bsp, btype, bz);
+spawn_timebomb(bx, by, bdm, bsp, btype, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -363,16 +375,30 @@ void read_timebomb(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
+if(sd.length() == 7)
+{
+int z=stn(sd[3]);
+int dmg=stn(sd[4]);
+int sp=stn(sd[5]);
+string timbotype=sd[6];
+spawn_timebomb(x, y, dmg, sp, timbotype, z);
+}
+else
+{
 int dmg=stn(sd[3]);
 int sp=stn(sd[4]);
 string timbotype=sd[5];
-spawn_timebomb(x, y, dmg, sp, timbotype);
+spawn_timebomb(x, y, dmg, sp, timbotype, 0);
+}
 }
 
-void write_timebomb(int x, int y, int damage, int speed, string timbombtype)
+void write_timebomb(int x, int y, int damage, int speed, string timbombtype, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"timebomb "+x+" "+y+" "+z+" "+damage+" "+speed+" "+timbombtype);
+else
 mapper.write("\r\n"+"timebomb "+x+" "+y+" "+damage+" "+speed+" "+timbombtype);
 mapper.close();
 }

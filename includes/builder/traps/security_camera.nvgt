@@ -5,20 +5,23 @@ bool spotted = false;
 bool alarm_started = false;
 int alarmsound, camsound, defsound, hurtsound, wornsound;
 int alarmdelay_ms;
-int sucamx, sucamy;
+int sucamx, sucamy, sucamz;
 int camdir, turntime;
 double camlevel, camxp;
 double camhealth, cammaxhealth;
 int vision_x;
 int vision_y;
+int vision_z;
 timer turntimer, alarmdelaytimer, spawn_timer, spot_check_timer;
 string cameratype;
-sucam(int cmx, int cmy, int cmvx, int cmvy, int cmdr, int cmtime, double chp, double cmhp, double cmlv, double cmxp, string cmtype)
+sucam(int cmx, int cmy, int cmvx, int cmvy, int cmdr, int cmtime, double chp, double cmhp, double cmlv, double cmxp, string cmtype, int cmz=0, int cmvz=0)
 {
 sucamx = cmx;
 sucamy = cmy;
+sucamz = cmz;
 vision_x=cmvx;
 vision_y=cmvy;
+vision_z=cmvz;
 camdir = cmdr;
 turntime = cmtime;
 camhealth = chp;
@@ -30,7 +33,7 @@ alarmdelay_ms = 5000;
 alarmdelaytimer.restart();
 spawn_timer.restart();
 sucampool.destroy_sound(camsound);
-camsound = sucampool.play_3d(get_map_sound("objects/cameras/"+cameratype+"/*turn*"), me.x, me.y, me.z, sucamx, sucamy, 0, 0, false);
+camsound = sucampool.play_3d(get_map_sound("objects/cameras/"+cameratype+"/*turn*"), me.x, me.y, me.z, sucamx, sucamy, sucamz, 0, false);
 }
 }
 void camloop()
@@ -46,7 +49,7 @@ cam.camdir = 2;
 cam.turntimer.restart();
 cam.spot_check_timer.restart();
 sucampool.destroy_sound(cam.camsound);
-cam.camsound = sucampool.play_3d(get_map_sound("objects/cameras/" + cam.cameratype + "/*turn*"), me.x, me.y, me.z, cam.sucamx, cam.sucamy, 0, 0, false);
+cam.camsound = sucampool.play_3d(get_map_sound("objects/cameras/" + cam.cameratype + "/*turn*"), me.x, me.y, me.z, cam.sucamx, cam.sucamy, cam.sucamz, 0, false);
 }
 else if (cam.camdir == 2 && cam.turntimer.elapsed >= cam.turntime)
 {
@@ -54,14 +57,15 @@ cam.camdir = 1;
 cam.turntimer.restart();
 cam.spot_check_timer.restart();
 sucampool.destroy_sound(cam.camsound);
-cam.camsound = sucampool.play_3d(get_map_sound("objects/cameras/" + cam.cameratype + "/*turn*"), me.x, me.y, me.z, cam.sucamx, cam.sucamy, 0, 0, false);
+cam.camsound = sucampool.play_3d(get_map_sound("objects/cameras/" + cam.cameratype + "/*turn*"), me.x, me.y, me.z, cam.sucamx, cam.sucamy, cam.sucamz, 0, false);
 }
 }
 if (cam.spot_check_timer.elapsed >= random(1000, 2000))
 {
 bool in_y_range = absolute(me.y - cam.sucamy) <= cam.vision_y;
+bool in_z_range = (mapmode != "3d") || absolute(me.z - cam.sucamz) <= cam.vision_z;
 cam.spotted = false;
-if (in_y_range)
+if (in_y_range && in_z_range)
 {
 if (cam.camdir == 1 && me.x < cam.sucamx && (cam.sucamx - me.x) <= cam.vision_x)
 cam.spotted = true;
@@ -101,7 +105,7 @@ if (cam.camhealth <= 0)
 sucampool.destroy_sound(cam.alarmsound);
 sucampool.destroy_sound(cam.camsound);
 sucampool.destroy_sound(cam.wornsound);
-cam.defsound = sucampool.play_3d(get_map_sound("objects/cameras/"+cam.cameratype+"/*death*"), me.x, me.y, me.z, cam.sucamx, cam.sucamy, 0, 0, false);
+cam.defsound = sucampool.play_3d(get_map_sound("objects/cameras/"+cam.cameratype+"/*death*"), me.x, me.y, me.z, cam.sucamx, cam.sucamy, cam.sucamz, 0, false);
 if (xpmod >= 1)
 {
 double gained_xp = cam.camxp * cam.camlevel * xpmod;
@@ -114,9 +118,9 @@ continue;
 }
 }
 }
-void spawn_camera(int cx, int cy, int cvx, int cvy, int cdir, int turntime, double chp, double cmaxhp, double clv, double cxp, string camtype)
+void spawn_camera(int cx, int cy, int cvx, int cvy, int cdir, int turntime, double chp, double cmaxhp, double clv, double cxp, string camtype, int cz=0, int cvz=0)
 {
-sucam scam1(cx, cy, cvx, cvy, cdir, turntime, chp, cmaxhp, clv, cxp, camtype);
+sucam scam1(cx, cy, cvx, cvy, cdir, turntime, chp, cmaxhp, clv, cxp, camtype, cz, cvz);
 sucams.insert_last(scam1);
 }
 void destroy_all_cameras()
@@ -144,16 +148,22 @@ form.reset();
 form.create_window("security camera", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int rng = form.create_input_box("x seeing range", ""+maxx);
 int rng2 = form.create_input_box("y seeing range", ""+maxy);
+int rng3 = -1;
+if(mapmode == "3d") rng3 = form.create_input_box("z seeing range", ""+maxz);
 int sp = form.create_input_box("speed");
 int hp = form.create_input_box("health");
 int lev = form.create_input_box("level");
 int exper = form.create_input_box("xp");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(rng, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(rng2, disallowed_nums, false, "This character is not allowed.");
+if(rng3 != -1) form.set_disallowed_chars(rng3, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
@@ -231,6 +241,18 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
+if(rng3 != -1 && form.get_text(rng3) == "")
+{
+speak("Z seeing range is required.");
+form.focus(rng3);
+continue;
+}
 if(form.get_text(sp) == "")
 {
 speak("Speed is required.");
@@ -257,8 +279,10 @@ continue;
 }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int brng = string_to_number(form.get_text(rng));
 int brng2 = string_to_number(form.get_text(rng2));
+int brng3 = (rng3 != -1) ? string_to_number(form.get_text(rng3)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 double bhp = string_to_number(form.get_text(hp));
 double blev = string_to_number(form.get_text(lev));
@@ -268,8 +292,8 @@ int p = form.get_list_position(cam_list);
 string btype = (p > 0) ? cams[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_camera(bx, by, brng, brng2, bdir, bsp, bhp, blev, bxp, btype);
-spawn_camera(bx, by, brng, brng2, bdir, bsp, bhp, bhp, blev, bxp, btype);
+write_camera(bx, by, brng, brng2, bdir, bsp, bhp, blev, bxp, btype, bz, brng3);
+spawn_camera(bx, by, brng, brng2, bdir, bsp, bhp, bhp, blev, bxp, btype, bz, brng3);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -280,23 +304,31 @@ return;
 
 void read_camera(string[] sd)
 {
-int camx=stn(sd[1]);
-int cammy=stn(sd[2]);
-int cammer=stn(sd[3]);
-int cammer2=stn(sd[4]);
-int camdir=stn(sd[5]);
-int camtime=stn(sd[6]);
-double camhp=stn(sd[7]);
-double camlev=stn(sd[8]);
-double camxp=stn(sd[9]);
-string camtype=sd[10];
-spawn_camera(camx, cammy, cammer, cammer2, camdir, camtime, camhp, camhp, camlev, camxp, camtype);
+bool is_3d = sd.length() == 12;
+int o = 1;
+int camx = stn(sd[o]);
+int cammy = stn(sd[o+1]);
+int cammz = 0;
+if(is_3d) { cammz = stn(sd[o+2]); o += 3; } else o += 2;
+int cammer = stn(sd[o]);
+int cammer2 = stn(sd[o+1]);
+int cammer3 = 0;
+if(is_3d) { cammer3 = stn(sd[o+2]); o += 3; } else o += 2;
+int camdir = stn(sd[o]);
+int camtime = stn(sd[o+1]);
+double camhp = stn(sd[o+2]);
+double camlev = stn(sd[o+3]);
+double camxp = stn(sd[o+4]);
+string camtype = sd[o+5];
+spawn_camera(camx, cammy, cammer, cammer2, camdir, camtime, camhp, camhp, camlev, camxp, camtype, cammz, cammer3);
 }
 
-void write_camera(int x, int y, int camrange, int camrange2, int direction, int speed, double hp, double level, double xp, string camtype)
+void write_camera(int x, int y, int camrange, int camrange2, int direction, int speed, double hp, double level, double xp, string camtype, int z=0, int camrange3=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"camera "+x+" "+y+" "+camrange+" "+camrange2+" "+direction+" "+speed+" "+hp+" "+level+" "+xp+" "+camtype);
+string zsrc = (mapmode == "3d") ? (" "+z) : "";
+string zrng = (mapmode == "3d") ? (" "+camrange3) : "";
+mapper.write("\r\n"+"camera "+x+" "+y+zsrc+" "+camrange+" "+camrange2+zrng+" "+direction+" "+speed+" "+hp+" "+level+" "+xp+" "+camtype);
 mapper.close();
 }

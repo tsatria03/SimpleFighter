@@ -373,7 +373,20 @@ return;
 bool ready_to_land = false;
 if(mapmode == "2d") ready_to_land = (me.y <= 0 && aircrafts[i].plainy <= 0);
 else if(mapmode == "3d") ready_to_land = (me.z <= 0 && aircrafts[i].plainz <= 0);
-else ready_to_land = aircrafts[i].landing;
+else
+{
+if(airbeacons.length() == 0)
+ready_to_land = aircrafts[i].landing;
+else
+{
+bool topdown_on_beacon = false;
+for (uint b = 0; b < airbeacons.length(); b++)
+{
+if (airbeacons[b].is_on_beacon()) { topdown_on_beacon = true; break; }
+}
+ready_to_land = aircrafts[i].landing && topdown_on_beacon;
+}
+}
 if (ready_to_land && aircrafts[i].moveable == true)
 {
 bool on_valid_beacon = false;

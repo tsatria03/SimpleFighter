@@ -242,7 +242,7 @@ else
         running = !running;
     movetime = running ? runtime : walktime;
 }
-if (shift_is_down() && !key_down(KEY_G) && camdext == false && key_repeating(KEY_I) and doormove==false and elvmove==false)
+if (alt_is_down() && !key_down(KEY_G) && camdext == false && key_repeating(KEY_I) and doormove==false and elvmove==false)
 {
 if (inv.get_size() == 0)
 {
@@ -739,16 +739,34 @@ if((key_pressed(KEY_PAGEDOWN) || (key_pressed(KEY_S) && mapmode == "3d" && !alt_
 {
 if(moveable==true)
 {
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,-1);
+        movetimer.restart();
+    }
+    else
+    {
 key_step_pgdown();
 movetimer.restart();
+}
 }
 }
 if((key_pressed(KEY_PAGEUP) || (key_pressed(KEY_W) && mapmode == "3d" && !alt_is_down())) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and elvmove==false)
 {
 if(moveable==true)
 {
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,1);
+        movetimer.restart();
+    }
+    else
+    {
 key_step_pgup();
 movetimer.restart();
+}
 }
 }
 if(movetimer.elapsed>=movetime and doormove==false and elvmove==false)
@@ -797,10 +815,20 @@ if(moveable==true)
 {
     if(onhook && hookable==true)
 {
-facing="backward";
-bonecheck();
+    if(mapmode == "3d")
+    {
+        bonecheck();
+        hk.release_hook();
+        key_step_down();
+        movetimer.restart();
+    }
+    else
+    {
+        facing="backward";
+        bonecheck();
         hk.move_hook(0,-1);
-movetimer.restart();
+        movetimer.restart();
+    }
 }
     else
         {
@@ -815,10 +843,20 @@ if(moveable==true)
 {
     if(onhook && hookable==true)
 {
-facing="forward";
-bonecheck();
+    if(mapmode == "3d")
+    {
+        bonecheck();
+        hk.release_hook();
+        key_step_up();
+        movetimer.restart();
+    }
+    else
+    {
+        facing="forward";
+        bonecheck();
         hk.move_hook(0,1);
-movetimer.restart();
+        movetimer.restart();
+    }
 }
     else
         {
@@ -831,14 +869,31 @@ if((key_down(KEY_PAGEDOWN) || (key_down(KEY_S) && mapmode == "3d" && !alt_is_dow
 {
 if(moveable==true)
 {
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,-1);
+        movetimer.restart();
+    }
+    else
+    {
 key_step_pgdown();
 movetimer.restart();
+}
 }
 }
 if((key_down(KEY_PAGEUP) || (key_down(KEY_W) && mapmode == "3d" && !alt_is_down())) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
 {
 if(moveable==true)
 {
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,1);
+        movetimer.restart();
+    }
+    else
+    {
 key_step_pgup();
 movetimer.restart();
 }
@@ -866,7 +921,7 @@ hookusetimer.restart();
     }
     else
     {
-        hk.set_direction(2);
+        hk.set_direction(mapmode == "3d" ? 4 : 2);
         hk.throw_hook();
 hookusetimer.restart();
     }
@@ -971,6 +1026,16 @@ speak(son.facedir);
 {
 son.face("up");
 speak(son.facedir);}
+    if (mapmode == "3d" && shift_is_down() && !key_down(KEY_G) && camdext==false && key_pressed(KEY_I) && son.facedir=="zup"==false && son.enabled==true)
+{
+son.face("zup");
+speak("z up");
+}
+    if (mapmode == "3d" && shift_is_down() && !key_down(KEY_G) && camdext==false && key_pressed(KEY_K) && son.facedir=="zdown"==false && son.enabled==true)
+{
+son.face("zdown");
+speak("z down");
+}
 }
 if(shift_is_down() && key_repeating(KEY_F1) and jumpheight!=1 and jumpchange==true and mapmode != "topdown")
 {
