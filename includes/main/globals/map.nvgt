@@ -943,8 +943,66 @@ else if(platform_supports(me.x, me.y, me.z)) landed = true;
 if(landed)
 {
 if(fallcounter >= 0) p.destroy_sound(fallslot);
-if(fallcounter < 8) playland();
-else playfall();
+if(fallcounter >= 8 and shieldon == 1) shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100);
+if(fallcounter < 8)
+{
+playland();
+}
+else
+{
+playfall();
+if(fallcounter >= 8 and onbike)
+{
+int bdmg = max(1, fallcounter * fallmod);
+for(uint i = 0; i < bikes.length(); i++)
+{
+if(bikes[i].moveable)
+{
+bikes[i].bikehealth -= bdmg;
+kombatlog.insert_last(bdmg + " damage to " + bikes[i].biketype + ", falling down.");
+if(bikes[i].bikehealth <= 0)
+{
+health -= bdmg;
+kombatlog.insert_last(bdmg + " damage to player, falling down.");
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, bdmg, 10 * fallcounter, count);
+}
+break;
+}
+}
+}
+int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
+if(fallcounter >= 8 and shieldon == 1 and !onbike)
+{
+shieldstrength -= sdm;
+kombatlog.insert_last(sdm + " damage to " + shieldtype + ", falling down.");
+stun_target("me", "", 10 * fallcounter);
+if(shieldstrength <= 0)
+{
+health -= sdm;
+kombatlog.insert_last(sdm + " damage to player, falling down.");
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, sdm, 10 * fallcounter, count);
+}
+}
+int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
+if(fallcounter >= 8 and shieldon == 0 and !onbike)
+{
+health -= dmg;
+kombatlog.insert_last(dmg + " damage to player, falling down.");
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if(damage_percent <= 1) painfile = get_pack_sound("characters/" + chartype + "/general/*hurt*");
+else if(damage_percent >= 10) painfile = get_pack_sound("characters/" + chartype + "/general/*crit*");
+else painfile = get_pack_sound("characters/" + chartype + "/general/*hurt*");
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, dmg, 10 * fallcounter, count);
+}
+}
 falling = false;
 fallcounter = 0;
 }
