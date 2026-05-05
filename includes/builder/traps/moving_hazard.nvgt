@@ -3,41 +3,52 @@ class moving_hazard
 {
 int hazard_id;
 double minx,maxx,miny,maxy;
-double currentx,currenty;
-double sizex,sizey;
+double minz,maxz;
+double currentx,currenty,currentz;
+double sizex,sizey,sizez;
 string hazardtype;
 int move_mode;
 int snap_mode;
 int speed;
 bool moving_forward;
 timer move_timer;
-moving_hazard(double left_x,double right_x,double bottom_y,double top_y,double x_length,double y_length,int direction,int snap,int speed_in,string ht)
+moving_hazard(double left_x,double right_x,double bottom_y,double top_y,double x_length,double y_length,int direction,int snap,int speed_in,string ht,double bottom_z=0,double top_z=0,double z_length=1)
 {
 minx=left_x;
 maxx=right_x;
 miny=bottom_y;
 maxy=top_y;
+minz=bottom_z;
+maxz=top_z;
 sizex=x_length;
 sizey=y_length;
+sizez=z_length;
 currentx=minx;
 currenty=miny;
+currentz=minz;
 move_mode=direction;
 snap_mode=snap;
 if (speed_in <= 0) speed_in = 1;
 speed = speed_in;
 hazardtype=ht;
 moving_forward=true;
+if(mapmode == "3d")
+hazard_id = spawn_hazard(currentx, currentx + sizex, currenty, currenty + sizey, hazardtype, false, currentz, currentz + sizez);
+else
 hazard_id = spawn_hazard(currentx, currentx + sizex, currenty, currenty + sizey, hazardtype, false);
 }
 void update_hazard_position()
 {
+if(mapmode == "3d")
+update_hazard(hazard_id, currentx, currentx + sizex, currenty, currenty + sizey, currentz, currentz + sizez);
+else
 update_hazard(hazard_id, currentx, currentx + sizex, currenty, currenty + sizey);
 }
 void move()
 {
 if (move_timer.elapsed < speed) return;
 move_timer.restart();
-int dx=0,dy=0;
+int dx=0,dy=0,dz=0;
 bool reached_endpoint =false;
 switch(move_mode)
 {
@@ -63,9 +74,16 @@ dx=(move_mode==3?-1:1)*(moving_forward?1:-1);
 dy=(move_mode==3?1:-1)*(moving_forward?1:-1);
 reached_endpoint =(moving_forward && (currentx<=minx||currenty>=maxy))||(!moving_forward && (currentx>=maxx||currenty<=miny));
 break;
+case 8:
+case 9:
+dz=(move_mode==8?1:-1)*(moving_forward?1:-1);
+reached_endpoint =(moving_forward && (move_mode==8 ? currentz>=maxz : currentz<=minz))||(!moving_forward && (move_mode==8 ? currentz<=minz : currentz>=maxz));
+break;
 }
 currentx+=dx;
 currenty+=dy;
+currentz+=dz;
+bool z_mode = (move_mode == 8 || move_mode == 9);
 if(reached_endpoint )
 {
 switch(snap_mode)
@@ -76,33 +94,34 @@ break;
 case 1:
 if(moving_forward)
 {
-currentx=minx;
-currenty=miny;
+if(z_mode) currentz = (move_mode == 8) ? minz : maxz;
+else { currentx=minx; currenty=miny; }
 }
 break;
 case 2:
 if(!moving_forward)
 {
-currentx=maxx;
-currenty=maxy;
+if(z_mode) currentz = (move_mode == 8) ? maxz : minz;
+else { currentx=maxx; currenty=maxy; }
 }
 break;
 case 3:
 if(moving_forward)
 {
-currentx=maxx;
-currenty=maxy;
+if(z_mode) currentz = (move_mode == 8) ? maxz : minz;
+else { currentx=maxx; currenty=maxy; }
 }
 else
 {
-currentx=minx;
-currenty=miny;
+if(z_mode) currentz = (move_mode == 8) ? minz : maxz;
+else { currentx=minx; currenty=miny; }
 }
 break;
 }
 }
 currentx=clamp(currentx,minx,maxx);
 currenty=clamp(currenty,miny,maxy);
+if(mapmode == "3d") currentz=clamp(currentz,minz,maxz);
 update_hazard_position();
 }
 }
@@ -113,9 +132,9 @@ for(uint  i=0; i<moving_hazards.length(); i++)
 moving_hazards[i].move();
 }
 }
-void spawn_moving_hazard(double left_x,double right_x,double bottom_y,double top_y,double x_length,double y_length,int direction,int snap,int speed,string hazardtype)
+void spawn_moving_hazard(double left_x,double right_x,double bottom_y,double top_y,double x_length,double y_length,int direction,int snap,int speed,string hazardtype,double bottom_z=0,double top_z=0,double z_length=1)
 {
-moving_hazard mh1(left_x,right_x,bottom_y,top_y,x_length,y_length,direction,snap,speed,hazardtype);
+moving_hazard mh1(left_x,right_x,bottom_y,top_y,x_length,y_length,direction,snap,speed,hazardtype,bottom_z,top_z,z_length);
 moving_hazards.insert_last(mh1);
 }
 void destroy_all_moving_hazards()
@@ -139,19 +158,30 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("moving hazard", false);
+bool y_uses_back_front = mapmode != "2d";
 int mx = form.create_input_box("left x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("right x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("bottom y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("top y", sel_top_set ? sel_top : "");
-int sx = form.create_input_box("maximum x length", sel_right_set ? sel_right : "");
-int sy = form.create_input_box("maximum y length", sel_top_set ? sel_top : "");
+int my = form.create_input_box(y_uses_back_front ? "back y" : "bottom y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int my2 = form.create_input_box(y_uses_back_front ? "front y" : "top y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+int mnz = -1, mxz = -1, sz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("bottom z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("top z", sel_top_set ? sel_top : "");
+}
+int sx = form.create_input_box("x length of hazard", sel_right_set ? sel_right : "");
+int sy = form.create_input_box("y length of hazard", sel_top_set ? sel_top : "");
+if(mapmode == "3d") sz = form.create_input_box("z length of hazard", "1");
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sy, disallowed_nums, false, "This character is not allowed.");
+if(sz != -1) form.set_disallowed_chars(sz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int dir_list = form.create_list("direction");
 form.add_list_item(dir_list, "right and left", "right and left");
@@ -162,6 +192,11 @@ form.add_list_item(dir_list, "left and right", "left and right");
 form.add_list_item(dir_list, "down and up", "down and up");
 form.add_list_item(dir_list, "diagonal down/left and up/right", "diagonal down/left and up/right");
 form.add_list_item(dir_list, "diagonal down/right and up/left", "diagonal down/right and up/left");
+if(mapmode == "3d")
+{
+form.add_list_item(dir_list, "bottom to top on z", "bottom to top on z");
+form.add_list_item(dir_list, "top to bottom on z", "top to bottom on z");
+}
 form.set_list_position(dir_list, 0, false);
 int snap_list = form.create_list("snap mode");
 form.add_list_item(snap_list, "no snapping", "no snapping");
@@ -237,8 +272,20 @@ continue;
 }
 if(form.get_text(my2) == "")
 {
-speak("Top y is required.");
+speak((mapmode != "2d") ? "Front y is required." : "Top y is required.");
 form.focus(my2);
+continue;
+}
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Bottom z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Top z is required.");
+form.focus(mxz);
 continue;
 }
 if(form.get_text(sx) == "")
@@ -249,8 +296,14 @@ continue;
 }
 if(form.get_text(sy) == "")
 {
-speak("Maximum y length is required.");
+speak("Y length of hazard is required.");
 form.focus(sy);
+continue;
+}
+if(sz != -1 && form.get_text(sz) == "")
+{
+speak("Z length of hazard is required.");
+form.focus(sz);
 continue;
 }
 if(form.get_text(sp) == "")
@@ -263,8 +316,11 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 double bsx = string_to_number(form.get_text(sx));
 double bsy = string_to_number(form.get_text(sy));
+double bsz = (sz != -1) ? string_to_number(form.get_text(sz)) : 1;
 int bsp = string_to_number(form.get_text(sp));
 int bdir = form.get_list_position(dir_list);
 int bsnap = form.get_list_position(snap_list);
@@ -272,8 +328,8 @@ int p = form.get_list_position(hazard_list);
 string btype = (p > 0) ? hazards[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_mhazard(bx, bx2, by, by2, bsx, bsy, bdir, bsnap, bsp, btype);
-spawn_moving_hazard(bx, bx2, by, by2, bsx, bsy, bdir, bsnap, bsp, btype);
+write_mhazard(bx, bx2, by, by2, bsx, bsy, bdir, bsnap, bsp, btype, bmnz, bmxz, bsz);
+spawn_moving_hazard(bx, bx2, by, by2, bsx, bsy, bdir, bsnap, bsp, btype, bmnz, bmxz, bsz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -288,19 +344,33 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-double sx=stn(sd[5]);
-double sy=stn(sd[6]);
-int dir=stn(sd[7]);
-int dir2=stn(sd[8]);
-int sp=stn(sd[9]);
-string hazardtype=sd[10];
-spawn_moving_hazard(mx, mx2, my, my2, sx, sy, dir, dir2, sp, hazardtype);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+double sx=stn(sd[o]);
+double sy=stn(sd[o+1]);
+double sz=1;
+if(mapmode == "3d") { sz=stn(sd[o+2]); o+=3; } else o+=2;
+int dir=stn(sd[o]);
+int dir2=stn(sd[o+1]);
+int sp=stn(sd[o+2]);
+string hazardtype=sd[o+3];
+spawn_moving_hazard(mx, mx2, my, my2, sx, sy, dir, dir2, sp, hazardtype, mnz, mxz, sz);
 }
 
-void write_mhazard(double x1, double x2, double y1, double y2, double sx, double sy, int direction, int direction2, int speed, string hazardtype)
+void write_mhazard(double x1, double x2, double y1, double y2, double sx, double sy, int direction, int direction2, int speed, string hazardtype, double minz=0, double maxz=0, double sz=1)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"mhazard "+x1+" "+x2+" "+y1+" "+y2+" "+sx+" "+sy+" "+direction+" "+direction2+" "+speed+" "+hazardtype);
+string bounds = x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") bounds += " "+minz+" "+maxz;
+string sizes = sx+" "+sy;
+if(mapmode == "3d") sizes += " "+sz;
+mapper.write("\r\n"+"mhazard "+bounds+" "+sizes+" "+direction+" "+direction2+" "+speed+" "+hazardtype);
 mapper.close();
 }
