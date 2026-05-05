@@ -21,7 +21,7 @@ update_sound_pools();
 checkdeath();
 checkloc();
 checkpassages();
-wepchar.check_reload(int(me.x), int(me.y));
+wepchar.check_reload(int(me.x), int(me.y), int(me.z));
 
 calendarcheck();
 clockcheck();
@@ -911,7 +911,7 @@ modspeed-=1;
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*change*"),false);
 speak("speed"+modspeed);
 }
-if(!shift_is_down() && key_repeating(KEY_F) && hookusetimer.elapsed>=hookusetime && doormove==false && elvmove==false && hookable==true)
+if(!shift_is_down() && key_repeating(KEY_F) && hookusetimer.elapsed>=hookusetime && doormove==false && elvmove==false && hookable==true && mapmode != "topdown")
 {
 bonecheck();
     if(onhook)
@@ -1020,12 +1020,12 @@ speak(son.facedir);
     if (!shift_is_down() && key_pressed(KEY_K) && son.facedir=="down"==false && son.enabled==true)
 {
 son.face("down");
-speak(son.facedir);
+speak(mapmode == "topdown" ? "back" : son.facedir);
 }
     if (!shift_is_down() && key_pressed(KEY_I) && son.facedir=="up"==false && son.enabled==true)
 {
 son.face("up");
-speak(son.facedir);}
+speak(mapmode == "topdown" ? "front" : son.facedir);}
     if (mapmode == "3d" && shift_is_down() && !key_down(KEY_G) && camdext==false && key_pressed(KEY_I) && son.facedir=="zup"==false && son.enabled==true)
 {
 son.face("zup");
@@ -1416,8 +1416,8 @@ speak("This weapon is already loaded with ammo.");
 else if(melee==false and wepchar.loaded_ammo<=0)
 {
 if(wepchar.is_reloading) speak("This weapon is still reloading.");
-else if(wepchar.ammo <= 0) { wepchar.start_reload(int(me.x), int(me.y)); speak("No ammo."); }
-else wepchar.start_reload(int(me.x), int(me.y));
+else if(wepchar.ammo <= 0) { wepchar.start_reload(int(me.x), int(me.y), int(me.z)); speak("No ammo."); }
+else wepchar.start_reload(int(me.x), int(me.y), int(me.z));
 }
 }
 }
@@ -1537,12 +1537,12 @@ speak("shield strength,"+round(shieldstrength/maxshieldstrength*100,2)+"percent"
 if(control_is_down() and fireable==true and doormove==false and elvmove==false)
 {
 drawable=true;
-wepchar.auto_fire(int(me.x), int(me.y), facing, int(attack * 2));
+wepchar.auto_fire(int(me.x), int(me.y), facing, int(attack * 2), int(me.z));
 }
 if(key_pressed(KEY_LCONTROL) and fireable==true and doormove==false and elvmove==false or key_pressed(KEY_RCONTROL) and fireable==true and doormove==false and elvmove==false)
 {
 drawable=true;
-wepchar.manual_fire(int(me.x), int(me.y), facing, int(attack * 2));
+wepchar.manual_fire(int(me.x), int(me.y), facing, int(attack * 2), int(me.z));
 }
 if(!shift_is_down() and key_repeating(KEY_E))
 {
@@ -1760,6 +1760,7 @@ return;
 if(mres==2)
 {
 speak("canceled");
+}
 }
 }
 }

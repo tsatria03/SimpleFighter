@@ -251,7 +251,7 @@ entry_types.insert_last("aircraft"); entry_indices.insert_last(i); entry_labels.
 for(uint i=0; i<npcs.length(); i++)
 {
 if(is_obscured("npc", "menu")) continue;
-m.add_item_tts(npcs[i].subtype+" "+"at;"+npcs[i].x+" "+npcs[i].y+" "+"HP"+round(npcs[i].health/npcs[i].maxhealth*100,2)+"percent"+" "+"level"+npcs[i].level);
+m.add_item_tts(npcs[i].subtype+" "+"at;"+npcs[i].x+" "+npcs[i].y+(mapmode == "3d" ? " "+npcs[i].z : "")+" "+"HP"+round(npcs[i].health/npcs[i].maxhealth*100,2)+"percent"+" "+"level"+npcs[i].level);
 entry_types.insert_last("npc"); entry_indices.insert_last(i); entry_labels.insert_last(npcs[i].subtype);
 }
 for(uint i=0; i<bikes.length(); i++)
@@ -371,8 +371,9 @@ m.add_item_tts("upgrade maximum character stamina,"+"currently set to;"+maxstami
 m.add_item_tts("upgrade maximum character lives,"+"currently set to;"+lifecard, "umlf");
 if(drawnshield==true) m.add_item_tts("upgrade maximum shield strength,"+"currently set to;"+maxshieldstrength, "umst");
 if(drawnshield==true) m.add_item_tts("upgrade maximum shield defence,"+"currently set to;"+shielddefence, "umsd");
-m.add_item_tts("upgrade maximum horizontal weapon range,"+"currently set to;"+wepchar.range, "umra1");
-m.add_item_tts("upgrade maximum vertical weapon range,"+"currently set to;"+wepchar.range2, "umra2");
+m.add_item_tts("upgrade maximum x weapon range,"+"currently set to;"+wepchar.range, "umra1");
+m.add_item_tts("upgrade maximum y weapon range,"+"currently set to;"+wepchar.range2, "umra2");
+if(mapmode == "3d") m.add_item_tts("upgrade maximum z weapon range,"+"currently set to;"+wepchar.range3, "umra3");
 m.add_item_tts("back", "back");
 int mres=m.run("Points menu. ",true);
 string ptmem=m.get_item_name(mres);
@@ -608,7 +609,7 @@ return;
 else if(points>=1)
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string rg1=vd.input_box("","How much horizontal weapon range would you like to buy?");
+string rg1=vd.input_box("","How much x weapon range would you like to buy?");
 if(rg1=="")
 {
 speak("canceled");
@@ -621,7 +622,7 @@ resume_pools();
 speak("Perchis completed.");
 wepchar.range+=tempstat;
 points-=tempstat;
-wepchar.update_hl_range(wepchar.range);
+wepchar.update_x_range(wepchar.range);
 }
 }
 if(ptmem=="umra2")
@@ -635,7 +636,7 @@ return;
 else if(points>=2)
 {
 vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string rg2=vd.input_box("","How much vertical weapon range would you like to buy?");
+string rg2=vd.input_box("","How much y weapon range would you like to buy?");
 if(rg2=="")
 {
 speak("canceled");
@@ -648,7 +649,34 @@ resume_pools();
 speak("Perchis completed.");
 wepchar.range2+=tempstat;
 points-=tempstat;
-wepchar.update_vl_range(wepchar.range2);
+wepchar.update_y_range(wepchar.range2);
+}
+}
+if(ptmem=="umra3")
+{
+if(points<=0)
+{
+dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
+resume_pools();
+return;
+}
+else if(points>=3)
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string rg3=vd.input_box("","How much z weapon range would you like to buy?");
+if(rg3=="")
+{
+speak("canceled");
+pointsmenu();
+return;
+}
+double tempstat=string_to_number(rg3);
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*buy*"),false);
+resume_pools();
+speak("Perchis completed.");
+wepchar.range3+=tempstat;
+points-=tempstat;
+wepchar.update_z_range(wepchar.range3);
 }
 }
 if(ptmem=="back")
@@ -693,7 +721,7 @@ wepdef=0;
 wepchar.cad="archery";
 t.destroy_sound(prevslot);
 wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y));
+wepchar.play_draw(int(me.x), int(me.y), int(me.z));
 speak(wepchar.sub + " equipped");
 }
 }
@@ -719,7 +747,7 @@ wepdef=0;
 wepchar.cad="artillery";
 t.destroy_sound(prevslot);
 wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y));
+wepchar.play_draw(int(me.x), int(me.y), int(me.z));
 speak(wepchar.sub + " equipped");
 }
 }
@@ -745,7 +773,7 @@ wepdef=0;
 wepchar.cad="explosive";
 t.destroy_sound(prevslot);
 wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y));
+wepchar.play_draw(int(me.x), int(me.y), int(me.z));
 speak(wepchar.sub + " equipped");
 }
 }
@@ -771,7 +799,7 @@ wepdef=0;
 wepchar.cad="melee";
 t.destroy_sound(prevslot);
 wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y));
+wepchar.play_draw(int(me.x), int(me.y), int(me.z));
 speak(wepchar.sub + " equipped");
 }
 }

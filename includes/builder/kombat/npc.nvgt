@@ -1,12 +1,12 @@
 npc@[] npcs(0);
 class npc
 {
-    int x, y;
+    int x, y, z;
     string path;
     string category;
     string subtype;
-    int hrange, vrange;
-    int hsight, vsight;
+    int hrange, vrange, zrange;
+    int hsight, vsight, zsight;
     double maxhealth;
     int lives;
     int attack;
@@ -22,8 +22,8 @@ class npc
     bool ambient_heal;
     timer rest_heal_timer;
     timer ambient_heal_timer;
-    int w_hrange, w_vrange;
-    int w_hsight, w_vsight;
+    int w_hrange, w_vrange, w_zrange;
+    int w_hsight, w_vsight, w_zsight;
     int w_lives;
     int w_attack;
     int w_defence;
@@ -31,8 +31,8 @@ class npc
     int w_movetime;
     double w_level;
     double w_xpvalue;
-    int h_hrange, h_vrange;
-    int h_hsight, h_vsight;
+    int h_hrange, h_vrange, h_zrange;
+    int h_hsight, h_vsight, h_zsight;
     int h_lives;
     int h_attack;
     int h_defence;
@@ -43,9 +43,11 @@ class npc
     bool fireable;
     bool move_x;
     bool move_y;
+    bool move_z;
     bool dropitem;
     bool tel_x;
     bool tel_y;
+    bool tel_z;
     int facing_dx;
     bool launching;
     string launch_path;
@@ -61,6 +63,7 @@ class npc
     int telsound;
     int patrol_x_min, patrol_x_max;
     int patrol_y_min, patrol_y_max;
+    int patrol_z_min, patrol_z_max;
     double health;
     int currentlives;
     bool spotted;
@@ -78,6 +81,7 @@ class npc
     int active_terrain_speed;
     bool patrol_x_terrain;
     bool patrol_y_terrain;
+    bool patrol_z_terrain;
     bool chase_terrains;
     int taunttime;
     int spawnsound, mainsound, defsound, hurtsound, stepsound, tilesound, wepsound, healsound;
@@ -98,18 +102,19 @@ class npc
     bool random_chasing;
     timer random_phase_timer;
     int random_phase_duration;
-    int wander_x, wander_y;
+    int wander_x, wander_y, wander_z;
     bool has_wander_dest;
-    int patrol_dx, patrol_dy;
+    int patrol_dx, patrol_dy, patrol_dz;
     bool wander_paused;
     timer wander_pause_timer;
     int wander_pause_duration;
     timer wander_travel_timer;
     string last_state;
-    npc(int sx, int sy, int scale_level, string p, string cat, string sub)
+    npc(int sx, int sy, int scale_level, string p, string cat, string sub, int sz=0)
     {
         x = sx;
         y = sy;
+        z = sz;
         path = p;
         category = cat;
         subtype = sub;
@@ -135,12 +140,14 @@ class npc
         random_chasing = false;
         random_phase_duration = 0;
         has_wander_dest = false;
-        patrol_dx = 1; patrol_dy = 1;
+        patrol_dx = 1; patrol_dy = 1; patrol_dz = 1;
         wander_paused = false;
         wander_pause_duration = 0;
         last_state = "normal";
         tel_x = false;
         tel_y = false;
+        tel_z = false;
+        move_z = false;
         ambient_heal = false;
         facing_dx = 1;
         launching = false;
@@ -153,8 +160,10 @@ class npc
         tel_h_min = -1; tel_h_max = -1;
         patrol_x_min = minx; patrol_x_max = maxx;
         patrol_y_min = miny; patrol_y_max = maxy;
+        patrol_z_min = int(minz); patrol_z_max = int(maxz);
         patrol_x_terrain = false;
         patrol_y_terrain = false;
+        patrol_z_terrain = false;
         npc_parse(this);
         if(patrol_x_terrain)
         {
@@ -172,12 +181,22 @@ class npc
             patrol_y_min = ly;
             patrol_y_max = ry;
         }
+        if(mapmode == "3d" && patrol_z_terrain)
+        {
+            int lz = sz, rz = sz;
+            while(lz > int(minz) && npc_terrain_allows(this, sx, sy, lz - 1)) lz--;
+            while(rz < int(maxz) && npc_terrain_allows(this, sx, sy, rz + 1)) rz++;
+            patrol_z_min = lz;
+            patrol_z_max = rz;
+        }
         if(scale_level > 0)
         {
             hrange = 0;
             vrange = 0;
+            zrange = 0;
             hsight = maxx;
             vsight = maxy;
+            zsight = int(maxz);
             maxhealth = xp + 1;
             attack = int(xp) + 1;
             lives = 1;
@@ -188,13 +207,14 @@ class npc
             fireable = true;
             move_x = true;
             move_y = random_bool();
+            move_z = random_bool();
             dropitem = random_bool();
             run_health = 0;
             heal_amount = 0;
             rest_heal_time = 0;
             ambient_heal_time = 0;
-            w_hrange = hrange; w_vrange = vrange;
-            w_hsight = hsight; w_vsight = vsight;
+            w_hrange = hrange; w_vrange = vrange; w_zrange = zrange;
+            w_hsight = hsight; w_vsight = vsight; w_zsight = zsight;
             w_lives = lives;
             w_attack = attack;
             w_defence = defence;
@@ -202,8 +222,8 @@ class npc
             w_movetime = movetime;
             w_level = this.level;
             w_xpvalue = xpvalue;
-            h_hrange = hrange; h_vrange = vrange;
-            h_hsight = hsight; h_vsight = vsight;
+            h_hrange = hrange; h_vrange = vrange; h_zrange = zrange;
+            h_hsight = hsight; h_vsight = vsight; h_zsight = zsight;
             h_lives = lives;
             h_attack = attack;
             h_defence = defence;
@@ -216,7 +236,7 @@ class npc
         last_health = maxhealth;
         currentlives = lives;
         sound_pool@ pool = npc_pool(category);
-        spawnsound = pool.play_extended_3d(get_map_sound("kombat/npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, me.z, x, y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+        spawnsound = pool.play_extended_3d(get_map_sound("kombat/npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, me.z, x, y, z, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         wephum.cad = "";
         wephum.sub = "";
         if(category == "humans" && fireable && targets.length() > 0)
@@ -228,7 +248,7 @@ class npc
             {
                 string rolled_sub = random_string(weapons);
                 wephum.parse(rolled_cat, rolled_sub);
-                wephum.play_draw(x, y);
+                wephum.play_draw(x, y, z);
             }
             refon = false;
         }
@@ -327,10 +347,12 @@ int roll_range(int min_v, int max_v)
 
 int smart_int(string v)
 {
-    if(v == "maxx") return maxx;
-    if(v == "maxy") return maxy;
-    if(v == "minx") return minx;
-    if(v == "miny") return miny;
+    if(v == "maxx") return int(maxx);
+    if(v == "maxy") return int(maxy);
+    if(v == "maxz") return int(maxz);
+    if(v == "minx") return int(minx);
+    if(v == "miny") return int(miny);
+    if(v == "minz") return int(minz);
     return parse_int(v);
 }
 
@@ -384,10 +406,12 @@ void npc_parse_file(npc@ self, string path)
         if(data.length() < 2) continue;
         string k = data[0];
         string v = data[1];
-        if(k == "horizontal att range") parse_triple_int(v, self.hrange, self.w_hrange, self.h_hrange);
-        else if(k == "vertical att range") parse_triple_int(v, self.vrange, self.w_vrange, self.h_vrange);
-        else if(k == "horizontal sight range") parse_triple_int(v, self.hsight, self.w_hsight, self.h_hsight);
-        else if(k == "vertical sight range") parse_triple_int(v, self.vsight, self.w_vsight, self.h_vsight);
+        if(k == "x attack range") parse_triple_int(v, self.hrange, self.w_hrange, self.h_hrange);
+        else if(k == "y attack range") parse_triple_int(v, self.vrange, self.w_vrange, self.h_vrange);
+        else if(k == "z attack range") parse_triple_int(v, self.zrange, self.w_zrange, self.h_zrange);
+        else if(k == "x sight range") parse_triple_int(v, self.hsight, self.w_hsight, self.h_hsight);
+        else if(k == "y sight range") parse_triple_int(v, self.vsight, self.w_vsight, self.h_vsight);
+        else if(k == "z sight range") parse_triple_int(v, self.zsight, self.w_zsight, self.h_zsight);
         else if(k == "health")
         {
             string[] parts = string_split(v, ":", true);
@@ -447,9 +471,11 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "attacking") self.fireable = string_to_bool(v);
         else if(k == "move x") self.move_x = string_to_bool(v);
         else if(k == "move y") self.move_y = string_to_bool(v);
+        else if(k == "move z") self.move_z = string_to_bool(v);
         else if(k == "drop item") self.dropitem = string_to_bool(v);
         else if(k == "tel x") self.tel_x = string_to_bool(v);
         else if(k == "tel y") self.tel_y = string_to_bool(v);
+        else if(k == "tel z") self.tel_z = string_to_bool(v);
         else if(k == "patrol x range")
         {
             if(v == "terrain") self.patrol_x_terrain = true;
@@ -468,6 +494,16 @@ void npc_parse_file(npc@ self, string path)
                 string[] parts = string_split(v, ",", true);
                 self.patrol_y_min = smart_int(parts[0]);
                 self.patrol_y_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_y_min;
+            }
+        }
+        else if(k == "patrol z range")
+        {
+            if(v == "terrain") self.patrol_z_terrain = true;
+            else
+            {
+                string[] parts = string_split(v, ",", true);
+                self.patrol_z_min = smart_int(parts[0]);
+                self.patrol_z_max = (parts.length() >= 2 && parts[1] != "") ? smart_int(parts[1]) : self.patrol_z_min;
             }
         }
         else if(k == "teleport time")
@@ -540,14 +576,14 @@ bool npc_protects(npc@ self, string cat)
     return false;
 }
 
-bool npc_terrain_allows(npc@ self, int tx, int ty)
+bool npc_terrain_allows(npc@ self, int tx, int ty, int tz = 0)
 {
     if(self.terrain.length() == 0) return true;
     for(uint j=0; j<self.terrain.length(); j++)
     {
         if(self.terrain[j] == "any") return true;
     }
-    string tile = gmt(tx, ty);
+    string tile = (mapmode == "3d") ? gmt(tx, ty, tz) : gmt(tx, ty);
     for(uint j=0; j<self.terrain.length(); j++)
     {
         if(self.terrain[j] == "" || self.terrain[j] == "any") continue;
@@ -556,9 +592,9 @@ bool npc_terrain_allows(npc@ self, int tx, int ty)
     return false;
 }
 
-int npc_territory_speed_at(npc@ self, int tx, int ty)
+int npc_territory_speed_at(npc@ self, int tx, int ty, int tz = 0)
 {
-    string tile = gmt(tx, ty);
+    string tile = (mapmode == "3d") ? gmt(tx, ty, tz) : gmt(tx, ty);
     int speed = 0;
     for(uint j=0; j<self.terrain.length(); j++)
     {
@@ -573,10 +609,10 @@ int npc_territory_speed_at(npc@ self, int tx, int ty)
     return speed;
 }
 
-void spawn_npc(int x, int y, int scale_level, string path, string category, string subtype)
+void spawn_npc(int x, int y, int scale_level, string path, string category, string subtype, int z=0)
 {
     if(subtype == "" || subtype == "none") return;
-    npc n(x, y, scale_level, path, category, subtype);
+    npc n(x, y, scale_level, path, category, subtype, z);
     npcs.insert_last(n);
 }
 
@@ -586,7 +622,7 @@ void destroy_all_npcs()
     {
         sound_pool@ pool = npc_pool(npcs[i].category);
         if(npcs[i].category == "helpers")
-            pool.play_3d(get_map_sound("kombat/npc/helpers/"+npcs[i].subtype+"/*remove*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, false);
+            pool.play_3d(get_map_sound("kombat/npc/helpers/"+npcs[i].subtype+"/*remove*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, 0, false);
         pool.destroy_sound(npcs[i].mainsound);
         pool.destroy_sound(npcs[i].spawnsound);
         pool.destroy_sound(npcs[i].refsound);
@@ -601,1238 +637,34 @@ void read_npc(string[] sd)
 {
     int x = stn(sd[1]);
     int y = stn(sd[2]);
-    int scale_level = stn(sd[3]);
-    string path = sd[4];
-    string category = sd[5];
-    string subtype = sd[6];
-    spawn_npc(x, y, scale_level, path, category, subtype);
+    if(sd.length() == 8)
+    {
+        int z = stn(sd[3]);
+        int scale_level = stn(sd[4]);
+        string path = sd[5];
+        string category = sd[6];
+        string subtype = sd[7];
+        spawn_npc(x, y, scale_level, path, category, subtype, z);
+    }
+    else
+    {
+        int scale_level = stn(sd[3]);
+        string path = sd[4];
+        string category = sd[5];
+        string subtype = sd[6];
+        spawn_npc(x, y, scale_level, path, category, subtype, 0);
+    }
 }
 
-void write_npc(int x, int y, int scale_level, string path, string category, string subtype)
+void write_npc(int x, int y, int scale_level, string path, string category, string subtype, int z=0)
 {
     mapper.open("data/maps/decompiled/"+mapname+"/info.sif", "ab");
     mapdata = mapper.read();
-    mapper.write("\r\n"+"npc "+x+" "+y+" "+scale_level+" "+path+" "+category+" "+subtype);
-    mapper.close();
-}
-
-void npc_play_pain(int dmg)
-{
-    int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
-    string painfile;
-    if(damage_percent >= 10)
-        painfile = get_pack_sound("characters/"+chartype+"/general/*crit*");
+    if(mapmode == "3d")
+        mapper.write("\r\n"+"npc "+x+" "+y+" "+z+" "+scale_level+" "+path+" "+category+" "+subtype);
     else
-        painfile = get_pack_sound("characters/"+chartype+"/general/*hurt*");
-    painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
-}
-
-void npc_apply_break_charbones(int dmg, string category)
-{
-    if(category != "animals" && category != "zombies") return;
-    if((dmg >= 100 && dmg <= 500 && dmg >= random(100, 500)) || dmg > 500)
-    {
-        int ct = clamp(dmg * 2, 0, 100);
-        int count = clamp(dmg / 15, 1, 5);
-        break_charbones(ct, dmg, random(100, 200), count);
-    }
-}
-
-void npcloop()
-{
-    for(uint i = 0; i < npcs.length(); i++)
-    {
-        sound_pool@ pool = npc_pool(npcs[i].category);
-        string sound_base = "kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype;
-        bool human_armed = (npcs[i].category == "humans" && npcs[i].wephum.cad != "");
-
-        // tick the human's reload timer
-        if(human_armed) npcs[i].wephum.check_reload(npcs[i].x, npcs[i].y);
-
-        // human melee reflection toggle
-        if(human_armed && npcs[i].fireable && npcs[i].wephum.cad == "melee" && npcs[i].reftimer.elapsed >= random(5000, 10000))
-        {
-            pool.destroy_sound(npcs[i].refsound2);
-            if(!npcs[i].refon)
-            {
-                npcs[i].refsound = pool.play_extended_3d(get_pack_sound("equipments/weapons/"+npcs[i].wephum.cad+"/"+npcs[i].wephum.sub+"/*on*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                npcs[i].refsound2 = pool.play_extended_3d(get_pack_sound("equipments/weapons/"+npcs[i].wephum.cad+"/"+npcs[i].wephum.sub+"/*ref*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
-                npcs[i].refon = true;
-            }
-            else
-            {
-                npcs[i].refsound = pool.play_extended_3d(get_pack_sound("equipments/weapons/"+npcs[i].wephum.cad+"/"+npcs[i].wephum.sub+"/*off*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                npcs[i].refon = false;
-            }
-            npcs[i].reftimer.restart();
-        }
-
-        // detect damage taken since last tick (drives provoke)
-        if(npcs[i].health < npcs[i].last_health)
-        {
-            npcs[i].provoked = true;
-            npcs[i].provoke_lost_timer.restart();
-        }
-        npcs[i].last_health = npcs[i].health;
-
-        // territorial trigger: player standing on a defended tile provokes the creature
-        npcs[i].active_terrain_speed = 0;
-        if(npc_targets(npcs[i], "player") && inplain == false && invehicle == false)
-        {
-            int tspd = npc_territory_speed_at(npcs[i], int(me.x), int(me.y));
-            if(tspd > 0)
-            {
-                npcs[i].active_terrain_speed = tspd;
-                npcs[i].provoked = true;
-                npcs[i].provoke_lost_timer.restart();
-            }
-        }
-
-        // pick nearest valid combat target (player or another npc)
-        bool combat_found = false;
-        bool target_is_player = false;
-        int target_npc = -1;
-        int combat_tx = 0, combat_ty = 0;
-        int best_dist = 0;
-        if(npc_targets(npcs[i], "player") && inplain == false && invehicle == false)
-        {
-            int d = absolute(me.x - npcs[i].x) + absolute(me.y - npcs[i].y);
-            best_dist = d;
-            combat_tx = me.x; combat_ty = me.y;
-            target_is_player = true;
-            target_npc = -1;
-            combat_found = true;
-        }
-        for(uint j = 0; j < npcs.length(); j++)
-        {
-            if(j == i) continue;
-            if(npcs[j].health <= 0) continue;
-            if(!npc_targets(npcs[i], npcs[j].category)) continue;
-            int d = absolute(npcs[j].x - npcs[i].x) + absolute(npcs[j].y - npcs[i].y);
-            if(!combat_found || d < best_dist)
-            {
-                best_dist = d;
-                combat_tx = npcs[j].x; combat_ty = npcs[j].y;
-                target_is_player = false;
-                target_npc = int(j);
-                combat_found = true;
-            }
-        }
-
-        // determine state: normal / wounded / healing
-        bool sub_threshold = npc_below_threshold(npcs[i]);
-        bool target_in_w_sight = combat_found && absolute(combat_tx - npcs[i].x) <= npcs[i].w_hsight && absolute(combat_ty - npcs[i].y) <= npcs[i].w_vsight;
-        bool in_wounded = sub_threshold && target_in_w_sight;
-        bool in_healing = sub_threshold && !target_in_w_sight;
-        bool in_normal = !sub_threshold;
-
-        // state transition: reset wander state on entering normal
-        string cur_state = in_normal ? "normal" : (in_wounded ? "wounded" : "healing");
-        if(cur_state != npcs[i].last_state)
-        {
-            if(cur_state == "normal")
-            {
-                npcs[i].has_wander_dest = false;
-                npcs[i].wander_paused = false;
-                npcs[i].random_phase_duration = 0;
-            }
-            npcs[i].last_state = cur_state;
-        }
-
-        if(in_healing)
-        {
-            combat_found = false;
-            target_npc = -1;
-        }
-        int eff_hrange = in_normal ? npcs[i].hrange : (in_wounded ? npcs[i].w_hrange : npcs[i].h_hrange);
-        int eff_vrange = in_normal ? npcs[i].vrange : (in_wounded ? npcs[i].w_vrange : npcs[i].h_vrange);
-        int eff_hsight = in_normal ? npcs[i].hsight : (in_wounded ? npcs[i].w_hsight : npcs[i].h_hsight);
-        int eff_vsight = in_normal ? npcs[i].vsight : (in_wounded ? npcs[i].w_vsight : npcs[i].h_vsight);
-        int eff_firetime = in_normal ? npcs[i].firetime : (in_wounded ? npcs[i].w_firetime : npcs[i].h_firetime);
-        int eff_movetime = in_normal ? npcs[i].movetime : (in_wounded ? npcs[i].w_movetime : npcs[i].h_movetime);
-        int eff_attack = in_normal ? npcs[i].attack : (in_wounded ? npcs[i].w_attack : npcs[i].h_attack);
-        double eff_level = in_normal ? npcs[i].level : (in_wounded ? npcs[i].w_level : npcs[i].h_level);
-        int eff_lives_cap = in_normal ? npcs[i].lives : (in_wounded ? npcs[i].w_lives : npcs[i].h_lives);
-        if(npcs[i].currentlives > eff_lives_cap) npcs[i].currentlives = eff_lives_cap;
-
-        // rest heal tick (fires while in healing state)
-        if(in_healing && npcs[i].rest_heal_time > 0 && npcs[i].heal_amount > 0 && npcs[i].rest_heal_timer.elapsed >= npcs[i].rest_heal_time)
-        {
-            npcs[i].healsound = pool.play_extended_3d(get_map_sound(sound_base+"/*heal*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-            npcs[i].health += npcs[i].heal_amount;
-            if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
-            npcs[i].rest_heal_timer.restart();
-        }
-        // ambient heal tick (fires regardless of state when enabled)
-        if(npcs[i].ambient_heal && npcs[i].ambient_heal_time > 0 && npcs[i].heal_amount > 0 && npcs[i].ambient_heal_timer.elapsed >= npcs[i].ambient_heal_time)
-        {
-            npcs[i].healsound = pool.play_extended_3d(get_map_sound(sound_base+"/*heal*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-            npcs[i].health += npcs[i].heal_amount;
-            if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
-            npcs[i].ambient_heal_timer.restart();
-        }
-
-        // launch tick (summons an npc on its own clock, paused while resting in healing state)
-        if(npcs[i].launching && !in_healing && npcs[i].launch_time > 0 && npcs[i].launch_timer.elapsed >= npcs[i].launch_time)
-        {
-            int dx;
-            if(combat_found) dx = (combat_tx < npcs[i].x) ? -1 : 1;
-            else dx = npcs[i].facing_dx;
-            string lcat = npcs[i].launch_category;
-            string lsub = npcs[i].launch_subtype;
-            int eff_scale = int(npcs[i].level);
-            if(lsub.find(",") >= 0)
-            {
-                string[] picks = string_split(lsub, ",", true);
-                string[] cleaned;
-                for(uint k = 0; k < picks.length(); k++) if(picks[k] != "") cleaned.insert_last(picks[k]);
-                if(cleaned.length() > 0) lsub = random_string(cleaned);
-            }
-            int colon = lsub.find(":");
-            if(colon >= 0)
-            {
-                string scale_part = string_mid(lsub, colon+2, lsub.length()-colon-1);
-                if(scale_part != "") eff_scale = smart_int(scale_part);
-                lsub = string_left(lsub, colon);
-            }
-            if(lsub == "random")
-            {
-                string[] folders = get_map_sound_folders("kombat/npc/"+lcat+"/*");
-                if(folders.length() > 0) lsub = random_string(folders);
-            }
-            if(lsub != "" && lsub != "none" && lsub != "random" && (lcat == "animals" || lcat == "bosses" || lcat == "helpers" || lcat == "humans" || lcat == "robots" || lcat == "specials" || lcat == "zombies"))
-            {
-                npcs[i].launchsound = pool.play_extended_3d(get_map_sound(sound_base+"/*launch*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                spawn_npc(npcs[i].x + dx, npcs[i].y, eff_scale, npcs[i].launch_path, lcat, lsub);
-                if(npcs.length() > 0) npcs[npcs.length()-1].launching = false;
-            }
-            npcs[i].launch_timer.restart();
-        }
-
-        // teleport tick
-        if(npcs[i].tel_x || npcs[i].tel_y)
-        {
-            int tel_min = in_normal ? npcs[i].tel_n_min : (in_wounded ? npcs[i].tel_w_min : npcs[i].tel_h_min);
-            int tel_max = in_normal ? npcs[i].tel_n_max : (in_wounded ? npcs[i].tel_w_max : npcs[i].tel_h_max);
-            if(tel_min > 0 && tel_max > 0 && npcs[i].teltimer.elapsed >= roll_range(tel_min, tel_max))
-            {
-                int new_x = npcs[i].tel_x ? random(npcs[i].patrol_x_min, npcs[i].patrol_x_max) : npcs[i].x;
-                int new_y = npcs[i].tel_y ? random(npcs[i].patrol_y_min, npcs[i].patrol_y_max) : npcs[i].y;
-                pool.play_extended_3d(get_map_sound(sound_base+"/*tel*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                npcs[i].x = new_x;
-                npcs[i].y = new_y;
-                npcs[i].telsound = pool.play_extended_3d(get_map_sound(sound_base+"/*tel*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                pool.update_sound_3d(npcs[i].mainsound, npcs[i].x, npcs[i].y, 0);
-                npcs[i].teltimer.restart();
-            }
-        }
-
-        // determine pursuing flag from chase trigger (only relevant in normal state)
-        bool pursuing = false;
-        bool combat_in_sight = combat_found && absolute(combat_tx - npcs[i].x) <= eff_hsight && absolute(combat_ty - npcs[i].y) <= eff_vsight;
-        if(in_normal && combat_found)
-        {
-            string trigger = npcs[i].chase_trigger;
-            if(trigger == "always") pursuing = true;
-            else if(trigger == "sight") pursuing = combat_in_sight;
-            else if(trigger == "random")
-            {
-                if(npcs[i].random_phase_duration == 0 || npcs[i].random_phase_timer.elapsed >= npcs[i].random_phase_duration)
-                {
-                    npcs[i].random_chasing = !npcs[i].random_chasing;
-                    npcs[i].random_phase_duration = roll_range(npcs[i].chase_random_min, npcs[i].chase_random_max);
-                    npcs[i].random_phase_timer.restart();
-                }
-                if(npcs[i].random_chasing) pursuing = combat_in_sight;
-            }
-            // "never" leaves pursuing false and is exempt from the provoke override below
-
-            // Universal provoke: a hit starts the chase regardless of trigger, except for "never"
-            if(npcs[i].provoked && trigger != "never")
-            {
-                if(combat_in_sight)
-                {
-                    npcs[i].provoke_lost_timer.restart();
-                    pursuing = true;
-                }
-                else
-                {
-                    int calm_time = roll_range(npcs[i].chase_calm_min, npcs[i].chase_calm_max);
-                    if(npcs[i].provoke_lost_timer.elapsed >= calm_time) npcs[i].provoked = false;
-                }
-            }
-        }
-
-        // determine movement target (tx, ty) and whether to require sight
-        int tx = 0, ty = 0;
-        bool has_move = false;
-        bool sight_required = true;
-        if(in_wounded && combat_found)
-        {
-            tx = combat_tx; ty = combat_ty;
-            has_move = true;
-        }
-        else if(in_normal && pursuing && combat_found)
-        {
-            tx = combat_tx; ty = combat_ty;
-            has_move = true;
-            sight_required = (npcs[i].chase_trigger != "always");
-        }
-        else if(in_normal && !pursuing && npcs[i].category == "helpers" && npc_protects(npcs[i], "player"))
-        {
-            int best_obj = -1;
-            int best_obj_d = 0;
-            for(uint k = 0; k < objs.length(); k++)
-            {
-                int d = absolute(objs[k].itx - npcs[i].x) + absolute(objs[k].ity - npcs[i].y);
-                if(best_obj < 0 || d < best_obj_d) { best_obj = int(k); best_obj_d = d; }
-            }
-            if(best_obj >= 0)
-            {
-                tx = objs[best_obj].itx; ty = objs[best_obj].ity;
-            }
-            else
-            {
-                tx = int(me.x); ty = int(me.y);
-            }
-            has_move = true;
-            sight_required = false;
-        }
-        else if(in_normal && !pursuing)
-        {
-            string wander = npcs[i].chase_wander;
-            if(wander == "roam")
-            {
-                if(npcs[i].wander_paused)
-                {
-                    if(npcs[i].wander_pause_timer.elapsed >= npcs[i].wander_pause_duration)
-                    {
-                        npcs[i].wander_paused = false;
-                        npcs[i].has_wander_dest = false;
-                    }
-                }
-                if(!npcs[i].wander_paused)
-                {
-                    if(!npcs[i].has_wander_dest)
-                    {
-                        int rx = (npcs[i].move_x && npcs[i].patrol_x_max > npcs[i].patrol_x_min) ? random(npcs[i].patrol_x_min, npcs[i].patrol_x_max) : npcs[i].x;
-                        int ry = (npcs[i].move_y && npcs[i].patrol_y_max > npcs[i].patrol_y_min) ? random(npcs[i].patrol_y_min, npcs[i].patrol_y_max) : npcs[i].y;
-                        npcs[i].wander_x = rx;
-                        npcs[i].wander_y = ry;
-                        npcs[i].has_wander_dest = true;
-                        npcs[i].wander_travel_timer.restart();
-                    }
-                    if(npcs[i].x == npcs[i].wander_x && npcs[i].y == npcs[i].wander_y)
-                    {
-                        npcs[i].wander_paused = true;
-                        npcs[i].wander_pause_timer.restart();
-                        npcs[i].wander_pause_duration = roll_range(npcs[i].roam_pause_min, npcs[i].roam_pause_max);
-                    }
-                    else if(npcs[i].wander_travel_timer.elapsed >= 60000)
-                    {
-                        npcs[i].has_wander_dest = false;
-                    }
-                    else
-                    {
-                        tx = npcs[i].wander_x; ty = npcs[i].wander_y;
-                        has_move = true;
-                        sight_required = false;
-                    }
-                }
-            }
-            else if(wander == "patrol")
-            {
-                if(!npcs[i].has_wander_dest)
-                {
-                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? npcs[i].patrol_x_max : npcs[i].patrol_x_min) : npcs[i].x;
-                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? npcs[i].patrol_y_max : npcs[i].patrol_y_min) : npcs[i].y;
-                    npcs[i].has_wander_dest = true;
-                }
-                bool x_reached = (npcs[i].x == npcs[i].wander_x) || !npcs[i].move_x;
-                bool y_reached = (npcs[i].y == npcs[i].wander_y) || !npcs[i].move_y;
-                if(x_reached && y_reached)
-                {
-                    npcs[i].patrol_dx = -npcs[i].patrol_dx;
-                    npcs[i].patrol_dy = -npcs[i].patrol_dy;
-                    npcs[i].wander_x = npcs[i].move_x ? ((npcs[i].patrol_dx > 0) ? npcs[i].patrol_x_max : npcs[i].patrol_x_min) : npcs[i].x;
-                    npcs[i].wander_y = npcs[i].move_y ? ((npcs[i].patrol_dy > 0) ? npcs[i].patrol_y_max : npcs[i].patrol_y_min) : npcs[i].y;
-                }
-                tx = npcs[i].wander_x; ty = npcs[i].wander_y;
-                has_move = true;
-                sight_required = false;
-            }
-        }
-
-        // movement / spotting
-        int eff_move_step = (npcs[i].fleeing && npcs[i].flee_speed > 0) ? npcs[i].flee_speed : ((npcs[i].active_terrain_speed > 0) ? npcs[i].active_terrain_speed : ((npcs[i].provoked && npcs[i].provoke_speed > 0) ? npcs[i].provoke_speed : eff_movetime));
-        if(has_move && npcs[i].movetimer.elapsed >= eff_move_step)
-        {
-            bool h = absolute(tx - npcs[i].x) <= eff_hsight;
-            bool v = absolute(ty - npcs[i].y) <= eff_vsight;
-            npcs[i].spotted = h && v;
-            if(!sight_required || npcs[i].spotted)
-            {
-                bool moved = false;
-                int dx_intent = 0;
-                if(npcs[i].x < tx) dx_intent = 1;
-                else if(npcs[i].x > tx) dx_intent = -1;
-                if(in_wounded || npcs[i].fleeing)
-                {
-                    if(dx_intent == 0) dx_intent = (random(0, 1) == 0) ? -1 : 1;
-                    else dx_intent = -dx_intent;
-                }
-                int dy_intent = 0;
-                if(npcs[i].y < ty) dy_intent = 1;
-                else if(npcs[i].y > ty) dy_intent = -1;
-                if(in_wounded || npcs[i].fleeing)
-                {
-                    if(dy_intent == 0) dy_intent = (random(0, 1) == 0) ? -1 : 1;
-                    else dy_intent = -dy_intent;
-                }
-                bool ignore_terrain = npcs[i].chase_terrains && (npcs[i].provoked || npcs[i].fleeing);
-                bool stuck_terrain = !ignore_terrain && !npc_terrain_allows(npcs[i], npcs[i].x, npcs[i].y);
-                bool terrain_off = ignore_terrain || stuck_terrain;
-                if(dx_intent != 0 && npcs[i].move_x && paused == 0)
-                {
-                    int next_x = npcs[i].x + dx_intent;
-                    bool blocked = string_contains(gmt(next_x, npcs[i].y), "wall", 1) > -1 or is_in_safe(next_x, npcs[i].y) or (!terrain_off && !npc_terrain_allows(npcs[i], next_x, npcs[i].y));
-                    if(blocked) next_x = npcs[i].x - dx_intent;
-                    if(next_x >= minx && next_x <= maxx && (terrain_off || npc_terrain_allows(npcs[i], next_x, npcs[i].y)))
-                    {
-                        int actual_dx = next_x - npcs[i].x;
-                        if(actual_dx != 0) npcs[i].facing_dx = (actual_dx > 0) ? 1 : -1;
-                        npcs[i].x = next_x;
-                        moved = true;
-                    }
-                }
-                if(dy_intent != 0 && npcs[i].move_y && paused == 0)
-                {
-                    int next_y = npcs[i].y + dy_intent;
-                    bool blocked = string_contains(gmt(npcs[i].x, next_y), "wall", 1) > -1 or is_in_safe(npcs[i].x, next_y) or (!terrain_off && !npc_terrain_allows(npcs[i], npcs[i].x, next_y));
-                    if(blocked) next_y = npcs[i].y - dy_intent;
-                    if(next_y >= miny && next_y <= maxy && (terrain_off || npc_terrain_allows(npcs[i], npcs[i].x, next_y)))
-                    {
-                        npcs[i].y = next_y;
-                        moved = true;
-                    }
-                }
-                if(moved)
-                {
-                    string step_resolved = resolve_npc_step_sound(npcs[i]);
-                    if(step_resolved != "")
-                    {
-                        npcs[i].tilesound = pool.play_extended_3d(step_resolved, me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
-                        npcs[i].step_active = true;
-                    }
-                    else
-                    {
-                        npcs[i].step_active = false;
-                    }
-                }
-                else
-                {
-                    npcs[i].step_active = false;
-                }
-                if(npcs[i].category == "helpers" && npc_protects(npcs[i], "player"))
-                {
-                    for(uint k = 0; k < objs.length(); k++)
-                    {
-                        if(npcs[i].x == objs[k].itx && npcs[i].y == objs[k].ity)
-                        {
-                            objs[k].getsound = itempool.play_stationary_extended(get_map_sound("objects/items/"+objs[k].objtype+"/"+objs[k].objtype2+"/*get*"), false, 0, 0, 0, 100, false);
-                            give(objs[k].objtype2, 1);
-                            objs.remove_at(k);
-                            break;
-                        }
-                    }
-                }
-                pool.update_sound_3d(npcs[i].mainsound, npcs[i].x, npcs[i].y, 0);
-                npcs[i].movetimer.restart();
-            }
-        }
-
-        // taunt
-        if(npcs[i].taunttimer.elapsed >= npcs[i].taunttime)
-        {
-            npcs[i].mainsound = pool.play_extended_3d(get_map_sound(sound_base+"/*taunt*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-            int delay = round(pool.get_sound_length(npcs[i].mainsound), 0);
-            npcs[i].taunttime = (delay <= 0 ? random(500, 1000) : delay);
-            npcs[i].taunttimer.restart();
-        }
-
-        // attack chosen target
-        if(npcs[i].fleeing && npcs[i].flee_time > 0 && npcs[i].flee_timer.elapsed >= npcs[i].flee_time)
-            npcs[i].fleeing = false;
-        if(combat_found && absolute(combat_tx - npcs[i].x) <= eff_hrange && absolute(combat_ty - npcs[i].y) <= eff_vrange && npcs[i].firetimer.elapsed >= eff_firetime && npcs[i].fireable && paused == 0 && !npcs[i].fleeing)
-        {
-            npcs[i].step_active = false;
-            if(human_armed)
-            {
-                int dx_aim = combat_tx - npcs[i].x;
-                int dy_aim = combat_ty - npcs[i].y;
-                string h_dir = "right";
-                if(absolute(dx_aim) >= absolute(dy_aim))
-                    h_dir = (dx_aim >= 0) ? "right" : "left";
-                else
-                    h_dir = (dy_aim >= 0) ? "up" : "down";
-                if(!npcs[i].wephum.is_melee() && npcs[i].wephum.loaded_ammo <= 0 && !npcs[i].wephum.is_reloading)
-                {
-                    npcs[i].wephum.start_reload(npcs[i].x, npcs[i].y);
-                }
-                else if(!npcs[i].wephum.is_reloading)
-                {
-                    npcs[i].wephum.fire(npcs[i].x, npcs[i].y, h_dir, int(eff_attack * eff_level), int(i));
-                    kombatlog.insert_last(npcs[i].subtype + " fired " + npcs[i].wephum.sub + ".");
-                }
-            }
-            else if(target_is_player)
-            {
-                if(shieldon == 1)
-                {
-                    shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
-                    int sdm = max(1, (eff_attack * eff_level) - (shielddefence * 3));
-                    shieldstrength -= sdm;
-                    kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
-                }
-                else
-                {
-                    npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
-                    int dmg = max(1, (eff_attack * eff_level) - (defence * 3));
-                    health -= dmg;
-                    kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
-                    npc_play_pain(dmg);
-                    npc_apply_break_charbones(dmg, npcs[i].category);
-                }
-            }
-            else
-            {
-                int j = target_npc;
-                npcs[i].wepsound = pool.play_extended_3d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                sound_pool@ vpool = npc_pool(npcs[j].category);
-                vpool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                int j_defence = npcs[j].defence;
-                if(npc_below_threshold(npcs[j]))
-                {
-                    bool j_in_w_sight = absolute(npcs[i].x - npcs[j].x) <= npcs[j].w_hsight && absolute(npcs[i].y - npcs[j].y) <= npcs[j].w_vsight;
-                    j_defence = j_in_w_sight ? npcs[j].w_defence : npcs[j].h_defence;
-                }
-                int dmg = max(1, (eff_attack * eff_level) - (j_defence * 3));
-                npcs[j].health -= dmg;
-                kombatlog.insert_last(npcs[i].subtype + " attacked " + npcs[j].subtype + " for " + dmg + " damage.");
-            }
-            npcs[i].firetimer.restart();
-            if(npcs[i].hit_and_run && npcs[i].flee_time > 0)
-            {
-                npcs[i].fleeing = true;
-                npcs[i].flee_timer.restart();
-            }
-        }
-
-        // hit nearby items
-        for(uint k = 0; k < objs.length(); k++)
-        {
-            if(objs[k].itx == npcs[i].x and objs[k].ity == npcs[i].y and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable)
-            {
-                npcs[i].wepsound = pool.play_extended_3d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                itempool.destroy_sound(objs[k].objsound);
-                objs[k].hurtsound = itempool.play_extended_3d(get_map_sound("objects/items/"+objs[k].objtype+"/"+objs[k].objtype2+"/*break*"), me.x, me.y, me.z, objs[k].itx, objs[k].ity, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                npcs[i].firetimer.restart();
-                objs.remove_at(k);
-                return;
-            }
-        }
-
-        // hit player vehicle
-        for(uint k = 0; k < vehicles.length(); k++)
-        {
-            if(vehicles[k].vehx == npcs[i].x and vehicles[k].vehy == npcs[i].y and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable and invehicle)
-            {
-                vehicles[k].hurtsound = vehpool.play_stationary_extended(get_map_sound("objects/vehicles/"+vehicles[k].vehtype+"/*hurt*"), false, 0, 0, 0, 100, false);
-                vehicles[k].vehhealth -= eff_attack;
-                npcs[i].firetimer.restart();
-            }
-        }
-
-        // death / revive
-        if(npcs[i].health <= 0)
-        {
-            if(npcs[i].currentlives >= 2 and paused == 0)
-            {
-                pool.play_3d(get_map_sound(sound_base+"/*life*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, false);
-                npcs[i].health = npcs[i].maxhealth;
-                npcs[i].currentlives -= 1;
-            }
-            else if(npcs[i].currentlives <= 1 and paused == 0)
-            {
-                pool.destroy_sound(npcs[i].hurtsound);
-                pool.destroy_sound(npcs[i].mainsound);
-                pool.destroy_sound(npcs[i].refsound);
-                pool.destroy_sound(npcs[i].refsound2);
-                pool.destroy_sound(npcs[i].launchsound);
-                npcs[i].defsound = pool.play_extended_3d(get_map_sound(sound_base+"/*death*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                if(xpmod >= 1)
-                {
-                    double effx_xp = in_normal ? npcs[i].xpvalue : (in_wounded ? npcs[i].w_xpvalue : npcs[i].h_xpvalue);
-                    double gained_xp = effx_xp * eff_level * xpmod;
-                    xp += gained_xp;
-                    kombatlog.insert_last(gained_xp + " experience gained. Defeated " + npcs[i].subtype + " level " + eff_level + ".");
-                }
-                kills += 1;
-                int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
-                spawn_bodyfall(npcs[i].x, npcs[i].y, (falldelay <= 0 ? random(500, 1000) : falldelay), resolve_npc_fall_sound(npcs[i]));
-                string[] heal_folders = {"health", "stamina"};
-                string chosen_folder = random_string(heal_folders);
-                string[] healtypes = get_map_sound_folders("objects/items/"+chosen_folder+"/*");
-                if(healtypes.length() != 0 and npcs[i].dropitem) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true);
-                p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*kill*"), false);
-                clean_dead_npc_bullets(int(i));
-                npcs.remove_at(i);
-                return;
-            }
-        }
-    }
-}
-
-void npc_chooser()
-{
-    bool do_build = true;
-    int b_add, b_edit, b_remove, b_spawn, b_view, b_cancel;
-    while(true)
-    {
-        wait(5);
-        if(do_build)
-        {
-            do_build = false;
-            form.reset();
-            form.create_window("npc", false, true, false);
-            b_add = form.create_button("&add npc");
-            b_edit = form.create_button("&edit npc");
-            b_remove = form.create_button("&remove npc");
-            b_spawn = form.create_button("&spawn npc", true);
-            b_view = form.create_button("&view npc");
-            b_cancel = form.create_button("&cancel", false, true);
-            form.focus(b_add);
-        }
-        form.monitor();
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-        {
-            resume_pools();
-            speak("canceled");
-            return;
-        }
-        if(form.is_pressed(b_add)) { add_npc(); do_build = true; continue; }
-        if(form.is_pressed(b_edit)) { edit_npc(); do_build = true; continue; }
-        if(form.is_pressed(b_remove)) { remove_npc(); do_build = true; continue; }
-        if(form.is_pressed(b_view)) { view_npc(); do_build = true; continue; }
-        if(form.is_pressed(b_spawn)) { build_npc(); return; }
-    }
-}
-
-bool add_npc_form(string path_choice, string category, string subtype)
-{
-    string target_path = (path_choice == "global")
-        ? "sounds/"+soundpack+"/kombat/npc/"+category+"/"+subtype+"/info.sif"
-        : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+category+"/"+subtype+"/info.sif";
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed", "provoke_speed", "terrain"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run", "chase_terrains"};
-    form.reset();
-    form.create_window("add "+subtype, false, true, false);
-    int[] inputs;
-    for(uint i=0; i<keys.length(); i++)
-        inputs.insert_last(form.create_input_box(keys[i]));
-    string[] mode_opts = {"auto", "own", "player", "never"};
-    int steps_list = form.create_list("use steps");
-    int falls_list = form.create_list("use falls");
-    for(uint i=0; i<mode_opts.length(); i++)
-    {
-        form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
-        form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
-    }
-    form.set_list_position(steps_list, 0, false);
-    form.set_list_position(falls_list, 0, false);
-    int[] checkboxes;
-    for(uint i=0; i<cb_keys.length(); i++)
-        checkboxes.insert_last(form.create_checkbox(cb_keys[i]));
-    int b_save = form.create_button("&save", true);
-    int b_cancel = form.create_button("&cancel", false, true);
-    form.focus(inputs[0]);
-    while(true)
-    {
-        wait(5);
-        form.monitor();
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-        {
-            speak("canceled");
-            return false;
-        }
-        if(form.is_pressed(b_save))
-        {
-            bool blank = false;
-            for(uint i=0; i<inputs.length(); i++)
-            {
-                if(form.get_text(inputs[i]) == "")
-                {
-                    speak(keys[i]+" is required.");
-                    form.focus(inputs[i]);
-                    blank = true;
-                    break;
-                }
-            }
-            if(blank) continue;
-            if(file_exists(target_path))
-            {
-                setupmenu();
-                m.wrap_sound = "none.ogg";
-                m.click_sound = get_pack_sound("misc/menu1.ogg");
-                m.enter_sound = get_pack_sound("misc/menu2.ogg");
-                m.open_sound = get_pack_sound("misc/menu3.ogg");
-                m.add_item_tts("yes");
-                m.add_item_tts("no");
-                int mres = m.run("An info.sif already exists for this NPC. Overwrite?", true);
-                if(mres != 0) continue;
-            }
-            string content = "";
-            for(uint i=0; i<inputs.length(); i++)
-                content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-            for(uint i=0; i<checkboxes.length(); i++)
-                content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
-            content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
-            content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
-            file fout;
-            if(!fout.open(target_path, "w"))
-            {
-                speak("Failed to open file for writing.");
-                continue;
-            }
-            fout.write(content);
-            fout.close();
-            speak("Saved.");
-            return true;
-        }
-    }
-    return false;
-}
-
-string read_npc_info_file(string base, string subtype)
-{
-    string path = base+"/"+subtype+"/info.sif";
-    file fin;
-    if(!fin.open(path, "rb")) return "";
-    string content = fin.read();
-    fin.close();
-    return content;
-}
-
-void view_npc()
-{
-    string[] paths = {"global", "map"};
-    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-    int saved_path_pos = 0;
-    int saved_cat_pos = 0;
-    int saved_sub_pos = 0;
-    bool do_build = true;
-    int last_path_pos = -1;
-    int last_cat_pos = -1;
-    int last_sub_pos = -1;
-    int focus_after_build = 0;
-    int path_list, cat_list, sub_list, content_box, b_cancel;
-    string[] sub_data;
-    string base = "";
-    while(true)
-    {
-        wait(5);
-        if(do_build)
-        {
-            do_build = false;
-            base = (saved_path_pos == 0)
-                ? "sounds/"+soundpack+"/kombat/npc/"+categories[saved_cat_pos]
-                : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+categories[saved_cat_pos];
-            string[] all_dirs = find_directories(base+"/*");
-            sub_data.resize(0);
-            for(uint i=0; i<all_dirs.length(); i++)
-            {
-                if(file_exists(base+"/"+all_dirs[i]+"/info.sif"))
-                    sub_data.insert_last(all_dirs[i]);
-            }
-            if(sub_data.length() > 0) sort_naturally(sub_data);
-            int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-            string initial_content = (sub_data.length() > 0) ? read_npc_info_file(base, sub_data[sp]) : "";
-            string initial_caption = (sub_data.length() > 0) ? "contents for "+sub_data[sp] : "contents";
-            form.reset();
-            form.create_window("view npc", false, true, last_path_pos != -1);
-            path_list = form.create_list("path");
-            for(uint i=0; i<paths.length(); i++)
-                form.add_list_item(path_list, paths[i], paths[i]);
-            form.set_list_position(path_list, saved_path_pos, false);
-            cat_list = form.create_list("category");
-            for(uint i=0; i<categories.length(); i++)
-                form.add_list_item(cat_list, categories[i], categories[i]);
-            form.set_list_position(cat_list, saved_cat_pos, false);
-            sub_list = form.create_list("subtype");
-            for(uint i=0; i<sub_data.length(); i++)
-                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-            form.set_list_position(sub_list, sp, false);
-            content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
-            b_cancel = form.create_button("&cancel", false, true);
-            last_sub_pos = sp;
-            if(last_path_pos == -1)
-            {
-                form.focus(path_list);
-            }
-            else if(focus_after_build == 1)
-                form.focus_silently(cat_list);
-            else
-                form.focus_silently(path_list);
-            last_path_pos = saved_path_pos;
-            last_cat_pos = saved_cat_pos;
-        }
-        form.monitor();
-        int cur_path = form.get_list_position(path_list);
-        if(cur_path != -1 && cur_path != last_path_pos)
-        {
-            saved_path_pos = cur_path;
-            saved_sub_pos = 0;
-            focus_after_build = 0;
-            do_build = true;
-            continue;
-        }
-        int cur_cat = form.get_list_position(cat_list);
-        if(cur_cat != -1 && cur_cat != last_cat_pos)
-        {
-            saved_cat_pos = cur_cat;
-            saved_sub_pos = 0;
-            focus_after_build = 1;
-            do_build = true;
-            continue;
-        }
-        int cur_sub = form.get_list_position(sub_list);
-        if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
-        {
-            saved_sub_pos = cur_sub;
-            last_sub_pos = cur_sub;
-            form.set_text(content_box, read_npc_info_file(base, sub_data[cur_sub]));
-            form.set_caption(content_box, "contents for "+sub_data[cur_sub]);
-        }
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-        {
-            speak("canceled");
-            return;
-        }
-    }
-}
-
-void remove_npc()
-{
-    string[] paths = {"global", "map"};
-    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-    int saved_path_pos = 0;
-    int saved_cat_pos = 0;
-    bool do_build = true;
-    int last_path_pos = -1;
-    int last_cat_pos = -1;
-    int focus_after_build = 0;
-    int path_list, cat_list, sub_list, b_remove, b_cancel;
-    string[] sub_data;
-    string base = "";
-    while(true)
-    {
-        wait(5);
-        if(do_build)
-        {
-            do_build = false;
-            base = (saved_path_pos == 0)
-                ? "sounds/"+soundpack+"/kombat/npc/"+categories[saved_cat_pos]
-                : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+categories[saved_cat_pos];
-            string[] all_dirs = find_directories(base+"/*");
-            sub_data.resize(0);
-            for(uint i=0; i<all_dirs.length(); i++)
-            {
-                if(file_exists(base+"/"+all_dirs[i]+"/info.sif"))
-                    sub_data.insert_last(all_dirs[i]);
-            }
-            if(sub_data.length() > 0) sort_naturally(sub_data);
-            form.reset();
-            form.create_window("remove npc", false, true, last_path_pos != -1);
-            path_list = form.create_list("path");
-            for(uint i=0; i<paths.length(); i++)
-                form.add_list_item(path_list, paths[i], paths[i]);
-            form.set_list_position(path_list, saved_path_pos, false);
-            cat_list = form.create_list("category");
-            for(uint i=0; i<categories.length(); i++)
-                form.add_list_item(cat_list, categories[i], categories[i]);
-            form.set_list_position(cat_list, saved_cat_pos, false);
-            sub_list = form.create_list("subtype", 0, true);
-            for(uint i=0; i<sub_data.length(); i++)
-                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-            b_remove = form.create_button("&remove", true);
-            b_cancel = form.create_button("&cancel", false, true);
-            if(last_path_pos == -1)
-            {
-                form.focus(path_list);
-            }
-            else if(focus_after_build == 1)
-                form.focus_silently(cat_list);
-            else
-                form.focus_silently(path_list);
-            last_path_pos = saved_path_pos;
-            last_cat_pos = saved_cat_pos;
-        }
-        form.monitor();
-        int cur_path = form.get_list_position(path_list);
-        if(cur_path != -1 && cur_path != last_path_pos)
-        {
-            saved_path_pos = cur_path;
-            focus_after_build = 0;
-            do_build = true;
-            continue;
-        }
-        int cur_cat = form.get_list_position(cat_list);
-        if(cur_cat != -1 && cur_cat != last_cat_pos)
-        {
-            saved_cat_pos = cur_cat;
-            focus_after_build = 1;
-            do_build = true;
-            continue;
-        }
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-        {
-            speak("canceled");
-            return;
-        }
-        if(form.is_pressed(b_remove))
-        {
-            int[]@ checked = form.get_checked_list_items(sub_list);
-            if(checked is null || checked.length() == 0)
-            {
-                speak("No subtypes selected.");
-                form.focus(sub_list);
-                continue;
-            }
-            setupmenu();
-            m.wrap_sound = "none.ogg";
-            m.click_sound = get_pack_sound("misc/menu1.ogg");
-            m.enter_sound = get_pack_sound("misc/menu2.ogg");
-            m.open_sound = get_pack_sound("misc/menu3.ogg");
-            m.add_item_tts("yes");
-            m.add_item_tts("no");
-            int mres = m.run("Are you sure you would like to remove "+checked.length()+" info.sif files?", true);
-            if(mres != 0)
-            {
-                do_build = true;
-                continue;
-            }
-            for(uint i=0; i<checked.length(); i++)
-            {
-                string p = base+"/"+sub_data[checked[i]]+"/info.sif";
-                if(file_exists(p)) file_delete(p);
-            }
-            speak("Removed "+checked.length()+" info.sif files.");
-            return;
-        }
-    }
-}
-
-bool edit_npc_form(string target_path, string subtype)
-{
-    string[] keys = {"horizontal att range", "vertical att range", "horizontal sight range", "vertical sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee_time", "flee_speed", "provoke_speed", "terrain"};
-    string[] cb_keys = {"attacking", "move x", "move y", "drop item", "tel x", "tel y", "ambient heal", "launching", "hit_and_run", "chase_terrains"};
-    dictionary existing;
-    file fin;
-    if(fin.open(target_path, "rb"))
-    {
-        string content = fin.read();
-        fin.close();
-        content = string_replace(content, "\r", "", true);
-        string[] lines = string_split(content, "\n", true);
-        for(uint i=0; i<lines.length(); i++)
-        {
-            int eq = string_contains(lines[i], "=", 1);
-            if(eq < 0) continue;
-            string k = string_left(lines[i], eq);
-            string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
-            existing[k] = v;
-        }
-    }
-    form.reset();
-    form.create_window("edit "+subtype, false, true, false);
-    int[] inputs;
-    for(uint i=0; i<keys.length(); i++)
-    {
-        string preset = "";
-        if(existing.exists(keys[i])) existing.get(keys[i], preset);
-        inputs.insert_last(form.create_input_box(keys[i], preset));
-    }
-    string[] mode_opts = {"auto", "own", "player", "never"};
-    int steps_list = form.create_list("use steps");
-    int falls_list = form.create_list("use falls");
-    for(uint i=0; i<mode_opts.length(); i++)
-    {
-        form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
-        form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
-    }
-    string steps_pre = "auto"; if(existing.exists("use steps")) existing.get("use steps", steps_pre);
-    string falls_pre = "auto"; if(existing.exists("use falls")) existing.get("use falls", falls_pre);
-    int steps_idx = 0, falls_idx = 0;
-    for(uint i=0; i<mode_opts.length(); i++)
-    {
-        if(mode_opts[i] == steps_pre) steps_idx = i;
-        if(mode_opts[i] == falls_pre) falls_idx = i;
-    }
-    form.set_list_position(steps_list, steps_idx, false);
-    form.set_list_position(falls_list, falls_idx, false);
-    int[] checkboxes;
-    for(uint i=0; i<cb_keys.length(); i++)
-    {
-        string cv = "";
-        if(existing.exists(cb_keys[i])) existing.get(cb_keys[i], cv);
-        checkboxes.insert_last(form.create_checkbox(cb_keys[i], cv == "true"));
-    }
-    int b_save = form.create_button("&save", true);
-    int b_cancel = form.create_button("&cancel", false, true);
-    form.focus(inputs[0]);
-    while(true)
-    {
-        wait(5);
-        form.monitor();
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-        {
-            speak("canceled");
-            return false;
-        }
-        if(form.is_pressed(b_save))
-        {
-            bool blank = false;
-            for(uint i=0; i<inputs.length(); i++)
-            {
-                if(form.get_text(inputs[i]) == "")
-                {
-                    speak(keys[i]+" is required.");
-                    form.focus(inputs[i]);
-                    blank = true;
-                    break;
-                }
-            }
-            if(blank) continue;
-            string content = "";
-            for(uint i=0; i<inputs.length(); i++)
-                content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-            for(uint i=0; i<checkboxes.length(); i++)
-                content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
-            content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
-            content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
-            file fout;
-            if(!fout.open(target_path, "w"))
-            {
-                speak("Failed to open file for writing.");
-                continue;
-            }
-            fout.write(content);
-            fout.close();
-            speak("Saved.");
-            return true;
-        }
-    }
-    return false;
-}
-
-void edit_npc()
-{
-    string[] paths = {"global", "map"};
-    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-    int saved_path_pos = 0;
-    int saved_cat_pos = 0;
-    int saved_sub_pos = 0;
-    bool do_build = true;
-    int last_path_pos = -1;
-    int last_cat_pos = -1;
-    int focus_after_build = 0;
-    int path_list, cat_list, sub_list, b_edit, b_cancel;
-    string[] sub_data;
-    while(true)
-    {
-        wait(5);
-        if(do_build)
-        {
-            do_build = false;
-            string base = (saved_path_pos == 0)
-                ? "sounds/"+soundpack+"/kombat/npc/"+categories[saved_cat_pos]
-                : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+categories[saved_cat_pos];
-            string[] all_dirs = find_directories(base+"/*");
-            sub_data.resize(0);
-            for(uint i=0; i<all_dirs.length(); i++)
-            {
-                if(file_exists(base+"/"+all_dirs[i]+"/info.sif"))
-                    sub_data.insert_last(all_dirs[i]);
-            }
-            if(sub_data.length() > 0) sort_naturally(sub_data);
-            form.reset();
-            form.create_window("edit npc", false, true, last_path_pos != -1);
-            path_list = form.create_list("path");
-            for(uint i=0; i<paths.length(); i++)
-                form.add_list_item(path_list, paths[i], paths[i]);
-            form.set_list_position(path_list, saved_path_pos, false);
-            cat_list = form.create_list("category");
-            for(uint i=0; i<categories.length(); i++)
-                form.add_list_item(cat_list, categories[i], categories[i]);
-            form.set_list_position(cat_list, saved_cat_pos, false);
-            sub_list = form.create_list("subtype");
-            for(uint i=0; i<sub_data.length(); i++)
-                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-            int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-            form.set_list_position(sub_list, sp, false);
-            b_edit = form.create_button("&edit", true);
-            b_cancel = form.create_button("&cancel", false, true);
-            if(last_path_pos == -1)
-            {
-                form.focus(path_list);
-            }
-            else if(focus_after_build == 1)
-                form.focus_silently(cat_list);
-            else
-                form.focus_silently(path_list);
-            last_path_pos = saved_path_pos;
-            last_cat_pos = saved_cat_pos;
-        }
-        form.monitor();
-        int cur_path = form.get_list_position(path_list);
-        if(cur_path != -1 && cur_path != last_path_pos)
-        {
-            saved_path_pos = cur_path;
-            saved_sub_pos = 0;
-            focus_after_build = 0;
-            do_build = true;
-            continue;
-        }
-        int cur_cat = form.get_list_position(cat_list);
-        if(cur_cat != -1 && cur_cat != last_cat_pos)
-        {
-            saved_cat_pos = cur_cat;
-            saved_sub_pos = 0;
-            focus_after_build = 1;
-            do_build = true;
-            continue;
-        }
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-        {
-            speak("canceled");
-            return;
-        }
-        if(form.is_pressed(b_edit))
-        {
-            int p = form.get_list_position(sub_list);
-            if(p < 0 || p >= int(sub_data.length()))
-            {
-                speak("Subtype is required.");
-                form.focus(sub_list);
-                continue;
-            }
-            string chosen_sub = sub_data[p];
-            string chosen_cat = categories[saved_cat_pos];
-            string target_path = (saved_path_pos == 0)
-                ? "sounds/"+soundpack+"/kombat/npc/"+chosen_cat+"/"+chosen_sub+"/info.sif"
-                : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+chosen_cat+"/"+chosen_sub+"/info.sif";
-            saved_sub_pos = p;
-            if(edit_npc_form(target_path, chosen_sub)) return;
-            do_build = true;
-            continue;
-        }
-    }
-}
-
-void add_npc()
-{
-    string[] paths = {"global", "map"};
-    string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-    int saved_path_pos = 0;
-    int saved_cat_pos = 0;
-    int saved_sub_pos = 0;
-    bool do_build = true;
-    int last_path_pos = -1;
-    int last_cat_pos = -1;
-    int focus_after_build = 0;
-    int path_list, cat_list, sub_list, b_add, b_cancel;
-    string[] sub_data;
-    while(true)
-    {
-        wait(5);
-        if(do_build)
-        {
-            do_build = false;
-            string base = (saved_path_pos == 0)
-                ? "sounds/"+soundpack+"/kombat/npc/"+categories[saved_cat_pos]
-                : "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+categories[saved_cat_pos];
-            sub_data = find_directories(base+"/*");
-            if(sub_data.length() > 0) sort_naturally(sub_data);
-            form.reset();
-            form.create_window("add npc", false, true, last_path_pos != -1);
-            path_list = form.create_list("path");
-            for(uint i=0; i<paths.length(); i++)
-                form.add_list_item(path_list, paths[i], paths[i]);
-            form.set_list_position(path_list, saved_path_pos, false);
-            cat_list = form.create_list("category");
-            for(uint i=0; i<categories.length(); i++)
-                form.add_list_item(cat_list, categories[i], categories[i]);
-            form.set_list_position(cat_list, saved_cat_pos, false);
-            sub_list = form.create_list("subtype");
-            for(uint i=0; i<sub_data.length(); i++)
-                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-            int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-            form.set_list_position(sub_list, sp, false);
-            b_add = form.create_button("&add", true);
-            b_cancel = form.create_button("&cancel", false, true);
-            if(last_path_pos == -1)
-            {
-                form.focus(path_list);
-            }
-            else if(focus_after_build == 1)
-                form.focus_silently(cat_list);
-            else
-                form.focus_silently(path_list);
-            last_path_pos = saved_path_pos;
-            last_cat_pos = saved_cat_pos;
-        }
-        form.monitor();
-        int cur_path = form.get_list_position(path_list);
-        if(cur_path != -1 && cur_path != last_path_pos)
-        {
-            saved_path_pos = cur_path;
-            saved_sub_pos = 0;
-            focus_after_build = 0;
-            do_build = true;
-            continue;
-        }
-        int cur_cat = form.get_list_position(cat_list);
-        if(cur_cat != -1 && cur_cat != last_cat_pos)
-        {
-            saved_cat_pos = cur_cat;
-            saved_sub_pos = 0;
-            focus_after_build = 1;
-            do_build = true;
-            continue;
-        }
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-        {
-            speak("canceled");
-            return;
-        }
-        if(form.is_pressed(b_add))
-        {
-            int p = form.get_list_position(sub_list);
-            if(p < 0 || p >= int(sub_data.length()))
-            {
-                speak("Subtype is required.");
-                form.focus(sub_list);
-                continue;
-            }
-            string chosen_sub = sub_data[p];
-            string chosen_cat = categories[saved_cat_pos];
-            string chosen_path = paths[saved_path_pos];
-            saved_sub_pos = p;
-            if(add_npc_form(chosen_path, chosen_cat, chosen_sub)) return;
-            do_build = true;
-            continue;
-        }
-    }
+        mapper.write("\r\n"+"npc "+x+" "+y+" "+scale_level+" "+path+" "+category+" "+subtype);
+    mapper.close();
 }
 
 void build_npc()
@@ -1842,6 +674,7 @@ void build_npc()
     string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
     string saved_x = sel_left_set ? sel_left : "";
     string saved_y = sel_bottom_set ? sel_bottom : "";
+    string saved_z = "";
     string saved_lev = "0";
     int saved_path_pos = 0;
     int saved_cat_pos = 0;
@@ -1850,7 +683,7 @@ void build_npc()
     int last_path_pos = -1;
     int last_cat_pos = -1;
     int focus_after_build = 0;
-    int mx, my, lev, path_list, cat_list, sub_list, ok, cn;
+    int mx, my, mz, lev, path_list, cat_list, sub_list, ok, cn;
     string[] sub_data;
     while(true)
     {
@@ -1862,6 +695,7 @@ void build_npc()
             {
                 saved_x = form.get_text(mx);
                 saved_y = form.get_text(my);
+                if(mapmode == "3d") saved_z = form.get_text(mz);
                 saved_lev = form.get_text(lev);
             }
             string global_base = "sounds/"+soundpack+"/kombat/npc/"+categories[saved_cat_pos];
@@ -1890,10 +724,12 @@ void build_npc()
             form.create_window("spawn npc", false, true, last_cat_pos != -1);
             mx = form.create_input_box("x", saved_x);
             my = form.create_input_box("y", saved_y);
+            mz = -1;
+            if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
             lev = form.create_input_box("scale level", saved_lev);
             form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
-            form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+            if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
             path_list = form.create_list("path");
             for(uint i = 0; i < paths.length(); i++)
@@ -1982,16 +818,23 @@ void build_npc()
         if(form.is_pressed(ok))
         {
             int p = form.get_list_position(sub_list);
+            if(mz != -1 && form.get_text(mz) == "")
+            {
+                speak("Z is required.");
+                form.focus(mz);
+                continue;
+            }
             int bx = string_to_number(form.get_text(mx));
             int by = string_to_number(form.get_text(my));
+            int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
             int blev = string_to_number(form.get_text(lev));
             string bpath = paths[saved_path_pos];
             string bcat = categories[saved_cat_pos];
             string bsub = (p == 0) ? "none" : sub_data[p - 1];
             t.destroy_sound(prevslot);
             resume_pools();
-            write_npc(bx, by, blev, bpath, bcat, bsub);
-            spawn_npc(bx, by, blev, bpath, bcat, bsub);
+            write_npc(bx, by, blev, bpath, bcat, bsub, bz);
+            spawn_npc(bx, by, blev, bpath, bcat, bsub, bz);
             load_map(mapname, mapowner);
             mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
             speak("Map updated.");

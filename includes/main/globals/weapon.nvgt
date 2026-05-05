@@ -8,6 +8,7 @@ class weapon
     int damage;
     int range;
     int range2;
+    int range3;
     int speed;
     int firetime;
     int firetime2;
@@ -43,6 +44,7 @@ class weapon
         damage = 1;
         range = 1;
         range2 = 1;
+        range3 = 1;
         speed = 50;
         firetime = 100;
         firetime2 = 100;
@@ -85,8 +87,9 @@ class weapon
             if(data.length() < 2) continue;
             if(data[0] == "damage") damage = parse_int(data[1]);
             else if(data[0] == "fire mode") fire_mode = parse_int(data[1]);
-            else if(data[0] == "horizontal range") range = parse_int(data[1]);
-            else if(data[0] == "vertical range") range2 = parse_int(data[1]);
+            else if(data[0] == "x range") range = parse_int(data[1]);
+            else if(data[0] == "y range") range2 = parse_int(data[1]);
+            else if(data[0] == "z range") range3 = parse_int(data[1]);
             else if(data[0] == "bullet speed") speed = parse_int(data[1]);
             else if(data[0] == "repeat time") firetime = parse_int(data[1]);
             else if(data[0] == "spam time") firetime2 = parse_int(data[1]);
@@ -120,15 +123,15 @@ class weapon
         }
     }
 
-    void play_draw(int x, int y)
+    void play_draw(int x, int y, int z=0)
     {
         is_reloading = false;
         pending_ammo = 0;
         reload_duration = 0;
-        sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*draw*"), me.x, me.y, me.z, x, y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+        sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*draw*"), me.x, me.y, me.z, x, y, z, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
     }
 
-    void check_reload(int x, int y)
+    void check_reload(int x, int y, int z=0)
     {
         if(is_reloading && reload_timer.elapsed >= reload_duration)
         {
@@ -136,16 +139,16 @@ class weapon
             ammo -= pending_ammo;
             pending_ammo = 0;
             is_reloading = false;
-            sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*ping*"), me.x, me.y, me.z, x, y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*ping*"), me.x, me.y, me.z, x, y, z, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         }
     }
 
-    bool start_reload(int x, int y)
+    bool start_reload(int x, int y, int z=0)
     {
         if(is_reloading) return false;
         if(ammo <= 0)
         {
-            sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*empty*"), me.x, me.y, me.z, x, y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*empty*"), me.x, me.y, me.z, x, y, z, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             return false;
         }
         double am;
@@ -156,7 +159,7 @@ class weapon
             if(loaded_ammo < max_ammo && loaded_ammo > 0)
                 am = max_ammo - loaded_ammo;
         }
-        sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*reload*"), me.x, me.y, me.z, x, y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+        sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*reload*"), me.x, me.y, me.z, x, y, z, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         reload_duration = p.get_sound_length(sound_slot);
         is_reloading = true;
         reload_timer.restart();
@@ -164,48 +167,58 @@ class weapon
         return true;
     }
 
-    void fire(int x, int y, string facing, int extra_damage, int firer_npc = -1)
+    void fire(int x, int y, string facing, int extra_damage, int firer_npc = -1, int z = 0)
     {
         if(loaded_ammo == 0 && !is_melee())
         {
-            sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*empty*"), me.x, me.y, me.z, x, y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*empty*"), me.x, me.y, me.z, x, y, z, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             return;
         }
-        sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*fire*"), me.x, me.y, me.z, x, y, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+        sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*fire*"), me.x, me.y, me.z, x, y, z, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         int dmg = damage + extra_damage;
         if(launch_type == "projectile" && launch_subtype != "")
         {
-            int pmnx = x, pmxx = x, pmny = y, pmxy = y;
+            int pmnx = x, pmxx = x, pmny = y, pmxy = y, pmnz = z, pmxz = z;
             int pdir = 0;
             if(facing == "right") { pmxx = x + range; pdir = 0; }
             else if(facing == "left") { pmnx = x - range; pdir = 4; }
-            else if(facing == "up") { pmxy = y + range2; pdir = 1; }
-            else if(facing == "down") { pmny = y - range2; pdir = 5; }
-            spawn_projectile(x, y, pmnx, pmxx, pmny, pmxy, pdir, 1, dmg, speed, launch_subtype, false, false, true, true, stun);
+            else if(facing == "forward") { pmxy = y + range2; pdir = 1; }
+            else if(facing == "backward") { pmny = y - range2; pdir = 5; }
+            else if(facing == "up")
+            {
+                if(mapmode == "3d") { pmxz = z + range3; pdir = 8; }
+                else { pmxy = y + range2; pdir = 1; }
+            }
+            else if(facing == "down")
+            {
+                if(mapmode == "3d") { pmnz = z - range3; pdir = 9; }
+                else { pmny = y - range2; pdir = 5; }
+            }
+            spawn_projectile(x, y, pmnx, pmxx, pmny, pmxy, pdir, 1, dmg, speed, launch_subtype, false, false, true, true, stun, z, pmnz, pmxz);
         }
         else
         {
-            spawn_bullet(x, y, range, range2, dmg, speed, facing, cad, sub, stun, firer_npc);
+            spawn_bullet(x, y, range, range2, dmg, speed, facing, cad, sub, stun, firer_npc, z, range3);
         }
         if(!is_melee()) loaded_ammo -= 1;
     }
 
-    void auto_fire(int x, int y, string facing, int extra_damage)
+    void auto_fire(int x, int y, string facing, int extra_damage, int z=0)
     {
         if(sub == "" || fire_mode != 1) return;
         if(firetimer.elapsed < firetime) return;
         firetimer.restart();
-        fire(x, y, facing, extra_damage);
+        fire(x, y, facing, extra_damage, -1, z);
     }
 
-    void manual_fire(int x, int y, string facing, int extra_damage)
+    void manual_fire(int x, int y, string facing, int extra_damage, int z=0)
     {
         if(sub == "" || fire_mode != 0) return;
         if(firetimer2.elapsed < firetime2) return;
         firetimer2.restart();
         if(is_melee())
             p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*swing*"), false);
-        fire(x, y, facing, extra_damage);
+        fire(x, y, facing, extra_damage, -1, z);
     }
 
     void update_ammo(double new_ammo)
@@ -228,44 +241,29 @@ class weapon
         else speak("Failed to write updated ammo stat to file.");
     }
 
-    void update_hl_range(int new_range)
+    void update_range_axis(string axis, int new_range)
     {
+        string key = axis + " range";
         string path = "sounds/" + soundpack + "/equipments/weapons/" + cad + "/" + sub + "/info.sif";
         if(!info.open(path, "r")) { speak("Failed to open file for reading."); return; }
         string content = info.read();
         info.close();
-        int range_pos = string_contains(content, "horizontal range=", 1);
-        if(range_pos == -1) { speak("Horizontal range stat not found in file."); return; }
-        int value_start = range_pos + 17;
+        int range_pos = string_contains(content, key+"=", 1);
+        if(range_pos == -1) { speak(key + " stat not found in file."); return; }
+        int value_start = range_pos + key.length() + 1;
         int value_end = string_contains(content.substr(value_start), "\r\n", 1);
         if(value_end == -1) value_end = content.length() - value_start;
         string current = string_trim_sides(content.substr(value_start, value_end));
-        content = string_replace(content, "horizontal range=" + current, "horizontal range=" + string(new_range), true);
+        content = string_replace(content, key+"=" + current, key+"=" + string(new_range), true);
         if(!info.open(path, "w")) { speak("Failed to open file for writing."); return; }
         uint bytes_written = info.write(content);
         info.close();
-        if(bytes_written == content.length()) speak("Horizontal range stat updated successfully.");
-        else speak("Failed to write updated horizontal range stat to file.");
+        if(bytes_written == content.length()) speak(key + " stat updated successfully.");
+        else speak("Failed to write updated " + key + " stat to file.");
     }
 
-    void update_vl_range(int new_range)
-    {
-        string path = "sounds/" + soundpack + "/equipments/weapons/" + cad + "/" + sub + "/info.sif";
-        if(!info.open(path, "r")) { speak("Failed to open file for reading."); return; }
-        string content = info.read();
-        info.close();
-        int range_pos = string_contains(content, "vertical range=", 1);
-        if(range_pos == -1) { speak("Vertical range stat not found in file."); return; }
-        int value_start = range_pos + 15;
-        int value_end = string_contains(content.substr(value_start), "\r\n", 1);
-        if(value_end == -1) value_end = content.length() - value_start;
-        string current = string_trim_sides(content.substr(value_start, value_end));
-        content = string_replace(content, "vertical range=" + current, "vertical range=" + string(new_range), true);
-        if(!info.open(path, "w")) { speak("Failed to open file for writing."); return; }
-        uint bytes_written = info.write(content);
-        info.close();
-        if(bytes_written == content.length()) speak("Vertical range stat updated successfully.");
-        else speak("Failed to write updated vertical range stat to file.");
-    }
+    void update_x_range(int new_range) { update_range_axis("x", new_range); }
+    void update_y_range(int new_range) { update_range_axis("y", new_range); }
+    void update_z_range(int new_range) { update_range_axis("z", new_range); }
 }
 
