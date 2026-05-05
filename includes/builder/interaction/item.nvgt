@@ -5,14 +5,16 @@ bool automatic;
 ;int getsound, hurtsound, objsound;
 int itx;
 int ity;
+int itz;
 int objtime;
 string objtype;
 string objtype2;
 timer objtimer;
-obj(int ix,int iy,int sp,string ty,string ty2,bool itc)
+obj(int ix,int iy,int sp,string ty,string ty2,bool itc,int iz=0)
 {
 itx=ix;
 ity=iy;
+itz=iz;
 objtime=sp;
 objtype=ty;
 objtype2=ty2;
@@ -25,10 +27,12 @@ for(uint i=0; i<objs.length(); i++)
 {
 if(objs[i].objtimer.elapsed>=objs[i].objtime)
 {
-objs[i].objsound=itempool.play_extended_3d(get_map_sound("objects/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*loop*"),me.x,me.y,me.z,objs[i].itx,objs[i].ity,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
+objs[i].objsound=itempool.play_extended_3d(get_map_sound("objects/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*loop*"),me.x,me.y,me.z,objs[i].itx,objs[i].ity,objs[i].itz,0,0,0,0,0,0,0,false,0,0,0,100,false);
 objs[i].objtimer.restart();
 }
-if(me.x==objs[i].itx and me.y==objs[i].ity and objs[i].automatic==true)
+bool obj_match = me.x==objs[i].itx and me.y==objs[i].ity;
+if(mapmode == "3d") obj_match = obj_match and me.z==objs[i].itz;
+if(obj_match and objs[i].automatic==true)
 {
 objs[i].getsound=itempool.play_stationary_extended(get_map_sound("objects/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,0,100,false);
 give(objs[i].objtype2,1);
@@ -36,7 +40,7 @@ speak(objs[i].objtype2);
 objs.remove_at(i);
 return;
 }
-if(me.x==objs[i].itx and me.y==objs[i].ity and objs[i].automatic==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+if(obj_match and objs[i].automatic==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 objs[i].getsound=itempool.play_stationary_extended(get_map_sound("objects/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,0,100,false);
 give(objs[i].objtype2,1);
@@ -46,9 +50,9 @@ return;
 }
 }
 }
-void spawn_obj(int x,int y,int objtime,string objtype,string objtype2,bool automatic)
+void spawn_obj(int x,int y,int objtime,string objtype,string objtype2,bool automatic,int z=0)
 {
-obj o1(x,y,objtime,objtype,objtype2,automatic);
+obj o1(x,y,objtime,objtype,objtype2,automatic,z);
 objs.insert_last(o1);
 }
 void destroy_all_objs()
@@ -74,13 +78,14 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 string saved_x = sel_left_set ? sel_left : "";
 string saved_y = sel_bottom_set ? sel_bottom : "";
+string saved_z = "";
 string saved_sp = "500";
 int saved_cat_pos = 0;
 int saved_sub_pos = 0;
 bool saved_auto = false;
 bool do_build = true;
 int last_cat_pos = -1;
-int mx, my, sp, cat_list, sub_list, auto_cb, ok, cn;
+int mx, my, mz, sp, cat_list, sub_list, auto_cb, ok, cn;
 while(true)
 {
 if(do_build)
@@ -90,6 +95,7 @@ if(last_cat_pos != -1)
 {
 saved_x = form.get_text(mx);
 saved_y = form.get_text(my);
+if(mapmode == "3d") saved_z = form.get_text(mz);
 saved_sp = form.get_text(sp);
 saved_auto = form.is_checked(auto_cb);
 }
@@ -97,9 +103,12 @@ form.reset();
 form.create_window("item", false, true, last_cat_pos != -1);
 mx = form.create_input_box("x", saved_x);
 my = form.create_input_box("y", saved_y);
+mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
 sp = form.create_input_box("speed", saved_sp);
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 cat_list = form.create_list("category");
 form.add_list_item(cat_list, "health", "health");
@@ -192,6 +201,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(sp) == "")
 {
 speak("Speed is required.");
@@ -200,6 +215,7 @@ continue;
 }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(sub_list);
 string btype = (saved_cat_pos == 1) ? "stamina" : (saved_cat_pos == 2 ? "other" : "health");
@@ -211,8 +227,8 @@ btype2 = "none";
 bool bauto = form.is_checked(auto_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_item(bx, by, bsp, btype, btype2, bauto);
-spawn_obj(bx, by, bsp, btype, btype2, bauto);
+write_item(bx, by, bsp, btype, btype2, bauto, bz);
+spawn_obj(bx, by, bsp, btype, btype2, bauto, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -225,17 +241,32 @@ void read_item(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
+if(sd.length() == 8)
+{
+int z=stn(sd[3]);
+int objtime=stn(sd[4]);
+string objtype=sd[5];
+string objtype2=sd[6];
+bool automatic=string_to_bool(sd[7]);
+spawn_obj(x, y, objtime, objtype, objtype2, automatic, z);
+}
+else
+{
 int objtime=stn(sd[3]);
 string objtype=sd[4];
 string objtype2=sd[5];
 bool automatic=string_to_bool(sd[6]);
-spawn_obj(x, y, objtime, objtype, objtype2, automatic);
+spawn_obj(x, y, objtime, objtype, objtype2, automatic, 0);
+}
 }
 
-void write_item(int x, int y, int objtime, string objtype, string objtype2, bool automatic)
+void write_item(int x, int y, int objtime, string objtype, string objtype2, bool automatic, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"item "+x+" "+y+" "+z+" "+objtime+" "+objtype+" "+objtype2+" "+automatic);
+else
 mapper.write("\r\n"+"item "+x+" "+y+" "+objtime+" "+objtype+" "+objtype2+" "+automatic);
 mapper.close();
 }

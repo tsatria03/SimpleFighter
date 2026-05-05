@@ -4,18 +4,20 @@ class bomb
 int fallsound, landsound;
 int bombx;
 int bomby;
+int bombz;
 int damage;
 int bombtime;
 string bombtype;
 timer bombtimer;
-bomb(int bx,int by,int dmg,int sp,string bt)
+bomb(int bx,int by,int dmg,int sp,string bt,int bz=0)
 {
 bombx=bx;
 bomby=by;
+bombz=bz;
 damage=dmg;
 bombtime=sp;
 bombtype=bt;
-fallsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombtype+"/*fall*"),me.x,me.y,me.z,bombx,bomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
+fallsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombtype+"/*fall*"),me.x,me.y,me.z,bombx,bomby,bombz,0,0,0,0,0,0,0,false,0,0,0,100,false);
 }
 }
 void bombloop()
@@ -40,7 +42,7 @@ bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bomb
 bombs.remove_at(i);
 return;
 }
-if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and shieldon==1 and paused==0)
+if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me.z==bombs[i].bombz) and shieldon==1 and paused==0)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
@@ -50,7 +52,7 @@ kombatlog.insert_last(bombs[i].bombtype + "'s attack took " + shieldtype + " " +
 bombs.remove_at(i);
 return;
 }
-else if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and shieldon==0 and paused==0)
+else if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me.z==bombs[i].bombz) and shieldon==0 and paused==0)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_stationary_extended(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),false,0,0,0,100,false);
@@ -93,7 +95,7 @@ return;
 }
 for(uint i2=0; i2<calendars.length(); i2++)
 {
-if(calendars[i2].calendarx==bombs[i].bombx and calendars[i2].calendary==bombs[i].bomby and calendars[i2].destroyable==true)
+if(calendars[i2].calendarx==bombs[i].bombx and calendars[i2].calendary==bombs[i].bomby and (mapmode != "3d" or calendars[i2].calendarz==bombs[i].bombz) and calendars[i2].destroyable==true)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 calpool.destroy_sound(calendars[i2].calendarsound);
@@ -106,7 +108,7 @@ return;
 }
 for(uint i3=0; i3<clocks.length(); i3++)
 {
-if(clocks[i3].clockx==bombs[i].bombx and clocks[i3].clocky==bombs[i].bomby and clocks[i3].destroyable==true)
+if(clocks[i3].clockx==bombs[i].bombx and clocks[i3].clocky==bombs[i].bomby and (mapmode != "3d" or clocks[i3].clockz==bombs[i].bombz) and clocks[i3].destroyable==true)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 clockpool.destroy_sound(clocks[i].clocksound);
@@ -119,7 +121,7 @@ return;
 }
 for(uint i4=0; i4<doors.length(); i4++)
 {
-if(doors[i4].minx<=bombs[i].bombx and doors[i4].maxx>=bombs[i].bombx and doors[i4].miny<=bombs[i].bomby and doors[i4].maxy>=bombs[i].bomby and doors[i4].destroyable==true)
+if(doors[i4].minx<=bombs[i].bombx and doors[i4].maxx>=bombs[i].bombx and doors[i4].miny<=bombs[i].bomby and doors[i4].maxy>=bombs[i].bomby and (mapmode != "3d" or (doors[i4].minz<=bombs[i].bombz and doors[i4].maxz>=bombs[i].bombz)) and doors[i4].destroyable==true)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -131,7 +133,7 @@ return;
 }
 for(uint i6=0; i6<objs.length(); i6++)
 {
-if(objs[i6].itx==bombs[i].bombx and objs[i6].ity==bombs[i].bomby)
+if(objs[i6].itx==bombs[i].bombx and objs[i6].ity==bombs[i].bomby and (mapmode != "3d" or objs[i6].itz==bombs[i].bombz))
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -143,7 +145,7 @@ return;
 }
 for(uint i9=0; i9<signs.length(); i9++)
 {
-if(signs[i9].signx==bombs[i].bombx and signs[i9].signy==bombs[i].bomby and signs[i9].destroyable==true)
+if(signs[i9].signx==bombs[i].bombx and signs[i9].signy==bombs[i].bomby and (mapmode != "3d" or signs[i9].signz==bombs[i].bombz) and signs[i9].destroyable==true)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 signpool.destroy_sound(signs[i9].signsound);
@@ -156,7 +158,7 @@ return;
 }
 for(uint i10=0; i10<spikes.length(); i10++)
 {
-if(spikes[i10].minx<=bombs[i].bombx and spikes[i10].maxx>=bombs[i].bombx and spikes[i10].miny<=bombs[i].bomby and spikes[i10].maxy>=bombs[i].bomby and spikes[i10].destroyable==true)
+if(spikes[i10].minx<=bombs[i].bombx and spikes[i10].maxx>=bombs[i].bombx and spikes[i10].miny<=bombs[i].bomby and spikes[i10].maxy>=bombs[i].bomby and (mapmode != "3d" or (spikes[i10].minz<=bombs[i].bombz and spikes[i10].maxz>=bombs[i].bombz)) and spikes[i10].destroyable==true)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -182,7 +184,7 @@ return;
 }
 for(uint i13=0; i13<walls.length(); i13++)
 {
-if(walls[i13].minx<=bombs[i].bombx and walls[i13].maxx>=bombs[i].bombx and walls[i13].miny<=bombs[i].bomby and walls[i13].maxy>=bombs[i].bomby and walls[i13].destroyable==true)
+if(walls[i13].minx<=bombs[i].bombx and walls[i13].maxx>=bombs[i].bombx and walls[i13].miny<=bombs[i].bomby and walls[i13].maxy>=bombs[i].bomby and (mapmode != "3d" or (walls[i13].minz<=bombs[i].bombz and walls[i13].maxz>=bombs[i].bombz)) and walls[i13].destroyable==true)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -196,7 +198,7 @@ return;
 }
 for(uint i15=0; i15<doors.length(); i15++)
 {
-if(doors[i15].minx<=bombs[i].bombx and doors[i15].maxx>=bombs[i].bombx and doors[i15].miny<=bombs[i].bomby and doors[i15].maxy>=bombs[i].bomby and doors[i15].destroyable==true)
+if(doors[i15].minx<=bombs[i].bombx and doors[i15].maxx>=bombs[i].bombx and doors[i15].miny<=bombs[i].bomby and doors[i15].maxy>=bombs[i].bomby and (mapmode != "3d" or (doors[i15].minz<=bombs[i].bombz and doors[i15].maxz>=bombs[i].bombz)) and doors[i15].destroyable==true)
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -208,9 +210,9 @@ return;
 }
 }
 }
-void spawn_bomb(int x,int y,int dmg,int sp,string bombtype)
+void spawn_bomb(int x,int y,int dmg,int sp,string bombtype,int z=0)
 {
-bomb b1(x,y,dmg,sp,bombtype);
+bomb b1(x,y,dmg,sp,bombtype,z);
 bombs.insert_last(b1);
 }
 void destroy_all_bombs()
@@ -236,10 +238,13 @@ form.reset();
 form.create_window("bomb", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int dm = form.create_input_box("maximum attack");
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int bomb_list = form.create_list("bomb sound");
@@ -302,6 +307,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(dm) == "")
 {
 speak("Maximum attack is required.");
@@ -316,14 +327,15 @@ continue;
 }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int bdm = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(bomb_list);
 string btype = (p > 0) ? bombs_l[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_bomb(bx, by, bdm, bsp, btype);
-spawn_bomb(bx, by, bdm, bsp, btype);
+write_bomb(bx, by, bdm, bsp, btype, bz);
+spawn_bomb(bx, by, bdm, bsp, btype, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -336,16 +348,30 @@ void read_bomb(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
+if(sd.length() == 7)
+{
+int z=stn(sd[3]);
+int dmg=stn(sd[4]);
+int sp=stn(sd[5]);
+string botype=sd[6];
+spawn_bomb(x, y, dmg, sp, botype, z);
+}
+else
+{
 int dmg=stn(sd[3]);
 int sp=stn(sd[4]);
 string botype=sd[5];
-spawn_bomb(x, y, dmg, sp, botype);
+spawn_bomb(x, y, dmg, sp, botype, 0);
+}
 }
 
-void write_bomb(int x, int y, int damage, int speed, string bombtype)
+void write_bomb(int x, int y, int damage, int speed, string bombtype, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"bomb "+x+" "+y+" "+z+" "+damage+" "+speed+" "+bombtype);
+else
 mapper.write("\r\n"+"bomb "+x+" "+y+" "+damage+" "+speed+" "+bombtype);
 mapper.close();
 }
