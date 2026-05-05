@@ -5,7 +5,10 @@ bool in_passage = false;
 passage@ current_passage = null;
 for (uint k = 0; k < lifts.length(); k++)
 {
-if (me.x >= lifts[k].minx && me.x <= lifts[k].maxx && me.y == lifts[k].lifty)
+bool on_this_lift;
+if(mapmode == "3d") on_this_lift = (me.x >= lifts[k].minx && me.x <= lifts[k].maxx && me.y >= lifts[k].miny && me.y <= lifts[k].maxy && me.z == lifts[k].liftz);
+else on_this_lift = (me.x >= lifts[k].minx && me.x <= lifts[k].maxx && me.y == lifts[k].lifty);
+if(on_this_lift)
 {
 on_lift = true;
 break;
@@ -292,9 +295,17 @@ if (include_lifts)
 for (uint j = 0; j < lifts.length(); j++)
 {
 double cx = me.x < lifts[j].minx ? lifts[j].minx : (me.x > lifts[j].maxx ? lifts[j].maxx : me.x);
-if (sx == cx && sy == lifts[j].lifty && !is_obscured("lift", "spier"))
+double cy;
+if(mapmode == "3d") cy = me.y < lifts[j].miny ? lifts[j].miny : (me.y > lifts[j].maxy ? lifts[j].maxy : me.y);
+else cy = lifts[j].lifty;
+bool match_pos;
+if(mapmode == "3d") match_pos = (sx == cx && sy == cy && sz == lifts[j].liftz);
+else match_pos = (sx == cx && sy == lifts[j].lifty);
+if (match_pos && !is_obscured("lift", "spier"))
 {
-labels.insert_last((lifts[j].maxx - lifts[j].minx + 1) + " x  tile lift");
+string ldims = "" + (lifts[j].maxx - lifts[j].minx + 1);
+if(mapmode == "3d") ldims += " x " + (lifts[j].maxy - lifts[j].miny + 1);
+labels.insert_last(ldims + " tile lift");
 found_object = true;
 }
 }

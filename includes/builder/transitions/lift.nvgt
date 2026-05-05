@@ -6,7 +6,9 @@ class lift
     int liftsound;
     int platform_id;
     double minx, maxx, miny, maxy;
+    double minz, maxz;
          int lifty;
+         int liftz;
     int liftdir;
     int lifttime;
     double tilevolume;
@@ -16,12 +18,14 @@ class lift
     string tile;
     string lifttype;
     timer lifttimer;
-    lift(double mx, double mx2, double my, double my2, int dir, int sp, string ty, double vol, double semitone, string lt, double vol2, double semitone2)
+    lift(double mx, double mx2, double my, double my2, int dir, int sp, string ty, double vol, double semitone, string lt, double vol2, double semitone2, double mnz=0, double mxz=0)
     {
         minx = mx;
         maxx = mx2;
         miny = my;
         maxy = my2;
+        minz = mnz;
+        maxz = mxz;
         liftdir = dir;
         lifttime = sp;
         tile = ty;
@@ -30,9 +34,21 @@ class lift
         lifttype = lt;
         liftvolume = vol2;
         liftpitch = semitone2;
-        lifty = miny;
-        platform_id = spawn_platform(minx, maxx, lifty, lifty, 1, 1, tile, tilevolume, tilepitch, false, false, true);
-        liftsound = liftpool.play_extended_3d(get_map_sound("objects/lifts/" + lifttype + "/*loop*"), me.x, me.y, me.z, minx, lifty, 0, 0, 0, 0, 0, 0, 0, 0, true, 0, 0, liftvolume, liftpitch, false);
+        if(mapmode == "3d")
+        {
+            liftz = int(minz);
+            lifty = int(miny);
+            platform_id = spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true, liftz);
+        }
+        else
+        {
+            lifty = int(miny);
+            liftz = 0;
+            platform_id = spawn_platform(minx, maxx, lifty, lifty, 1, 1, tile, tilevolume, tilepitch, false, false, true);
+        }
+        double sz = (mapmode == "3d") ? liftz : 0;
+        double sy = (mapmode == "3d") ? miny : lifty;
+        liftsound = liftpool.play_extended_3d(get_map_sound("objects/lifts/" + lifttype + "/*loop*"), me.x, me.y, me.z, minx, sy, sz, 0, 0, 0, 0, 0, 0, 0, true, 0, 0, liftvolume, liftpitch, false);
         update_lift_sound();
     }
     void move()
@@ -40,26 +56,52 @@ class lift
         if (lifttimer.elapsed >= lifttime)
         {
             lifttimer.restart();
-            int old_y = lifty;
-            if (liftdir == 1 && lifty < maxy)
-                lifty++;
-            else if (liftdir == 0 && lifty > miny)
-                lifty--;
-            if ((liftdir == 1 && lifty >= maxy) || (liftdir == 0 && lifty <= miny))
-                liftdir = 1 - liftdir;
-            if (liftmove)
-                me.y += (lifty - old_y);
-            update_platform(platform_id, minx, maxx, lifty, lifty);
+            if(mapmode == "3d")
+            {
+                int old_z = liftz;
+                if (liftdir == 1 && liftz < int(maxz))
+                    liftz++;
+                else if (liftdir == 0 && liftz > int(minz))
+                    liftz--;
+                if ((liftdir == 1 && liftz >= int(maxz)) || (liftdir == 0 && liftz <= int(minz)))
+                    liftdir = 1 - liftdir;
+                if (liftmove)
+                    me.z += (liftz - old_z);
+                update_platform(platform_id, minx, maxx, miny, maxy, liftz);
+            }
+            else
+            {
+                int old_y = lifty;
+                if (liftdir == 1 && lifty < int(maxy))
+                    lifty++;
+                else if (liftdir == 0 && lifty > int(miny))
+                    lifty--;
+                if ((liftdir == 1 && lifty >= int(maxy)) || (liftdir == 0 && lifty <= int(miny)))
+                    liftdir = 1 - liftdir;
+                if (liftmove)
+                    me.y += (lifty - old_y);
+                update_platform(platform_id, minx, maxx, lifty, lifty);
+            }
             update_lift_sound();
         }
     }
     void update_lift_sound()
     {
-        liftpool.update_sound_3d(liftsound, minx, lifty, 0);
-        liftpool.update_sound_range_3d(liftsound, 0, maxx - minx, 0, lifty - lifty, 0, 0);
+        if(mapmode == "3d")
+        {
+            liftpool.update_sound_3d(liftsound, minx, miny, liftz);
+            liftpool.update_sound_range_3d(liftsound, 0, maxx - minx, 0, maxy - miny, 0, 0);
+        }
+        else
+        {
+            liftpool.update_sound_3d(liftsound, minx, lifty, 0);
+            liftpool.update_sound_range_3d(liftsound, 0, maxx - minx, 0, 0, 0, 0);
+        }
     }
     bool is_on_lift()
     {
+        if(mapmode == "3d")
+            return (me.x >= minx && me.x <= maxx && me.y >= miny && me.y <= maxy && (me.z == liftz || me.z == liftz - 1 || me.z == liftz + 1));
         return (me.x >= minx && me.x <= maxx && (me.y == lifty || me.y == lifty - 1 || me.y == lifty + 1));
     }
     void check_player()
@@ -67,7 +109,10 @@ class lift
         liftmove = is_on_lift();
         if (liftmove)
         {
-            me.y = lifty;
+            if(mapmode == "3d")
+                me.z = liftz;
+            else
+                me.y = lifty;
         }
     }
 };
@@ -79,9 +124,9 @@ void liftloop()
         lifts[i].move();
     }
 }
-void spawn_lift(double minx, double maxx, double miny, double maxy, int dir, int lifttime, string tile, double tilevol, double tilepitch, string lifttype, double liftvol, double liftpitch)
+void spawn_lift(double minx, double maxx, double miny, double maxy, int dir, int lifttime, string tile, double tilevol, double tilepitch, string lifttype, double liftvol, double liftpitch, double minz=0, double maxz=0)
 {
-    lift lt1(minx, maxx, miny, maxy, dir, lifttime, tile, tilevol, tilepitch, lifttype, liftvol, liftpitch);
+    lift lt1(minx, maxx, miny, maxy, dir, lifttime, tile, tilevol, tilepitch, lifttype, liftvol, liftpitch, minz, maxz);
     lifts.insert_last(lt1);
 }
 void destroy_all_lifts()
@@ -114,15 +159,24 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("lift", false);
+bool y_uses_back_front = mapmode != "2d";
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int my2 = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int dir_list = form.create_list("direction");
 form.add_list_item(dir_list, "down then up", "down");
@@ -278,10 +332,19 @@ return;
 }
 if(form.is_pressed(ok))
 {
+if(form.get_text(mx)=="") { speak("Minimum x is required."); form.focus(mx); continue; }
+if(form.get_text(mx2)=="") { speak("Maximum x is required."); form.focus(mx2); continue; }
+if(form.get_text(my)=="") { speak("Minimum y is required."); form.focus(my); continue; }
+if(form.get_text(my2)=="") { speak("Maximum y is required."); form.focus(my2); continue; }
+if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
+if(form.get_text(sp)=="") { speak("Speed is required."); form.focus(sp); continue; }
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int bdir = form.get_list_position(dir_list);
 int pt = form.get_list_position(tile_list);
@@ -294,8 +357,8 @@ double blvol = form.get_slider(lift_vol);
 double blpit = form.get_slider(lift_pit);
 t.destroy_sound(prevslot);
 resume_pools();
-write_lift(bx, bx2, by, by2, bdir, bsp, btile, btvol, btpit, bltype, blvol, blpit);
-spawn_lift(bx, bx2, by, by2, bdir, bsp, btile, btvol, btpit, bltype, blvol, blpit);
+write_lift(bx, bx2, by, by2, bdir, bsp, btile, btvol, btpit, bltype, blvol, blpit, bmnz, bmxz);
+spawn_lift(bx, bx2, by, by2, bdir, bsp, btile, btvol, btpit, bltype, blvol, blpit, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -310,21 +373,31 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-int dir=stn(sd[5]);
-int sp=stn(sd[6]);
-string tiletype=sd[7];
-double tilevol=stn(sd[8]);
-double tilepitch=stn(sd[9]);
-string lifttype=sd[10];
-double liftvol=stn(sd[11]);
-double liftpitch=stn(sd[12]);
-spawn_lift(mx, mx2, my, my2, dir, sp, tiletype, tilevol, tilepitch, lifttype, liftvol, liftpitch);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+int dir=stn(sd[o]);
+int sp=stn(sd[o+1]);
+string tiletype=sd[o+2];
+double tilevol=stn(sd[o+3]);
+double tilepitch=stn(sd[o+4]);
+string lifttype=sd[o+5];
+double liftvol=stn(sd[o+6]);
+double liftpitch=stn(sd[o+7]);
+spawn_lift(mx, mx2, my, my2, dir, sp, tiletype, tilevol, tilepitch, lifttype, liftvol, liftpitch, mnz, mxz);
 }
 
-void write_lift(double x1, double x2, double y1, double y2, int direction, int speed, string tile, double tilevol, double tilepitch, string lifttype, double liftvol, double liftpitch)
+void write_lift(double x1, double x2, double y1, double y2, int direction, int speed, string tile, double tilevol, double tilepitch, string lifttype, double liftvol, double liftpitch, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"lift "+x1+" "+x2+" "+y1+" "+y2+" "+direction+" "+speed+" "+tile+" "+tilevol+" "+tilepitch+" "+lifttype+" "+liftvol+" "+liftpitch);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") coords += " "+minz+" "+maxz;
+mapper.write("\r\n"+"lift "+coords+" "+direction+" "+speed+" "+tile+" "+tilevol+" "+tilepitch+" "+lifttype+" "+liftvol+" "+liftpitch);
 mapper.close();
 }
