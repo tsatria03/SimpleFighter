@@ -3,14 +3,16 @@ class bombzone
 {
 double minx, maxx;
 int bomby;
+int bombz;
 int spawntime;
 string bombtype;
 timer spawntimer;
-bombzone(double mx,double mx2,int by,int sp,string bt)
+bombzone(double mx,double mx2,int by,int sp,string bt,int bz=0)
 {
 minx=mx;
 maxx=mx2;
 bomby=by;
+bombz=bz;
 spawntime=sp;
 bombtype=bt;
 }
@@ -19,16 +21,18 @@ void bombzoneloop()
 {
 for(uint i=0; i<bombzones.length(); i++)
 {
-if(bombzones[i].minx<=me.x and bombzones[i].maxx>=me.x and bombzones[i].bomby==me.y and bombzones[i].spawntimer.elapsed>=bombzones[i].spawntime)
+bool trigger = bombzones[i].minx<=me.x and bombzones[i].maxx>=me.x and bombzones[i].bomby==me.y;
+if(mapmode == "3d") trigger = trigger and bombzones[i].bombz == me.z;
+if(trigger and bombzones[i].spawntimer.elapsed>=bombzones[i].spawntime)
 {
 spawn_bomb(random(bombzones[i].minx, bombzones[i].maxx), bombzones[i].bomby, 1*xp+1, random(2250, 2500), bombzones[i].bombtype);
 bombzones[i].spawntimer.restart();
 }
 }
 }
-void spawn_bombzone(double x1,double x2,int y,int sp,string type)
+void spawn_bombzone(double x1,double x2,int y,int sp,string type,int z=0)
 {
-bombzone bz1(x1,x2,y,sp,type);
+bombzone bz1(x1,x2,y,sp,type,z);
 bombzones.insert_last(bz1);
 }
 void destroy_all_bombzones()
@@ -50,11 +54,14 @@ form.reset();
 form.create_window("bomb zone", false);
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my = form.create_input_box("y", (mapmode != "2d") ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 int sp = form.create_input_box("spawn time");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int bomb_list = form.create_list("bomb sound");
 form.add_list_item(bomb_list, "none", "none");
@@ -122,6 +129,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(sp) == "")
 {
 speak("Spawn time is required.");
@@ -131,13 +144,14 @@ continue;
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? int(string_to_number(form.get_text(mz))) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(bomb_list);
 string btype = (p > 0) ? bombs[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_bomb_zone(bx, bx2, by, bsp, btype);
-spawn_bombzone(bx, bx2, by, bsp, btype);
+write_bomb_zone(bx, bx2, by, bsp, btype, bz);
+spawn_bombzone(bx, bx2, by, bsp, btype, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -151,16 +165,25 @@ void read_bomb_zone(string[] sd)
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 int y=stn(sd[3]);
-int sp=stn(sd[4]);
-string botype=sd[5];
-spawn_bombzone(mx, mx2, y, sp, botype);
+int z=0;
+int o=4;
+if(sd.length()==7)
+{
+z=stn(sd[4]);
+o=5;
+}
+int sp=stn(sd[o]);
+string botype=sd[o+1];
+spawn_bombzone(mx, mx2, y, sp, botype, z);
 }
 
-void write_bomb_zone(double x1, double x2, int y, int speed, string bombtype)
+void write_bomb_zone(double x1, double x2, int y, int speed, string bombtype, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"bomb_zone "+x1+" "+x2+" "+y+" "+speed+" "+bombtype);
+string coords=x1+" "+x2+" "+y;
+if(mapmode=="3d") coords+=" "+z;
+mapper.write("\r\n"+"bomb_zone "+coords+" "+speed+" "+bombtype);
 mapper.close();
 }
 
