@@ -4,19 +4,24 @@ class floorbreaker
 int destsound, spawnsound;
 int breakerx;
 int breakery;
+int breakerz;
 string breakertype;
-floorbreaker(int fbx,int fby,string fbt)
+floorbreaker(int fbx,int fby,string fbt,int fbz=0)
 {
 breakerx=fbx;
 breakery=fby;
+breakerz=fbz;
 breakertype=fbt;
-spawnsound=breakerpool.play_3d(get_map_sound("objects/floor breakers/"+breakertype+"/*spawn*"),me.x,me.y,me.z,breakerx,breakery,0,0,false);
+spawnsound=breakerpool.play_3d(get_map_sound("objects/floor breakers/"+breakertype+"/*spawn*"),me.x,me.y,me.z,breakerx,breakery,breakerz,0,false);
+if(mapmode == "3d")
+spawn_platform(breakerx, breakerx, breakery, breakery, 1, 1, "air", tilevolume, tilepitch, false, false, true, breakerz);
+else
 spawn_platform(breakerx, breakerx, breakery, breakery, 1, 1, "air", tilevolume, tilepitch, false, false, true);
 }
 }
-void spawn_floorbreaker(int x,int y,string breakertype)
+void spawn_floorbreaker(int x,int y,string breakertype,int z=0)
 {
-floorbreaker fb1(x,y,breakertype);
+floorbreaker fb1(x,y,breakertype,z);
 floorbreakers.insert_last(fb1);
 }
 void destroy_all_floorbreakers()
@@ -24,7 +29,7 @@ void destroy_all_floorbreakers()
 for(uint i=0; i<floorbreakers.length(); i++)
 {
 breakerpool.destroy_sound(floorbreakers[i].spawnsound);
-floorbreakers[i].destsound=breakerpool.play_3d(get_map_sound("objects/floor breakers/"+floorbreakers[i].breakertype+"/*remove*"),me.x,me.y,me.z,floorbreakers[i].breakerx,floorbreakers[i].breakery,0,0,false);
+floorbreakers[i].destsound=breakerpool.play_3d(get_map_sound("objects/floor breakers/"+floorbreakers[i].breakertype+"/*remove*"),me.x,me.y,me.z,floorbreakers[i].breakerx,floorbreakers[i].breakery,floorbreakers[i].breakerz,0,false);
 }
 floorbreakers.resize(0);
 }
@@ -43,8 +48,11 @@ form.reset();
 form.create_window("floor breaker", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 int floor_list = form.create_list("floor breaker sound");
 form.add_list_item(floor_list, "none", "none");
 for(uint i = 0; i < floors.length(); i++)
@@ -96,14 +104,21 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int p = form.get_list_position(floor_list);
 string btype = (p > 0) ? floors[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_floor_breaker(bx, by, btype);
-spawn_floorbreaker(bx, by, btype);
+write_floor_breaker(bx, by, btype, bz);
+spawn_floorbreaker(bx, by, btype, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -116,14 +131,26 @@ void read_floor_breaker(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
+if(sd.length() == 5)
+{
+int z=stn(sd[3]);
+string floorbtype=sd[4];
+spawn_floorbreaker(x, y, floorbtype, z);
+}
+else
+{
 string floorbtype=sd[3];
-spawn_floorbreaker(x, y, floorbtype);
+spawn_floorbreaker(x, y, floorbtype, 0);
+}
 }
 
-void write_floor_breaker(int x, int y, string breakertype)
+void write_floor_breaker(int x, int y, string breakertype, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"floor_breaker "+x+" "+y+" "+z+" "+breakertype);
+else
 mapper.write("\r\n"+"floor_breaker "+x+" "+y+" "+breakertype);
 mapper.close();
 }

@@ -3,11 +3,13 @@ class text_square
 {
 int textx;
 int texty;
+int textz;
 string text;
-text_square(int tx,int ty,string txt)
+text_square(int tx,int ty,string txt,int tz=0)
 {
 textx=tx;
 texty=ty;
+textz=tz;
 text=txt;
 }
 }
@@ -15,15 +17,17 @@ void textcheck()
 {
 for(uint i=0; i<text_squares.length(); i++)
 {
-if(me.x==text_squares[i].textx and me.y==text_squares[i].texty and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool match = me.x==text_squares[i].textx and me.y==text_squares[i].texty;
+if(mapmode == "3d") match = match and me.z==text_squares[i].textz;
+if(match and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 speak(text_squares[i].text);
 }
 }
 }
-void spawn_text_square(int x,int y,string text)
+void spawn_text_square(int x,int y,string text,int z=0)
 {
-text_square text1(x,y,text);
+text_square text1(x,y,text,z);
 text_squares.insert_last(text1);
 }
 void destroy_all_text_squares()
@@ -37,10 +41,13 @@ form.reset();
 form.create_window("text square", false);
 int mx=form.create_input_box("x", sel_left_set ? sel_left : "");
 int my=form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int tqtext=form.create_input_box("text");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -50,6 +57,7 @@ wait(5);
 form.monitor();
 double x=string_to_number(form.get_text(mx));
 double y=string_to_number(form.get_text(my));
+double z = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 string txt=form.get_text(tqtext);
 if(key_pressed(KEY_ESCAPE))
 {
@@ -75,6 +83,11 @@ else if(form.get_text(my)=="")
 speak("Y is required.");
 form.focus(my);
 }
+else if(mz != -1 && form.get_text(mz)=="")
+{
+speak("Z is required.");
+form.focus(mz);
+}
 else if(form.get_text(tqtext)=="")
 {
 speak("Text is required.");
@@ -83,8 +96,8 @@ form.focus(tqtext);
 else
 {
 resume_pools();
-write_text_square(x, y, txt);
-spawn_text_square(x, y, txt);
+write_text_square(x, y, txt, z);
+spawn_text_square(x, y, txt, z);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -98,14 +111,19 @@ void read_text_square(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-string txt=join_string_array(sd, 3, sd.length());
-spawn_text_square(x, y, txt);
+int text_start = (mapmode == "3d") ? 4 : 3;
+int z = (mapmode == "3d") ? stn(sd[3]) : 0;
+string txt=join_string_array(sd, text_start, sd.length()-text_start);
+spawn_text_square(x, y, txt, z);
 }
 
-void write_text_square(int x, int y, string txt)
+void write_text_square(int x, int y, string txt, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"text_square "+x+" "+y+" "+z+" "+txt);
+else
 mapper.write("\r\n"+"text_square "+x+" "+y+" "+txt);
 mapper.close();
 }
