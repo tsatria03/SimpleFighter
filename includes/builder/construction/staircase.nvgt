@@ -3,20 +3,23 @@ bool onstaircase;
 staircase@[] staircases(0);
 class staircase
 {
-bool abletojump, destroyable, overlap;
+bool destroyable, overlap;
 int defsound,hurtsound;
-int platform_id;
+int[] platform_ids;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 double stairshealth, stairsmaxhealth;
 double stairsvolume;
 double stairspitch;
 string tile;
-staircase(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool vlp)
+staircase(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool vlp,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 stairshealth=hp;
 stairsmaxhealth=maxhp;
 tile=ty;
@@ -24,7 +27,15 @@ stairsvolume=vol;
 stairspitch=semitone;
 destroyable=dtb;
 overlap=vlp;
-platform_id=spawn_platform(minx, maxx, miny, maxy, stairshealth, stairsmaxhealth, tile, stairsvolume, stairspitch, destroyable, overlap, true);
+if(mapmode == "3d")
+{
+for(double z = minz; z <= maxz; z++)
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, stairshealth, stairsmaxhealth, tile, stairsvolume, stairspitch, destroyable, overlap, true, z));
+}
+else
+{
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, stairshealth, stairsmaxhealth, tile, stairsvolume, stairspitch, destroyable, overlap, true));
+}
 }
 }
 void stairscheck()
@@ -34,24 +45,22 @@ for (uint i=0; i<staircases.length(); i++)
 if(staircases[i].stairshealth<=0)
 {
 p.destroy_sound(staircases[i].hurtsound);
-staircases[i].defsound=p.play_extended_3d(get_map_sound("objects/platforms/"+staircases[i].tile+"/*death*"),me.x,me.y,me.z,staircases[i].minx,staircases[i].miny,0,0,0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
-p.update_sound_3d(staircases[i].defsound,staircases[i].minx,staircases[i].miny, 0);
-p.update_sound_range_3d(staircases[i].defsound,0,staircases[i].maxx-staircases[i].minx,0,staircases[i].maxy-staircases[i].miny, 0, 0);
-remove_platform(staircases[i].platform_id);
+staircases[i].defsound=p.play_extended_3d(get_map_sound("objects/platforms/"+staircases[i].tile+"/*death*"),me.x,me.y,me.z,staircases[i].minx,staircases[i].miny,staircases[i].minz,0,0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
+p.update_sound_3d(staircases[i].defsound,staircases[i].minx,staircases[i].miny,staircases[i].minz);
+p.update_sound_range_3d(staircases[i].defsound,0,staircases[i].maxx-staircases[i].minx,0,staircases[i].maxy-staircases[i].miny, 0, staircases[i].maxz-staircases[i].minz);
+for(uint j=0; j<staircases[i].platform_ids.length(); j++)
+remove_platform(staircases[i].platform_ids[j]);
 staircases.remove_at(i);
 return;
 }
-if (me.x>=staircases[i].minx && me.x<=staircases[i].maxx && me.y>=staircases[i].miny && me.y<=staircases[i].maxy)
-{
-onstaircase=true;
-if (me.y==staircases[i].maxy) staircases[i].abletojump=true;
-else staircases[i].abletojump=false;
-}
+bool in_xy = (me.x>=staircases[i].minx && me.x<=staircases[i].maxx && me.y>=staircases[i].miny && me.y<=staircases[i].maxy);
+bool in_volume;
+if(mapmode == "3d")
+in_volume = in_xy && me.z>=staircases[i].minz && me.z<=staircases[i].maxz;
 else
-{
-onstaircase=false;
-staircases[i].abletojump=true;
-}
+in_volume = in_xy;
+if(in_volume) onstaircase=true;
+else onstaircase=false;
 }
 }
 bool is_staircase(double x, double y)
@@ -77,11 +86,22 @@ bool in_staircase(double x, double y)
     }
     return false;
 }
-int spawn_staircase(double x1, double x2, double y1, double y2, double stairshealth, double stairsmaxhealth, string stairstile, double stairsvol, double stairspitch, bool destroyable, bool overlap)
+bool in_staircase_volume(double x, double y, double z)
 {
-staircase sc1(x1, x2, y1, y2, stairshealth, stairsmaxhealth, stairstile, stairsvol, stairspitch, destroyable, overlap);
+    for(uint i = 0; i < staircases.length(); i++)
+    {
+        if(x >= staircases[i].minx && x <= staircases[i].maxx
+        && y >= staircases[i].miny && y <= staircases[i].maxy
+        && z >= staircases[i].minz && z <= staircases[i].maxz)
+            return true;
+    }
+    return false;
+}
+int spawn_staircase(double x1, double x2, double y1, double y2, double stairshealth, double stairsmaxhealth, string stairstile, double stairsvol, double stairspitch, bool destroyable, bool overlap, double minz=0, double maxz=0)
+{
+staircase sc1(x1, x2, y1, y2, stairshealth, stairsmaxhealth, stairstile, stairsvol, stairspitch, destroyable, overlap, minz, maxz);
 staircases.insert_last(sc1);
-    return staircases.length() - 1; 
+    return staircases.length() - 1;
 }
 void update_staircase(int id, double x1, double x2, double y1, double y2)
 {
@@ -118,15 +138,26 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("staircase", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int hp = form.create_input_box("health", "1");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 int tile_list = form.create_list("tile sound");
 form.add_list_item(tile_list, "air", "air");
@@ -240,6 +271,8 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int p = form.get_list_position(tile_list);
 string btile = (p > 0) ? tiles_list[p-1] : "air";
@@ -249,8 +282,8 @@ bool bdest = form.is_checked(dest_cb);
 bool boverlap = form.is_checked(overlap_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_staircase(bx, bx2, by, by2, bhp, btile, bvol, bpit, bdest, boverlap);
-spawn_staircase(bx, bx2, by, by2, bhp, bhp, btile, bvol, bpit, bdest, boverlap);
+write_staircase(bx, bx2, by, by2, bhp, btile, bvol, bpit, bdest, boverlap, bmnz, bmxz);
+spawn_staircase(bx, bx2, by, by2, bhp, bhp, btile, bvol, bpit, bdest, boverlap, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -265,19 +298,29 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-double hp=stn(sd[5]);
-string tiletype=sd[6];
-double stairsvol=stn(sd[7]);
-double stairspitch=stn(sd[8]);
-bool dbl=string_to_bool(sd[9]);
-bool rps=string_to_bool(sd[10]);
-spawn_staircase(mx, mx2, my, my2, hp, hp, tiletype, stairsvol, stairspitch, dbl, rps);
+double minz=0, maxz=0;
+int o=5;
+if(sd.length()==13)
+{
+minz=stn(sd[5]);
+maxz=stn(sd[6]);
+o=7;
+}
+double hp=stn(sd[o]);
+string tiletype=sd[o+1];
+double stairsvol=stn(sd[o+2]);
+double stairspitch=stn(sd[o+3]);
+bool dbl=string_to_bool(sd[o+4]);
+bool rps=string_to_bool(sd[o+5]);
+spawn_staircase(mx, mx2, my, my2, hp, hp, tiletype, stairsvol, stairspitch, dbl, rps, minz, maxz);
 }
 
-void write_staircase(double x1, double x2, double y1, double y2, double hp, string tile, double vol, double pitch, bool destroyable, bool overlap)
+void write_staircase(double x1, double x2, double y1, double y2, double hp, string tile, double vol, double pitch, bool destroyable, bool overlap, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"staircase "+x1+" "+x2+" "+y1+" "+y2+" "+hp+" "+tile+" "+vol+" "+pitch+" "+destroyable+" "+overlap);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"staircase "+coords+" "+hp+" "+tile+" "+vol+" "+pitch+" "+destroyable+" "+overlap);
 mapper.close();
 }

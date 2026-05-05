@@ -1134,15 +1134,19 @@ for (uint i = 0; i < staircases.length(); i++)
 {
     if (!staircases[i].destroyable) continue;
     bool in_stairs =(me.x >= staircases[i].minx && me.x <= staircases[i].maxx && me.y >= staircases[i].miny && me.y <= staircases[i].maxy);
+    if(mapmode == "3d") in_stairs = in_stairs && me.z >= staircases[i].minz && me.z <= staircases[i].maxz;
     if (!in_stairs) continue;
     staircases[i].stairshealth -= impact_dmg;
 kombatlog.insert_last(impact_dmg+ " damage to "+staircases[i].tile+" staircase, falling down.");
     if (impact_dmg > 0) staircases[i].hurtsound =p.play_stationary_extended(get_map_sound("objects/platforms/" + staircases[i].tile + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
-    int pid = staircases[i].platform_id;
-    if (pid >= 0 && pid < platforms.length())
+    for(uint k=0; k<staircases[i].platform_ids.length(); k++)
     {
-        platforms[pid].plathealth = staircases[i].stairshealth;
-        platforms[pid].platmaxhealth = staircases[i].stairsmaxhealth;
+        int pid = staircases[i].platform_ids[k];
+        if (pid >= 0 && pid < platforms.length())
+        {
+            platforms[pid].plathealth = staircases[i].stairshealth;
+            platforms[pid].platmaxhealth = staircases[i].stairsmaxhealth;
+        }
     }
     break;
 }
