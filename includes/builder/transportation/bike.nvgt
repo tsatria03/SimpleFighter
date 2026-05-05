@@ -10,6 +10,7 @@ double bikehealth;
 double bikemaxhealth;
 int bikex;
 int bikey;
+int bikez;
 int bikedir;
 int bikespeed;
 int bikespeed2;
@@ -17,24 +18,26 @@ int biketime;
 string lasttile = "";
 string biketype;
 timer biketimer;
-bike(int bkx,int bky,double hp,double maxhp,int bks,string bkt)
+bike(int bkx,int bky,double hp,double maxhp,int bks,string bkt,int bkz=0)
 {
 bikex=bkx;
 bikey=bky;
+bikez=bkz;
 bikehealth=hp;
 bikemaxhealth=maxhp;
 bikespeed=bks;
 biketype=bkt;
 onbike=false;
-bikesound=bikepool.play_extended_3d(get_map_sound("objects/bikes/"+biketype+"/misc/*beacon*"),me.x,me.y,me.z,bikex,bikey,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-bikepool.update_sound_3d(bikesound,bikex,bikey, 0);
+double sz = (mapmode == "3d") ? bikez : 0;
+bikesound=bikepool.play_extended_3d(get_map_sound("objects/bikes/"+biketype+"/misc/*beacon*"),me.x,me.y,me.z,bikex,bikey,sz,0,0,0,0,0,0,0,true,0,0,0,100,false);
+bikepool.update_sound_3d(bikesound,bikex,bikey, sz);
 }
 }
 void bikeloop()
 {
 for(uint i=0; i<bikes.length(); i++)
 {
-if(onbike && bikes[i].moveable) bikes[i].bikey = me.y;
+if(onbike && bikes[i].moveable) { bikes[i].bikey = me.y; if(mapmode == "3d") bikes[i].bikez = int(me.z); }
 if(key_down(KEY_RIGHT) and bikes[i].biketimer.elapsed>=bikes[i].biketime and bikes[i].moveable==true)
 {
 if(facing!="right")
@@ -103,6 +106,74 @@ if(jumping!=1) bikes[i].bikesound=bikepool.play_stationary_extended(get_map_soun
 bikes[i].biketimer.restart();
 }
 }
+if(mapmode != "2d" && key_down(KEY_UP) and bikes[i].biketimer.elapsed>=bikes[i].biketime and bikes[i].moveable==true)
+{
+if(facing!="forward")
+{
+bikepool.destroy_sound(bikes[i].turnsound);
+bikes[i].turnsound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*turn*"),false,0,0,0,100,false);
+facing="forward";
+speak(facing);
+bikes[i].bikedir=3;
+bikes[i].biketimer.restart();
+}
+else
+{
+string nexttile = gmt(me.x, me.y + 5);
+if (!is_bikable(nexttile))
+{
+speak("You can't bike here!");
+bikes[i].biketimer.restart();
+return;
+}
+me.y+=5;
+bikes[i].bikey+=5;
+if(jumping!=1) check_radar(bikes[i].bikedir, @bikes[i]);
+string current_tile = identify_biketile(gmt(me.x, me.y));
+if (bikes[i].lasttile != current_tile)
+{
+bikepool.destroy_sound(bikes[i].changesound);
+bikes[i].changesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/" + bikes[i].biketype + "/misc/*change*"), false, 0, 0, 0, 100, false);
+bikes[i].lasttile = current_tile;
+}
+if(jumping!=1) bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,0,100,false);
+bikes[i].biketimer.restart();
+}
+}
+if(mapmode != "2d" && key_down(KEY_DOWN) and bikes[i].biketimer.elapsed>=bikes[i].biketime and bikes[i].moveable==true)
+{
+if(facing!="backward")
+{
+bikepool.destroy_sound(bikes[i].turnsound);
+bikes[i].turnsound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*turn*"),false,0,0,0,100,false);
+facing="backward";
+speak(facing);
+bikes[i].bikedir=2;
+bikes[i].biketimer.restart();
+}
+else
+{
+string prevtile = gmt(me.x, me.y - 5);
+if (!is_bikable(prevtile))
+{
+speak("You can't bike here!");
+bikes[i].biketimer.restart();
+return;
+}
+me.y-=5;
+bikes[i].bikey-=5;
+if(jumping!=1) check_radar(bikes[i].bikedir, @bikes[i]);
+string current_tile = identify_biketile(gmt(me.x, me.y));
+if (bikes[i].lasttile != current_tile)
+{
+bikepool.destroy_sound(bikes[i].changesound);
+bikes[i].changesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/" + bikes[i].biketype + "/misc/*change*"), false, 0, 0, 0, 100, false);
+bikes[i].lasttile = current_tile;
+}
+if(jumping!=1) bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/platforms/"+current_tile+"/*move*"),false,0,0,0,100,false);
+bikes[i].biketimer.restart();
+}
+}
 if(me.x==bikes[i].bikex and me.y==bikes[i].bikey and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 if(bikes[i].moveable==false)
@@ -152,7 +223,7 @@ if(shift_is_down() && key_repeating(KEY_SPACE) and bikes[i].moveable==true and p
 bikepool.destroy_sound(bikes[i].bellsound);
 bikes[i].bellsound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*bell*"),false,0,0,0,100,false);
 }
-if(spiable==false)
+if(spiable==false && mapmode == "2d")
 {
 if(key_repeating(KEY_UP) and bikes[i].bikespeed2!=10 and bikes[i].moveable==true and paused==0)
 {
@@ -162,6 +233,23 @@ speak("speed "+(bikes[i].bikespeed2+1));
 bikes[i].bikespeed2+=1;
 }
 if(key_repeating(KEY_DOWN) and bikes[i].bikespeed2!=1 and bikes[i].moveable==true and paused==0)
+{
+bikepool.destroy_sound(bikes[i].speedsound);
+bikes[i].speedsound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*speed*"),false,0,0,0,100,false);
+speak("speed "+(bikes[i].bikespeed2-1));
+bikes[i].bikespeed2-=1;
+}
+}
+if(mapmode != "2d")
+{
+if((key_repeating(KEY_W) || key_repeating(KEY_PAGEUP)) and bikes[i].bikespeed2!=10 and bikes[i].moveable==true and paused==0)
+{
+bikepool.destroy_sound(bikes[i].speedsound);
+bikes[i].speedsound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*speed*"),false,0,0,0,100,false);
+speak("speed "+(bikes[i].bikespeed2+1));
+bikes[i].bikespeed2+=1;
+}
+if((key_repeating(KEY_S) || key_repeating(KEY_PAGEDOWN)) and bikes[i].bikespeed2!=1 and bikes[i].moveable==true and paused==0)
 {
 bikepool.destroy_sound(bikes[i].speedsound);
 bikes[i].speedsound=bikepool.play_stationary_extended(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*speed*"),false,0,0,0,100,false);
@@ -424,6 +512,21 @@ else return "misc";
 }
 void check_radar(int dir, bike@ bk)
 {
+if(dir == 2 || dir == 3)
+{
+int step = (dir == 2) ? -1 : 1;
+for (uint i = 0; i <= 25; i++)
+{
+double check_y = me.y + (i * step);
+string tile = gmt(me.x, check_y);
+if (string_contains(tile, "wall", 1) > -1 || tile == "")
+{
+bk.radarsound = bikepool.play_stationary_extended(get_map_sound("objects/bikes/" + bk.biketype + "/misc/*radar*"), false, 0, 0, 0, 100, false);
+break;
+}
+}
+return;
+}
 int step = (dir == 0) ? -1 : 1;
 for (uint i = 0; i <= 25; i++)
 {
@@ -436,9 +539,9 @@ break;
 }
 }
 }
-void spawn_bike(int x,int y,double hp,double maxhp,int bikespeed,string biketype)
+void spawn_bike(int x,int y,double hp,double maxhp,int bikespeed,string biketype,int z=0)
 {
-bike bk1(x,y,hp,maxhp,bikespeed,biketype);
+bike bk1(x,y,hp,maxhp,bikespeed,biketype,z);
 bikes.insert_last(bk1);
 }
 void destroy_all_bikes()
@@ -464,12 +567,16 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("bike", false);
+bool y_uses_back_front = mapmode != "2d";
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 int hp = form.create_input_box("health", "1");
 int sp = form.create_input_box("base speed", "1500");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int bike_list = form.create_list("bike sound");
@@ -541,16 +648,18 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 double bhp = string_to_number(form.get_text(hp) != "" ? form.get_text(hp) : "1");
 int bsp = string_to_number(form.get_text(sp) != "" ? form.get_text(sp) : "1500");
 int p = form.get_list_position(bike_list);
 string btype = (p > 0) ? bikes_l[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_bike(bx, by, bhp, bsp, btype);
-spawn_bike(bx, by, bhp, bhp, bsp, btype);
+write_bike(bx, by, bhp, bsp, btype, bz);
+spawn_bike(bx, by, bhp, bhp, bsp, btype, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -563,16 +672,21 @@ void read_bike(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-double hp=stn(sd[3]);
-int sp=stn(sd[4]);
-string biktyp=sd[5];
-spawn_bike(x, y, hp, hp, sp, biktyp);
+int z=0;
+int o=3;
+if(mapmode == "3d") { z=stn(sd[3]); o=4; }
+double hp=stn(sd[o]);
+int sp=stn(sd[o+1]);
+string biktyp=sd[o+2];
+spawn_bike(x, y, hp, hp, sp, biktyp, z);
 }
 
-void write_bike(int x, int y, double hp, int speed, string biketype)
+void write_bike(int x, int y, double hp, int speed, string biketype, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"bike "+x+" "+y+" "+hp+" "+speed+" "+biketype);
+string pos = ""+x+" "+y;
+if(mapmode == "3d") pos += " "+z;
+mapper.write("\r\n"+"bike "+pos+" "+hp+" "+speed+" "+biketype);
 mapper.close();
 }

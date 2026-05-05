@@ -13,6 +13,7 @@ int brake_delay;
 int damage;
 int vehx;
 int vehy;
+int vehz;
 int vehdir;
 int vehspeed;
 int vehspeed2;
@@ -20,10 +21,11 @@ int vehtime;
 string vehtype;
 timer vehtimer;
 timer slowdown_timer;
-vehicle(int vx,int vy,double hp,double maxhp,int dm,int vsp,int acs,int bcs,string vt,bool vf)
+vehicle(int vx,int vy,double hp,double maxhp,int dm,int vsp,int acs,int bcs,string vt,bool vf,int vz=0)
 {
 vehx=vx;
 vehy=vy;
+vehz=vz;
 vehhealth=hp;
 vehmaxhealth=maxhp;
 damage=dm;
@@ -34,8 +36,9 @@ vehtype=vt;
 fireable=vf;
 invehicle=false;
 slowdown_timer.restart();
-vehsound=vehpool.play_extended_3d(get_map_sound("objects/vehicles/"+vehtype+"/*beacon*"),me.x,me.y,me.z,vehx,vehy,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-vehpool.update_sound_3d(vehsound,vehx,vehy, 0);
+double sz = (mapmode == "3d") ? vehz : 0;
+vehsound=vehpool.play_extended_3d(get_map_sound("objects/vehicles/"+vehtype+"/*beacon*"),me.x,me.y,me.z,vehx,vehy,sz,0,0,0,0,0,0,0,true,0,0,0,100,false);
+vehpool.update_sound_3d(vehsound,vehx,vehy, sz);
 }
 }
 void vehloop()
@@ -255,9 +258,9 @@ return;
 }
 }
 }
-void spawn_vehicle(int x,int y,double hp,double maxhp,int dm,int sp,int sp2,int sp3,string vehtype,bool fireable)
+void spawn_vehicle(int x,int y,double hp,double maxhp,int dm,int sp,int sp2,int sp3,string vehtype,bool fireable,int z=0)
 {
-vehicle vh1(x,y,hp,maxhp,dm,sp,sp2,sp3,vehtype,fireable);
+vehicle vh1(x,y,hp,maxhp,dm,sp,sp2,sp3,vehtype,fireable,z);
 vehicles.insert_last(vh1);
 }
 void destroy_all_vehicles()
@@ -283,8 +286,11 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("vehicle", false);
+bool y_uses_back_front = mapmode != "2d";
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 int hp = form.create_input_box("health", "1");
 int dm = form.create_input_box("maximum attack");
 int sp = form.create_input_box("base speed", "500");
@@ -292,6 +298,7 @@ int sp2 = form.create_input_box("accel speed", "100");
 int sp3 = form.create_input_box("brake speed", "50");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
@@ -397,8 +404,10 @@ speak("Brake speed is required.");
 form.focus(sp3);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int bdmg = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
@@ -409,8 +418,8 @@ string btype = (p > 0) ? vehs_list[p-1] : "none";
 bool bhit = form.is_checked(hit_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_vehicle(bx, by, bhp, bdmg, bsp, bsp2, bsp3, btype, bhit);
-spawn_vehicle(bx, by, bhp, bhp, bdmg, bsp, bsp2, bsp3, btype, bhit);
+write_vehicle(bx, by, bhp, bdmg, bsp, bsp2, bsp3, btype, bhit, bz);
+spawn_vehicle(bx, by, bhp, bhp, bdmg, bsp, bsp2, bsp3, btype, bhit, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -423,20 +432,25 @@ void read_vehicle(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-double hp=stn(sd[3]);
-int dmg=stn(sd[4]);
-int sp=stn(sd[5]);
-int sp2=stn(sd[6]);
-int sp3=stn(sd[7]);
-string vehtyp=sd[8];
-bool fb=string_to_bool(sd[9]);
-spawn_vehicle(x, y, hp, hp, dmg, sp, sp2, sp3, vehtyp, fb);
+int z=0;
+int o=3;
+if(mapmode == "3d") { z=stn(sd[3]); o=4; }
+double hp=stn(sd[o]);
+int dmg=stn(sd[o+1]);
+int sp=stn(sd[o+2]);
+int sp2=stn(sd[o+3]);
+int sp3=stn(sd[o+4]);
+string vehtyp=sd[o+5];
+bool fb=string_to_bool(sd[o+6]);
+spawn_vehicle(x, y, hp, hp, dmg, sp, sp2, sp3, vehtyp, fb, z);
 }
 
-void write_vehicle(int x, int y, double hp, int damage, int speed, int speed2, int speed3, string vehtype, bool fireable)
+void write_vehicle(int x, int y, double hp, int damage, int speed, int speed2, int speed3, string vehtype, bool fireable, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"vehicle "+x+" "+y+" "+hp+" "+damage+" "+speed+" "+speed2+" "+speed3+" "+vehtype+" "+fireable);
+string pos = ""+x+" "+y;
+if(mapmode == "3d") pos += " "+z;
+mapper.write("\r\n"+"vehicle "+pos+" "+hp+" "+damage+" "+speed+" "+speed2+" "+speed3+" "+vehtype+" "+fireable);
 mapper.close();
 }
