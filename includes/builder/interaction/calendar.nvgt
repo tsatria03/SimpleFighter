@@ -1,45 +1,49 @@
-calander@[]calanders(0);
-class calander
+calendar@[]calendars(0);
+class calendar
 {
 bool destroyable;
-int calandersound, hurtsound, pressound;
-int calanderx;
-int calandery;
+int calendarsound, hurtsound, pressound;
+int calendarx;
+int calendary;
+int calendarz;
 string cdtext;
-string calandertype;
-calander(int cnx,int cny,string cntext,string cntype,bool dbl)
+string calendartype;
+calendar(int cnx,int cny,string cntext,string cntype,bool dbl,int cnz=0)
 {
-calanderx=cnx;
-calandery=cny;
+calendarx=cnx;
+calendary=cny;
+calendarz=cnz;
 cdtext=cntext;
-calandertype=cntype;
+calendartype=cntype;
 destroyable=dbl;
-calandersound=calpool.play_3d(get_map_sound("objects/calendars/"+calandertype+"/*loop*"),me.x,me.y,me.z,calanderx,calandery,0,0,true);
+calendarsound=calpool.play_3d(get_map_sound("objects/calendars/"+calendartype+"/*loop*"),me.x,me.y,me.z,calendarx,calendary,calendarz,0,true);
 }
 }
-void calandercheck()
+void calendarcheck()
 {
-for(uint i=0; i<calanders.length(); i++)
+for(uint i=0; i<calendars.length(); i++)
 {
-if(me.x==calanders[i].calanderx and me.y==calanders[i].calandery and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool match = me.x==calendars[i].calendarx and me.y==calendars[i].calendary;
+if(mapmode == "3d") match = match and me.z==calendars[i].calendarz;
+if(match and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
-calanders[i].pressound=calpool.play_stationary(get_map_sound("objects/calendars/"+calanders[i].calandertype+"/*press*"),false);
-speak(calanders[i].cdtext+get_date(false, false));
+calendars[i].pressound=calpool.play_stationary(get_map_sound("objects/calendars/"+calendars[i].calendartype+"/*press*"),false);
+speak(calendars[i].cdtext+get_date(false, false));
 }
 }
 }
-void spawn_calendar(int x,int y,string text,string calandertype,bool destroyable)
+void spawn_calendar(int x,int y,string text,string calendartype,bool destroyable,int z=0)
 {
-calander cn1(x,y,text,calandertype,destroyable);
-calanders.insert_last(cn1);
+calendar cn1(x,y,text,calendartype,destroyable,z);
+calendars.insert_last(cn1);
 }
 void destroy_all_calendars()
 {
-for(uint i=0; i<calanders.length(); i++)
+for(uint i=0; i<calendars.length(); i++)
 {
-calpool.destroy_sound(calanders[i].calandersound);
+calpool.destroy_sound(calendars[i].calendarsound);
 }
-calanders.resize(0);
+calendars.resize(0);
 }
 
 void build_calendar()
@@ -56,9 +60,12 @@ form.reset();
 form.create_window("calendar", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int text = form.create_input_box("text", "The date is ");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 int cal_list = form.create_list("calendar sound");
 form.add_list_item(cal_list, "none", "none");
 for(uint i = 0; i < cals.length(); i++)
@@ -120,16 +127,23 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 string btxt = form.get_text(text) != "" ? form.get_text(text) : "The date is ";
 bool bdmd = form.is_checked(destroyable_cb);
 int p = form.get_list_position(cal_list);
 string btype = (p > 0) ? cals[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_calendar(bx, by, btxt, btype, bdmd);
-spawn_calendar(bx, by, btxt, btype, bdmd);
+write_calendar(bx, by, btxt, btype, bdmd, bz);
+spawn_calendar(bx, by, btxt, btype, bdmd, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -142,17 +156,21 @@ void read_calendar(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-string txt=join_string_array(sd, 3, sd.length()-2);
-string calandertype=sd[sd.length()-2];
+int text_start = (mapmode == "3d") ? 4 : 3;
+int z = (mapmode == "3d") ? stn(sd[3]) : 0;
+string txt=join_string_array(sd, text_start, sd.length()-text_start-2);
+string calendartype=sd[sd.length()-2];
 bool dbl=string_to_bool(sd[sd.length()-1]);
-spawn_calendar(x, y, txt, calandertype, dbl);
+spawn_calendar(x, y, txt, calendartype, dbl, z);
 }
 
-void write_calendar(int x, int y, string txt, string calandertype, bool destroyable)
+void write_calendar(int x, int y, string txt, string calendartype, bool destroyable, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"calendar "+x+" "+y+" "+txt+" "+calandertype+" "+destroyable);
+if(mapmode == "3d")
+mapper.write("\r\n"+"calendar "+x+" "+y+" "+z+" "+txt+" "+calendartype+" "+destroyable);
+else
+mapper.write("\r\n"+"calendar "+x+" "+y+" "+txt+" "+calendartype+" "+destroyable);
 mapper.close();
 }
-

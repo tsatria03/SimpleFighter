@@ -5,33 +5,37 @@ bool destroyable, looping;
 int hurtsound, signsound, pressound;
 int signx;
 int signy;
+int signz;
 string text;
 string signtype;
-sign(int sx,int sy,string txt, string st,bool dbl,bool lps)
+sign(int sx,int sy,string txt, string st,bool dbl,bool lps,int sz=0)
 {
 signx=sx;
 signy=sy;
+signz=sz;
 text=txt;
 signtype=st;
 destroyable=dbl;
 looping=lps;
-if(looping==true) signsound=signpool.play_3d(get_map_sound("objects/signs/"+signtype+"/*loop*"),me.x,me.y,me.z,signx,signy,0,0,true);
+if(looping==true) signsound=signpool.play_3d(get_map_sound("objects/signs/"+signtype+"/*loop*"),me.x,me.y,me.z,signx,signy,signz,0,true);
 }
 }
 void signcheck()
 {
 for(uint i=0; i<signs.length(); i++)
 {
-if(me.x==signs[i].signx and me.y==signs[i].signy and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool match = me.x==signs[i].signx and me.y==signs[i].signy;
+if(mapmode == "3d") match = match and me.z==signs[i].signz;
+if(match and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 signs[i].pressound=signpool.play_stationary(get_map_sound("objects/signs/"+signs[i].signtype+"/*press*"),false);
 speak(signs[i].text);
 }
 }
 }
-void spawn_sign(int x,int y,string text,string signtype,bool destroyable,bool looping)
+void spawn_sign(int x,int y,string text,string signtype,bool destroyable,bool looping,int z=0)
 {
-sign sg1(x,y,text,signtype,destroyable,looping);
+sign sg1(x,y,text,signtype,destroyable,looping,z);
 signs.insert_last(sg1);
 }
 void destroy_all_signs()
@@ -57,9 +61,12 @@ form.reset();
 form.create_window("sign", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int txtbox = form.create_input_box("text");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 int sign_list = form.create_list("sign sound");
 form.add_list_item(sign_list, "none", "none");
 for(uint i = 0; i < signs_list.length(); i++)
@@ -131,6 +138,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(txtbox) == "")
 {
 speak("Text is required.");
@@ -139,6 +152,7 @@ continue;
 }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 string btxt = form.get_text(txtbox);
 int p = form.get_list_position(sign_list);
 string btype = (p > 0) ? signs_list[p-1] : "none";
@@ -146,8 +160,8 @@ bool bdest = form.is_checked(dest_cb);
 bool bloop = form.is_checked(loop_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_sign(bx, by, btxt, btype, bdest, bloop);
-spawn_sign(bx, by, btxt, btype, bdest, bloop);
+write_sign(bx, by, btxt, btype, bdest, bloop, bz);
+spawn_sign(bx, by, btxt, btype, bdest, bloop, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -160,17 +174,22 @@ void read_sign(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-string txt=join_string_array(sd, 3, sd.length()-3);
+int text_start = (mapmode == "3d") ? 4 : 3;
+int z = (mapmode == "3d") ? stn(sd[3]) : 0;
+string txt=join_string_array(sd, text_start, sd.length()-text_start-3);
 string signtype=sd[sd.length()-3];
 bool dbl=string_to_bool(sd[sd.length()-2]);
 bool lps=string_to_bool(sd[sd.length()-1]);
-spawn_sign(x, y, txt, signtype, dbl, lps);
+spawn_sign(x, y, txt, signtype, dbl, lps, z);
 }
 
-void write_sign(int x, int y, string txt, string signtype, bool destroyable, bool looping)
+void write_sign(int x, int y, string txt, string signtype, bool destroyable, bool looping, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"sign "+x+" "+y+" "+z+" "+txt+" "+signtype+" "+destroyable+" "+looping);
+else
 mapper.write("\r\n"+"sign "+x+" "+y+" "+txt+" "+signtype+" "+destroyable+" "+looping);
 mapper.close();
 }

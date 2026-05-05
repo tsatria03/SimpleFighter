@@ -4,26 +4,30 @@ class spawnpoint
 {
 int spawnx;
 int spawny;
-spawnpoint (int spx,int spy)
+int spawnz;
+spawnpoint (int spx,int spy,int spz=0)
 {
 spawnx=spx;
 spawny=spy;
+spawnz=spz;
 }
 }
 void spawncheck()
 {
 for(uint i=0; i<spawnpoints.length(); i++)
 {
-if(me.x==spawnpoints[i].spawnx and me.y==spawnpoints[i].spawny)
+bool match = me.x==spawnpoints[i].spawnx and me.y==spawnpoints[i].spawny;
+if(mapmode == "3d") match = match and me.z==spawnpoints[i].spawnz;
+if(match)
 {
 @last_spawnpoint =spawnpoints[i];
 return;
 }
 }
 }
-void create_spawnpoint (int x,int y)
+void create_spawnpoint (int x,int y,int z=0)
 {
-spawnpoint sp1(x,y);
+spawnpoint sp1(x,y,z);
 spawnpoints.insert_last(sp1);
 }
 void destroy_all_spawnpoints()
@@ -38,9 +42,12 @@ form.reset();
 form.create_window("spawnpoint", false);
 int mx=form.create_input_box("x", sel_left_set ? sel_left : "");
 int my=form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -50,6 +57,7 @@ wait(5);
 form.monitor();
 double x=string_to_number(form.get_text(mx));
 double y=string_to_number(form.get_text(my));
+double z = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
@@ -74,11 +82,16 @@ else if(form.get_text(my)=="")
 speak("Y is required.");
 form.focus(my);
 }
+else if(mz != -1 && form.get_text(mz)=="")
+{
+speak("Z is required.");
+form.focus(mz);
+}
 else
 {
 resume_pools();
-write_spawnpoint(x, y);
-create_spawnpoint(x, y);
+write_spawnpoint(x, y, z);
+create_spawnpoint(x, y, z);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -92,13 +105,17 @@ void read_spawnpoint(string[] sd)
 {
 int spx=stn(sd[1]);
 int spy=stn(sd[2]);
-create_spawnpoint(spx, spy);
+int spz = (sd.length() == 4) ? stn(sd[3]) : 0;
+create_spawnpoint(spx, spy, spz);
 }
 
-void write_spawnpoint(int x, int y)
+void write_spawnpoint(int x, int y, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"spawnpoint "+x+" "+y+" "+z);
+else
 mapper.write("\r\n"+"spawnpoint "+x+" "+y);
 mapper.close();
 }

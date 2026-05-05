@@ -5,32 +5,36 @@ bool destroyable;
 int hurtsound, clocksound, pressound;
 int clockx;
 int clocky;
+int clockz;
 string cktext;
 string clocktype;
-clock(int clx,int cly,string cltext,string cltype,bool dbl)
+clock(int clx,int cly,string cltext,string cltype,bool dbl,int clz=0)
 {
 clockx=clx;
 clocky=cly;
+clockz=clz;
 cktext=cltext;
 clocktype=cltype;
 destroyable=dbl;
-clocksound=clockpool.play_3d(get_map_sound("objects/clocks/"+clocktype+"/*loop*"),me.x,me.y,me.z,clockx,clocky,0,0,true);
+clocksound=clockpool.play_3d(get_map_sound("objects/clocks/"+clocktype+"/*loop*"),me.x,me.y,me.z,clockx,clocky,clockz,0,true);
 }
 }
 void clockcheck()
 {
 for(uint i=0; i<clocks.length(); i++)
 {
-if(me.x==clocks[i].clockx and me.y==clocks[i].clocky and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool match = me.x==clocks[i].clockx and me.y==clocks[i].clocky;
+if(mapmode == "3d") match = match and me.z==clocks[i].clockz;
+if(match and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 clocks[i].pressound=clockpool.play_stationary(get_map_sound("objects/clocks/"+clocks[i].clocktype+"/*press*"),false);
 speak(clocks[i].cktext+get_time(true, false));
 }
 }
 }
-void spawn_clock(int x,int y,string text,string clocktype,bool destroyable)
+void spawn_clock(int x,int y,string text,string clocktype,bool destroyable,int z=0)
 {
-clock ck1(x,y,text,clocktype,destroyable);
+clock ck1(x,y,text,clocktype,destroyable,z);
 clocks.insert_last(ck1);
 }
 void destroy_all_clocks()
@@ -56,9 +60,12 @@ form.reset();
 form.create_window("clock", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int text = form.create_input_box("text", "The time is ");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 int clk_list = form.create_list("clock sound");
 form.add_list_item(clk_list, "none", "none");
 for(uint i = 0; i < clks.length(); i++)
@@ -120,16 +127,23 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 string btxt = form.get_text(text) != "" ? form.get_text(text) : "The time is ";
 bool bdmd = form.is_checked(destroyable_cb);
 int p = form.get_list_position(clk_list);
 string btype = (p > 0) ? clks[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_clock(bx, by, btxt, btype, bdmd);
-spawn_clock(bx, by, btxt, btype, bdmd);
+write_clock(bx, by, btxt, btype, bdmd, bz);
+spawn_clock(bx, by, btxt, btype, bdmd, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -142,16 +156,21 @@ void read_clock(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-string txt=join_string_array(sd, 3, sd.length()-2);
+int text_start = (mapmode == "3d") ? 4 : 3;
+int z = (mapmode == "3d") ? stn(sd[3]) : 0;
+string txt=join_string_array(sd, text_start, sd.length()-text_start-2);
 string clocktype=sd[sd.length()-2];
 bool dbl=string_to_bool(sd[sd.length()-1]);
-spawn_clock(x, y, txt, clocktype, dbl);
+spawn_clock(x, y, txt, clocktype, dbl, z);
 }
 
-void write_clock(int x, int y, string txt, string clocktype, bool destroyable)
+void write_clock(int x, int y, string txt, string clocktype, bool destroyable, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"clock "+x+" "+y+" "+z+" "+txt+" "+clocktype+" "+destroyable);
+else
 mapper.write("\r\n"+"clock "+x+" "+y+" "+txt+" "+clocktype+" "+destroyable);
 mapper.close();
 }
