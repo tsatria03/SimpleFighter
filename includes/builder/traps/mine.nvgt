@@ -5,38 +5,46 @@ bool triggered;
 int explodesound, lightsound, minesound, spawnsound, wepsound;
 int minex;
 int miney;
+int minez;
 int damage;
 string minetype;
-mine(int mx,int my,int dmg,string mt,bool tg)
+mine(int mx,int my,int dmg,string mt,bool tg,int mz=0)
 {
 minex=mx;
 miney=my;
+minez=mz;
 damage=dmg;
 minetype=mt;
 triggered=tg;
-if(triggered==true) lightsound=minepool.play_extended_3d(get_map_sound("objects/mines/"+minetype+"/*light*"),me.x,me.y,me.z,minex,miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
-if(triggered==true) minesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+minetype+"/*loop*"),me.x,me.y,me.z,minex,miney,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-if(triggered==false) spawnsound=minepool.play_extended_3d(get_map_sound("objects/mines/"+minetype+"/*spawn*"),me.x,me.y,me.z,minex,miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
+if(triggered==true) lightsound=minepool.play_extended_3d(get_map_sound("objects/mines/"+minetype+"/*light*"),me.x,me.y,me.z,minex,miney,minez,0,0,0,0,0,0,0,false,0,0,0,100,false);
+if(triggered==true) minesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+minetype+"/*loop*"),me.x,me.y,me.z,minex,miney,minez,0,0,0,0,0,0,0,true,0,0,0,100,false);
+if(triggered==false) spawnsound=minepool.play_extended_3d(get_map_sound("objects/mines/"+minetype+"/*spawn*"),me.x,me.y,me.z,minex,miney,minez,0,0,0,0,0,0,0,false,0,0,0,100,false);
 }
 }
 void mineloop()
 {
 for(uint i=0; i<mines.length(); i++)
 {
-if((absolute(me.x-mines[i].minex)==1 or absolute(me.y-mines[i].miney)==1) and (me.x!=mines[i].minex or me.y!=mines[i].miney) and mines[i].triggered==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool adj_step = absolute(me.x-mines[i].minex)==1 or absolute(me.y-mines[i].miney)==1;
+if(mapmode == "3d") adj_step = adj_step or absolute(me.z-mines[i].minez)==1;
+bool not_on_mine = me.x!=mines[i].minex or me.y!=mines[i].miney;
+if(mapmode == "3d") not_on_mine = not_on_mine or me.z!=mines[i].minez;
+if(adj_step and not_on_mine and mines[i].triggered==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
-mines[i].lightsound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*light*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
-mines[i].minesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*loop*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-minepool.update_sound_3d(mines[i].lightsound,mines[i].minex,mines[i].miney, 0);
-minepool.update_sound_3d(mines[i].minesound,mines[i].minex,mines[i].miney, 0);
+mines[i].lightsound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*light*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,mines[i].minez,0,0,0,0,0,0,0,false,0,0,0,100,false);
+mines[i].minesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*loop*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,mines[i].minez,0,0,0,0,0,0,0,true,0,0,0,100,false);
+minepool.update_sound_3d(mines[i].lightsound,mines[i].minex,mines[i].miney, mines[i].minez);
+minepool.update_sound_3d(mines[i].minesound,mines[i].minex,mines[i].miney, mines[i].minez);
 mines[i].triggered=true;
 speak("Mine activated.");
 }
-if(me.x==mines[i].minex and me.y==mines[i].miney and mines[i].triggered==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
+bool on_mine = me.x==mines[i].minex and me.y==mines[i].miney;
+if(mapmode == "3d") on_mine = on_mine and me.z==mines[i].minez;
+if(on_mine and mines[i].triggered==false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 speak("Do you want to blow yourself up? If not, then I suggest stepping to the left or right side of the mine to activate it safely. Unless you'd rather become a pile of flesh on the floor, that is.");
 }
-if(me.x==mines[i].minex and me.y==mines[i].miney and mines[i].triggered==true and shieldon==1 and shieldstrength<=maxshieldstrength and paused==0)
+if(on_mine and mines[i].triggered==true and shieldon==1 and shieldstrength<=maxshieldstrength and paused==0)
 {
 minepool.destroy_sound(mines[i].minesound);
 shieldslot=minepool.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
@@ -47,7 +55,7 @@ mines[i].triggered=false;
 mines.remove_at(i);
 return;
 }
-else if(me.x==mines[i].minex and me.y==mines[i].miney and mines[i].triggered==true and shieldon==0 and paused==0)
+else if(on_mine and mines[i].triggered==true and shieldon==0 and paused==0)
 {
 minepool.destroy_sound(mines[i].minesound);
 mines[i].explodesound=minepool.play_stationary_extended(get_map_sound("objects/mines/"+mines[i].minetype+"/*explode*"),false,0,0,0,100,false);
@@ -92,7 +100,7 @@ return;
 }
 for(uint i2=0; i2<calendars.length(); i2++)
 {
-if(calendars[i2].calendarx==mines[i].minex and calendars[i2].calendary==mines[i].miney and calendars[i2].destroyable==true and mines[i].triggered==true)
+if(calendars[i2].calendarx==mines[i].minex and calendars[i2].calendary==mines[i].miney and (mapmode != "3d" or calendars[i2].calendarz==mines[i].minez) and calendars[i2].destroyable==true and mines[i].triggered==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 calpool.destroy_sound(calendars[i2].calendarsound);
@@ -106,7 +114,7 @@ return;
 }
 for(uint i3=0; i3<clocks.length(); i3++)
 {
-if(clocks[i3].clockx==mines[i].minex and clocks[i3].clocky==mines[i].miney and clocks[i3].destroyable==true and mines[i].triggered==true)
+if(clocks[i3].clockx==mines[i].minex and clocks[i3].clocky==mines[i].miney and (mapmode != "3d" or clocks[i3].clockz==mines[i].minez) and clocks[i3].destroyable==true and mines[i].triggered==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 clockpool.destroy_sound(clocks[i].clocksound);
@@ -120,7 +128,7 @@ return;
 }
 for(uint i4=0; i4<doors.length(); i4++)
 {
-if(doors[i4].minx<=mines[i].minex and doors[i4].maxx>=mines[i].minex and doors[i4].miny<=mines[i].miney and doors[i4].maxy>=mines[i].miney and doors[i4].destroyable==true and mines[i].triggered==true)
+if(doors[i4].minx<=mines[i].minex and doors[i4].maxx>=mines[i].minex and doors[i4].miny<=mines[i].miney and doors[i4].maxy>=mines[i].miney and (mapmode != "3d" or (doors[i4].minz<=mines[i].minez and doors[i4].maxz>=mines[i].minez)) and doors[i4].destroyable==true and mines[i].triggered==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 mines[i].explodesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*explode*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -133,7 +141,7 @@ return;
 }
 for(uint i6=0; i6<objs.length(); i6++)
 {
-if(objs[i6].itx==mines[i].minex and objs[i6].ity==mines[i].miney and mines[i].triggered==true)
+if(objs[i6].itx==mines[i].minex and objs[i6].ity==mines[i].miney and (mapmode != "3d" or objs[i6].itz==mines[i].minez) and mines[i].triggered==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 mines[i].explodesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*explode*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -146,7 +154,7 @@ return;
 }
 for(uint i9=0; i9<signs.length(); i9++)
 {
-if(signs[i9].signx==mines[i].minex and signs[i9].signy==mines[i].miney and signs[i9].destroyable==true and mines[i].triggered==true)
+if(signs[i9].signx==mines[i].minex and signs[i9].signy==mines[i].miney and (mapmode != "3d" or signs[i9].signz==mines[i].minez) and signs[i9].destroyable==true and mines[i].triggered==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 signpool.destroy_sound(signs[i9].signsound);
@@ -160,7 +168,7 @@ return;
 }
 for(uint i10=0; i10<spikes.length(); i10++)
 {
-if(spikes[i10].minx<=mines[i].minex and spikes[i10].maxx>=mines[i].minex and spikes[i10].miny<=mines[i].miney and spikes[i10].maxy>=mines[i].miney and spikes[i10].destroyable==true and mines[i].triggered==true)
+if(spikes[i10].minx<=mines[i].minex and spikes[i10].maxx>=mines[i].minex and spikes[i10].miny<=mines[i].miney and spikes[i10].maxy>=mines[i].miney and (mapmode != "3d" or (spikes[i10].minz<=mines[i].minez and spikes[i10].maxz>=mines[i].minez)) and spikes[i10].destroyable==true and mines[i].triggered==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 mines[i].explodesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*explode*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -188,7 +196,7 @@ return;
 }
 for(uint i13=0; i13<walls.length(); i13++)
 {
-if(walls[i13].minx<=mines[i].minex and walls[i13].maxx>=mines[i].minex and walls[i13].miny<=mines[i].miney and walls[i13].maxy>=mines[i].miney and mines[i].triggered==true and walls[i13].destroyable==true)
+if(walls[i13].minx<=mines[i].minex and walls[i13].maxx>=mines[i].minex and walls[i13].miny<=mines[i].miney and walls[i13].maxy>=mines[i].miney and (mapmode != "3d" or (walls[i13].minz<=mines[i].minez and walls[i13].maxz>=mines[i].minez)) and mines[i].triggered==true and walls[i13].destroyable==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 mines[i].explodesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*explode*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -203,7 +211,7 @@ return;
 }
 for(uint i15=0; i15<doors.length(); i15++)
 {
-if(doors[i15].minx<=mines[i].minex and doors[i15].maxx>=mines[i].minex and doors[i15].miny<=mines[i].miney and doors[i15].maxy>=mines[i].miney and doors[i15].destroyable==true and mines[i].triggered==true)
+if(doors[i15].minx<=mines[i].minex and doors[i15].maxx>=mines[i].minex and doors[i15].miny<=mines[i].miney and doors[i15].maxy>=mines[i].miney and (mapmode != "3d" or (doors[i15].minz<=mines[i].minez and doors[i15].maxz>=mines[i].minez)) and doors[i15].destroyable==true and mines[i].triggered==true)
 {
 minepool.destroy_sound(mines[i].minesound);
 mines[i].explodesound=minepool.play_extended_3d(get_map_sound("objects/mines/"+mines[i].minetype+"/*explode*"),me.x,me.y,me.z,mines[i].minex,mines[i].miney,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
@@ -216,9 +224,9 @@ return;
 }
 }
 }
-void spawn_mine(int x,int y,int damage,string minetype,bool triggered)
+void spawn_mine(int x,int y,int damage,string minetype,bool triggered,int z=0)
 {
-mine mine1(x,y,damage,minetype,triggered);
+mine mine1(x,y,damage,minetype,triggered,z);
 mines.insert_last(mine1);
 }
 void destroy_all_mines()
@@ -244,9 +252,12 @@ form.reset();
 form.create_window("mine", false);
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z");
 int dm = form.create_input_box("maximum attack");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
 int mine_list = form.create_list("mine sound");
 form.add_list_item(mine_list, "none", "none");
@@ -318,6 +329,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(dm) == "")
 {
 speak("Maximum attack is required.");
@@ -326,14 +343,15 @@ continue;
 }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int bdmg = string_to_number(form.get_text(dm));
 int p = form.get_list_position(mine_list);
 string btype = (p > 0) ? mines_list[p-1] : "none";
 bool btrig = form.is_checked(auto_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_mine(bx, by, bdmg, btype, btrig);
-spawn_mine(bx, by, bdmg, btype, btrig);
+write_mine(bx, by, bdmg, btype, btrig, bz);
+spawn_mine(bx, by, bdmg, btype, btrig, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -346,16 +364,30 @@ void read_mine(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
+if(sd.length() == 7)
+{
+int z=stn(sd[3]);
+int dmg=stn(sd[4]);
+string minetype=sd[5];
+bool tg=string_to_bool(sd[6]);
+spawn_mine(x, y, dmg, minetype, tg, z);
+}
+else
+{
 int dmg=stn(sd[3]);
 string minetype=sd[4];
 bool tg=string_to_bool(sd[5]);
-spawn_mine(x, y, dmg, minetype, tg);
+spawn_mine(x, y, dmg, minetype, tg, 0);
+}
 }
 
-void write_mine(int x, int y, int damage, string minetype, bool triggered)
+void write_mine(int x, int y, int damage, string minetype, bool triggered, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"mine "+x+" "+y+" "+z+" "+damage+" "+minetype+" "+triggered);
+else
 mapper.write("\r\n"+"mine "+x+" "+y+" "+damage+" "+minetype+" "+triggered);
 mapper.close();
 }
