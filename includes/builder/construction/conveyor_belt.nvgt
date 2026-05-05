@@ -3,25 +3,39 @@ class belt
 {
 int beltsound;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 int dir;
 int speed;
 string tile;
 string belttype;
 timer speedtimer;
-belt(double mx,double mx2,double my,double my2,int bd,int sp,string ty,string bt)
+belt(double mx,double mx2,double my,double my2,int bd,int sp,string ty,string bt,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 dir=bd;
 speed=sp;
 tile=ty;
 belttype=bt;
+if(mapmode == "3d")
+{
+beltsound=beltpool.play_3d(get_map_sound("objects/belts/"+belttype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,0,true);
+beltpool.update_sound_3d(beltsound,minx,miny,minz);
+beltpool.update_sound_range_3d(beltsound, 0, maxx-minx, 0, maxy-miny, 0, maxz-minz);
+for(double z = minz; z <= maxz; z++)
+spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, 0, 100, false, false, true, z);
+}
+else
+{
 beltsound=beltpool.play_3d(get_map_sound("objects/belts/"+belttype+"/*loop*"),me.x,me.y,me.z,minx,miny,0,0,true);
 beltpool.update_sound_3d(beltsound,minx,miny, 0);
 beltpool.update_sound_range_3d(beltsound, 0, maxx-minx, 0, maxy-miny, 0, 0);
 spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, 0, 100, false, false, true);
+}
 }
 }
 void beltloop()
@@ -31,7 +45,9 @@ for(uint i=0; i<belts.length(); i++)
 if(belts[i].speedtimer.elapsed>=belts[i].speed)
 {
 belts[i].speedtimer.restart();
-if(me.x>=belts[i].minx and me.x<=belts[i].maxx and me.y>=belts[i].miny and me.y<=belts[i].maxy)
+bool inside = me.x>=belts[i].minx and me.x<=belts[i].maxx and me.y>=belts[i].miny and me.y<=belts[i].maxy;
+if(mapmode == "3d") inside = inside and me.z >= belts[i].minz and me.z <= belts[i].maxz;
+if(inside)
 {
 if(belts[i].dir==1)
 {
@@ -53,9 +69,9 @@ me.y++;
 }
 }
 }
-void spawn_belt(double x1,double x2,double y1,double y2,int direction,int speed,string tile,string belttype)
+void spawn_belt(double x1,double x2,double y1,double y2,int direction,int speed,string tile,string belttype,double minz=0,double maxz=0)
 {
-belt belt1(x1,x2,y1,y2,direction,speed,tile,belttype);
+belt belt1(x1,x2,y1,y2,direction,speed,tile,belttype,minz,maxz);
 belts.insert_last(belt1);
 }
 void destroy_all_belts()
@@ -86,15 +102,26 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("conveyor belt", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int sp = form.create_input_box("speed", "");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int dir_list = form.create_list("direction");
 form.add_list_item(dir_list, "left", "1");
@@ -166,10 +193,19 @@ return;
 }
 if(form.is_pressed(ok))
 {
+if(form.get_text(mx)=="") { speak("Minimum x is required."); form.focus(mx); continue; }
+if(form.get_text(mx2)=="") { speak("Maximum x is required."); form.focus(mx2); continue; }
+if(form.get_text(my)=="") { speak("Minimum y is required."); form.focus(my); continue; }
+if(form.get_text(my2)=="") { speak("Maximum y is required."); form.focus(my2); continue; }
+if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
+if(form.get_text(sp)=="") { speak("Speed is required."); form.focus(sp); continue; }
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int bdir = form.get_list_position(dir_list) + 1;
 int tp = form.get_list_position(tile_list);
@@ -178,8 +214,8 @@ int bp = form.get_list_position(belt_list);
 string bbelt = (bp > 0) ? belts_list[bp-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_belt(bx, bx2, by, by2, bdir, bsp, btile, bbelt);
-spawn_belt(bx, bx2, by, by2, bdir, bsp, btile, bbelt);
+write_belt(bx, bx2, by, by2, bdir, bsp, btile, bbelt, bmnz, bmxz);
+spawn_belt(bx, bx2, by, by2, bdir, bsp, btile, bbelt, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -194,17 +230,27 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-int dir=stn(sd[5]);
-int sp=stn(sd[6]);
-string tiletype=sd[7];
-string belttyp=sd[8];
-spawn_belt(mx, mx2, my, my2, dir, sp, tiletype, belttyp);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+int dir=stn(sd[o]);
+int sp=stn(sd[o+1]);
+string tiletype=sd[o+2];
+string belttyp=sd[o+3];
+spawn_belt(mx, mx2, my, my2, dir, sp, tiletype, belttyp, mnz, mxz);
 }
 
-void write_belt(double x1, double x2, double y1, double y2, int direction, int speed, string tile, string belttype)
+void write_belt(double x1, double x2, double y1, double y2, int direction, int speed, string tile, string belttype, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"belt "+x1+" "+x2+" "+y1+" "+y2+" "+direction+" "+speed+" "+tile+" "+belttype);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") coords += " "+minz+" "+maxz;
+mapper.write("\r\n"+"belt "+coords+" "+direction+" "+speed+" "+tile+" "+belttype);
 mapper.close();
 }
