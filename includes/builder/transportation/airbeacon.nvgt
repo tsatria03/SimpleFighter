@@ -2,14 +2,16 @@ airbeacon@[] airbeacons(0);
 class airbeacon
 {
 int loopsound;
-int bx, by;
-int width;
+int minx, maxx, miny, maxy;
+int balt;
 bool active = false;
-airbeacon(int x, int y, int w)
+airbeacon(int mnx, int mxx, int mny, int mxy, int alt)
 {
-bx = x;
-by = y;
-width = w;
+minx = mnx;
+maxx = mxx;
+miny = mny;
+maxy = mxy;
+balt = alt;
 for (uint i = 0; i < aircrafts.length(); i++)
 {
 if (aircrafts[i].landing == true)
@@ -27,8 +29,11 @@ for (uint i = 0; i < aircrafts.length(); i++)
 if (aircrafts[i].landing)
 {
 active = true;
-loopsound = plainpool.play_3d(get_map_sound("objects/aircrafts/" + aircrafts[i].plaintype + "/*beacon*"), me.x, me.y, me.z, bx, by, 0, 0, true);
-plainpool.update_sound_3d(loopsound, bx, by, 0);
+double sx = minx;
+double sy = (mapmode == "2d") ? balt : miny;
+double sz = (mapmode == "3d") ? balt : 0;
+loopsound = plainpool.play_3d(get_map_sound("objects/aircrafts/" + aircrafts[i].plaintype + "/*beacon*"), me.x, me.y, me.z, sx, sy, sz, 0, true);
+plainpool.update_sound_3d(loopsound, sx, sy, sz);
 return;
 }
 }
@@ -41,12 +46,17 @@ active = false;
 }
 bool is_on_beacon()
 {
-return me.y == by && me.x >= bx && me.x < bx + width;
+if(mapmode == "2d")
+return me.y == balt && me.x >= minx && me.x <= maxx;
+else if(mapmode == "3d")
+return me.z == balt && me.x >= minx && me.x <= maxx && me.y >= miny && me.y <= maxy;
+else
+return me.x >= minx && me.x <= maxx && me.y >= miny && me.y <= maxy;
 }
 }
-void spawn_airbeacon(int x, int y, int width)
+void spawn_airbeacon(int minx, int maxx, int miny, int maxy, int balt)
 {
-airbeacon ab(x, y, width);
+airbeacon ab(minx, maxx, miny, maxy, balt);
 airbeacons.insert_last(ab);
 }
 void destroy_all_airbeacons()
@@ -62,14 +72,27 @@ void build_airbeacon()
 {
 form.reset();
 form.create_window("aircraft beacon", false);
-int mx=form.create_input_box("x", sel_left_set ? sel_left : "");
-int wt=form.create_input_box("width");
+int mnx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mxx = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int mny = -1, mxy = -1, alt = -1;
+if(mapmode != "2d")
+{
+mny = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
+mxy = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+}
+if(mapmode == "2d")
+alt = form.create_input_box("y");
+else if(mapmode == "3d")
+alt = form.create_input_box("z");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
-form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(wt, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mnx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_chars, false, "This character is not allowed.");
+if(mny != -1) form.set_disallowed_chars(mny, disallowed_chars, false, "This character is not allowed.");
+if(mxy != -1) form.set_disallowed_chars(mxy, disallowed_chars, false, "This character is not allowed.");
+if(alt != -1) form.set_disallowed_chars(alt, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
-form.focus(mx);
+form.focus(mnx);
 while (true)
 {
 wait(5);
@@ -88,23 +111,44 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx)=="")
+if(form.get_text(mnx)=="")
 {
-speak("X is required.");
-form.focus(mx);
+speak("Minimum x is required.");
+form.focus(mnx);
+continue;
 }
-else if(form.get_text(wt)=="")
+if(form.get_text(mxx)=="")
 {
-speak("Width is required.");
-form.focus(wt);
+speak("Maximum x is required.");
+form.focus(mxx);
+continue;
 }
-else
+if(mny != -1 && form.get_text(mny)=="")
 {
-int bx_in = string_to_number(form.get_text(mx));
-int bw = string_to_number(form.get_text(wt));
+speak("Minimum y is required.");
+form.focus(mny);
+continue;
+}
+if(mxy != -1 && form.get_text(mxy)=="")
+{
+speak("Maximum y is required.");
+form.focus(mxy);
+continue;
+}
+if(alt != -1 && form.get_text(alt)=="")
+{
+speak("Altitude is required.");
+form.focus(alt);
+continue;
+}
+int b_minx = string_to_number(form.get_text(mnx));
+int b_maxx = string_to_number(form.get_text(mxx));
+int b_miny = (mny != -1) ? string_to_number(form.get_text(mny)) : 0;
+int b_maxy = (mxy != -1) ? string_to_number(form.get_text(mxy)) : 0;
+int b_alt = (alt != -1) ? string_to_number(form.get_text(alt)) : 0;
 resume_pools();
-write_airbeacon(bx_in, bw);
-spawn_airbeacon(bx_in, 0, bw);
+write_airbeacon(b_minx, b_maxx, b_miny, b_maxy, b_alt);
+spawn_airbeacon(b_minx, b_maxx, b_miny, b_maxy, b_alt);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -112,20 +156,50 @@ return;
 }
 }
 }
-}
 
 void read_airbeacon(string[] sd)
 {
-int x=stn(sd[1]);
-int w=stn(sd[2]);
-spawn_airbeacon(x, 0, w);
+if(sd.length() == 3)
+{
+int x = stn(sd[1]);
+int w = stn(sd[2]);
+spawn_airbeacon(x, x + w - 1, 0, 0, 0);
+}
+else if(sd.length() == 4)
+{
+int minx = stn(sd[1]);
+int maxx = stn(sd[2]);
+int alt = stn(sd[3]);
+spawn_airbeacon(minx, maxx, 0, 0, alt);
+}
+else if(sd.length() == 5)
+{
+int minx = stn(sd[1]);
+int maxx = stn(sd[2]);
+int miny = stn(sd[3]);
+int maxy = stn(sd[4]);
+spawn_airbeacon(minx, maxx, miny, maxy, 0);
+}
+else if(sd.length() == 6)
+{
+int minx = stn(sd[1]);
+int maxx = stn(sd[2]);
+int miny = stn(sd[3]);
+int maxy = stn(sd[4]);
+int alt = stn(sd[5]);
+spawn_airbeacon(minx, maxx, miny, maxy, alt);
+}
 }
 
-void write_airbeacon(int x, int width)
+void write_airbeacon(int minx, int maxx, int miny, int maxy, int balt)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"airbeacon "+x+" "+width);
+if(mapmode == "2d")
+mapper.write("\r\n"+"airbeacon "+minx+" "+maxx+" "+balt);
+else if(mapmode == "3d")
+mapper.write("\r\n"+"airbeacon "+minx+" "+maxx+" "+miny+" "+maxy+" "+balt);
+else
+mapper.write("\r\n"+"airbeacon "+minx+" "+maxx+" "+miny+" "+maxy);
 mapper.close();
 }
-
