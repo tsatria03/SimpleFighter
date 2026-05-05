@@ -3,18 +3,34 @@ class el_floor
 {
 double minx, maxx;
 int floory;
+int miny, maxy;
+int z;
 string text;
-el_floor(double mx, double mx2, int fly, string txt)
+el_floor(double mx, double mx2, int fly, string txt, int mny=0, int mxy=0, int zv=0)
 {
 minx = mx;
 maxx = mx2;
 floory=fly;
+miny=mny;
+maxy=mxy;
+z=zv;
 text = txt;
 }
-}
-void spawn_el_floor(double x1, double x2, int floory, string text)
+bool contains(double px, double py, double pz)
 {
-el_floor elfr1(x1, x2, floory, text);
+if(px < minx || px > maxx) return false;
+if(mapmode == "3d")
+{
+if(py < miny || py > maxy) return false;
+if(int(pz) != z) return false;
+return true;
+}
+return int(py) == floory;
+}
+}
+void spawn_el_floor(double x1, double x2, int floory, string text, int miny=0, int maxy=0, int z=0)
+{
+el_floor elfr1(x1, x2, floory, text, miny, maxy, z);
 el_floors.insert_last(elfr1);
 }
 void destroy_all_el_floors()
@@ -26,14 +42,27 @@ void build_elevator_floor()
 {
 form.reset();
 form.create_window("elevator floor", false);
+bool y_uses_back_front = mapmode != "2d";
 int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my=form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my=-1, my2=-1, mz=-1;
+if(mapmode == "3d")
+{
+my=form.create_input_box("minimum y", sel_back_set ? sel_back : "");
+my2=form.create_input_box("maximum y", sel_front_set ? sel_front : "");
+mz=form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+}
+else
+{
+my=form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+}
 int elvftext=form.create_input_box("text");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+if(my != -1) form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+if(my2 != -1) form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -43,7 +72,9 @@ wait(5);
 form.monitor();
 double x=string_to_number(form.get_text(mx));
 double paxx=string_to_number(form.get_text(mx2));
-double y=string_to_number(form.get_text(my));
+double y=(my != -1) ? string_to_number(form.get_text(my)) : 0;
+double y2=(my2 != -1) ? string_to_number(form.get_text(my2)) : 0;
+double zv=(mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 string txt=form.get_text(elvftext);
 if(key_pressed(KEY_ESCAPE))
 {
@@ -71,8 +102,18 @@ form.focus(mx2);
 }
 else if(form.get_text(my)=="")
 {
-speak("Y is required.");
+speak((mapmode == "3d") ? "Minimum y is required." : "Y is required.");
 form.focus(my);
+}
+else if(my2 != -1 && form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+}
+else if(mz != -1 && form.get_text(mz)=="")
+{
+speak("Z is required.");
+form.focus(mz);
 }
 else if(form.get_text(elvftext)=="")
 {
@@ -82,8 +123,8 @@ form.focus(elvftext);
 else
 {
 resume_pools();
-write_el_floor(x, paxx, y, txt);
-spawn_el_floor(x, paxx, y, txt);
+write_el_floor(x, paxx, y, txt, int(y2), int(zv));
+spawn_el_floor(x, paxx, int(y), txt, int(y), int(y2), int(zv));
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -98,14 +139,24 @@ void read_el_floor(string[] sd)
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 int y=stn(sd[3]);
-string txt=join_string_array(sd, 4, sd.length());
-spawn_el_floor(mx, mx2, y, txt);
+int y2=0, zv=0;
+int o=4;
+if(mapmode == "3d")
+{
+y2=stn(sd[4]);
+zv=stn(sd[5]);
+o=6;
+}
+string txt=join_string_array(sd, o, sd.length());
+spawn_el_floor(mx, mx2, y, txt, y, y2, zv);
 }
 
-void write_el_floor(double x1, double x2, int y, string txt)
+void write_el_floor(double x1, double x2, int y, string txt, int y2=0, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"el_floor "+x1+" "+x2+" "+y+" "+txt);
+string coords=x1+" "+x2+" "+y;
+if(mapmode == "3d") coords += " "+y2+" "+z;
+mapper.write("\r\n"+"el_floor "+coords+" "+txt);
 mapper.close();
 }

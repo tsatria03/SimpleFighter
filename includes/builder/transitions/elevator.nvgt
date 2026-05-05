@@ -6,8 +6,8 @@ class elevator
 bool is_moving = false;
 bool floorspeak;
 int beepsound, closesound, loopsound, movesound, opensound;
-int startx, starty;
-int endx, endy;
+int startx, starty, startz;
+int endx, endy, endz;
 int speed;
 string elvtext;
 string closetype;
@@ -17,10 +17,11 @@ string opentype;
 string beeptype;
 timer elevatortimer;
 int last_floor_index = -1;
-elevator(int sx, int sy, int sp, string eltxt, string lsound, string mvsound, string osound, string clsound, string besound, bool fls)
+elevator(int sx, int sy, int sp, string eltxt, string lsound, string mvsound, string osound, string clsound, string besound, bool fls, int sz=0)
 {
 startx = sx;
 starty = sy;
+startz = sz;
 speed = sp;
 elvtext=eltxt;
 looptype = lsound;
@@ -31,14 +32,18 @@ beeptype = besound;
 floorspeak = fls;
 endx = sx;
 endy = sy;
-loopsound = elvpool.play_extended_3d(get_map_sound("objects/elevators/loop/" + looptype + "/*loop*"), me.x, me.y, me.z, startx, starty, 0, 0, 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+endz = sz;
+double soundz = (mapmode == "3d") ? startz : 0;
+loopsound = elvpool.play_extended_3d(get_map_sound("objects/elevators/loop/" + looptype + "/*loop*"), me.x, me.y, me.z, startx, starty, soundz, 0, 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
 }
 }
 void elvcheck()
 {
 for (uint i = 0; i < elevators.length(); i++)
 {
-if (elevators[i].startx == me.x && elevators[i].starty == me.y && key_up(KEY_LSHIFT) && key_up(KEY_RSHIFT) && key_repeating(KEY_RETURN))
+bool on_call_point = elevators[i].startx == me.x && elevators[i].starty == me.y;
+if(mapmode == "3d") on_call_point = on_call_point && int(me.z) == elevators[i].startz;
+if (on_call_point && key_up(KEY_LSHIFT) && key_up(KEY_RSHIFT) && key_repeating(KEY_RETURN))
 {
 if (el_floors.length() == 0)
 {
@@ -54,7 +59,7 @@ m.add_item_tts(el_floors[i2].text, el_floors[i2].text, "", true);
 string current_floor_text = "an unknown floor";
 for (uint i3 = 0; i3 < el_floors.length(); i3++)
 {
-	if (me.y == el_floors[i3].floory && me.x >= el_floors[i3].minx && me.x <= el_floors[i3].maxx)
+	if (el_floors[i3].contains(me.x, me.y, me.z))
 	{
 		current_floor_text = el_floors[i3].text;
 		break;
@@ -71,7 +76,7 @@ if (mres > 0 && mres <= int(el_floors.length()))
 {
 elevator@ elv = elevators[i];
 el_floor@ target = el_floors[mres - 1];
-if (me.y == target.floory && me.x >= target.minx && me.x <= target.maxx)
+if (target.contains(me.x, me.y, me.z))
 {
 elvpool.resume_sound(elevators[i].loopsound);
 speak("You're already on " + target.text + ".");
@@ -85,7 +90,16 @@ else
 {
 elv.endx = int(target.minx);
 }
+if(mapmode == "3d")
+{
+if (me.y >= target.miny && me.y <= target.maxy) elv.endy = int(me.y);
+else elv.endy = target.miny;
+elv.endz = target.z;
+}
+else
+{
 elv.endy = target.floory;
+}
 elv.is_moving = true;
 elv.last_floor_index = -1;
 elvpool.resume_sound(elevators[i].loopsound);
@@ -108,9 +122,14 @@ if (me.x < elv.endx) me.x++;
 else if (me.x > elv.endx) me.x--;
 if (me.y < elv.endy) me.y++;
 else if (me.y > elv.endy) me.y--;
+if(mapmode == "3d")
+{
+if (me.z < elv.endz) me.z++;
+else if (me.z > elv.endz) me.z--;
+}
 for (uint i2 = 0; i2 < el_floors.length(); i2++)
 {
-if (me.x >= el_floors[i2].minx && me.x <= el_floors[i2].maxx && me.y == el_floors[i2].floory)
+if (el_floors[i2].contains(me.x, me.y, me.z))
 {
 if (int(i2) != elv.last_floor_index)
 {
@@ -121,12 +140,15 @@ elv.beepsound=elvpool.play_stationary_extended(get_map_sound("objects/elevators/
 break;
 }
 }
-if (me.x == elv.endx && me.y == elv.endy)
+bool reached_end = (me.x == elv.endx && me.y == elv.endy);
+if(mapmode == "3d") reached_end = reached_end && (int(me.z) == elv.endz);
+if (reached_end)
 {
 elvpool.destroy_sound(elv.beepsound);
 elvpool.destroy_sound(elv.movesound);
-elv.beepsound=elvpool.play_extended_3d(get_map_sound("objects/elevators/beep/" + elv.beeptype + "/*beep*"), me.x, me.y, me.z, elv.endx, elv.endy, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-elv.closesound = elvpool.play_extended_3d(get_map_sound("objects/elevators/close/" + elv.closetype + "/*close*"), me.x, me.y, me.z, elv.endx, elv.endy, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+double bz = (mapmode == "3d") ? elv.endz : 0;
+elv.beepsound=elvpool.play_extended_3d(get_map_sound("objects/elevators/beep/" + elv.beeptype + "/*beep*"), me.x, me.y, me.z, elv.endx, elv.endy, bz, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+elv.closesound = elvpool.play_extended_3d(get_map_sound("objects/elevators/close/" + elv.closetype + "/*close*"), me.x, me.y, me.z, elv.endx, elv.endy, bz, 0, 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 elv.is_moving = false;
 elvmove = false;
 elv.last_floor_index = -1;
@@ -134,9 +156,9 @@ elv.last_floor_index = -1;
 }
 }
 }
-void spawn_elevator(int x, int y, int speed, string elvtext, string looptype, string movetype, string opentype, string closetype, string beeptype, bool floorspeak)
+void spawn_elevator(int x, int y, int speed, string elvtext, string looptype, string movetype, string opentype, string closetype, string beeptype, bool floorspeak, int z=0)
 {
-elevator elv1(x, y, speed, elvtext, looptype, movetype, opentype, closetype, beeptype, floorspeak);
+elevator elv1(x, y, speed, elvtext, looptype, movetype, opentype, closetype, beeptype, floorspeak, z);
 elevators.insert_last(elv1);
 }
 void destroy_all_elevators()
@@ -191,12 +213,16 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("elevator", false);
+bool y_uses_back_front = mapmode != "2d";
 int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 int sp = form.create_input_box("speed");
 int txtbox = form.create_input_box("menu text", "Choose the floor you'd like to go to.");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int loop_list = form.create_list("loop sound");
 form.add_list_item(loop_list, "none", "none");
@@ -285,6 +311,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(sp) == "")
 {
 speak("Speed is required.");
@@ -299,6 +331,7 @@ continue;
 }
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 string btxt = form.get_text(txtbox);
 int pl = form.get_list_position(loop_list);
@@ -314,8 +347,8 @@ string bbe = (pb > 0) ? beeps_list[pb-1] : "none";
 bool bspk = form.is_checked(speak_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_elevator(bx, by, bsp, btxt, blo, bmo, bop, bcl, bbe, bspk);
-spawn_elevator(bx, by, bsp, btxt, blo, bmo, bop, bcl, bbe, bspk);
+write_elevator(bx, by, bsp, btxt, blo, bmo, bop, bcl, bbe, bspk, bz);
+spawn_elevator(bx, by, bsp, btxt, blo, bmo, bop, bcl, bbe, bspk, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -328,21 +361,30 @@ void read_elevator(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-int sp=stn(sd[3]);
-string txt=join_string_array(sd, 4, sd.length()-6);
+int z=0;
+int o=3;
+if(mapmode == "3d")
+{
+z=stn(sd[3]);
+o=4;
+}
+int sp=stn(sd[o]);
+string txt=join_string_array(sd, o+1, sd.length()-6);
 string ellotype=sd[sd.length()-6];
 string elmotype=sd[sd.length()-5];
 string eloptype=sd[sd.length()-4];
 string elcotype=sd[sd.length()-3];
 string elbetype=sd[sd.length()-2];
 bool fsp=string_to_bool(sd[sd.length()-1]);
-spawn_elevator(x, y, sp, txt, ellotype, elmotype, eloptype, elcotype, elbetype, fsp);
+spawn_elevator(x, y, sp, txt, ellotype, elmotype, eloptype, elcotype, elbetype, fsp, z);
 }
 
-void write_elevator(int x, int y, int speed, string txt, string looptype, string movetype, string opentype, string closetype, string beeptype, bool floorspeak)
+void write_elevator(int x, int y, int speed, string txt, string looptype, string movetype, string opentype, string closetype, string beeptype, bool floorspeak, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"elevator "+x+" "+y+" "+speed+" "+txt+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+beeptype+" "+floorspeak);
+string coords=""+x+" "+y;
+if(mapmode == "3d") coords += " "+z;
+mapper.write("\r\n"+"elevator "+coords+" "+speed+" "+txt+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+beeptype+" "+floorspeak);
 mapper.close();
 }
