@@ -348,6 +348,10 @@ bonecheck();
 if(spokenturns==1) speak(facing);
 if(facing=="left") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x-1,me.y,me.z,me.x-1,me.y,me.z,0,false);
 }
+else if (mapmode != "2d" and me.x-1>=minx and wall_blocks(me.x-1, me.y, me.z))
+{
+bump_wall_at(me.x-1, me.y, me.z);
+}
 else if (me.x-1>=minx)
 {
 if(turnmode==0) facing="left";
@@ -364,6 +368,10 @@ facing="right";
 bonecheck();
 if(spokenturns==1) speak(facing);
 if(facing=="right") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x+1,me.y,me.z,me.x+1,me.y,me.z,0,false);
+}
+else if (mapmode != "2d" and me.x+1<=maxx and wall_blocks(me.x+1, me.y, me.z))
+{
+bump_wall_at(me.x+1, me.y, me.z);
 }
 else if (me.x+1<=maxx)
 {
@@ -382,6 +390,10 @@ bonecheck();
 if(spokenturns==1) speak(facing);
 if(facing=="backward") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y-1,me.z,me.x,me.y-1,me.z,0,false);
 }
+else if (mapmode != "2d" and me.y-1>=miny and wall_blocks(me.x, me.y-1, me.z))
+{
+bump_wall_at(me.x, me.y-1, me.z);
+}
 else if (mapmode == "2d" ? !gmt(me.x,me.y-1).is_empty() : me.y-1>=miny)
 {
 if(turnmode==0) facing="backward";
@@ -398,6 +410,10 @@ facing="forward";
 bonecheck();
 if(spokenturns==1) speak(facing);
 if(facing=="forward") p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y+1,me.z,me.x,me.y+1,me.z,0,false);
+}
+else if (mapmode != "2d" and me.y+1<=maxy and wall_blocks(me.x, me.y+1, me.z))
+{
+bump_wall_at(me.x, me.y+1, me.z);
 }
 else if (mapmode == "2d" ? !gmt(me.x,me.y+1).is_empty() : me.y+1<=maxy)
 {
@@ -416,6 +432,10 @@ bonecheck();
 if(spokenturns==1) speak(facing);
 p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y,me.z-1,me.x,me.y,me.z-1,0,false);
 }
+else if (me.z-1 >= minz and wall_blocks(me.x, me.y, me.z-1))
+{
+bump_wall_at(me.x, me.y, me.z-1);
+}
 else if (me.z-1 >= minz)
 {
 if(turnmode==0) facing="down";
@@ -432,6 +452,10 @@ facing="up";
 bonecheck();
 if(spokenturns==1) speak(facing);
 p.play_3d(get_pack_sound("characters/"+chartype+"/general/*turn*"),me.x,me.y,me.z+1,me.x,me.y,me.z+1,0,false);
+}
+else if (me.z+1 <= maxz && wall_blocks(me.x, me.y, me.z+1))
+{
+bump_wall_at(me.x, me.y, me.z+1);
 }
 else if (me.z+1 <= maxz && platform_supports(me.x, me.y, me.z+1))
 {
@@ -611,7 +635,7 @@ return;
 }
 }
 }
-if (string_contains(gmt(me.x, me.y), "wall", 1) > -1)
+if (mapmode == "2d" && string_contains(gmt(me.x, me.y), "wall", 1) > -1)
 {
 if (wallbump)
 {
@@ -951,6 +975,37 @@ playland();
 else
 {
 playfall();
+int impact_dmg = max(1, fallcounter * fallmod);
+for(uint i = 0; i < walls.length(); i++)
+{
+if(!walls[i].destroyable) continue;
+bool in_wall = (me.x >= walls[i].minx && me.x <= walls[i].maxx && me.y >= walls[i].miny && me.y <= walls[i].maxy && me.z >= walls[i].minz && me.z <= walls[i].maxz);
+if(!in_wall) continue;
+walls[i].wallhealth -= impact_dmg;
+kombatlog.insert_last(impact_dmg + " damage to " + string_replace(walls[i].wall, "wall", "", true) + " wall, falling down.");
+if(impact_dmg > 0) walls[i].hurtsound = p.play_stationary_extended(get_map_sound("objects/walls/" + walls[i].wall + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
+for(uint k = 0; k < walls[i].platform_ids.length(); k++)
+{
+int pid = walls[i].platform_ids[k];
+if(pid >= 0 && pid < platforms.length())
+{
+platforms[pid].plathealth = walls[i].wallhealth;
+platforms[pid].platmaxhealth = walls[i].wallmaxhealth;
+}
+}
+break;
+}
+for(uint i = 0; i < platforms.length(); i++)
+{
+if(!platforms[i].destroyable) continue;
+if(platforms[i].is_backing) continue;
+bool in_plat = (me.x >= platforms[i].minx && me.x <= platforms[i].maxx && me.y >= platforms[i].miny && me.y <= platforms[i].maxy && platforms[i].z == me.z);
+if(!in_plat) continue;
+platforms[i].plathealth -= impact_dmg;
+kombatlog.insert_last(impact_dmg + " damage to " + platforms[i].tile + " platform, falling down.");
+if(impact_dmg > 0) platforms[i].hurtsound = p.play_stationary_extended(get_map_sound("objects/platforms/" + platforms[i].tile + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
+break;
+}
 if(fallcounter >= 8 and onbike)
 {
 int bdmg = max(1, fallcounter * fallmod);
@@ -1064,11 +1119,14 @@ int impact_dmg = max(1, (fallcounter * fallmod));
         walls[i].wallhealth -= impact_dmg;
 kombatlog.insert_last(impact_dmg+ " damage to "+string_replace(walls[i].wall, "wall", "", true)+" wall, falling down.");
 if(impact_dmg>0) walls[i].hurtsound=p.play_stationary_extended(get_map_sound("objects/walls/"+walls[i].wall+"/*hurt*"),false,0,0,tilevolume,tilepitch,false);
-        int pid = walls[i].platform_id;
-        if (pid >= 0 && pid < platforms.length())
+        for(uint k=0; k<walls[i].platform_ids.length(); k++)
         {
-            platforms[pid].plathealth = walls[i].wallhealth;
-            platforms[pid].platmaxhealth = walls[i].wallmaxhealth;
+            int pid = walls[i].platform_ids[k];
+            if (pid >= 0 && pid < platforms.length())
+            {
+                platforms[pid].plathealth = walls[i].wallhealth;
+                platforms[pid].platmaxhealth = walls[i].wallmaxhealth;
+            }
         }
         break;
     }
