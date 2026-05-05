@@ -1,20 +1,22 @@
 void clear_camera_markers(bool feedback=true)
 {
-    if (!sel_left_set && !sel_right_set && !sel_top_set && !sel_bottom_set)
+    if (!sel_left_set && !sel_right_set && !sel_back_set && !sel_front_set && !sel_bottom_set && !sel_top_set)
     {
         if(feedback) speak("No selection points to clear.");
         return;
     }
     sel_left_set = false;
     sel_right_set = false;
-    sel_top_set = false;
+    sel_back_set = false;
+    sel_front_set = false;
     sel_bottom_set = false;
+    sel_top_set = false;
 if(feedback) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camclear*"),false,0,0,0,100,false);
     if(feedback) speak("Selection points cleared.");
 }
 void speak_camera_markers()
 {
-    if (!sel_left_set && !sel_right_set && !sel_top_set && !sel_bottom_set)
+    if (!sel_left_set && !sel_right_set && !sel_back_set && !sel_front_set && !sel_bottom_set && !sel_top_set)
     {
         speak("No selection points to view.");
         return;
@@ -24,6 +26,10 @@ void speak_camera_markers()
         msg += " left: " + sel_left + ",";
     if (sel_right_set)
         msg += " right: " + sel_right + ",";
+    if (sel_back_set)
+        msg += " back: " + sel_back + ",";
+    if (sel_front_set)
+        msg += " front: " + sel_front + ",";
     if (sel_bottom_set)
         msg += " bottom: " + sel_bottom + ",";
     if (sel_top_set)
@@ -438,6 +444,8 @@ playstep();
 
 void playcam()
 {
+string camtile = (mapmode == "3d") ? platform_tile_at(cam.x, cam.y, cam.z) : gct(cam.x, cam.y);
+bool cam_on_player = (mapmode == "3d") ? (me.x==cam.x and me.y==cam.y and me.z==cam.z) : (me.x==cam.x and me.y==cam.y);
 for (uint i = 0; i < hazards.length(); i++)
 {
 if(cam.x>=hazards[i].minx && cam.x<=hazards[i].maxx && cam.y>=hazards[i].miny && cam.y<=hazards[i].maxy)
@@ -462,32 +470,32 @@ if(mfc==false) safezones[i].safesound=campool.play_extended_3d(get_map_sound("ob
 safezones[i].cam_in_zone=false;
 }
 }
-if (string_contains(gct(cam.x,cam.y),"wall",1)>-1)
+if (string_contains(camtile,"wall",1)>-1)
 {
     if(is_transparent_wall(cam.x, cam.y))
     {
 if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camwall*"),false,0,0,0,100,false);
 if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("characters/"+chartype+"/map/*camwall*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,100,false);
-if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("objects/walls/"+gct(cam.x,cam.y)+"/*bump*"),false,0,0,0,100);
-if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("objects/walls/"+gct(cam.x,cam.y)+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,200);
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("objects/walls/"+camtile+"/*bump*"),false,0,0,0,100);
+if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("objects/walls/"+camtile+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,200);
 return;
     }
 else
 {
 if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camwall*"),false,0,0,0,100,false);
 if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("characters/"+chartype+"/map/*camwall*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,100,false);
-if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("objects/walls/"+gct(cam.x,cam.y)+"/*bump*"),false,0,0,0,100);
-if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("objects/walls/"+gct(cam.x,cam.y)+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,200);
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("objects/walls/"+camtile+"/*bump*"),false,0,0,0,100);
+if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("objects/walls/"+camtile+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,200);
 cbounce();
 return;
 }
 }
-if(me.x==cam.x and me.y==cam.y)
+if(cam_on_player)
 {
 if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camplayer*"),false,0,0,0,100,false);
 if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("characters/"+chartype+"/map/*camplayer*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,200,false);
 }
-if(gct(cam.x, cam.y)=="" || gct(cam.x, cam.y)=="air")
+if(camtile=="" || camtile=="air")
 {
 if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camair*"),false,0,0,0,100,false);
 if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("characters/"+chartype+"/map/*camair*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,0,0,0,0,0,0,0,false,0,0,0,100,false);
