@@ -16,7 +16,7 @@ break;
 }
 for (uint k = 0; k < passages.length(); k++)
 {
-if (passages[k].is_within_passage(me.x, me.y))
+if (passages[k].is_within_passage(me.x, me.y, int(me.z)))
 {
 in_passage = true;
 @current_passage = passages[k];
@@ -45,7 +45,7 @@ else if (direction == "up") spyage.z++;
 else if (direction == "down") spyage.z--;
 bool found_object = false;
 string[] labels;
-spy_check_passages(spyage.x, spyage.y, labels, in_passage, current_passage, found_object);
+spy_check_passages(spyage.x, spyage.y, spyage.z, labels, in_passage, current_passage, found_object);
 if (!found_object)
 {
 bool include_lifts = !(on_lift && (direction == "left" || direction == "right"));
@@ -60,17 +60,17 @@ if (materials == "") materials = "Nothing in this direction";
 speak(materials);
 }
 
-void spy_check_passages(double sx, double sy, string[] &inout labels, bool &inout in_passage, passage@ &inout current_passage, bool &inout found_object)
+void spy_check_passages(double sx, double sy, double sz, string[] &inout labels, bool &inout in_passage, passage@ &inout current_passage, bool &inout found_object)
 {
 if (in_passage)
 {
-string endpoint_desc = current_passage.get_endpoint_description(sx, sy);
+string endpoint_desc = current_passage.get_endpoint_description(sx, sy, int(sz));
 if (endpoint_desc != "")
 {
 if (!is_obscured("passage", "spier")) labels.insert_last(endpoint_desc);
 found_object = true;
 }
-else if (!current_passage.is_within_passage(sx, sy))
+else if (!current_passage.is_within_passage(sx, sy, int(sz)))
 {
 in_passage = false;
 }
@@ -79,12 +79,13 @@ if (!in_passage)
 {
 for (uint j = 0; j < passages.length(); j++)
 {
-string endpoint_desc = passages[j].get_endpoint_description(sx, sy);
+if(mapmode == "3d" && (int(sz) < passages[j].z || int(sz) > passages[j].z + passages[j].passageheight - 1)) continue;
+string endpoint_desc = passages[j].get_endpoint_description(sx, sy, int(sz));
 if (endpoint_desc != "")
 {
 if (!is_obscured("passage", "spier")) labels.insert_last(endpoint_desc);
 }
-else if (passages[j].is_within_passage(sx, sy))
+else if (passages[j].is_within_passage(sx, sy, int(sz)))
 {
 in_passage = true;
 @current_passage = passages[j];
