@@ -4,18 +4,21 @@ class vanishing_hazard
 bool vanished;
 int hazard_id;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 int vhazardtime;
 string vhazardtype;
 timer vhazardtimer;
-vanishing_hazard(double mx,double mx2,double my,double my2,int vhtime,string vhtype)
+vanishing_hazard(double mx,double mx2,double my,double my2,int vhtime,string vhtype,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 vhazardtime=vhtime;
 vhazardtype=vhtype;
-hazard_id = spawn_hazard(minx, maxx, miny, maxy, vhazardtype, false);
+hazard_id = spawn_hazard(minx, maxx, miny, maxy, vhazardtype, false, minz, maxz);
 }
 }
 void vhazardcheck()
@@ -30,15 +33,15 @@ vanishing_hazards[i].vhazardtimer.restart();
 }
 else if(vanishing_hazards[i].vanished==true and vanishing_hazards[i].vhazardtimer.elapsed>=vanishing_hazards[i].vhazardtime)
 {
-vanishing_hazards[i].hazard_id = spawn_hazard(vanishing_hazards[i].minx, vanishing_hazards[i].maxx, vanishing_hazards[i].miny, vanishing_hazards[i].maxy, vanishing_hazards[i].vhazardtype, false);
+vanishing_hazards[i].hazard_id = spawn_hazard(vanishing_hazards[i].minx, vanishing_hazards[i].maxx, vanishing_hazards[i].miny, vanishing_hazards[i].maxy, vanishing_hazards[i].vhazardtype, false, vanishing_hazards[i].minz, vanishing_hazards[i].maxz);
 vanishing_hazards[i].vanished=false;
 vanishing_hazards[i].vhazardtimer.restart();
 }
 }
 }
-void spawn_vanishing_hazard(double x1,double x2,double y1,double y2,int vhazardtime,string vhazardtype)
+void spawn_vanishing_hazard(double x1,double x2,double y1,double y2,int vhazardtime,string vhazardtype,double minz=0,double maxz=0)
 {
-vanishing_hazard vh1(x1,x2,y1,y2,vhazardtime,vhazardtype);
+vanishing_hazard vh1(x1,x2,y1,y2,vhazardtime,vhazardtype,minz,maxz);
 vanishing_hazards.insert_last(vh1);
 }
 void destroy_all_vanishing_hazards()
@@ -58,15 +61,26 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("vanishing hazard", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int hazard_list = form.create_list("hazard sound");
 form.add_list_item(hazard_list, "none", "none");
@@ -140,6 +154,18 @@ speak("Maximum y is required.");
 form.focus(my2);
 continue;
 }
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
 if(form.get_text(sp) == "")
 {
 speak("Speed is required.");
@@ -150,13 +176,15 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(hazard_list);
 string btype = (p > 0) ? hazards[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_vanishing_hazard(bx, bx2, by, by2, bsp, btype);
-spawn_vanishing_hazard(bx, bx2, by, by2, bsp, btype);
+write_vanishing_hazard(bx, bx2, by, by2, bsp, btype, bmnz, bmxz);
+spawn_vanishing_hazard(bx, bx2, by, by2, bsp, btype, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -171,15 +199,25 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-int sp=stn(sd[5]);
-string hazardtype=sd[6];
-spawn_vanishing_hazard(mx, mx2, my, my2, sp, hazardtype);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==9)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+int sp=stn(sd[o]);
+string hazardtype=sd[o+1];
+spawn_vanishing_hazard(mx, mx2, my, my2, sp, hazardtype, mnz, mxz);
 }
 
-void write_vanishing_hazard(double x1, double x2, double y1, double y2, int speed, string hazardtype)
+void write_vanishing_hazard(double x1, double x2, double y1, double y2, int speed, string hazardtype, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"vanishing_hazard "+x1+" "+x2+" "+y1+" "+y2+" "+speed+" "+hazardtype);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"vanishing_hazard "+coords+" "+speed+" "+hazardtype);
 mapper.close();
 }

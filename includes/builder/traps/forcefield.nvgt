@@ -4,25 +4,66 @@ class forcefield
 bool forcefielded;
 int activesound,inactivesound,wepsound;
 double minx,maxx,miny,maxy;
+double minz,maxz;
 int activetime;
 int deactivetime;
 int damage;
 string forcetype;
 timer activetimer, deactivetimer;
-forcefield(double mx,double mx2,double my,double my2,int dmg,int sp,string ftype)
+forcefield(double mx,double mx2,double my,double my2,int dmg,int sp,string ftype,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 damage=dmg;
 activetime=sp;
 deactivetime=sp;
 forcetype=ftype;
-inactivesound=forcepool.play_extended_3d(get_map_sound("objects/force fields/"+forcetype+"/*off*"),me.x,me.y,me.z,minx,miny,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-forcepool.update_sound_3d(inactivesound, minx, miny, 0);
-forcepool.update_sound_range_3d(inactivesound, 0, maxx-minx, 0, maxy-miny, 0, 0);
+inactivesound=forcepool.play_extended_3d(get_map_sound("objects/force fields/"+forcetype+"/*off*"),me.x,me.y,me.z,minx,miny,minz,0,0,0,0,0,0,0,true,0,0,0,100,false);
+forcepool.update_sound_3d(inactivesound, minx, miny, minz);
+forcepool.update_sound_range_3d(inactivesound, 0, maxx-minx, 0, maxy-miny, 0, maxz-minz);
 }
+}
+bool player_in_forcefield(uint i)
+{
+if(!(forcefields[i].minx<=me.x && forcefields[i].maxx>=me.x && forcefields[i].miny<=me.y && forcefields[i].maxy>=me.y)) return false;
+if(mapmode == "3d" && (me.z < forcefields[i].minz || me.z > forcefields[i].maxz)) return false;
+return true;
+}
+bool forcefield_hit(uint i)
+{
+if(!(forcefields[i].forcefielded==true && player_in_forcefield(i) && paused==0)) return false;
+if(shieldon==1 && shieldstrength<=maxshieldstrength)
+{
+shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
+int sdm = max(1, (forcefields[i].damage) - (shielddefence * 3));
+shieldstrength -= sdm;
+kombatlog.insert_last(forcefields[i].forcetype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+pbounce(5);
+return true;
+}
+else if(shieldon==0)
+{
+forcefields[i].wepsound=forcepool.play_stationary_extended(get_map_sound("objects/force fields/"+forcefields[i].forcetype+"/*hit*"),false,0,0,0,100,false);
+int dmg = max(1, (forcefields[i].damage) - (defence * 3));
+health -= dmg;
+kombatlog.insert_last(forcefields[i].forcetype + "'s attack took you " + dmg + " damage.");
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
+else if (damage_percent >= 10)
+painfile = get_pack_sound("characters/" + chartype+"/general/*crit*");
+else
+painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+pbounce(5);
+return true;
+}
+return false;
 }
 void forceloop()
 {
@@ -32,60 +73,26 @@ if(forcefields[i].forcefielded==false && forcefields[i].deactivetimer.elapsed>=f
 {
 forcefields[i].forcefielded=true;
 forcepool.destroy_sound(forcefields[i].inactivesound);
-forcefields[i].activesound=forcepool.play_extended_3d(get_map_sound("objects/force fields/"+forcefields[i].forcetype+"/*on*"),me.x,me.y,me.z,forcefields[i].minx,forcefields[i].miny,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-forcepool.update_sound_3d(forcefields[i].activesound, forcefields[i].minx, forcefields[i].miny, 0);
-forcepool.update_sound_range_3d(forcefields[i].activesound, 0, forcefields[i].maxx-forcefields[i].minx, 0, forcefields[i].maxy-forcefields[i].miny, 0, 0);
+forcefields[i].activesound=forcepool.play_extended_3d(get_map_sound("objects/force fields/"+forcefields[i].forcetype+"/*on*"),me.x,me.y,me.z,forcefields[i].minx,forcefields[i].miny,forcefields[i].minz,0,0,0,0,0,0,0,true,0,0,0,100,false);
+forcepool.update_sound_3d(forcefields[i].activesound, forcefields[i].minx, forcefields[i].miny, forcefields[i].minz);
+forcepool.update_sound_range_3d(forcefields[i].activesound, 0, forcefields[i].maxx-forcefields[i].minx, 0, forcefields[i].maxy-forcefields[i].miny, 0, forcefields[i].maxz-forcefields[i].minz);
 forcefields[i].activetimer.restart();
 }
 else if(forcefields[i].forcefielded==true && forcefields[i].activetimer.elapsed>=forcefields[i].activetime)
 {
 forcefields[i].forcefielded=false;
 forcepool.destroy_sound(forcefields[i].activesound);
-forcefields[i].inactivesound=forcepool.play_extended_3d(get_map_sound("objects/force fields/"+forcefields[i].forcetype+"/*off*"),me.x,me.y,me.z,forcefields[i].minx,forcefields[i].miny,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-forcepool.update_sound_3d(forcefields[i].inactivesound, forcefields[i].minx, forcefields[i].miny, 0);
-forcepool.update_sound_range_3d(forcefields[i].inactivesound, 0, forcefields[i].maxx-forcefields[i].minx, 0, forcefields[i].maxy-forcefields[i].miny, 0, 0);
+forcefields[i].inactivesound=forcepool.play_extended_3d(get_map_sound("objects/force fields/"+forcefields[i].forcetype+"/*off*"),me.x,me.y,me.z,forcefields[i].minx,forcefields[i].miny,forcefields[i].minz,0,0,0,0,0,0,0,true,0,0,0,100,false);
+forcepool.update_sound_3d(forcefields[i].inactivesound, forcefields[i].minx, forcefields[i].miny, forcefields[i].minz);
+forcepool.update_sound_range_3d(forcefields[i].inactivesound, 0, forcefields[i].maxx-forcefields[i].minx, 0, forcefields[i].maxy-forcefields[i].miny, 0, forcefields[i].maxz-forcefields[i].minz);
 forcefields[i].deactivetimer.restart();
 }
-if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcefields[i].maxx>=me.x && forcefields[i].miny<=me.y && forcefields[i].maxy>=me.y && shieldon==1 && shieldstrength<=maxshieldstrength && paused==0)
+if(forcefield_hit(i)) return;
+}
+}
+void spawn_forcefield(double x1,double x2,double y1,double y2,int dmg,int sp,string forcetype,double minz=0,double maxz=0)
 {
-shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
-int sdm = max(1, (forcefields[i].damage) - (shielddefence * 3));
-shieldstrength -= sdm;
-kombatlog.insert_last(forcefields[i].forcetype + "'s attack took " + shieldtype + " " + sdm + " damage.");
-pbounce(5);
-return;
-}
-else if(forcefields[i].forcefielded==true && forcefields[i].minx<=me.x && forcefields[i].maxx>=me.x && forcefields[i].miny<=me.y && forcefields[i].maxy>=me.y && shieldon==0 && paused==0)
-{
-forcefields[i].wepsound=forcepool.play_stationary_extended(get_map_sound("objects/force fields/"+forcefields[i].forcetype+"/*hit*"),false,0,0,0,100,false);
-int dmg = max(1, (forcefields[i].damage) - (defence * 3));
-health -= dmg;
-kombatlog.insert_last(forcefields[i].forcetype + "'s attack took you " + dmg + " damage.");
-{
-string painfile;
-int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
-if (damage_percent <= 1)
-{
-painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
-}
-else if (damage_percent >= 10)
-{
-painfile = get_pack_sound("characters/" + chartype+"/general/*crit*");
-}
-else
-{
-painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
-}
-painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
-}
-pbounce(5);
-return;
-}
-}
-}
-void spawn_forcefield(double x1,double x2,double y1,double y2,int dmg,int sp,string forcetype)
-{
-forcefield force1(x1,x2,y1,y2,dmg,sp,forcetype);
+forcefield force1(x1,x2,y1,y2,dmg,sp,forcetype,minz,maxz);
 forcefields.insert_last(force1);
 }
 void destroy_all_forcefields()
@@ -110,16 +117,27 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("force field", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int dm = form.create_input_box("maximum attack");
 int sp = form.create_input_box("speed");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int force_list = form.create_list("force field sound");
@@ -203,6 +221,18 @@ speak("Maximum y is required.");
 form.focus(my2);
 continue;
 }
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
 if(form.get_text(dm) == "")
 {
 speak("Maximum attack is required.");
@@ -219,14 +249,16 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int bdm = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(force_list);
 string btype = (p > 0) ? forces[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_forcefield(bx, bx2, by, by2, bdm, bsp, btype);
-spawn_forcefield(bx, bx2, by, by2, bdm, bsp, btype);
+write_forcefield(bx, bx2, by, by2, bdm, bsp, btype, bmnz, bmxz);
+spawn_forcefield(bx, bx2, by, by2, bdm, bsp, btype, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -241,16 +273,26 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-int dmg=stn(sd[5]);
-int sp=stn(sd[6]);
-string forcetype=sd[7];
-spawn_forcefield(mx, mx2, my, my2, dmg, sp, forcetype);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==10)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+int dmg=stn(sd[o]);
+int sp=stn(sd[o+1]);
+string forcetype=sd[o+2];
+spawn_forcefield(mx, mx2, my, my2, dmg, sp, forcetype, mnz, mxz);
 }
 
-void write_forcefield(double x1, double x2, double y1, double y2, int damage, int speed, string forcetype)
+void write_forcefield(double x1, double x2, double y1, double y2, int damage, int speed, string forcetype, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"forcefield "+x1+" "+x2+" "+y1+" "+y2+" "+damage+" "+speed+" "+forcetype);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"forcefield "+coords+" "+damage+" "+speed+" "+forcetype);
 mapper.close();
 }
