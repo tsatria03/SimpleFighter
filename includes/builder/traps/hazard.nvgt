@@ -5,32 +5,47 @@ bool ledgespawn;
 int fallsound, hazardsound;
 int platid, platid2;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 string hazardtype;
-hazard(double mx,double mx2,double my,double my2,string ht,bool lgp)
+hazard(double mx,double mx2,double my,double my2,string ht,bool lgp,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 hazardtype=ht;
 ledgespawn=lgp;
 string[] plattype=get_map_sound_folders("objects/platforms/*ledge*");
 if(plattype.length() != 0 and ledgespawn == true)
 {
 string ledgetype=random_string(plattype);
-platid=spawn_platform(minx - 2, minx - 1, miny, miny, 1, 1, ledgetype, 0, 100, false, false, true);    
+platid=spawn_platform(minx - 2, minx - 1, miny, miny, 1, 1, ledgetype, 0, 100, false, false, true);
 platid2=spawn_platform(maxx + 1, maxx + 2, miny, miny, 1, 1, ledgetype, 0, 100, false, false, true);
 }
-hazardsound=hazardpool.play_extended_3d(get_map_sound("objects/hazards/"+hazardtype+"/*loop*"),me.x,me.y,me.z,minx,miny,0,0,0,0,0,0,0,0,true,0,0,0,100,false);
-hazardpool.update_sound_3d(hazardsound,minx,miny, 0);
-hazardpool.update_sound_range_3d(hazardsound,0,maxx-minx,0,maxy-miny, 0, 0);
+hazardsound=hazardpool.play_extended_3d(get_map_sound("objects/hazards/"+hazardtype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,0,0,0,0,0,0,0,true,0,0,0,100,false);
+hazardpool.update_sound_3d(hazardsound,minx,miny,minz);
+hazardpool.update_sound_range_3d(hazardsound,0,maxx-minx,0,maxy-miny, 0, maxz-minz);
 }
+}
+bool player_in_hazard(uint i)
+{
+if(!(me.x >= hazards[i].minx && me.x <= hazards[i].maxx && me.y >= hazards[i].miny && me.y <= hazards[i].maxy)) return false;
+if(mapmode == "3d" && (me.z < hazards[i].minz || me.z > hazards[i].maxz)) return false;
+return true;
+}
+bool cam_in_hazard(uint i)
+{
+if(!(cam.x >= hazards[i].minx && cam.x <= hazards[i].maxx && cam.y >= hazards[i].miny && cam.y <= hazards[i].maxy)) return false;
+if(mapmode == "3d" && (cam.z < hazards[i].minz || cam.z > hazards[i].maxz)) return false;
+return true;
 }
 void hazardcheck()
 {
 for (uint i=0; i<hazards.length(); i++)
 {
-if(me.x >= hazards[i].minx && me.x <= hazards[i].maxx && me.y >= hazards[i].miny && me.y <= hazards[i].maxy and !inplain)
+if(player_in_hazard(i) and !inplain)
 {
 if(lifecard>=2)
 {
@@ -108,9 +123,9 @@ mainmenu();
 }
 }
 }
-int spawn_hazard(double minx, double maxx, double miny, double maxy, string hazardtype,bool ledgespawn)
+int spawn_hazard(double minx, double maxx, double miny, double maxy, string hazardtype,bool ledgespawn,double minz=0,double maxz=0)
 {
-    hazard hz1(minx,maxx,miny,maxy,hazardtype,ledgespawn);
+    hazard hz1(minx,maxx,miny,maxy,hazardtype,ledgespawn,minz,maxz);
     hazards.insert_last(hz1);
     return hazards.length() - 1;
 }
@@ -157,14 +172,25 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("hazard", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 int hazard_list = form.create_list("hazard sound");
 form.add_list_item(hazard_list, "none", "none");
 for(uint i = 0; i < hazards_list.length(); i++)
@@ -238,17 +264,31 @@ speak("Maximum y is required.");
 form.focus(my2);
 continue;
 }
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int p = form.get_list_position(hazard_list);
 string btype = (p > 0) ? hazards_list[p-1] : "none";
 bool bledge = form.is_checked(ledge_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_hazard(bx, bx2, by, by2, btype, bledge);
-spawn_hazard(bx, bx2, by, by2, btype, bledge);
+write_hazard(bx, bx2, by, by2, btype, bledge, bmnz, bmxz);
+spawn_hazard(bx, bx2, by, by2, btype, bledge, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -263,15 +303,25 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string hazardtype=sd[5];
-bool lgp=string_to_bool(sd[6]);
-spawn_hazard(mx, mx2, my, my2, hazardtype, lgp);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==9)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string hazardtype=sd[o];
+bool lgp=string_to_bool(sd[o+1]);
+spawn_hazard(mx, mx2, my, my2, hazardtype, lgp, mnz, mxz);
 }
 
-void write_hazard(double x1, double x2, double y1, double y2, string hazardtype, bool ledgespawn)
+void write_hazard(double x1, double x2, double y1, double y2, string hazardtype, bool ledgespawn, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"hazard "+x1+" "+x2+" "+y1+" "+y2+" "+hazardtype+" "+ledgespawn);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"hazard "+coords+" "+hazardtype+" "+ledgespawn);
 mapper.close();
 }

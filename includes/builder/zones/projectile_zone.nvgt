@@ -3,14 +3,16 @@ class projzone
 {
 double minx, maxx;
 int proy;
+int proz;
 int spawntime;
 string projtype;
 timer spawntimer;
-projzone(double mx,double mx2,int py,int sp,string pt)
+projzone(double mx,double mx2,int py,int sp,string pt,int pz=0)
 {
 minx=mx;
 maxx=mx2;
 proy=py;
+proz=pz;
 spawntime=sp;
 projtype=pt;
 }
@@ -19,7 +21,9 @@ void projzoneloop()
 {
 for(uint i=0; i<projzones.length(); i++)
 {
-if(projzones[i].minx<=me.x and projzones[i].maxx>=me.x and projzones[i].proy==me.y and projzones[i].spawntimer.elapsed>=projzones[i].spawntime)
+bool trigger = projzones[i].minx<=me.x and projzones[i].maxx>=me.x and projzones[i].proy==me.y;
+if(mapmode == "3d") trigger = trigger and projzones[i].proz == me.z;
+if(trigger and projzones[i].spawntimer.elapsed>=projzones[i].spawntime)
 {
 string[] projtype=get_map_sound_folders("kombat/projectiles/*");
 string potype=projzones[i].projtype;
@@ -33,9 +37,9 @@ projzones[i].spawntimer.restart();
 }
 }
 }
-void spawn_projzone(double x1,double x2,int y,int sp,string type)
+void spawn_projzone(double x1,double x2,int y,int sp,string type,int z=0)
 {
-projzone pz1(x1,x2,y,sp,type);
+projzone pz1(x1,x2,y,sp,type,z);
 projzones.insert_last(pz1);
 }
 void destroy_all_projzones()
@@ -57,11 +61,14 @@ form.reset();
 form.create_window("projectile zone", false);
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my = form.create_input_box("y", (mapmode != "2d") ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 int sp = form.create_input_box("spawn time");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 int proj_list = form.create_list("projectile sound");
 form.add_list_item(proj_list, "none", "none");
@@ -139,6 +146,12 @@ speak("Y is required.");
 form.focus(my);
 continue;
 }
+if(mz != -1 && form.get_text(mz) == "")
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 if(form.get_text(sp) == "")
 {
 speak("Spawn time is required.");
@@ -148,6 +161,7 @@ continue;
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? int(string_to_number(form.get_text(mz))) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(proj_list);
 string btype;
@@ -156,8 +170,8 @@ else if(p == int(projs.length()) + 1) btype = "random";
 else btype = projs[p-1];
 t.destroy_sound(prevslot);
 resume_pools();
-write_projectile_zone(bx, bx2, by, bsp, btype);
-spawn_projzone(bx, bx2, by, bsp, btype);
+write_projectile_zone(bx, bx2, by, bsp, btype, bz);
+spawn_projzone(bx, bx2, by, bsp, btype, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -171,15 +185,24 @@ void read_projectile_zone(string[] sd)
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 int y=stn(sd[3]);
-int sp=stn(sd[4]);
-string potype=sd[5];
-spawn_projzone(mx, mx2, y, sp, potype);
+int z=0;
+int o=4;
+if(sd.length()==7)
+{
+z=stn(sd[4]);
+o=5;
+}
+int sp=stn(sd[o]);
+string potype=sd[o+1];
+spawn_projzone(mx, mx2, y, sp, potype, z);
 }
 
-void write_projectile_zone(double x1, double x2, int y, int speed, string projtype)
+void write_projectile_zone(double x1, double x2, int y, int speed, string projtype, int z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"projectile_zone "+x1+" "+x2+" "+y+" "+speed+" "+projtype);
+string coords=x1+" "+x2+" "+y;
+if(mapmode=="3d") coords+=" "+z;
+mapper.write("\r\n"+"projectile_zone "+coords+" "+speed+" "+projtype);
 mapper.close();
 }

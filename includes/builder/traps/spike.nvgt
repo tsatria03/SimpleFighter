@@ -4,28 +4,37 @@ class spike
 int defsound, hitsound, hurtsound, spikesound;
 bool destroyable;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 double spikehealth;
 double spikemaxhealth;
 int damage;
 int spiketime;
 string spiketype;
 timer spiketimer;
-spike(double mx,double mx2,double my,double my2,double hp,double maxhp,int dmg,int sp,string st,bool dtb)
+spike(double mx,double mx2,double my,double my2,double hp,double maxhp,int dmg,int sp,string st,bool dtb,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 spikehealth=hp;
 spikemaxhealth=maxhp;
 damage=dmg;
 spiketime=sp;
 spiketype=st;
 destroyable=dtb;
-spikesound=spikepool.play_extended_3d(get_map_sound("objects/spikes/"+spiketype+"/*loop*"),me.x,me.y,me.z,minx,miny,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
-spikepool.update_sound_3d(spikesound,minx,miny, 0);
-spikepool.update_sound_range_3d(spikesound, 0, maxx-minx, 0, maxy-miny, 0, 0);
+spikesound=spikepool.play_extended_3d(get_map_sound("objects/spikes/"+spiketype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,0,0,0,0,0,0,0,false,0,0,0,100,false);
+spikepool.update_sound_3d(spikesound,minx,miny,minz);
+spikepool.update_sound_range_3d(spikesound, 0, maxx-minx, 0, maxy-miny, 0, maxz-minz);
 }
+}
+bool player_in_spike(uint i)
+{
+if(!(spikes[i].minx<=me.x and spikes[i].maxx>=me.x and spikes[i].miny<=me.y and spikes[i].maxy>=me.y)) return false;
+if(mapmode == "3d" && (me.z < spikes[i].minz || me.z > spikes[i].maxz)) return false;
+return true;
 }
 void spikeloop()
 {
@@ -33,18 +42,18 @@ for(uint i=0; i<spikes.length(); i++)
 {
 if(spikes[i].spiketimer.elapsed>=spikes[i].spiketime)
 {
-spikes[i].spikesound=spikepool.play_extended_3d(get_map_sound("objects/spikes/"+spikes[i].spiketype+"/*loop*"),me.x,me.y,me.z,spikes[i].minx,spikes[i].miny,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
-spikepool.update_sound_3d(spikes[i].spikesound,spikes[i].minx,spikes[i].miny, 0);
-spikepool.update_sound_range_3d(spikes[i].spikesound, 0, spikes[i].maxx-spikes[i].minx, 0, spikes[i].maxy-spikes[i].miny, 0, 0);
+spikes[i].spikesound=spikepool.play_extended_3d(get_map_sound("objects/spikes/"+spikes[i].spiketype+"/*loop*"),me.x,me.y,me.z,spikes[i].minx,spikes[i].miny,spikes[i].minz,0,0,0,0,0,0,0,false,0,0,0,100,false);
+spikepool.update_sound_3d(spikes[i].spikesound,spikes[i].minx,spikes[i].miny,spikes[i].minz);
+spikepool.update_sound_range_3d(spikes[i].spikesound, 0, spikes[i].maxx-spikes[i].minx, 0, spikes[i].maxy-spikes[i].miny, 0, spikes[i].maxz-spikes[i].minz);
 spikes[i].spiketimer.restart();
-if(spikes[i].minx<=me.x and spikes[i].maxx>=me.x and spikes[i].miny<=me.y and spikes[i].maxy>=me.y and shieldon==1 and paused==0)
+if(player_in_spike(i) and shieldon==1 and paused==0)
 {
 shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
 int sdm = max(1, (spikes[i].damage) - (shielddefence * 3));
 shieldstrength -= sdm;
 kombatlog.insert_last(spikes[i].spiketype + "'s attack took " + shieldtype + " " + sdm + " damage.");
 }
-else if(spikes[i].minx<=me.x and spikes[i].maxx>=me.x and spikes[i].miny<=me.y and spikes[i].maxy>=me.y and shieldon==0 and paused==0)
+else if(player_in_spike(i) and shieldon==0 and paused==0)
 {
 spikes[i].hitsound=spikepool.play_stationary_extended(get_map_sound("objects/spikes/"+spikes[i].spiketype+"/*hit*"),false,0,0,0,100,false);
 int dmg = max(1, (spikes[i].damage) - (defence * 3));
@@ -72,18 +81,18 @@ if(spikes[i].spikehealth<=0)
 {
 spikepool.destroy_sound(spikes[i].hurtsound);
 spikepool.destroy_sound(spikes[i].spikesound);
-spikes[i].defsound=spikepool.play_extended_3d(get_map_sound("objects/spikes/"+spikes[i].spiketype+"/*death*"),me.x,me.y,me.z,spikes[i].minx,spikes[i].miny,0,0,0,0,0,0,0,0,false,0,0,0,100,false);
-spikepool.update_sound_3d(spikes[i].defsound,spikes[i].minx,spikes[i].miny, 0);
-spikepool.update_sound_range_3d(spikes[i].defsound,0,spikes[i].maxx-spikes[i].minx,0,spikes[i].maxy-spikes[i].miny, 0, 0);
+spikes[i].defsound=spikepool.play_extended_3d(get_map_sound("objects/spikes/"+spikes[i].spiketype+"/*death*"),me.x,me.y,me.z,spikes[i].minx,spikes[i].miny,spikes[i].minz,0,0,0,0,0,0,0,false,0,0,0,100,false);
+spikepool.update_sound_3d(spikes[i].defsound,spikes[i].minx,spikes[i].miny,spikes[i].minz);
+spikepool.update_sound_range_3d(spikes[i].defsound,0,spikes[i].maxx-spikes[i].minx,0,spikes[i].maxy-spikes[i].miny, 0, spikes[i].maxz-spikes[i].minz);
 spikes.remove_at(i);
 return;
 }
 }
 }
 }
-void spawn_spike(double x1,double x2,double y1,double y2,double hp,double maxhp,int dmg,int sp,string spiketype,bool destroyable)
+void spawn_spike(double x1,double x2,double y1,double y2,double hp,double maxhp,int dmg,int sp,string spiketype,bool destroyable,double minz=0,double maxz=0)
 {
-spike sp1(x1,x2,y1,y2,hp,maxhp,dmg,sp,spiketype,destroyable);
+spike sp1(x1,x2,y1,y2,hp,maxhp,dmg,sp,spiketype,destroyable,minz,maxz);
 spikes.insert_last(sp1);
 }
 void destroy_all_spikes()
@@ -107,10 +116,19 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("spike", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2 = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 int hp = form.create_input_box("health", "1");
 int dm = form.create_input_box("maximum attack");
 int sp = form.create_input_box("speed");
@@ -118,6 +136,8 @@ form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not all
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
@@ -203,6 +223,18 @@ speak("Maximum y is required.");
 form.focus(my2);
 continue;
 }
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
 if(form.get_text(hp) == "")
 {
 speak("Health is required.");
@@ -225,6 +257,8 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int bdmg = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
@@ -233,8 +267,8 @@ string btype = (p > 0) ? spikes_list[p-1] : "none";
 bool bdest = form.is_checked(dest_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_spike(bx, bx2, by, by2, bhp, bdmg, bsp, btype, bdest);
-spawn_spike(bx, bx2, by, by2, bhp, bhp, bdmg, bsp, btype, bdest);
+write_spike(bx, bx2, by, by2, bhp, bdmg, bsp, btype, bdest, bmnz, bmxz);
+spawn_spike(bx, bx2, by, by2, bhp, bhp, bdmg, bsp, btype, bdest, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -249,18 +283,28 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-double hp=stn(sd[5]);
-int dmg=stn(sd[6]);
-int sp=stn(sd[7]);
-string spiketype=sd[8];
-bool dbl=string_to_bool(sd[9]);
-spawn_spike(mx, mx2, my, my2, hp, hp, dmg, sp, spiketype, dbl);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==12)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+double hp=stn(sd[o]);
+int dmg=stn(sd[o+1]);
+int sp=stn(sd[o+2]);
+string spiketype=sd[o+3];
+bool dbl=string_to_bool(sd[o+4]);
+spawn_spike(mx, mx2, my, my2, hp, hp, dmg, sp, spiketype, dbl, mnz, mxz);
 }
 
-void write_spike(double x1, double x2, double y1, double y2, double hp, int damage, int speed, string spiketype, bool destroyable)
+void write_spike(double x1, double x2, double y1, double y2, double hp, int damage, int speed, string spiketype, bool destroyable, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"spike "+x1+" "+x2+" "+y1+" "+y2+" "+hp+" "+damage+" "+speed+" "+spiketype+" "+destroyable);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"spike "+coords+" "+hp+" "+damage+" "+speed+" "+spiketype+" "+destroyable);
 mapper.close();
 }
