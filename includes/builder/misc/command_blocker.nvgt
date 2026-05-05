@@ -3,13 +3,16 @@ class cblocker
 {
 bool whitelist;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 string[] commands;
-cblocker(double mx,double mx2,double my,double my2,string[] coms,bool wtl)
+cblocker(double mx,double mx2,double my,double my2,string[] coms,bool wtl,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 commands=coms;
 whitelist=wtl;
 }
@@ -21,6 +24,7 @@ for (uint i = 0; i < cblockers.length(); i++)
 cblocker@ cb = cblockers[i];
 if (me.x >= cb.minx && me.x <= cb.maxx && me.y >= cb.miny && me.y <= cb.maxy)
 {
+if(mapmode == "3d" && (me.z < cb.minz || me.z > cb.maxz)) continue;
 if (cb.whitelist)
 {
 bool found = false;
@@ -45,9 +49,9 @@ if (cb.commands[j] == comname) return true;
 }
 return false;
 }
-void spawn_cblocker(double x1,double x2,double y1,double y2,string[] commands,bool wtl)
+void spawn_cblocker(double x1,double x2,double y1,double y2,string[] commands,bool wtl,double minz=0,double maxz=0)
 {
-cblocker cblocker1(x1,x2,y1,y2,commands,wtl);
+cblocker cblocker1(x1,x2,y1,y2,commands,wtl,minz,maxz);
 cblockers.insert_last(cblocker1);
 }
 void destroy_all_cblockers()
@@ -59,15 +63,26 @@ void build_command_blocker()
 {
 form.reset();
 form.create_window("command blocker", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my=form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2=form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my=form.create_input_box("minimum y", saved_my);
+int my2=form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
 int comlist = form.create_list("Select the slash commands to block or allow", 0, true);
 string[] allcommands = {"build", "bl", "changemap", "cm", "delmap", "dm", "draw", "dr", "gamestart", "gs", "gamestop", "gp", "getall", "gl", "give", "gv", "go", "gozone", "gz", "help", "hp", "invclear", "ic", "kill", "kn", "killall", "kl", "maps", "mp", "menu", "mu", "newmap", "nm", "play", "pl", "preffs", "pf", "rawmap", "rp", "rawdata", "rd", "relchar", "rc", "relmap", "rm", "relshields", "rs", "relscripts", "rt", "relweps", "rw", "scriptmode", "sm", "speak", "sp", "stats", "st", "suicide", "sd"};
 for (uint i = 0; i < allcommands.length(); i++)
@@ -116,6 +131,16 @@ else if(form.get_text(my2)=="")
 speak("Maximum y is required.");
 form.focus(my2);
 }
+else if(mnz != -1 && form.get_text(mnz)=="")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+}
+else if(mxz != -1 && form.get_text(mxz)=="")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+}
 else
 {
 comslist.resize(0);
@@ -135,10 +160,12 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 bool bctl = form.is_checked(cw);
 resume_pools();
-write_cblocker(bx, bx2, by, by2, comslist, bctl);
-spawn_cblocker(bx, bx2, by, by2, comslist, bctl);
+write_cblocker(bx, bx2, by, by2, comslist, bctl, bmnz, bmxz);
+spawn_cblocker(bx, bx2, by, by2, comslist, bctl, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -154,15 +181,25 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string[] coms = string_split(join_string_array(sd, 5, sd.length() - 1), ", ", true);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string[] coms = string_split(join_string_array(sd, o, sd.length() - 1), ", ", true);
 bool wtl = string_to_bool(sd[sd.length() - 1]);
-spawn_cblocker(mx, mx2, my, my2, coms, wtl);
+spawn_cblocker(mx, mx2, my, my2, coms, wtl, mnz, mxz);
 }
 
-void write_cblocker(double x1, double x2, double y1, double y2, string[] commands, bool whitelist)
+void write_cblocker(double x1, double x2, double y1, double y2, string[] commands, bool whitelist, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"cblocker "+x1+" "+x2+" "+y1+" "+y2+" "+string_join(commands, ", ")+" "+whitelist);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") coords += " "+minz+" "+maxz;
+mapper.write("\r\n"+"cblocker "+coords+" "+string_join(commands, ", ")+" "+whitelist);
 mapper.close();
 }

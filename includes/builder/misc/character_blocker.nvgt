@@ -6,13 +6,16 @@ class chblocker
 {
 bool whitelist;
 double minx, maxx, miny, maxy;
+double minz, maxz;
 string[] charsets;
-chblocker(double mx,double mx2,double my,double my2,string[] chsets,bool wtl)
+chblocker(double mx,double mx2,double my,double my2,string[] chsets,bool wtl,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
 miny=my;
 maxy=my2;
+minz=mnz;
+maxz=mxz;
 charsets=chsets;
 whitelist=wtl;
 }
@@ -24,6 +27,7 @@ for (uint i = 0; i < chblockers.length(); i++)
 chblocker@ cb = chblockers[i];
 if (me.x >= cb.minx && me.x <= cb.maxx && me.y >= cb.miny && me.y <= cb.maxy)
 {
+if(mapmode == "3d" && (me.z < cb.minz || me.z > cb.maxz)) continue;
 if (cb.whitelist)
 {
 bool found = false;
@@ -90,9 +94,9 @@ else if(onbike && inplain && invehicle && shieldmode==1)
 return;
 }
 }
-void spawn_chblocker(double x1,double x2,double y1,double y2,string[] charsets,bool wtl)
+void spawn_chblocker(double x1,double x2,double y1,double y2,string[] charsets,bool wtl,double minz=0,double maxz=0)
 {
-chblocker chblocker1(x1,x2,y1,y2,charsets,wtl);
+chblocker chblocker1(x1,x2,y1,y2,charsets,wtl,minz,maxz);
 chblockers.insert_last(chblocker1);
 }
 void destroy_all_chblockers()
@@ -104,15 +108,26 @@ void build_character_blocker()
 {
 form.reset();
 form.create_window("character blocker", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my=form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
-int my2=form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+int my=form.create_input_box("minimum y", saved_my);
+int my2=form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
     int charset_list_id = form.create_list("Select the character settings to block or allow", 0, true);
 string[] allcharsets={"building", "camming", "commanding", "drawing", "firing", "healing", "hooking", "jumpheight", "jumping", "macros", "movespeed", "pausing", "quitting", "running", "sonar", "spying", "teleporting", "turning", "using"};
 for (uint i = 0; i < allcharsets.length(); i++)
@@ -161,6 +176,16 @@ else if(form.get_text(my2)=="")
 speak("Maximum y is required.");
 form.focus(my2);
 }
+else if(mnz != -1 && form.get_text(mnz)=="")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+}
+else if(mxz != -1 && form.get_text(mxz)=="")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+}
 else
 {
             string[] selected_charsets;
@@ -180,10 +205,12 @@ double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 bool bctl = form.is_checked(cw);
 resume_pools();
-write_chblocker(bx, bx2, by, by2, selected_charsets, bctl);
-spawn_chblocker(bx, bx2, by, by2, selected_charsets, bctl);
+write_chblocker(bx, bx2, by, by2, selected_charsets, bctl, bmnz, bmxz);
+spawn_chblocker(bx, bx2, by, by2, selected_charsets, bctl, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -199,15 +226,25 @@ double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
-string[] chsets = string_split(join_string_array(sd, 5, sd.length() - 1), ", ", true);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string[] chsets = string_split(join_string_array(sd, o, sd.length() - 1), ", ", true);
 bool wtl = string_to_bool(sd[sd.length() - 1]);
-spawn_chblocker(mx, mx2, my, my2, chsets, wtl);
+spawn_chblocker(mx, mx2, my, my2, chsets, wtl, mnz, mxz);
 }
 
-void write_chblocker(double x1, double x2, double y1, double y2, string[] charsets, bool whitelist)
+void write_chblocker(double x1, double x2, double y1, double y2, string[] charsets, bool whitelist, double minz=0, double maxz=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"chblocker "+x1+" "+x2+" "+y1+" "+y2+" "+string_join(charsets, ", ")+" "+whitelist);
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") coords += " "+minz+" "+maxz;
+mapper.write("\r\n"+"chblocker "+coords+" "+string_join(charsets, ", ")+" "+whitelist);
 mapper.close();
 }
