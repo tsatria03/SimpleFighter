@@ -14,22 +14,22 @@ bool tracking_get_anchor(double &out x, double &out y, double &out z)
     if (tracking_type == "aircraft")
     {
         if (tracking_index >= int(aircrafts.length())) return false;
-        x = aircrafts[tracking_index].plainx; y = aircrafts[tracking_index].plainy; return true;
+        x = aircrafts[tracking_index].plainx; y = aircrafts[tracking_index].plainy; z = aircrafts[tracking_index].plainz; return true;
     }
     if (tracking_type == "bike")
     {
         if (tracking_index >= int(bikes.length())) return false;
-        x = bikes[tracking_index].bikex; y = bikes[tracking_index].bikey; return true;
+        x = bikes[tracking_index].bikex; y = bikes[tracking_index].bikey; z = bikes[tracking_index].bikez; return true;
     }
     if (tracking_type == "door")
     {
         if (tracking_index >= int(doors.length())) return false;
-        x = doors[tracking_index].minx; y = doors[tracking_index].miny; return true;
+        x = doors[tracking_index].minx; y = doors[tracking_index].miny; z = doors[tracking_index].minz; return true;
     }
     if (tracking_type == "npc")
     {
         if (tracking_index >= int(npcs.length())) return false;
-        x = npcs[tracking_index].x; y = npcs[tracking_index].y; return true;
+        x = npcs[tracking_index].x; y = npcs[tracking_index].y; z = npcs[tracking_index].z; return true;
     }
     if (tracking_type == "platform")
     {
@@ -39,7 +39,7 @@ bool tracking_get_anchor(double &out x, double &out y, double &out z)
     if (tracking_type == "projectile")
     {
         if (tracking_index >= int(projectiles.length())) return false;
-        x = projectiles[tracking_index].prox; y = projectiles[tracking_index].proy; return true;
+        x = projectiles[tracking_index].prox; y = projectiles[tracking_index].proy; z = projectiles[tracking_index].proz; return true;
     }
     if (tracking_type == "spike")
     {
@@ -54,17 +54,17 @@ bool tracking_get_anchor(double &out x, double &out y, double &out z)
     if (tracking_type == "security camera")
     {
         if (tracking_index >= int(sucams.length())) return false;
-        x = sucams[tracking_index].sucamx; y = sucams[tracking_index].sucamy; return true;
+        x = sucams[tracking_index].sucamx; y = sucams[tracking_index].sucamy; z = sucams[tracking_index].sucamz; return true;
     }
     if (tracking_type == "vehicle")
     {
         if (tracking_index >= int(vehicles.length())) return false;
-        x = vehicles[tracking_index].vehx; y = vehicles[tracking_index].vehy; return true;
+        x = vehicles[tracking_index].vehx; y = vehicles[tracking_index].vehy; z = vehicles[tracking_index].vehz; return true;
     }
     if (tracking_type == "wall")
     {
         if (tracking_index >= int(walls.length())) return false;
-        x = walls[tracking_index].minx; y = walls[tracking_index].miny; return true;
+        x = walls[tracking_index].minx; y = walls[tracking_index].miny; z = walls[tracking_index].minz; return true;
     }
     return false;
 }
@@ -75,7 +75,9 @@ bool tracking_player_at_target()
     if (tracking_type == "door")
     {
         if (tracking_index >= int(doors.length())) return false;
-        return me.x >= doors[tracking_index].minx && me.x <= doors[tracking_index].maxx && me.y >= doors[tracking_index].miny && me.y <= doors[tracking_index].maxy;
+        bool xy_match = me.x >= doors[tracking_index].minx && me.x <= doors[tracking_index].maxx && me.y >= doors[tracking_index].miny && me.y <= doors[tracking_index].maxy;
+        if (mapmode == "3d") return xy_match && me.z >= doors[tracking_index].minz && me.z <= doors[tracking_index].maxz;
+        return xy_match;
     }
     if (tracking_type == "platform")
     {
@@ -101,7 +103,9 @@ bool tracking_player_at_target()
     if (tracking_type == "wall")
     {
         if (tracking_index >= int(walls.length())) return false;
-        return me.x >= walls[tracking_index].minx && me.x <= walls[tracking_index].maxx && me.y >= walls[tracking_index].miny && me.y <= walls[tracking_index].maxy;
+        bool xy_match = me.x >= walls[tracking_index].minx && me.x <= walls[tracking_index].maxx && me.y >= walls[tracking_index].miny && me.y <= walls[tracking_index].maxy;
+        if (mapmode == "3d") return xy_match && me.z >= walls[tracking_index].minz && me.z <= walls[tracking_index].maxz;
+        return xy_match;
     }
     double tx, ty, tz;
     if (!tracking_get_anchor(tx, ty, tz)) return false;

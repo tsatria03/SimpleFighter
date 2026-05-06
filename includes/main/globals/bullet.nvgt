@@ -95,8 +95,17 @@ if(bullets[i].direction=="down")
 if(mapmode == "3d") bullets[i].bullz--;
 else bullets[i].bully--;
 }
-string bull_tile = (mapmode == "3d") ? gmt(bullets[i].bullx,bullets[i].bully,bullets[i].bullz) : gmt(bullets[i].bullx,bullets[i].bully);
-if(string_contains(bull_tile,"wall",1)>-1)
+bool bull_hit_wall = false;
+for(uint w=0; w<walls.length(); w++)
+{
+if(walls[w].minx<=bullets[i].bullx and walls[w].maxx>=bullets[i].bullx and walls[w].miny<=bullets[i].bully and walls[w].maxy>=bullets[i].bully)
+{
+if(mapmode == "3d" and (bullets[i].bullz<walls[w].minz or bullets[i].bullz>walls[w].maxz)) continue;
+bull_hit_wall = true;
+break;
+}
+}
+if(bull_hit_wall)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*rico*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,0,0,0,0,0,0,0,false,0,0,0,100,false);
