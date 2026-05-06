@@ -51,17 +51,19 @@ Teleport time uses normal:wounded:healing like most fields, but each slot accept
 The comma format is min,max for a fresh random roll on each use.
 Fields can mix the two: 5000,15000:1000,5000:5000,15000 gives a different range per state.
 
-Most numeric fields also accept the tokens maxx, maxy, minx, and miny.
-These resolve to the map's bounds at parse time, which lets a creature cover the entire map with horizontal sight range=maxx without baking a hard coded number into a globally shared file.
+Most numeric fields also accept the tokens maxx, maxy, maxz, minx, miny, and minz.
+These resolve to the map's bounds at parse time, which lets a creature cover the entire map with x sight range=maxx without baking a hard coded number into a globally shared file. The z tokens are only meaningful on 3d maps; on 2d and topdown maps z fields are ignored regardless of what they hold.
 
-horizontal att range (triple int): How many tiles horizontally the creature has to be within of its target before it can attack. Zero means the target must be on the same tile.
-vertical att range (triple int): How many tiles vertically the creature has to be within of its target before it can attack.
+x attack range (triple int): How many tiles along the x axis the creature has to be within of its target before it can attack. Zero means the target must share the same x as the creature.
+y attack range (triple int): How many tiles along the y axis the creature has to be within of its target before it can attack.
+z attack range (triple int): How many tiles along the z axis (height) the creature has to be within of its target before it can attack. Only consulted on 3d maps; on 2d and topdown maps the z gate is bypassed and the field is effectively ignored.
 
 For unarmed creatures (animals, robots, zombies, specials, helpers without weapons, and humans whose weapon roll did not pick anything) att range is the actual contact damage range, since the engine applies damage directly without spawning a bullet. Att range zero on these is fine and means a same tile bite, claw, or punch.
-For armed humans the picture is different because the engine spawns a real bullet from the human's weapon. Att range gates when the human pulls the trigger, while the weapon's own horizontal range and vertical range fields in its info.sif govern how far the spawned bullet actually travels before despawning. The two distances do not have to match: a stand off shotgun feel can use a short att range with a long weapon range, and a sniper rifle feel can use a long att range with an even longer weapon range, but att range should never exceed weapon range or the human will trigger from far enough away that the bullet despawns before reaching you. Att range zero on an armed human still works thanks to the bullet's first tick hit check at its spawn position, so a same tile point blank fire connects without the bullet needing to travel.
+For armed humans the picture is different because the engine spawns a real bullet from the human's weapon. Att range gates when the human pulls the trigger, while the weapon's own x range, y range, and z range fields in its info.sif govern how far the spawned bullet actually travels before despawning. The three distances do not have to match: a stand off shotgun feel can use a short att range with a long weapon range, and a sniper rifle feel can use a long att range with an even longer weapon range, but att range should never exceed weapon range or the human will trigger from far enough away that the bullet despawns before reaching you. Att range zero on an armed human still works thanks to the bullet's first tick hit check at its spawn position, so a same tile point blank fire connects without the bullet needing to travel.
 
-horizontal sight range (triple int): How far horizontally the creature can see a target. The creature only pursues a target inside this range under sight based chase modes. Setting this to maxx makes the creature aware of targets anywhere on the map.
-vertical sight range (triple int): The vertical equivalent of horizontal sight range.
+x sight range (triple int): How far along the x axis the creature can see a target. The creature only pursues a target inside this range under sight based chase modes. Setting this to maxx makes the creature aware of targets anywhere on the map's x axis.
+y sight range (triple int): The y axis equivalent of x sight range.
+z sight range (triple int): The z axis (height) equivalent. Only consulted on 3d maps; on 2d and topdown maps the field is ignored.
 
 health (special triple): The creature's hit points. Written as a:b:c where a is the maximum starting health, b is the wounded threshold the creature drops below to enter wounded mode, and c is the amount of health restored on each tick of healing. Writing a single number leaves wounded and healing disabled. The wounded threshold is the gateway: leaving b at zero means the creature never enters wounded or healing mode no matter what other state specific values are set.
 rest heal time (single int): Milliseconds between heal ticks while the creature is in healing mode (below the wounded threshold and with no target in wounded sight). Accepts a comma range like 4000,8000 for a fresh roll on parse. Only fires while the third value of health is set.
@@ -82,8 +84,9 @@ xp (triple double): The xp value the creature drops when killed, multiplied by l
 
 attacking (bool): Whether the creature can fire at all. Setting this to false makes a creature that walks but never swings.
 
-move_x (bool): Whether the creature is allowed to move horizontally.
-move_y (bool): Whether the creature is allowed to move vertically.
+move_x (bool): Whether the creature is allowed to move along the x axis.
+move_y (bool): Whether the creature is allowed to move along the y axis.
+move z (bool): Whether the creature is allowed to move along the z axis (height). Only consulted on 3d maps; on 2d and topdown maps the field is ignored.
 
 drop_item (bool): Whether the creature has a chance to drop a healing or stamina item on death.
 
@@ -92,12 +95,13 @@ Provoke on hit. Any creature that takes damage flips to a provoked state and sta
 
 chase time (triple range): Three timer slots joined with colons as calm:random:pause, all in milliseconds. Each slot supports comma ranges for a fresh random roll. Calm controls how long a provoked creature stays angry after losing sight. Random controls how long each phase of the random trigger lasts before flipping. Pause controls how long a roaming creature stops between destinations. Slots not relevant to the chosen chase mode are ignored.
 
-teleport time (triple range): Three timer slots joined with colons as normal:wounded:healing, all in milliseconds. Each slot supports comma ranges for a fresh random roll on each tick, like 5000,15000 for a teleport every five to fifteen seconds. Each slot also accepts the literal never to disable teleporting in that state, so teleport time=5000:never:never makes the creature teleport on the normal clock but never while wounded or healing. The destination uses the creature's patrol x range and patrol y range gated by tel x and tel y, the creature's *tel* clip plays at the new tile, and the loop sound follows along.
+teleport time (triple range): Three timer slots joined with colons as normal:wounded:healing, all in milliseconds. Each slot supports comma ranges for a fresh random roll on each tick, like 5000,15000 for a teleport every five to fifteen seconds. Each slot also accepts the literal never to disable teleporting in that state, so teleport time=5000:never:never makes the creature teleport on the normal clock but never while wounded or healing. The destination uses the creature's patrol x range, patrol y range, and patrol z range gated by tel x, tel y, and tel z, the creature's *tel* clip plays at the new tile, and the loop sound follows along.
 
-tel_x (bool): Whether a teleport tick is allowed to randomize the creature's x coordinate. With tel_y false this gives a horizontal only warp, matching the boss telleble flag.
-tel_y (bool): Whether a teleport tick is allowed to randomize the creature's y coordinate. Combined with tel_x both true the creature can jump to any tile on the map.
+tel_x (bool): Whether a teleport tick is allowed to randomize the creature's x coordinate.
+tel_y (bool): Whether a teleport tick is allowed to randomize the creature's y coordinate.
+tel z (bool): Whether a teleport tick is allowed to randomize the creature's z coordinate (height). Only consulted on 3d maps; on 2d and topdown maps the field is ignored.
 
-With both bools false the teleport feature is off entirely, so the time field is ignored.
+With every tel bool false the teleport feature is off entirely, so the time field is ignored.
 
 use steps (string): Which step sound the creature plays as it walks. Accepts auto, own, player, or never. Auto tries the creature's own step clip first and falls back to the surface's step clip when the creature has none, so a creature with its own footsteps always sounds like itself and only borrows the surface clip when nothing better is available. Own always plays the creature's own folder step clip regardless of surface, so a robot always sounds metal even on grass. Player plays only the surface's step clip and stays silent on tiles missing one, matching exactly what the player hears walking that same tile. Never silences footsteps entirely, useful for ghosts, floating creatures, or anything that should not betray its position.
 use falls (string): Which fall sound the creature's body plays when it dies and hits the ground. Accepts auto, own, player, or never with the same meaning as use steps. Auto tries the creature's own fall clip first and falls back to the surface fall clip if the creature has none. Own forces the creature's own fall clip, player forces the surface fall clip, and never plays nothing on death.
@@ -122,10 +126,11 @@ launch subtype (string): Which specific creature to summon under the chosen laun
 
 launch time (single int): Milliseconds between launch ticks. Accepts a comma range like 8000,15000 for a fresh roll on parse. Runs on its own clock independent of the attack and movement clocks, regardless of state, so a launching creature keeps summoning while attacking, while wounded, and while healing.
 
-patrol x range (range): Minimum and maximum x tiles the creature will roam, patrol, or teleport into, written as min,max. Each value accepts the tokens minx and maxx as well as a literal number, so patrol x range=15,30 confines a guard to a thirty tile horizontal post and patrol x range=minx,maxx restores the full map sweep. Writing patrol x range=terrain by itself auto fits the patrol bounds to the contiguous habitat the creature spawns on, scanning left and right from the spawn tile until the next tile fails the terrain check, so a bear with terrain=grass:150 and patrol x range=terrain confines its roaming to whatever grass patch it spawned on no matter where on the map it is placed. Pursuit is left unbounded, so a guard can still chase the player past their post and walk back when calm.
-patrol y range (range): The vertical equivalent of patrol x range, with miny and maxy as the supported tokens, and the same terrain auto fit token that scans up and down from the spawn tile.
+patrol x range (range): Minimum and maximum x tiles the creature will roam, patrol, or teleport into, written as min,max. Each value accepts the tokens minx and maxx as well as a literal number, so patrol x range=15,30 confines a guard to a thirty tile post on the x axis and patrol x range=minx,maxx restores the full map sweep. Writing patrol x range=terrain by itself auto fits the patrol bounds to the contiguous habitat the creature spawns on, scanning along the x axis from the spawn tile until the next tile fails the terrain check, so a bear with terrain=grass:150 and patrol x range=terrain confines its roaming to whatever grass patch it spawned on no matter where on the map it is placed. Pursuit is left unbounded, so a guard can still chase the player past their post and walk back when calm.
+patrol y range (range): The y axis equivalent of patrol x range, with miny and maxy as the supported tokens, and the same terrain auto fit token that scans along the y axis from the spawn tile.
+patrol z range (range): The z axis (height) equivalent of patrol x range, with minz and maxz as the supported tokens. Only consulted on 3d maps; on 2d and topdown maps the field is ignored.
 
-Both ranges default to the full map when absent. The roam destination picker, patrol corner picker, and teleport destination picker all read from these fields, so a single patrol box keeps a creature anchored across all three movement modes.
+All three ranges default to the full map when absent. The roam destination picker, patrol corner picker, and teleport destination picker all read from these fields, so a single patrol box keeps a creature anchored across all three movement modes.
 
 targets (csv list): What the creature attacks. The default is player, matching the original behavior. Other accepted values are animals, bosses, helpers, humans, robots, zombies, specials, the shorthand all for everything, and the special value none for a fully passive creature that walks around without attacking anything. Multiple values can be combined with commas, like player,zombies for a creature that hunts you and zombies but ignores everyone else.
 A creature with targets=none is also invulnerable. Bullets pass through them without dealing damage or being consumed, so a pacifist villager cannot be killed by player or npc fire, only despawned with the map.
@@ -165,8 +170,8 @@ Arrowing through the subtype list updates the contents box in real time so you c
 
 Spawn line format.
 
-When the Spawn button writes a creature into a map, it appends a line to the map's info.sif at data/maps/decompiled/<map>/info.sif in the form npc x y scale path category subtype.
-The six fields are space separated, where x and y are the tile coordinates the creature spawns at, scale is an integer scale level, path is one of any, global, or map, and category and subtype name the folder under sounds/<pack>/npc/.
+When the Spawn button writes a creature into a map, it appends a line to the map's info.sif at data/maps/decompiled/<map>/info.sif in the form npc x y scale path category subtype on 2d and topdown maps, and npc x y z scale path category subtype on 3d maps.
+The fields are space separated, where x, y, and (on 3d maps) z are the tile coordinates the creature spawns at, scale is an integer scale level, path is one of any, global, or map, and category and subtype name the folder under sounds/<pack>/npc/.
 The path value decides where the creature reads its info.sif from. Any uses the map's local copy if it exists and falls back to the global pack otherwise. Global pins the lookup to sounds/<pack>/npc/ even if a map local copy is present. Map pins it to data/maps/decompiled/<map>/assets/npc/ and refuses the global fallback. This lets two creatures of the same name on the same map intentionally read different stats by pointing at different paths.
 A subtype of none places nothing and is silently ignored at parse time, which is useful as a placeholder when blocking out a map.
 The line is parsed back into spawn_npc on map load, so editing this file by hand is a valid way to bulk place creatures without going through the builder.
@@ -184,8 +189,8 @@ The wounded and healing variant stats are also blanked out under scale, so an au
 NPC zones.
 
 NPC zones are the auto respawn variant of a single spawn line.
-Instead of placing one creature once, a zone defines a horizontal range and a y coordinate that, when the player walks across it, spawns a creature on a timer.
-Zones live in the map info.sif as npc_zone minx maxx y spawntime scale path category subtype, written by the npc zone builder under zones.
+Instead of placing one creature once, a zone defines an x range and a y coordinate (plus a z coordinate on 3d maps) that, when the player walks across it, spawns a creature on a timer.
+Zones live in the map info.sif as npc_zone minx maxx y spawntime scale path category subtype on 2d and topdown maps, and npc_zone minx maxx y z spawntime scale path category subtype on 3d maps. They are written by the npc zone builder under zones.
 Walking onto any tile in the zone's minx to maxx range at the matching y starts the spawn timer, and once spawntime milliseconds have elapsed a creature is spawned at a random x inside the range, the timer restarts, and the next spawn is queued.
 Setting subtype to random rolls a random folder from the chosen category on every spawn, so a single zone can spit out a different creature each time it fires.
 The scale field works the same as on spawn lines: zero uses static info.sif stats, one or higher auto scales to the player. The path field works the same way too, with any, global, and map deciding which info.sif copy each spawned creature reads from.
