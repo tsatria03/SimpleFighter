@@ -1,0 +1,41 @@
+Weapons.
+
+A weapon is what the player and armed humans fire. The same weapon file produces the same behavior whether the player draws it or a human picks it up at spawn, so every stat written below applies equally to both wielders.
+
+Each weapon lives in its own folder under one of four categories: archery, artillery, explosive, or melee. The full file path is equipments/weapons/<category>/<weapon>/info.sif inside the sound pack.
+
+Sound packs and info.sif files.
+
+Weapon stats live in info.sif files inside the sound pack. The full path is sounds/<pack>/equipments/weapons/<category>/<weapon>/info.sif.
+
+Each weapon has its own info.sif. The file is self contained: every stat the weapon uses is written explicitly, and anything left out falls through to a sensible default.
+
+The info.sif file does not list any sounds. The engine learns what audio a weapon has by scanning the weapon's own folder, matching whatever clips it finds against the names it expects (draw, fire, hit, loop, rico, shell, empty, reload, ping, on, off, ref, block). Drop a clip in the folder and the weapon plays it; remove it and the weapon goes silent for that event. There is nothing to wire up by hand because the folder layout is the audio configuration.
+
+Field reference.
+
+Every field in info.sif uses the form key=value, one per line. Missing fields fall back to the defaults shown below.
+
+damage (int): The weapon's base damage per hit. The wielder's own attack bonus is added on top: the player's flat attack stat in the player's case, the human's effective attack times level in the human's case. Defaults to 1.
+
+fire mode (int): How the weapon fires. 0 is manual fire, where each press of the fire key triggers one shot, paced by spam time. 1 is auto fire, where holding the fire key triggers a continuous stream, paced by repeat time. Defaults to 0.
+
+horizontal range (int): How far in tiles the bullet flies along the horizontal axis before vanishing. Defaults to 1.
+vertical range (int): How far in tiles the bullet flies along the vertical axis before vanishing. Defaults to 1. The bullet is removed when its horizontal or vertical distance from where it was fired exceeds the matching range, so the range field accurately reflects how far the bullet flies regardless of who fired it.
+
+bullet speed (int): Milliseconds between each one tile move of the bullet. Lower values mean a faster bullet. Defaults to 50.
+
+repeat time (int): Milliseconds between auto fire shots when fire mode is 1. Defaults to 100.
+spam time (int): Milliseconds between manual fire shots when fire mode is 0. Defaults to 100.
+
+weight (int): How much the weapon slows the player down while drawn. Heavier weapons cost movement and reaction speed. Defaults to 1.
+
+ammo (double): How many shots the weapon has in reserve. Decreases by the loaded ammo count each time a reload completes. The weapon plays its empty clip when ammo hits zero. Melee weapons ignore ammo entirely. Defaults to 100.
+loaded ammo (double): How many shots are currently in the magazine, ready to fire without reloading. Decreases by one per fire on non melee weapons, refilled from the reserve when a reload completes. Defaults to 100.
+max ammo (double): The magazine size, used as the cap on loaded ammo and as the target a reload fills back up to. Defaults to 100.
+
+unlock level (double): The minimum character level required to draw this weapon from the weapons menu. Locked weapons appear in the menu with an "(Unlocked at level X)" suffix and cannot be selected until the player levels up enough. Defaults to 1.
+
+launch type (string): What the weapon fires when the trigger is pulled. The default is bullet, which sends out a regular bullet that travels along the wielder's facing axis. Setting launch type=projectile:<name> sends out the named projectile from kombat/projectiles/<name> instead, with the weapon's damage, speed, and range carried over to the projectile's flight. Projectiles fired by a wielder travel one way and disappear on first entity hit, giving rocket launchers and needle launchers a clean fire and forget feel.
+
+stun mode (int pair): Whether and how long the weapon's bullet or projectile freezes its target on hit, written as enabled:duration where enabled is 1 to turn the rider on and 0 to turn it off, and duration is the stun time in milliseconds. stun mode=1:500 makes a 500 millisecond stun on every successful hit. stun mode=0 (or 1:0, which is functionally the same) disables the rider entirely. The stun applies in both directions, so a human with a tazer rifle freezes the player and a player with the same weapon freezes a human, and is gated on damage actually going through, so a melee block or a full shield absorption ducks the stun the same way it ducks the hurt clip.
