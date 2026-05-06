@@ -1,0 +1,1593 @@
+void game_input()
+{
+if(key_pressed(KEY_SLASH) and commable==true)
+{
+comparse();
+}
+if(freezgame==false)
+{
+uint bank = 0;
+if (shift_is_down() && alt_is_down())
+    bank = 2;
+else if (shift_is_down())
+    bank = 1;
+uint offset = bank * ordered_scriptkeys.length();
+for (uint i = 0; i < ordered_scriptkeys.length(); i++)
+{
+    if (key_repeating(ordered_scriptkeys[i]) and scriptmode==true and scriptable==true)
+    {
+        use_macro(offset + i);
+        break;
+    }
+}
+if (jumping == 1)
+{
+    movetime = airtime;
+}
+else
+{
+    bool running = autorun;
+    if (alt_is_down() and runnable==true)
+        running = !running;
+    movetime = running ? runtime : walktime;
+}
+if (alt_is_down() && !key_down(KEY_G) && camdext == false && key_repeating(KEY_I) and doormove==false and elvmove==false)
+{
+if (inv.get_size() == 0)
+{
+speak("Your inventory is currently empty.");
+}
+else
+{
+pause_pools();
+string res=invmenu();
+if(res!="")
+{
+return;
+}
+}
+}
+if(!map_is_compiled && key_repeating(KEY_B) and buildable==true)
+{
+pause_pools();
+buildmenu();
+}
+else if(map_is_compiled && key_repeating(KEY_B) and buildable==true)
+{
+speak("You cannot build anything on this compiled map.");
+}
+if(key_repeating(KEY_TAB) and key_up(KEY_LMENU) and key_up(KEY_RMENU))
+{
+if (shift_is_down())
+cycle_inv(0);
+else
+cycle_inv(1);
+}
+if(key_repeating(KEY_RETURN) and shift_is_down() and usetimer.elapsed>=usetime and useable==true)
+{
+usetimer.restart();
+if (inv.get_keys().length()>0 and invpos<inv.get_size())
+useitem(inv.get_keys()[invpos]);
+else
+speak("No item in focus.");
+}
+if(alt_is_down() and shift_is_down())
+{
+if(key_pressed(KEY_LEFT) and doormove==false and elvmove==false)
+{
+if(turnmode==0 and !moveable==false)
+{
+face_left();
+}
+}
+if(key_pressed(KEY_RIGHT) and doormove==false and elvmove==false)
+{
+if(turnmode==0 and !moveable==false)
+{
+face_right();
+}
+}
+if(key_pressed(KEY_DOWN) and doormove==false and elvmove==false)
+{
+if(turnmode==0 and !moveable==false)
+{
+if(mapmode == "2d") face_down();
+else face_backward();
+}
+}
+if(key_pressed(KEY_UP) and doormove==false and elvmove==false)
+{
+if(turnmode==0 and !moveable==false)
+{
+if(mapmode == "2d") face_up();
+else face_forward();
+}
+}
+if(mapmode == "3d" && (key_pressed(KEY_PAGEDOWN) || key_pressed(KEY_S)) && doormove==false && elvmove==false)
+{
+if(turnmode==0 && moveable==true)
+{
+face_down();
+}
+}
+if(mapmode == "3d" && (key_pressed(KEY_PAGEUP) || key_pressed(KEY_W)) && doormove==false && elvmove==false)
+{
+if(turnmode==0 && moveable==true)
+{
+face_up();
+}
+}
+}
+if(((mapmode == "3d" && alt_is_down()) || (mapmode != "3d" && !alt_is_down())) && !shift_is_down() && key_pressed(KEY_W) && drawable==true)
+{
+pause_pools();
+weaponsmenu();
+}
+if(((mapmode == "3d" && alt_is_down()) || (mapmode != "3d" && !alt_is_down())) && !shift_is_down() && key_repeating(KEY_S) && drawable==true)
+{
+string[] armor=get_pack_sound_folders("equipments/shields/*");
+if(armor.length()==0)
+{
+speak("there are no shields available to view.");
+}
+else if(drawnshield==true)
+{
+speak("You can't switch to a different shield while the current one is in use.");
+}
+else
+{
+shieldparse();
+pause_pools();
+string res=shieldsmenu();
+if(res!="")
+{
+drawnshield=true;
+shieldtype=res;
+}
+}
+}
+if(shift_is_down())
+{
+if(alt_is_down() && key_pressed(KEY_E))
+{
+if(kombatlog.is_empty())
+{
+speak("There's nothing in the combat log to view.");
+}
+else
+{
+pause_pools();
+komlogmenu();
+}
+}
+if(key_repeating(KEY_LEFT) and spiable==true)
+{
+key_spy_left();
+}
+if(key_repeating(KEY_RIGHT) and spiable==true)
+{
+key_spy_right();
+}
+if(key_repeating(KEY_DOWN) and spiable==true)
+{
+key_spy_down();
+}
+if(key_repeating(KEY_UP) and spiable==true)
+{
+key_spy_up();
+}
+if(shift_is_down() && !alt_is_down() && (key_repeating(KEY_W) || key_repeating(KEY_PAGEUP)) && spiable==true)
+{
+key_spy_pgup();
+}
+if(shift_is_down() && !alt_is_down() && (key_repeating(KEY_S) || key_repeating(KEY_PAGEDOWN)) && spiable==true)
+{
+key_spy_pgdown();
+}
+}
+if((key_down(KEY_G) || camdext) and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
+{
+if(key_repeating(KEY_Y) and cammable==true)
+{
+    camdext = !camdext;
+    if(switchsound==1)
+    {
+        if(camdext)
+            p.play_stationary(get_pack_sound("misc/toggleon.ogg"), false);
+        else
+            p.play_stationary(get_pack_sound("misc/toggleoff.ogg"), false);
+    }
+    if(camdext)
+        speak("Dexterity camera enabled.");
+    else
+        speak("Dexterity camera disabled.");
+}
+if ((key_down(KEY_G) || camdext) and key_pressed(KEY_J) and cammable==true)
+{
+    if (sel_left_set)
+        speak("Left marker is already set to " + sel_left);
+    else
+    {
+        sel_left = cam.x;
+        sel_left_set = true;
+camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+        speak("Left marker set to " + cam.x);
+    }
+}
+if ((key_down(KEY_G) || camdext) and key_pressed(KEY_L) and cammable==true)
+{
+    if (sel_right_set)
+        speak("Right marker is already set to " + sel_right);
+    else
+    {
+        sel_right = cam.x;
+        sel_right_set = true;
+camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+        speak("Right marker set to " + cam.x);
+    }
+}
+if ((key_down(KEY_G) || camdext) and !shift_is_down() and key_pressed(KEY_K) and cammable==true)
+{
+    if (mapmode != "2d")
+    {
+        if (sel_back_set)
+            speak("Back marker is already set to " + sel_back);
+        else
+        {
+            sel_back = cam.y;
+            sel_back_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Back marker set to " + cam.y);
+        }
+    }
+    else
+    {
+        if (sel_bottom_set)
+            speak("Bottom marker is already set to " + sel_bottom);
+        else
+        {
+            sel_bottom = cam.y;
+            sel_bottom_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Bottom marker set to " + cam.y);
+        }
+    }
+}
+if ((key_down(KEY_G) || camdext) and !shift_is_down() and key_pressed(KEY_I) and cammable==true)
+{
+    if (mapmode != "2d")
+    {
+        if (sel_front_set)
+            speak("Front marker is already set to " + sel_front);
+        else
+        {
+            sel_front = cam.y;
+            sel_front_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Front marker set to " + cam.y);
+        }
+    }
+    else
+    {
+        if (sel_top_set)
+            speak("Top marker is already set to " + sel_top);
+        else
+        {
+            sel_top = cam.y;
+            sel_top_set = true;
+            camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+            speak("Top marker set to " + cam.y);
+        }
+    }
+}
+if (key_pressed(KEY_SEMICOLON) and cammable==true)
+{
+    speak_camera_markers();
+}
+if (key_pressed(KEY_APOSTROPHE) and cammable==true)
+{
+    clear_camera_markers();
+}
+if(key_pressed(KEY_R) and cammable==true)
+{
+    bool is_3d = mapmode == "3d";
+    bool is_topdown = mapmode == "topdown";
+    bool y_is_depth = mapmode != "2d";
+    bool hazard_found = false;
+    string tile_lookup = is_3d ? platform_tile_at(cam.x, cam.y, cam.z) : gct(cam.x, cam.y);
+    bool no_tile = tile_lookup == "";
+    bool suppress_air = is_topdown && no_tile;
+    string tiletype = no_tile ? "air" : tile_lookup;
+    int dx = cam.x - me.x;
+    int dy = cam.y - me.y;
+    int dz = int(cam.z - me.z);
+    string pos = "";
+    if(dx > 0)
+        pos += "Right " + dx;
+    else if(dx < 0)
+        pos += "Left " + abs(dx);
+    if(y_is_depth)
+    {
+        if(dy > 0)
+        {
+            if(pos != "") pos += " and ";
+            pos += "In front " + dy;
+        }
+        else if(dy < 0)
+        {
+            if(pos != "") pos += " and ";
+            pos += "Behind " + abs(dy);
+        }
+    }
+    else
+    {
+        if(dy > 0)
+        {
+            if(pos != "") pos += " and ";
+            pos += "Above " + dy;
+        }
+        else if(dy < 0)
+        {
+            if(pos != "") pos += " and ";
+            pos += "Below " + abs(dy);
+        }
+    }
+    if(is_3d)
+    {
+        if(dz > 0)
+        {
+            if(pos != "") pos += " and ";
+            pos += "Above " + dz;
+        }
+        else if(dz < 0)
+        {
+            if(pos != "") pos += " and ";
+            pos += "Below " + abs(dz);
+        }
+    }
+    bool here = is_3d ? (dx == 0 && dy == 0 && dz == 0) : (dx == 0 && dy == 0);
+    if(here) pos = "Right here";
+    string coords = is_3d ? (cam.x + ", " + cam.y + ", " + cam.z) : (cam.x + ", " + cam.y);
+    for(uint i = 0; i < hazards.length(); i++)
+    {
+        if(cam_in_hazard(i))
+        {
+            hazard_found = true;
+            if(suppress_air) speak(hazards[i].hazardtype + " hazard, " + coords + ". " + pos);
+            else speak(tiletype + " with " + hazards[i].hazardtype + " hazard, " + coords + ". " + pos);
+            break;
+        }
+    }
+    if(!hazard_found)
+    {
+        bool on_player = is_3d ? (me.x == cam.x && me.y == cam.y && me.z == cam.z) : (me.x == cam.x && me.y == cam.y);
+        if(on_player)
+        {
+            if(suppress_air) speak("player, " + coords + ". " + pos);
+            else speak(tiletype + " with player, " + coords + ". " + pos);
+        }
+        else
+        {
+            if(suppress_air) speak(coords + ". " + pos);
+            else speak(tiletype + ", " + coords + ". " + pos);
+        }
+    }
+}
+if(key_repeating(KEY_M) and cammable==true)
+{
+if(mfc==false)
+{
+mfc=true;
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/toggleon.ogg"),false);
+speak("Mfwc enabled.");
+}
+else if(mfc==true)
+{
+mfc=false;
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/toggleoff.ogg"),false);
+speak("Mfwc disabled.");
+}
+}
+if(key_repeating(KEY_T) and cammable==true)
+{
+playcam();
+}
+if(cleft.pressing())
+{
+key_cam_strafe_left();
+}
+if(cright.pressing())
+{
+key_cam_strafe_right();
+}
+if(cdown.pressing())
+{
+key_cam_down();
+}
+if(cup.pressing())
+{
+key_cam_up();
+}
+if(cpgdown.pressing() || cs.pressing())
+{
+key_cam_pgdown();
+}
+if(cpgup.pressing() || cw.pressing())
+{
+key_cam_pgup();
+}
+}
+if ((key_down(KEY_G) || camdext) and shift_is_down() and key_pressed(KEY_K) and cammable==true and mapmode == "3d")
+{
+    if (sel_bottom_set)
+        speak("Bottom marker is already set to " + sel_bottom);
+    else
+    {
+        sel_bottom = cam.z;
+        sel_bottom_set = true;
+        camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+        speak("Bottom marker set to " + cam.z);
+    }
+}
+if ((key_down(KEY_G) || camdext) and shift_is_down() and key_pressed(KEY_I) and cammable==true and mapmode == "3d")
+{
+    if (sel_top_set)
+        speak("Top marker is already set to " + sel_top);
+    else
+    {
+        sel_top = cam.z;
+        sel_top_set = true;
+        camslot=campool.play_stationary_extended(get_pack_sound("characters/"+chartype+"/map/*camset*"),false,0,0,0,100,false);
+        speak("Top marker set to " + cam.z);
+    }
+}
+if(key_up(KEY_G) && !camdext)
+{
+for(uint i=0; i<safezones.length(); i++)
+{
+safezones[i].cam_in_zone=safezones[i].player_in_zone;
+}
+cam.x=me.x;
+cam.y=me.y;
+cam.z=me.z;
+mfc=false;
+}
+if(!alt_is_down() and !shift_is_down() and key_up(KEY_G) and camdext == false and doormove==false and elvmove==false and mapmode != "2d" and key_pressed(KEY_Q))
+{
+if(moveable==true)
+{
+rotate_left();
+movetimer.restart();
+}
+}
+if(!alt_is_down() and !shift_is_down() and key_up(KEY_G) and camdext == false and doormove==false and elvmove==false and mapmode != "2d" and key_pressed(KEY_E))
+{
+if(moveable==true)
+{
+rotate_right();
+movetimer.restart();
+}
+}
+if(movetimer.elapsed>=movetime and doormove==false and elvmove==false and mapmode != "2d")
+{
+if(key_down(KEY_Q) and !alt_is_down() and !shift_is_down() and key_up(KEY_G) and camdext == false)
+{
+if(moveable==true)
+{
+rotate_left();
+movetimer.restart();
+}
+}
+if(key_down(KEY_E) and !alt_is_down() and !shift_is_down() and key_up(KEY_G) and camdext == false)
+{
+if(moveable==true)
+{
+rotate_right();
+movetimer.restart();
+}
+}
+}
+if(key_pressed(KEY_LEFT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and elvmove==false)
+{
+if(moveable==true)
+{
+        if(onhook && hookable==true)
+{
+facing="left";
+bonecheck();
+            hk.release_hook();
+key_strafe_left();
+movetimer.restart();
+}
+        else
+{
+            key_strafe_left();
+movetimer.restart();
+}
+}
+}
+if(key_pressed(KEY_RIGHT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and elvmove==false)
+{
+if(moveable==true)
+{
+        if(onhook && hookable==true)
+{
+facing="right";
+bonecheck();
+hk.release_hook();
+key_strafe_right();
+movetimer.restart();
+}
+        else
+            {
+key_strafe_right();
+movetimer.restart();
+}
+}
+}
+if(key_pressed(KEY_DOWN) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and elvmove==false)
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true)
+{
+facing="backward";
+bonecheck();
+        hk.move_hook(0,-1);
+movetimer.restart();
+}
+    else
+        {
+key_step_down();
+movetimer.restart();
+}
+}
+}
+if(key_pressed(KEY_UP) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and elvmove==false)
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true)
+{
+facing="forward";
+bonecheck();
+        hk.move_hook(0,1);
+movetimer.restart();
+}
+    else
+        {
+key_step_up();
+movetimer.restart();
+}
+}
+}
+if((key_pressed(KEY_PAGEDOWN) || (key_pressed(KEY_S) && mapmode == "3d" && !alt_is_down())) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and elvmove==false)
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,-1);
+        movetimer.restart();
+    }
+    else
+    {
+key_step_pgdown();
+movetimer.restart();
+}
+}
+}
+if((key_pressed(KEY_PAGEUP) || (key_pressed(KEY_W) && mapmode == "3d" && !alt_is_down())) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and doormove==false and elvmove==false)
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,1);
+        movetimer.restart();
+    }
+    else
+    {
+key_step_pgup();
+movetimer.restart();
+}
+}
+}
+if(movetimer.elapsed>=movetime and doormove==false and elvmove==false)
+{
+if(key_down(KEY_LEFT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true)
+{
+facing="left";
+bonecheck();
+        hk.release_hook();
+key_strafe_left();
+movetimer.restart();
+}
+    else
+{
+        key_strafe_left();
+movetimer.restart();
+}
+}
+}
+if(key_down(KEY_RIGHT) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true)
+{
+facing="right";
+bonecheck();
+        hk.release_hook();
+key_strafe_right();
+movetimer.restart();
+}
+    else
+        {
+key_strafe_right();
+movetimer.restart();
+}
+}
+}
+if(key_down(KEY_DOWN) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true)
+{
+    if(mapmode == "3d")
+    {
+        bonecheck();
+        hk.release_hook();
+        key_step_down();
+        movetimer.restart();
+    }
+    else
+    {
+        facing="backward";
+        bonecheck();
+        hk.move_hook(0,-1);
+        movetimer.restart();
+    }
+}
+    else
+        {
+key_step_down();
+movetimer.restart();
+}
+}
+}
+if(key_down(KEY_UP) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true)
+{
+    if(mapmode == "3d")
+    {
+        bonecheck();
+        hk.release_hook();
+        key_step_up();
+        movetimer.restart();
+    }
+    else
+    {
+        facing="forward";
+        bonecheck();
+        hk.move_hook(0,1);
+        movetimer.restart();
+    }
+}
+    else
+        {
+key_step_up();
+movetimer.restart();
+}
+}
+}
+if((key_down(KEY_PAGEDOWN) || (key_down(KEY_S) && mapmode == "3d" && !alt_is_down())) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,-1);
+        movetimer.restart();
+    }
+    else
+    {
+key_step_pgdown();
+movetimer.restart();
+}
+}
+}
+if((key_down(KEY_PAGEUP) || (key_down(KEY_W) && mapmode == "3d" && !alt_is_down())) and key_up(KEY_G) and camdext == false and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT))
+{
+if(moveable==true)
+{
+    if(onhook && hookable==true && mapmode == "3d")
+    {
+        bonecheck();
+        hk.move_hook(0,0,1);
+        movetimer.restart();
+    }
+    else
+    {
+key_step_pgup();
+movetimer.restart();
+}
+}
+}
+}
+if(shift_is_down() && key_repeating(KEY_D) and modspeed!=10 and speedable==true)
+{
+modspeed+=1;
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*change*"),false);
+speak("speed"+modspeed);
+}
+if(shift_is_down() && key_repeating(KEY_A) and modspeed!=1 and speedable==true)
+{
+modspeed-=1;
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*change*"),false);
+speak("speed"+modspeed);
+}
+if(!shift_is_down() && key_repeating(KEY_F) && hookusetimer.elapsed>=hookusetime && doormove==false && elvmove==false && hookable==true && mapmode != "topdown")
+{
+bonecheck();
+    if(onhook)
+    {
+        hk.release_hook();
+hookusetimer.restart();
+    }
+    else
+    {
+        hk.set_direction(mapmode == "3d" ? 4 : 2);
+        hk.throw_hook();
+hookusetimer.restart();
+    }
+}
+if(shift_is_down() && key_pressed(KEY_F) && speedable==true)
+{
+if(modspeed==5)
+{
+speak("moving speed is already reset");
+}
+else if(modspeed<=10)
+{
+modspeed=5;
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*change*"),false);
+speak("moving speed reset");
+}
+}
+if(key_pressed(KEY_C))
+{
+if(inplain)
+{
+speak(mapmode == "3d" ? (me.x+", "+me.y+", "+me.z) : (me.x+", "+me.y));
+}
+else
+{
+speakcoordinates();
+}
+}
+if(key_repeating(KEY_Z))
+{
+if(spokenswitch==1)
+{
+if (zonestatus==1)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchoff.ogg"),false);
+speak("Zones will no longer be spoken.");
+zonestatus=0;
+}
+else if (zonestatus==0)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchon.ogg"),false);
+speak("Zones will now be spoken.");
+zonestatus=1;
+}
+else if(spokenswitch==0)
+{
+if (zonestatus==1)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchoff.ogg"),false);
+zonestatus=0;
+}
+else if (zonestatus==0)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchon.ogg"),false);
+zonestatus=1;
+}
+}
+}
+}
+if(alt_is_down() && key_pressed(KEY_Q))
+{
+if(get_text_zone_at(me.x, me.y, me.z)!="")
+{
+string locate=get_text_zone_at(me.x,me.y,me.z);
+speak("Current location, "+locate+" of "+mapname);
+}
+else
+{
+speak("Current location, unknown area "+"of "+mapname);
+}
+}
+if (!shift_is_down() && key_repeating(KEY_F1) && son.enabled==true)
+{
+    son.cycle_follow();
+}
+if (!shift_is_down() && key_repeating(KEY_F2) && son.enabled==true)
+{
+    son.cycle_mode();
+}
+if (!shift_is_down() && key_repeating(KEY_F3) && son.enabled==true)
+{
+    son.cycle_speed();
+}
+if (son.follomode==0)
+{
+    if (!shift_is_down() && key_pressed(KEY_J) && son.facedir=="left"==false && son.enabled==true)
+{
+son.face("left");
+speak(son.facedir);
+}
+    if (!shift_is_down() && key_pressed(KEY_L) && son.facedir=="right"==false && son.enabled==true)
+{
+son.face("right");
+speak(son.facedir);
+}
+    if (!shift_is_down() && key_pressed(KEY_K) && son.facedir=="down"==false && son.enabled==true)
+{
+son.face("down");
+speak(mapmode == "topdown" ? "back" : son.facedir);
+}
+    if (!shift_is_down() && key_pressed(KEY_I) && son.facedir=="up"==false && son.enabled==true)
+{
+son.face("up");
+speak(mapmode == "topdown" ? "front" : son.facedir);}
+    if (mapmode == "3d" && shift_is_down() && !key_down(KEY_G) && camdext==false && key_pressed(KEY_I) && son.facedir=="zup"==false && son.enabled==true)
+{
+son.face("zup");
+speak("z up");
+}
+    if (mapmode == "3d" && shift_is_down() && !key_down(KEY_G) && camdext==false && key_pressed(KEY_K) && son.facedir=="zdown"==false && son.enabled==true)
+{
+son.face("zdown");
+speak("z down");
+}
+}
+if(shift_is_down() && key_repeating(KEY_F1) and jumpheight!=1 and jumpchange==true and mapmode != "topdown")
+{
+jumpheight-=1;
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*change*"),false);
+speak("jump height decreased to"+jumpheight+"squares");
+}
+if(shift_is_down() && key_repeating(KEY_F2) and jumpheight!=20 and jumpchange==true and mapmode != "topdown")
+{
+jumpheight+=1;
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*change*"),false);
+speak("jump height increased to"+jumpheight+"squares");
+}
+if(shift_is_down() && key_pressed(KEY_F3) and jumpchange==true and mapmode != "topdown")
+{
+if(jumpheight==5)
+{
+speak("jump hight is already reset");
+}
+else if(jumpheight<=20)
+{
+jumpheight=5;
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*change*"),false);
+speak("jump hight reset");
+}
+}
+if(key_down(KEY_SPACE) and key_up(KEY_G)  and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and autojump==1 and jumping==0 and jumpable==true and falling==false and doormove==false  and elvmove==false and mapmode != "topdown")
+{
+if(onhook && hk.hook_direction == 3)
+{
+    hk.release_hook();
+}
+bonecheck();
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*rise*"),false);
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*jump*"),false);
+if(mapmode == "3d") { ty1=me.z; ty2=me.z+jumpheight; }
+else { ty1=me.y; ty2=me.y+jumpheight; }
+jumping=1;
+ascending=true;
+}
+if (jumping==1)
+{
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone = player_in_healzone(i);
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
+for(uint i=0; i<safezones.length(); i++)
+{
+bool currently_in_zone = player_in_safezone(i);
+if (currently_in_zone && !safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),false);
+safezones[i].player_in_zone = true;
+}
+else if (!currently_in_zone && safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),false);
+safezones[i].player_in_zone = false;
+}
+}
+if (atapex==true and jumptimer.elapsed>=apextime)
+{
+jumptimer.restart();
+atapex=false;
+}
+if (ascending == false and jumptimer.elapsed >= jumptime2 and atapex == false)
+{
+    if(onhook)
+    {
+        jumping = 0;
+        atapex = false;
+        return;
+    }
+jumptimer.restart();
+if(mapmode == "3d")
+{
+me.z -= 1;
+if (me.z <= ty1) { me.z = ty1; jumping = 0; playland(); }
+}
+else
+{
+me.y -= 1;
+checkforplatforms();
+if (me.y <= ty1)
+{
+me.y = ty1;
+jumping = 0;
+}
+}
+}
+if (ascending==true and jumptimer.elapsed>=jumptime)
+{
+jumptimer.restart();
+if(mapmode == "3d")
+{
+me.z += 1;
+if(wall_blocks(me.x, me.y, me.z))
+{
+for(uint i = 0; i < walls.length(); i++)
+{
+if(me.x >= walls[i].minx && me.x <= walls[i].maxx && me.y >= walls[i].miny && me.y <= walls[i].maxy && me.z >= walls[i].minz && me.z <= walls[i].maxz)
+{
+wallslot = p.play_extended_3d(get_map_sound("objects/walls/" + walls[i].wall + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, walls[i].volume, walls[i].pitch);
+break;
+}
+}
+me.z -= 1;
+ascending = false;
+jumptimer.restart();
+atapex = true;
+}
+else if (is_staircase_top(me.x, me.y, me.z))
+{
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+return;
+}
+else if (me.z >= ty2)
+{
+if(in_staircase_volume(me.x, me.y, me.z))
+{
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+return;
+}
+ascending = false; jumptimer.restart(); atapex = true;
+}
+}
+else
+{
+me.y+=1;
+checkforwalls();
+    string t = gmt(me.x, me.y);
+    if(t != "" && t != "air")
+    {
+    if(is_staircase(me.x, me.y))
+    {
+if(onhook)
+        {
+            hk.release_hook();
+        }
+playland();
+        jumping = 0;
+        ascending = false;
+        atapex = false;
+        ty1 = me.y;
+        return;
+    }
+}
+if (me.y>=ty2)
+{
+if(in_staircase(me.x, me.y))
+{
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.y;
+return;
+}
+ascending=false;
+jumptimer.restart();
+atapex=true;
+}
+}
+}
+}
+if(key_pressed(KEY_SPACE) and key_up(KEY_G)  and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and autojump==0 and jumping==0 and jumpable==true and falling==false and doormove==false  and elvmove==false and mapmode != "topdown")
+{
+if(onhook && hk.hook_direction == 3)
+{
+    hk.release_hook();
+}
+bonecheck();
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*rise*"),false);
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*jump*"),false);
+if(mapmode == "3d") { ty1=me.z; ty2=me.z+jumpheight; }
+else { ty1=me.y; ty2=me.y+jumpheight; }
+jumping=1;
+ascending=true;
+}
+if (jumping==1)
+{
+for(uint i=0; i<healzones.length(); i++)
+{
+bool currently_in_zone = player_in_healzone(i);
+if (currently_in_zone && !healzones[i].in_zone)
+{
+if(healzones[i].healmode==1) healzones[i].healsound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*heal*"),false);
+if(healzones[i].healmode==0) healzones[i].takesound=healpool.play_stationary(get_map_sound("objects/heal zones/"+healzones[i].healtype+"/*take*"),false);
+healzones[i].in_zone = true;
+}
+else if (!currently_in_zone && healzones[i].in_zone)
+{
+healzones[i].in_zone = false;
+}
+}
+for(uint i=0; i<safezones.length(); i++)
+{
+bool currently_in_zone = player_in_safezone(i);
+if (currently_in_zone && !safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*in*"),false);
+safezones[i].player_in_zone = true;
+}
+else if (!currently_in_zone && safezones[i].player_in_zone)
+{
+safezones[i].safesound=safepool.play_stationary(get_map_sound("objects/safe zones/"+safezones[i].safetype+"/*out*"),false);
+safezones[i].player_in_zone = false;
+}
+}
+if (atapex==true and jumptimer.elapsed>=apextime)
+{
+jumptimer.restart();
+atapex=false;
+}
+if (ascending==false and jumptimer.elapsed>=jumptime2 and atapex==false)
+{
+    if(onhook)
+    {
+        jumping = 0;
+        atapex = false;
+        return;
+    }
+jumptimer.restart();
+if(mapmode == "3d")
+{
+me.z -= 1;
+if (me.z <= ty1) { me.z = ty1; jumping = 0; playland(); }
+}
+else
+{
+me.y-=1;
+checkforplatforms();
+if (me.y <= ty1)
+{
+me.y=ty1;
+jumping=0;
+}
+}
+}
+if (ascending==true and jumptimer.elapsed>=jumptime)
+{
+jumptimer.restart();
+if(mapmode == "3d")
+{
+me.z += 1;
+if(wall_blocks(me.x, me.y, me.z))
+{
+for(uint i = 0; i < walls.length(); i++)
+{
+if(me.x >= walls[i].minx && me.x <= walls[i].maxx && me.y >= walls[i].miny && me.y <= walls[i].maxy && me.z >= walls[i].minz && me.z <= walls[i].maxz)
+{
+wallslot = p.play_extended_3d(get_map_sound("objects/walls/" + walls[i].wall + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, walls[i].volume, walls[i].pitch);
+break;
+}
+}
+me.z -= 1;
+ascending = false;
+jumptimer.restart();
+atapex = true;
+}
+else if (is_staircase_top(me.x, me.y, me.z))
+{
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+return;
+}
+else if (me.z >= ty2)
+{
+if(in_staircase_volume(me.x, me.y, me.z))
+{
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+return;
+}
+ascending = false; jumptimer.restart(); atapex = true;
+}
+}
+else
+{
+me.y+=1;
+checkforwalls();
+    string t = gmt(me.x, me.y);
+    if(t != "" && t != "air")
+    {
+    if(is_staircase(me.x, me.y))
+    {
+        if(onhook)
+        {
+            hk.release_hook();
+        }
+playland();
+        jumping = 0;
+        ascending = false;
+        atapex = false;
+        ty1 = me.y;
+        return;
+    }
+}
+if (me.y>=ty2)
+{
+if(in_staircase(me.x, me.y))
+{
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.y;
+return;
+}
+ascending=false;
+jumptimer.restart();
+atapex=true;
+}
+}
+}
+}
+if(key_pressed(KEY_X))
+{
+if(melee==false and wepchar.cad=="archery")
+{
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+}
+if(melee==false and wepchar.cad=="artillery")
+{
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+}
+if(melee==false and wepchar.cad=="explosive")
+{
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+}
+if(melee==true and wepchar.cad=="melee")
+{
+speak("This weapon does not take any ammo.");
+}
+}
+if(key_repeating(KEY_R) and fireable==true)
+{
+if(melee==true and wepchar.cad=="melee")
+{
+speak("This weapon does not take any ammo.");
+}
+else
+{
+if(melee==false and wepchar.loaded_ammo>=1)
+{
+speak("This weapon is already loaded with ammo.");
+}
+else if(melee==false and wepchar.loaded_ammo<=0)
+{
+if(wepchar.is_reloading) speak("This weapon is still reloading.");
+else if(wepchar.ammo <= 0) { wepchar.start_reload(int(me.x), int(me.y), int(me.z)); speak("No ammo."); }
+else wepchar.start_reload(int(me.x), int(me.y), int(me.z));
+}
+}
+}
+if(key_repeating(KEY_T) and wepref==true and useable==true)
+{
+if(melee==false and wepchar.cad!="melee")
+{
+speak("This weapon does not support reflection mode.");
+}
+else if(melee==true and wepchar.cad=="melee" and wepdef==0)
+{
+wepdef = 1;
+bonecheck();
+p.destroy_sound(refslot);
+wepchar.sound_slot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*on*"),false,0,0,0,100,false);
+refslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*ref*"),true,0,0,0,100,false);
+speak("Reflection mode on.");
+}
+else
+{
+if(melee==true and wepchar.cad=="melee" and wepdef==1)
+{
+wepdef = 0;
+bonecheck();
+p.destroy_sound(refslot);
+wepchar.sound_slot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*off*"),false,0,0,0,100,false);
+speak("Reflection mode off.");
+}
+}
+}
+if(!map_is_compiled && key_repeating(KEY_U) and buildable==true)
+{
+pause_pools();
+mapmenu2();
+}
+else if(map_is_compiled && key_repeating(KEY_U) and buildable==true)
+{
+speak("You cannot edit anything on this compiled map.");
+}
+if(shift_is_down() and key_pressed(KEY_H))
+{
+string[] helpcoms={"/help", "/hp"};
+use_command(random_string(helpcoms));
+}
+if(!shift_is_down() and key_pressed(KEY_H))
+{
+if(shieldon==1)
+{
+speak("Your shield must be removed to view the player's health status.");
+}
+else if(shieldon==0)
+{
+if(healthspeech==1 and lifecard>=2)
+{
+speak(health+"health,"+lifecard+"lives");
+}
+if(healthspeech==2 and lifecard>=2)
+{
+speak(health+"of"+maxhealth+"health,"+lifecard+"lives");
+}
+if(healthspeech==3 and lifecard>=2)
+{
+speak(round(health/maxhealth*100,2)+"percent health remaining,"+lifecard+"lives");
+}
+if(healthspeech==4 and lifecard>=2)
+{
+speak(round(health/maxhealth*100,2)+"percent,"+health+"of"+maxhealth+"health,"+lifecard+"lives");
+}
+if(healthspeech==1 and lifecard<=1)
+{
+speak(health+"health,"+lifecard+"life");
+}
+if(healthspeech==2 and lifecard<=1)
+{
+speak(health+"of"+maxhealth+"health,"+lifecard+"life");
+}
+if(healthspeech==3 and lifecard<=1)
+{
+speak(round(health/maxhealth*100,2)+"percent health remaining,"+lifecard+"life");
+}
+if(healthspeech==4 and lifecard<=1)
+{
+speak(round(health/maxhealth*100,2)+"percent,"+health+"of"+maxhealth+"health,"+lifecard+"life");
+}
+}
+}
+if(key_pressed(KEY_Y))
+{
+if(staminaspeech==1)
+{
+speak(stamina+"stamina");
+}
+if(staminaspeech==2)
+{
+speak(stamina+"of"+maxstamina+"stamina");
+}
+if(staminaspeech==3)
+{
+speak(round(stamina/maxstamina*100,2)+"percent stamina remaining");
+}
+if(staminaspeech==4)
+{
+speak(round(stamina/maxstamina*100,2)+"percent,"+stamina+"of"+maxstamina+"stamina");
+}
+}
+if(key_pressed(KEY_M))
+{
+if(shieldon==0)
+{
+speak("Your shield must be razed or worn to view it's status.");
+}
+else if(shieldon==1)
+{
+speak("shield strength,"+round(shieldstrength/maxshieldstrength*100,2)+"percent");
+}
+}
+if(control_is_down() and fireable==true and doormove==false and elvmove==false)
+{
+drawable=true;
+wepchar.auto_fire(int(me.x), int(me.y), facing, int(attack * 2), int(me.z));
+}
+if(key_pressed(KEY_LCONTROL) and fireable==true and doormove==false and elvmove==false or key_pressed(KEY_RCONTROL) and fireable==true and doormove==false and elvmove==false)
+{
+drawable=true;
+wepchar.manual_fire(int(me.x), int(me.y), facing, int(attack * 2), int(me.z));
+}
+if(!shift_is_down() && alt_is_down() && key_pressed(KEY_E))
+{
+if(aircrafts.length()==0 and bikes.length()==0 and doors.length()==0 and npcs.length()==0 and platforms.length()==0 and projectiles.length()==0 and spikes.length()==0  and staircases.length()==0 and sucams.length()==0 and vehicles.length()==0 and walls.length()==0)
+{
+speak("there are no objects on the field to view.");
+}
+else
+{
+pause_pools();
+infomenu();
+}
+}
+if(key_pressed(KEY_LBRACKET))
+{
+speak("You have killed a total of"+kills+"entidies.");
+}
+if(key_repeating(KEY_P) and pauseable==true)
+{
+if(pausem==0)
+{
+if(paused==0)
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*pause*"),false);
+pause_game();
+}
+else if(paused==1)
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*resume*"),false);
+resume_game();
+}
+}
+else if(pausem==1)
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*pause*"),false);
+pause_game();
+pausemenu();
+}
+}
+if(!shift_is_down() && key_repeating(KEY_V) && hookusetimer.elapsed>=hookusetime && doormove==false && elvmove==false && hookable==true)
+{
+bonecheck();
+    if(onhook)
+    {
+        hk.release_hook();
+hookusetimer.restart();
+    }
+    else
+    {
+        hk.set_direction(3);
+        hk.throw_hook();
+hookusetimer.restart();
+    }
+}
+if(shift_is_down() && key_pressed(KEY_V))
+{
+pause_pools();
+pointsmenu();
+}
+if(key_repeating(KEY_BACKSLASH) and healable==true)
+{
+if(shieldon==1)
+{
+speak("Your shield must be removed to restore the player's health.");
+}
+else if(shieldon==0 and hprestoration==0 and health>=maxhealth)
+{
+speak("You're already at maximum health.");
+}
+else if(health<=maxhealth and hprestoration==1)
+{
+p.destroy_sound(autoslot);
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstop*"),false);
+hprestoration=0;
+}
+else
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstart*"),false);
+autoslot=p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healing*"),true);
+hprestoration=1;
+}
+}
+if(shift_is_down() && key_repeating(KEY_N))
+{
+stop_tracking();
+}
+else if(key_repeating(KEY_N))
+{
+tracking_speak_position();
+}
+if(key_repeating(KEY_RBRACKET) and healable==true)
+{
+if(shieldon==0)
+{
+speak("Your shield must be razed or worn to restore it's strength.");
+}
+else if(shieldon==1 and shieldstrength>=maxshieldstrength)
+{
+speak("Your shield is already at maximum strength.");
+}
+else if(shieldon==1 and shieldstrength<=maxshieldstrength)
+{
+if(sprestoration==1)
+{
+p.destroy_sound(autoslot);
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstop*"),false);
+sprestoration=0;
+}
+else
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstart*"),false);
+autoslot=p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healing*"),true);
+sprestoration=1;
+}
+}
+}
+if(shieldmode == 0)
+{
+if(key_repeating(KEY_O) and useable==true)
+{
+if(shieldtype == "none")
+{
+speak("You must draw a shield before razing or wearing it.");
+}
+else if(shieldon == 0)
+{
+p.destroy_sound(shieldwearslot);
+shieldwearslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*wear*"), false, 0, 0, 0, 100, false);
+shieldloop = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*loop*"), true, 0, 0, 0, 100, false);
+shieldon = 1;
+}
+else
+{
+p.destroy_sound(shieldloop);
+p.destroy_sound(shieldremoveslot);
+shieldremoveslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*remove*"), false, 0, 0, 0, 100, false);
+shieldon = 0;
+}
+}
+}
+else if(shieldmode == 1)
+{
+if(key_repeating(KEY_O) and useable==true)
+{
+if(shieldtype == "none")
+{
+speak("You must draw a shield before razing or wearing it.");
+}
+else if(shieldon == 0)
+{
+p.destroy_sound(shieldwearslot);
+shieldwearslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*wear*"), false, 0, 0, 0, 100, false);
+shieldloop = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*loop*"), true, 0, 0, 0, 100, false);
+fireable=false;
+jumpable=false;
+moveable=false;
+shieldon = 1;
+}
+}
+else if (key_released(KEY_O) and useable==true)
+{
+if (shieldon == 1)
+{
+p.destroy_sound(shieldloop);
+p.destroy_sound(shieldremoveslot);
+shieldremoveslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*remove*"), false, 0, 0, 0, 100, false);
+fireable=true;
+jumpable=true;
+moveable=true;
+shieldon = 0;
+}
+}
+}
+}
+if(key_repeating(KEY_ESCAPE) and quittable==true)
+{
+if(gamxit==0)
+{
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+me.x=0;
+me.y=0;
+me.z=0;
+clearmap();
+destroymap();
+exit_game = true;
+return;
+}
+else if(gamxit==1)
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to exit?",true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres==1)
+{
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+me.x=0;
+me.y=0;
+me.z=0;
+clearmap();
+destroymap();
+exit_game = true;
+return;
+}
+if(mres==2)
+{
+speak("canceled");
+}
+}
+}
+}

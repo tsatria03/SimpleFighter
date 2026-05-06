@@ -547,6 +547,22 @@ bonecheck();
 playstep();
 }
 
+// Body-frame camera move for topdown/3d. body_dir: 0=forward, 1=backward, 2=strafe_left, 3=strafe_right.
+void body_cam_step(int body_dir)
+{
+if(camtimer.elapsed < camtime or cammable == false) return;
+int dx, dy;
+body_world_delta(body_dir, dx, dy);
+double nx = cam.x + dx;
+double ny = cam.y + dy;
+if(nx < minx or nx > maxx or ny < miny or ny > maxy) return;
+camdir = body_world_facing(body_dir);
+cam.x = nx;
+cam.y = ny;
+playcam();
+camtimer.restart();
+}
+
 void playcam()
 {
 string camtile = (mapmode == "3d") ? platform_tile_at(cam.x, cam.y, cam.z) : gct(cam.x, cam.y);
@@ -941,7 +957,7 @@ playcam();
 camtimer.restart();
 }
 }
-else cam_forward();
+else body_cam_step(0);
 }
 void key_cam_down()
 {
@@ -955,7 +971,17 @@ playcam();
 camtimer.restart();
 }
 }
-else cam_backward();
+else body_cam_step(1);
+}
+void key_cam_strafe_left()
+{
+if(mapmode == "2d") cam_left();
+else body_cam_step(2);
+}
+void key_cam_strafe_right()
+{
+if(mapmode == "2d") cam_right();
+else body_cam_step(3);
 }
 void key_cam_pgup()
 {
@@ -965,21 +991,36 @@ void key_cam_pgdown()
 {
 if(mapmode == "3d") cam_down();
 }
+// Maps a body direction to the closest cardinal world direction string for the spire.
+// body_dir: 0=forward, 1=backward, 2=strafe_left, 3=strafe_right.
+string body_to_spy_dir(int body_dir)
+{
+int dx, dy;
+body_world_delta(body_dir, dx, dy);
+int adx = dx < 0 ? -dx : dx;
+int ady = dy < 0 ? -dy : dy;
+if(ady >= adx) return dy >= 0 ? "forward" : "backward";
+return dx >= 0 ? "right" : "left";
+}
 void key_spy_left()
 {
-spy("left");
+if(mapmode == "2d") spy("left");
+else spy(body_to_spy_dir(2));
 }
 void key_spy_right()
 {
-spy("right");
+if(mapmode == "2d") spy("right");
+else spy(body_to_spy_dir(3));
 }
 void key_spy_up()
 {
-spy("forward");
+if(mapmode == "2d") spy("forward");
+else spy(body_to_spy_dir(0));
 }
 void key_spy_down()
 {
-spy("backward");
+if(mapmode == "2d") spy("backward");
+else spy(body_to_spy_dir(1));
 }
 void key_spy_pgup()
 {
