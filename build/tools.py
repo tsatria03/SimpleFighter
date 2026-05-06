@@ -141,6 +141,24 @@ def do_undo(unpushed):
     else:
         print("Commit undone. Your changes are still staged.")
 
+def do_push(unpushed):
+    if unpushed == 0:
+        print("Nothing to push. All commits are already on the remote.")
+        return
+    log = run_out(["git", "log", "origin/HEAD..HEAD", "--oneline"])
+    print(f"Unpushed commits ({unpushed}):")
+    print()
+    print(log)
+    print()
+    if not ask("Push these commits to the remote?"):
+        print("Cancelled.")
+        return
+    result = run(["git", "push"])
+    if result.returncode != 0:
+        print("ERROR: Push failed.")
+    else:
+        print("Push complete.")
+
 def do_history():
     raw = run_out(["git", "log", "-50", "--decorate-refs=refs/tags", "--format=%h~%ar~%s%d"])
     commits = []
@@ -437,15 +455,16 @@ def menu():
         print(" --- Commit ---")
         print(" 1. Make a commit")
         print(f" 2. Undo last commit (unpushed: {unpushed})")
-        print(" 3. Show commit history")
+        print(f" 3. Push commits (unpushed: {unpushed})")
+        print(" 4. Show commit history")
         print(" --- Release ---")
-        print(" 4. Full release")
-        print(" 5. Compile only")
-        print(" 6. Package only")
-        print(" 7. Release only")
-        print(" 8. Website only")
+        print(" 5. Full release")
+        print(" 6. Compile only")
+        print(" 7. Package only")
+        print(" 8. Release only")
+        print(" 9. Website only")
         print(" ---")
-        print(" 9. Exit")
+        print(" 10. Exit")
         print("========================")
         choice = input("Choose an option: ").strip()
         print()
@@ -454,21 +473,23 @@ def menu():
         elif choice == "2":
             do_undo(unpushed)
         elif choice == "3":
-            do_history()
+            do_push(unpushed)
         elif choice == "4":
-            run_release(SKIP, SKIP, SKIP, SKIP, SKIP)
+            do_history()
         elif choice == "5":
-            run_release(DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
+            run_release(SKIP, SKIP, SKIP, SKIP, SKIP)
         elif choice == "6":
-            run_release(SILENT_SKIP, DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
+            run_release(DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
         elif choice == "7":
-            run_release(SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP, DO)
+            run_release(SILENT_SKIP, DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
         elif choice == "8":
-            run_release(SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP)
+            run_release(SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP, DO)
         elif choice == "9":
+            run_release(SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP)
+        elif choice == "10":
             sys.exit(0)
         else:
-            print("Invalid choice. Please enter 1-9.")
+            print("Invalid choice. Please enter 1-10.")
 
 if __name__ == "__main__":
     args = sys.argv[1:]
