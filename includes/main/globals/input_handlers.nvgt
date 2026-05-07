@@ -257,3 +257,295 @@ else
 speak("No item in focus.");
 }
 }
+
+void handle_kombat_keys()
+{
+if(control_is_down() and fireable==true and doormove==false and elvmove==false)
+{
+drawable=true;
+wepchar.auto_fire(int(me.x), int(me.y), facing, int(attack * 2), int(me.z));
+}
+if(key_pressed(KEY_LCONTROL) and fireable==true and doormove==false and elvmove==false or key_pressed(KEY_RCONTROL) and fireable==true and doormove==false and elvmove==false)
+{
+drawable=true;
+wepchar.manual_fire(int(me.x), int(me.y), facing, int(attack * 2), int(me.z));
+}
+if(key_pressed(KEY_X))
+{
+if(melee==false and wepchar.cad=="archery")
+{
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+}
+if(melee==false and wepchar.cad=="artillery")
+{
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+}
+if(melee==false and wepchar.cad=="explosive")
+{
+speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+}
+if(melee==true and wepchar.cad=="melee")
+{
+speak("This weapon does not take any ammo.");
+}
+}
+if(key_repeating(KEY_R) and fireable==true)
+{
+if(melee==true and wepchar.cad=="melee")
+{
+speak("This weapon does not take any ammo.");
+}
+else
+{
+if(melee==false and wepchar.loaded_ammo>=1)
+{
+speak("This weapon is already loaded with ammo.");
+}
+else if(melee==false and wepchar.loaded_ammo<=0)
+{
+if(wepchar.is_reloading) speak("This weapon is still reloading.");
+else if(wepchar.ammo <= 0) { wepchar.start_reload(int(me.x), int(me.y), int(me.z)); speak("No ammo."); }
+else wepchar.start_reload(int(me.x), int(me.y), int(me.z));
+}
+}
+}
+if(key_repeating(KEY_T) and wepref==true and useable==true)
+{
+if(melee==false and wepchar.cad!="melee")
+{
+speak("This weapon does not support reflection mode.");
+}
+else if(melee==true and wepchar.cad=="melee" and wepdef==0)
+{
+wepdef = 1;
+bonecheck();
+p.destroy_sound(refslot);
+wepchar.sound_slot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*on*"),false,0,0,0,100,false);
+refslot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*ref*"),true,0,0,0,100,false);
+speak("Reflection mode on.");
+}
+else
+{
+if(melee==true and wepchar.cad=="melee" and wepdef==1)
+{
+wepdef = 0;
+bonecheck();
+p.destroy_sound(refslot);
+wepchar.sound_slot=p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*off*"),false,0,0,0,100,false);
+speak("Reflection mode off.");
+}
+}
+}
+}
+
+void handle_sonar_keys()
+{
+if (!shift_is_down() && key_repeating(KEY_F1) && son.enabled==true)
+{
+son.cycle_follow();
+}
+if (!shift_is_down() && key_repeating(KEY_F2) && son.enabled==true)
+{
+son.cycle_mode();
+}
+if (!shift_is_down() && key_repeating(KEY_F3) && son.enabled==true)
+{
+son.cycle_speed();
+}
+if (son.follomode==0)
+{
+if (!shift_is_down() && key_pressed(KEY_J) && son.enabled==true)
+{
+string newdir = (mapmode == "2d") ? "left" : body_to_sonar_dir(2);
+if(son.facedir != newdir)
+{
+son.face(newdir);
+speak("left");
+}
+}
+if (!shift_is_down() && key_pressed(KEY_L) && son.enabled==true)
+{
+string newdir = (mapmode == "2d") ? "right" : body_to_sonar_dir(3);
+if(son.facedir != newdir)
+{
+son.face(newdir);
+speak("right");
+}
+}
+if (!shift_is_down() && key_pressed(KEY_K) && son.enabled==true)
+{
+string newdir = (mapmode == "2d") ? "down" : body_to_sonar_dir(1);
+if(son.facedir != newdir)
+{
+son.face(newdir);
+speak(mapmode != "2d" ? "back" : "down");
+}
+}
+if (!shift_is_down() && key_pressed(KEY_I) && son.enabled==true)
+{
+string newdir = (mapmode == "2d") ? "up" : body_to_sonar_dir(0);
+if(son.facedir != newdir)
+{
+son.face(newdir);
+speak(mapmode != "2d" ? "front" : "up");
+}
+}
+if (mapmode == "3d" && shift_is_down() && !key_down(KEY_G) && camdext==false && key_pressed(KEY_I) && son.facedir=="zup"==false && son.enabled==true)
+{
+son.face("zup");
+speak("up");
+}
+if (mapmode == "3d" && shift_is_down() && !key_down(KEY_G) && camdext==false && key_pressed(KEY_K) && son.facedir=="zdown"==false && son.enabled==true)
+{
+son.face("zdown");
+speak("down");
+}
+}
+}
+
+void handle_misc_keys()
+{
+if(key_pressed(KEY_C))
+{
+if(inplain)
+{
+speak(mapmode == "3d" ? (me.x+", "+me.y+", "+me.z) : (me.x+", "+me.y));
+}
+else
+{
+speakcoordinates();
+}
+}
+if(key_repeating(KEY_Z))
+{
+if(spokenswitch==1)
+{
+if (zonestatus==1)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchoff.ogg"),false);
+speak("Zones will no longer be spoken.");
+zonestatus=0;
+}
+else if (zonestatus==0)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchon.ogg"),false);
+speak("Zones will now be spoken.");
+zonestatus=1;
+}
+else if(spokenswitch==0)
+{
+if (zonestatus==1)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchoff.ogg"),false);
+zonestatus=0;
+}
+else if (zonestatus==0)
+{
+if(switchsound==1) p.play_stationary(get_pack_sound("misc/switchon.ogg"),false);
+zonestatus=1;
+}
+}
+}
+}
+if(alt_is_down() && key_pressed(KEY_Q))
+{
+if(get_text_zone_at(me.x, me.y, me.z)!="")
+{
+string locate=get_text_zone_at(me.x,me.y,me.z);
+speak("Current location, "+locate+" of "+mapname);
+}
+else
+{
+speak("Current location, unknown area "+"of "+mapname);
+}
+}
+if(shift_is_down() and key_pressed(KEY_H))
+{
+string[] helpcoms={"/help", "/hp"};
+use_command(random_string(helpcoms));
+}
+if(!shift_is_down() and key_pressed(KEY_H))
+{
+if(shieldon==1)
+{
+speak("Your shield must be removed to view the player's health status.");
+}
+else if(shieldon==0)
+{
+if(healthspeech==1 and lifecard>=2)
+{
+speak(health+"health,"+lifecard+"lives");
+}
+if(healthspeech==2 and lifecard>=2)
+{
+speak(health+"of"+maxhealth+"health,"+lifecard+"lives");
+}
+if(healthspeech==3 and lifecard>=2)
+{
+speak(round(health/maxhealth*100,2)+"percent health remaining,"+lifecard+"lives");
+}
+if(healthspeech==4 and lifecard>=2)
+{
+speak(round(health/maxhealth*100,2)+"percent,"+health+"of"+maxhealth+"health,"+lifecard+"lives");
+}
+if(healthspeech==1 and lifecard<=1)
+{
+speak(health+"health,"+lifecard+"life");
+}
+if(healthspeech==2 and lifecard<=1)
+{
+speak(health+"of"+maxhealth+"health,"+lifecard+"life");
+}
+if(healthspeech==3 and lifecard<=1)
+{
+speak(round(health/maxhealth*100,2)+"percent health remaining,"+lifecard+"life");
+}
+if(healthspeech==4 and lifecard<=1)
+{
+speak(round(health/maxhealth*100,2)+"percent,"+health+"of"+maxhealth+"health,"+lifecard+"life");
+}
+}
+}
+if(key_pressed(KEY_Y))
+{
+if(staminaspeech==1)
+{
+speak(stamina+"stamina");
+}
+if(staminaspeech==2)
+{
+speak(stamina+"of"+maxstamina+"stamina");
+}
+if(staminaspeech==3)
+{
+speak(round(stamina/maxstamina*100,2)+"percent stamina remaining");
+}
+if(staminaspeech==4)
+{
+speak(round(stamina/maxstamina*100,2)+"percent,"+stamina+"of"+maxstamina+"stamina");
+}
+}
+if(key_pressed(KEY_M))
+{
+if(shieldon==0)
+{
+speak("Your shield must be razed or worn to view it's status.");
+}
+else if(shieldon==1)
+{
+speak("shield strength,"+round(shieldstrength/maxshieldstrength*100,2)+"percent");
+}
+}
+if(shift_is_down() && key_repeating(KEY_N))
+{
+stop_tracking();
+}
+else if(key_repeating(KEY_N))
+{
+tracking_speak_position();
+}
+if(key_pressed(KEY_LBRACKET))
+{
+speak("You have killed a total of"+kills+"entidies.");
+}
+}
