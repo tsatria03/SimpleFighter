@@ -161,12 +161,14 @@ return;
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("platform", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+int my = form.create_input_box("y", saved_my);
 int mz = -1;
 if(mapmode == "3d")
-mz = form.create_input_box("z", "");
+mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 int hp = form.create_input_box("health", "1");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
@@ -281,6 +283,30 @@ return;
 }
 if(form.is_pressed(ok))
 {
+if(form.get_text(mx).is_empty())
+{
+speak("Minimum x is required.");
+form.focus(mx);
+continue;
+}
+if(form.get_text(mx2).is_empty())
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+continue;
+}
+if(form.get_text(my).is_empty())
+{
+speak("Y is required.");
+form.focus(my);
+continue;
+}
+if(mz != -1 && form.get_text(mz).is_empty())
+{
+speak("Z is required.");
+form.focus(mz);
+continue;
+}
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
