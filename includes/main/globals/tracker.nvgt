@@ -177,7 +177,7 @@ void tracking_speak_position()
     int dz = int(tz - me.z);
     int distance = absolute(dx) + absolute(dy) + (mapmode == "3d" ? absolute(dz) : 0);
     bool y_is_depth = mapmode != "2d";
-    string direction = "";
+    string[] dir_parts;
     if (y_is_depth)
     {
         double rad = calculate_theta(me_rotation);
@@ -185,23 +185,23 @@ void tracking_speak_position()
         double c = cos(rad);
         double forward = double(dx) * s + double(dy) * c;
         double right = double(dx) * c - double(dy) * s;
-        if (forward > 0.5) direction += "in front";
-        else if (forward < -0.5) direction += "behind";
+        if (forward > 0.5) dir_parts.insert_last("in front");
+        else if (forward < -0.5) dir_parts.insert_last("behind");
         if (mapmode == "3d" && dz != 0)
         {
-            string altitude = (dz < 0) ? "below" : "above";
-            direction = (direction == "") ? altitude : (direction + " and " + altitude);
+            dir_parts.insert_last(dz < 0 ? "below" : "above");
         }
-        if (right < -0.5) direction = (direction == "") ? "to the left" : (direction + " and to the left");
-        else if (right > 0.5) direction = (direction == "") ? "to the right" : (direction + " and to the right");
+        if (right < -0.5) dir_parts.insert_last("to the left");
+        else if (right > 0.5) dir_parts.insert_last("to the right");
     }
     else
     {
-        if (dy < 0) direction += "below";
-        else if (dy > 0) direction += "above";
-        if (dx < 0) direction = (direction == "") ? "to the left" : (direction + " and to the left");
-        else if (dx > 0) direction = (direction == "") ? "to the right" : (direction + " and to the right");
+        if (dy < 0) dir_parts.insert_last("below");
+        else if (dy > 0) dir_parts.insert_last("above");
+        if (dx < 0) dir_parts.insert_last("to the left");
+        else if (dx > 0) dir_parts.insert_last("to the right");
     }
+    string direction = oxford_join(@dir_parts);
     if (direction == "") direction = "right here";
     p.play_stationary(get_pack_sound("misc/*tracking*"), false);
     speak(direction + ", " + distance + " feet away.");
