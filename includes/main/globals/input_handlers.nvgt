@@ -258,6 +258,235 @@ speak("No item in focus.");
 }
 }
 
+void handle_menu_keys()
+{
+if(!map_is_compiled && key_repeating(KEY_B) and buildable==true)
+{
+pause_pools();
+buildmenu();
+}
+else if(map_is_compiled && key_repeating(KEY_B) and buildable==true)
+{
+speak("You cannot build anything on this compiled map.");
+}
+if(!map_is_compiled && key_repeating(KEY_U) and buildable==true)
+{
+pause_pools();
+mapmenu2();
+}
+else if(map_is_compiled && key_repeating(KEY_U) and buildable==true)
+{
+speak("You cannot edit anything on this compiled map.");
+}
+if(shift_is_down() && alt_is_down() && key_pressed(KEY_E))
+{
+if(kombatlog.is_empty())
+{
+speak("There's nothing in the combat log to view.");
+}
+else
+{
+pause_pools();
+komlogmenu();
+}
+}
+if(!shift_is_down() && alt_is_down() && key_pressed(KEY_E))
+{
+if(aircrafts.length()==0 and bikes.length()==0 and doors.length()==0 and npcs.length()==0 and platforms.length()==0 and projectiles.length()==0 and spikes.length()==0  and staircases.length()==0 and sucams.length()==0 and vehicles.length()==0 and walls.length()==0)
+{
+speak("there are no objects on the field to view.");
+}
+else
+{
+pause_pools();
+infomenu();
+}
+}
+if(shift_is_down() && key_pressed(KEY_V))
+{
+pause_pools();
+pointsmenu();
+}
+if(key_repeating(KEY_P) and pauseable==true)
+{
+if(pausem==0)
+{
+if(paused==0)
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*pause*"),false);
+pause_game();
+}
+else if(paused==1)
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*resume*"),false);
+resume_game();
+}
+}
+else if(pausem==1)
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*pause*"),false);
+pause_game();
+pausemenu();
+}
+}
+if(key_repeating(KEY_ESCAPE) and quittable==true)
+{
+if(gamxit==0)
+{
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+me.x=0;
+me.y=0;
+me.z=0;
+clearmap();
+destroymap();
+exit_game = true;
+return;
+}
+else if(gamxit==1)
+{
+setupmenu();
+m.wrap_sound="none.ogg";
+m.click_sound=get_pack_sound("misc/menu1.ogg");
+m.enter_sound=get_pack_sound("misc/menu2.ogg");
+m.open_sound=get_pack_sound("misc/menu3.ogg");
+m.add_item_tts("yes");
+m.add_item_tts("no");
+int mres=m.run("Are you sure you want to exit?",true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(mres==1)
+{
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+me.x=0;
+me.y=0;
+me.z=0;
+clearmap();
+destroymap();
+exit_game = true;
+return;
+}
+if(mres==2)
+{
+speak("canceled");
+}
+}
+}
+}
+
+void handle_healing_keys()
+{
+if(key_repeating(KEY_BACKSLASH) and healable==true)
+{
+if(shieldon==1)
+{
+speak("Your shield must be removed to restore the player's health.");
+}
+else if(shieldon==0 and hprestoration==0 and health>=maxhealth)
+{
+speak("You're already at maximum health.");
+}
+else if(health<=maxhealth and hprestoration==1)
+{
+p.destroy_sound(autoslot);
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstop*"),false);
+hprestoration=0;
+}
+else
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstart*"),false);
+autoslot=p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healing*"),true);
+hprestoration=1;
+}
+}
+if(key_repeating(KEY_RBRACKET) and healable==true)
+{
+if(shieldon==0)
+{
+speak("Your shield must be razed or worn to restore it's strength.");
+}
+else if(shieldon==1 and shieldstrength>=maxshieldstrength)
+{
+speak("Your shield is already at maximum strength.");
+}
+else if(shieldon==1 and shieldstrength<=maxshieldstrength)
+{
+if(sprestoration==1)
+{
+p.destroy_sound(autoslot);
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstop*"),false);
+sprestoration=0;
+}
+else
+{
+p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healstart*"),false);
+autoslot=p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*healing*"),true);
+sprestoration=1;
+}
+}
+}
+if(shieldmode == 0)
+{
+if(key_repeating(KEY_O) and useable==true)
+{
+if(shieldtype == "none")
+{
+speak("You must draw a shield before razing or wearing it.");
+}
+else if(shieldon == 0)
+{
+p.destroy_sound(shieldwearslot);
+shieldwearslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*wear*"), false, 0, 0, 0, 100, false);
+shieldloop = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*loop*"), true, 0, 0, 0, 100, false);
+shieldon = 1;
+}
+else
+{
+p.destroy_sound(shieldloop);
+p.destroy_sound(shieldremoveslot);
+shieldremoveslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*remove*"), false, 0, 0, 0, 100, false);
+shieldon = 0;
+}
+}
+}
+else if(shieldmode == 1)
+{
+if(key_repeating(KEY_O) and useable==true)
+{
+if(shieldtype == "none")
+{
+speak("You must draw a shield before razing or wearing it.");
+}
+else if(shieldon == 0)
+{
+p.destroy_sound(shieldwearslot);
+shieldwearslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*wear*"), false, 0, 0, 0, 100, false);
+shieldloop = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*loop*"), true, 0, 0, 0, 100, false);
+fireable=false;
+jumpable=false;
+moveable=false;
+shieldon = 1;
+}
+}
+else if (key_released(KEY_O) and useable==true)
+{
+if (shieldon == 1)
+{
+p.destroy_sound(shieldloop);
+p.destroy_sound(shieldremoveslot);
+shieldremoveslot = p.play_stationary_extended(get_pack_sound("equipments/shields/" + shieldtype + "/*remove*"), false, 0, 0, 0, 100, false);
+fireable=true;
+jumpable=true;
+moveable=true;
+shieldon = 0;
+}
+}
+}
+}
+
 void handle_kombat_keys()
 {
 if(control_is_down() and fireable==true and doormove==false and elvmove==false)
