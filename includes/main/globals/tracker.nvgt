@@ -180,21 +180,28 @@ void tracking_speak_position()
     string direction = "";
     if (y_is_depth)
     {
-        if (dy < 0) direction += "behind";
-        else if (dy > 0) direction += "in front";
+        double rad = calculate_theta(me_rotation);
+        double s = sin(rad);
+        double c = cos(rad);
+        double forward = double(dx) * s + double(dy) * c;
+        double right = double(dx) * c - double(dy) * s;
+        if (forward > 0.5) direction += "in front";
+        else if (forward < -0.5) direction += "behind";
+        if (mapmode == "3d" && dz != 0)
+        {
+            string altitude = (dz < 0) ? "below" : "above";
+            direction = (direction == "") ? altitude : (direction + " and " + altitude);
+        }
+        if (right < -0.5) direction = (direction == "") ? "to the left" : (direction + " and to the left");
+        else if (right > 0.5) direction = (direction == "") ? "to the right" : (direction + " and to the right");
     }
     else
     {
         if (dy < 0) direction += "below";
         else if (dy > 0) direction += "above";
+        if (dx < 0) direction = (direction == "") ? "to the left" : (direction + " and to the left");
+        else if (dx > 0) direction = (direction == "") ? "to the right" : (direction + " and to the right");
     }
-    if (mapmode == "3d" && dz != 0)
-    {
-        string altitude = (dz < 0) ? "below" : "above";
-        direction = (direction == "") ? altitude : (direction + " and " + altitude);
-    }
-    if (dx < 0) direction = (direction == "") ? "to the left" : (direction + " and to the left");
-    else if (dx > 0) direction = (direction == "") ? "to the right" : (direction + " and to the right");
     if (direction == "") direction = "right here";
     p.play_stationary(get_pack_sound("misc/*tracking*"), false);
     speak(direction + ", " + distance + " feet away.");
