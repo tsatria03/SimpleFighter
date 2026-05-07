@@ -1,231 +1,339 @@
-Welcome to simple fighter, my own spinnoff to games such as scrolling battels and other offline shooters.
+Welcome to simple fighter.
+
+Simple fighter is an audio only, blind accessible game built around a map builder. You design audio maps, populate them with characters, weapons, shields, NPCs, doors, hazards, vehicles, zones, and various other entities, and then walk around your maps and use what you've placed. All output is screen reader speech plus HRTF spatial audio, so the game can be played with the screen turned off.
 
 Game features.
-The ability to level up and gain experience.
-The ability to upgrade your stats with level up points.
-The ability to make maps of varying difficulty.
-The ability to add environmental effects such as HRTF and reverb to your map to further unleash your creativity and design.
-Last but not least, the ability to make your own sounds to add to the game. These include, but are not limited to: characters, equipments such as shields and weapons, footsteps, walls, NPC such as animals, enemies, projectiles etc, objects such as doors, hazards, spikes, teleporters, vehicles etc, and UI sounds such as menus, typing themes, miscellaneous SFX etc.
+The ability to build maps in three different modes (2d, topdown, and 3d), each with its own spatial rules.
+The ability to level up, gain experience, and upgrade stats with level up points.
+The ability to author your own characters, shields, weapons, NPCs, doors, items, zones, and more by editing plain text info files.
+The ability to add environmental effects like HRTF, reverb, echo, lowpass, highpass, phaser, flanger, chorus, and distortion to your maps through effect space zones.
+The ability to drop in your own sounds for any entity. Anything that's not in the data folder lives in the sounds folder, and the engine resolves clips by glob, so adding a sound is the wiring.
+The ability to bind up to 42 in game slash commands to keyboard slots through the macro system.
+The ability to compile maps into encrypted packs that the game falls back to when the decompiled folder is missing.
+
+Map modes.
+Every map is created in one of three modes, set when the map is first built. The mode determines what the axes mean and which keys are available.
+
+2d. The x axis is left and right; the y axis is altitude (up and down). There's no north and south. Body rotation does not apply.
+Topdown. The x axis is left and right; the y axis is north and south. There's no altitude axis, so jumping, hooking, jump height changes, and most height related entities are disabled. Body rotation applies, so movement, sonar, spire, and camera keys all rotate with your body.
+3d. The x axis is left and right; the y axis is north and south; the z axis is altitude. Body rotation applies. Hooking and jumping are vertical, so they ignore body rotation.
 
 The folder structure.
-This game comes with a high level folder structure that makes it easier to find and organize things when needed.
 
 Data folder.
-The data folder holds all of the files created in the game to store game level layouts and settings, such as character stats and other prefferences for menus. These files are able to be reset any time in case of problems.
+Holds map files, macro packs, character config, references for the help menu, and saved settings.
 
 Docks folder.
-The docks folder holds all of the files that contain useful information for reading, such as the game's changelog and readme. These files are also readable in the documentation menu of the game.
+Holds player facing documentation, including this readme, the changelog, the version file, and the todo list. Everything in here is also readable from the documentation menu.
+
+Sounds folder.
+Holds the swappable sound packs. Each top level folder is a pack that the engine selects through the soundpack setting. Inside a pack you'll find characters, equipments (shields and weapons), kombat (NPCs and projectiles), keyboards, menus, misc, objects, and soundtracks.
 
 Keyboard commands.
-This game comes with vary easy to familiarize keystrokes that are sometimes most common in other audio games you've played. I'll try to detail them as much as possible. Keep in mind some of these change depending on the mode of the map you're on, since 2d, topdown, and 3d maps each interpret the axes differently. On 2d maps the y axis is altitude (up and down). On topdown maps the y axis is north and south and there is no altitude. On 3d maps the y axis is north and south and the z axis is altitude.
+Some keys behave differently depending on the map mode. Where a key has a mode dependent meaning, the mode is called out. On topdown and 3d maps, movement, sonar, spire, and camera arrow keys are body relative, meaning the same key always moves in the same direction relative to your character regardless of which way you've rotated.
 
-In game keys.
-These are all of the keys that are found in the actual game.
+Movement.
+Left arrow. Step left, when pressed or held.
+Right arrow. Step right, when pressed or held.
+Up arrow. Step forward on the y axis, when pressed or held. On 2d maps this steps up on altitude.
+Down arrow. Step backward on the y axis, when pressed or held. On 2d maps this steps down on altitude.
+Letter, W. Step up on the z axis (3d maps only), when pressed or held. On 2d and topdown this key does nothing.
+Letter, S. Step down on the z axis (3d maps only), when pressed or held. On 2d and topdown this key does nothing.
+Page up. Step up on the z axis (3d maps only). Same as W on 3d.
+Page down. Step down on the z axis (3d maps only). Same as S on 3d.
+Alt. Held while moving, toggles run mode for the duration. The auto run setting flips the default so you walk while alt is held instead.
+Spacebar. Jump, when pressed (or held, if auto jump is enabled in the settings menu). Disabled on topdown maps.
 
-Movement keys.
+Body rotation (topdown and 3d only).
+Letter, Q. Rotate your body 45 degrees counterclockwise.
+Letter, E. Rotate your body 45 degrees clockwise.
+Rotating with Q or E also points your aim where your body is facing, so the next bullet you fire flies that way without you having to set the facing manually.
 
-Left arrow: Moves left on the x axis, if pressed/held down.
-Right arrow: Moves right on the x axis, if pressed/held down.
-Up arrow: Moves forward on the y axis, if pressed/held down. On 2d maps this means upward on altitude.
-Down arrow: Moves backward on the y axis, if pressed/held down. On 2d maps this means downward on altitude.
-Alt plus left arrow: Moves left at double speed on the x axis, if pressed/held down.
-Alt plus right arrow: Moves right at double speed on the x axis, if pressed/held down.
-Alt plus up arrow: Moves forward at double speed on the y axis, if pressed/held down.
-Alt plus down arrow: Moves backward at double speed on the y axis, if pressed/held down.
-Letter, W: Steps your character up on the z axis (3d maps only), if pressed/held down. On 2d and topdown maps this opens the weapons menu instead, see menu keys for more info.
-Letter, S: Steps your character down on the z axis (3d maps only), if pressed/held down. On 2d and topdown maps this opens the shields menu instead, see menu keys  for more info.
-Page up: Steps your character up on the z axis (3d maps only), if pressed/held down. Same effect as the W key on 3d maps.
-Page down: Steps your character down on the z axis (3d maps only), if pressed/held down. Same effect as the S key on 3d maps.
-Alt plus shift plus left arrow: Faces your character left, if pressed.
-Alt plus shift plus right arrow: Faces your character right, if pressed.
-Alt plus shift plus up arrow: Faces your character forward on the y axis, if pressed. On 2d maps this faces up.
-Alt plus shift plus down arrow: Faces your character backward on the y axis, if pressed. On 2d maps this faces down.
-Alt plus shift plus page up: Faces your character up on the z axis (3d maps only), if pressed.
-Alt plus shift plus page down: Faces your character down on the z axis (3d maps only), if pressed.
-Alt plus shift plus W: Same as alt plus shift plus page up on 3d maps. Does nothing on 2d and topdown.
-Alt plus shift plus S: Same as alt plus shift plus page down on 3d maps. Does nothing on 2d and topdown.
-Spacebar: Causes your character to jump on altitude, if pressed/held down. Disabled on topdown maps since topdown has no altitude axis.
+Manual facing override.
+These keys aim your character without moving them, so you can face one direction and fire while still walking another way.
+Alt plus shift plus left arrow. Face left.
+Alt plus shift plus right arrow. Face right.
+Alt plus shift plus up arrow. Face forward on the y axis. On 2d, faces up on altitude.
+Alt plus shift plus down arrow. Face backward on the y axis. On 2d, faces down on altitude.
+Alt plus shift plus W or page up. Face up on the z axis (3d maps only).
+Alt plus shift plus S or page down. Face down on the z axis (3d maps only).
 
-Camera keys.
+Speed.
+Shift plus letter A. Decrease overall movement speed.
+Shift plus letter D. Increase overall movement speed.
+Shift plus letter F. Reset movement speed to default.
 
-Letter, G plus left arrow: Moves the camera left on the x axis, if pressed/held down.
-Letter, G plus right arrow: Moves the camera right on the x axis, if pressed/held down.
-Letter, G plus up arrow: Moves the camera forward on the y axis, if pressed/held down.
-Letter, G plus down arrow: Moves the camera backward on the y axis, if pressed/held down.
-Letter, G plus W: Moves the camera up on the z axis (3d maps only), if pressed/held down.
-Letter, G plus S: Moves the camera down on the z axis (3d maps only), if pressed/held down.
-Letter, G plus page up: Same as G plus W on 3d maps.
-Letter, G plus page down: Same as G plus S on 3d maps.
-Letter, G plus letter J: Sets a selection point on the left side of the x axis, if pressed.
-Letter, G plus letter L: Sets a selection point on the right side of the x axis, if pressed.
-Letter, G plus letter I: Sets a selection point on the forward side of the y axis, if pressed. On 2d maps this is the top.
-Letter, G plus letter K: Sets a selection point on the backward side of the y axis, if pressed. On 2d maps this is the bottom.
-Letter, G plus shift plus letter I: Sets a selection point on the upper side of the z axis (3d maps only), if pressed.
-Letter, G plus shift plus letter K: Sets a selection point on the lower side of the z axis (3d maps only), if pressed.
-Letter, G plus letter M: Toggles the mfwc mode on or off for the camera, if pressed/held down.
-Letter, G plus letter Y: Toggles the dexterity mode on or off for the camera, if pressed/held down.
-Letter, G plus letter R: Anounces the camera's current coordinates relative to your position on the map, if pressed/held down.
-Letter, G plus letter T: Plays the current map tile at the camera's position, if pressed/held down.
-Letter, G plus semicolon: Speaks all of the newly created selection points, if pressed/held down.
-Letter, G plus apostrophe: Clears all of the newly created selection points, if pressed/held down.
+Jump height.
+Shift plus F1. Decrease maximum jump height. Disabled on topdown.
+Shift plus F2. Increase maximum jump height. Disabled on topdown.
+Shift plus F3. Reset jump height to default. Disabled on topdown.
 
-Hooking keys.
+Hooking.
+Disabled on topdown. The hook is purely vertical and ignores body rotation.
+Letter, F. Toggle hooking upward. Throws the hook if you're not already hooked, or releases it if you are.
+Letter, V. Toggle hooking downward.
 
-Letter, F: Atempts to hook upward, if pressed/held down. Disabled on topdown maps since topdown has no altitude axis.
-Letter, V: Atempts to hook downward, if pressed/held down. Disabled on topdown maps since topdown has no altitude axis.
+Sonar.
+F1. Cycle the sonar following mode.
+F2. Cycle the sonar tracking mode.
+F3. Cycle the sonar looping speed.
+When the sonar is not following you, you can point it manually:
+Letter, J. Face the sonar to your left side. On topdown and 3d this is body relative.
+Letter, L. Face the sonar to your right side.
+Letter, K. Face the sonar behind you. On 2d this faces the sonar down on altitude.
+Letter, I. Face the sonar in front of you. On 2d this faces the sonar up on altitude.
+Shift plus letter I. Face the sonar up on the z axis (3d maps only).
+Shift plus letter K. Face the sonar down on the z axis (3d maps only).
 
-Sonar keys.
+Spire.
+The spire scans the map for objects in a given direction.
+Shift plus left arrow. Sweep left. Body relative on topdown and 3d.
+Shift plus right arrow. Sweep right.
+Shift plus up arrow. Sweep forward on the y axis. On 2d this sweeps the top.
+Shift plus down arrow. Sweep backward on the y axis. On 2d this sweeps the bottom.
+Shift plus W or shift plus page up. Sweep up on the z axis (3d maps only).
+Shift plus S or shift plus page down. Sweep down on the z axis (3d maps only).
 
-F1: Changes the sonar following mode, if pressed/held down.
-F2: Changes the sonar tracking mode, if pressed/held down.
-F3: Changes the sonar looping speed, if pressed/held down.
-Letter, J: Face the sonar left when it's not following you, if pressed.
-Letter, L: Face the sonar right when it's not following you, if pressed.
-Letter, K: Face the sonar backward on the y axis when it's not following you, if pressed. On 2d maps this faces the sonar down on altitude.
-Letter, I: Face the sonar forward on the y axis when it's not following you, if pressed. On 2d maps this faces the sonar up on altitude.
-Shift plus letter K: Face the sonar down on the z axis when it's not following you, if pressed (3d maps only).
-Shift plus letter I: Face the sonar up on the z axis when it's not following you, if pressed (3d maps only).
+Camera.
+The camera is a free moving cursor for inspecting the map at a distance. Hold G plus a movement key, or toggle dexterity mode so the camera responds without holding G.
+Letter, G plus left or right arrow. Move the camera left or right. Body relative on topdown and 3d.
+Letter, G plus up or down arrow. Move the camera forward or backward on the y axis.
+Letter, G plus W or page up. Move the camera up on the z axis (3d maps only).
+Letter, G plus S or page down. Move the camera down on the z axis (3d maps only).
+Letter, G plus letter J. Set a left side selection marker.
+Letter, G plus letter L. Set a right side selection marker.
+Letter, G plus letter I. Set a forward (or top, on 2d) selection marker.
+Letter, G plus letter K. Set a backward (or bottom, on 2d) selection marker.
+Letter, G plus shift plus letter I. Set a top selection marker on the z axis (3d maps only).
+Letter, G plus shift plus letter K. Set a bottom selection marker on the z axis (3d maps only).
+Letter, G plus letter M. Toggle mfwc mode (camera focus).
+Letter, G plus letter Y. Toggle dexterity mode (camera responds without holding G).
+Letter, G plus letter R. Announce the tile, hazard, player presence, coordinates, and direction at the camera's current position.
+Letter, G plus letter T. Play the tile sound at the camera's current position.
+Letter, G plus semicolon. Speak all selection markers that have been set.
+Letter, G plus apostrophe. Clear all selection markers.
 
-Spire keys.
+Combat.
+Control. Fire the currently selected weapon. Held control auto fires for weapons that support it. The bullet flies along whichever axis your character is currently facing.
+Letter, R. Reload the current weapon.
+Letter, X. Announce ammo for the current weapon.
+Letter, T. Toggle reflection mode (melee weapons only).
 
-Shift plus left arrow: Moves the spire left to find objects on the left side of the map, if pressed.
-Shift plus right arrow: Moves the spire right to find objects on the right side of the map, if pressed.
-Shift plus up arrow: Moves the spire forward on the y axis, if pressed. On 2d maps this is the top.
-Shift plus down arrow: Moves the spire backward on the y axis, if pressed. On 2d maps this is the bottom.
-Shift plus W: Moves the spire up on the z axis (3d maps only), if pressed.
-Shift plus S: Moves the spire down on the z axis (3d maps only), if pressed.
-Shift plus page up: Same as shift plus W on 3d maps.
-Shift plus page down: Same as shift plus S on 3d maps.
+Inventory.
+Tab. Cycle forward through inventory items.
+Shift plus tab. Cycle backward.
+Shift plus enter. Use the currently focused inventory item.
+Alt plus letter I. Open the inventory menu.
 
-Miscellaneous keys.
+Healing and shields.
+Backslash. Toggle health restoration on or off.
+Right bracket. Toggle shield strength restoration on or off.
+Letter, O. Raze or wear a drawn shield. In one shield mode, hold O to keep the shield up; releasing lowers it.
 
-Letter, C: Check your current location and the tile being walked on, if pressed.
-Shift plus letter A: Decreases your overall movement speed, if pressed.
-Shift plus letter D: Increases your overall movement speed, if pressed.
-Shift plus letter F: Resets your overall movement speed back to default, if pressed.
-Letter, Q: Anounces the zone you're on, if pressed.
-Letter, Z: Toggles zone anouncements on or off, if pressed.
-Letter, P: Pauses or resumes the currently active game, if pressed.
-Letter, R: Reloads ammo into a particular weapon category, if pressed.
-Letter, X: Anounces ammo of a particular weapon category, if pressed.
-Letter, H: Anounces your current health in percentages and how many lives you have, if pressed.
-Letter, O: Equips a shield if one is available, if pressed.
-Letter, N: Anounces the direction and distance to whichever object you're currently tracking, if pressed. Tracking is started from the object viewer menu opened with the letter E.
-Shift plus letter N: Stops tracking the current object, if pressed.
-Left bracket: Anounces your total kills across all npcs, if pressed.
-Letter, M: Anounces your current shield strength in percentages, if pressed.
-Shift plus F1: Decreases your maximum jump height, if pressed. Disabled on topdown maps.
-Shift plus F2: Increases your maximum jump height, if pressed. Disabled on topdown maps.
-Shift plus F3: Resets your jump height back to default, if pressed. Disabled on topdown maps.
-Control: Fires the currently selected weapon, if pressed/held down. The bullet flies along whichever axis your character is currently facing, including up and down on 3d maps.
-Tab: Cycles forward through the available inventory items, if pressed.
-Shift plus tab: Cycles backward through the available inventory items, if pressed.
-Shift plus enter: Uses an inventory item when it's currently focused, if pressed/held down.
-Slash: Opens a prompt that lets you type a command that you could use on the map, if pressed.
-Enter: Interacts with various objects, such as doors, signs, passages, dialogs, and various other menu items, if pressed.
-Escape: Exits the current game or map and returns you to the last focused menu, if pressed.
+Status and information.
+Letter, C. Speak your current location and the tile being walked on.
+Letter, H. Speak your health and lives.
+Letter, Y. Speak your stamina.
+Letter, M. Speak your shield strength.
+Letter, N. Speak the direction and distance to the object you're tracking. Tracking is started from the object viewer.
+Shift plus letter N. Stop tracking the current object.
+Left bracket. Speak your total kills.
+Letter, Z. Toggle zone announcements on or off.
+Alt plus letter Q. Speak the text zone you're currently standing in.
 
-Menu keys.
-Letter, W: Opens the weapons menu, if pressed (2d and topdown maps only).
-Letter, S: Opens the shields menu, if pressed (2d and topdown maps only).
-Alt plus letter W: Opens the weapons menu, if pressed (3d maps only). Does nothing on 2d and topdown maps since plain W already covers it there.
-Alt plus letter S: Opens the shields menu, if pressed (3d maps only). Does nothing on 2d and topdown maps since plain S already covers it there.
-Alt plus letter I: Opens the inventory menu, if pressed.
-Letter, E: Opens the object viewer menu, if pressed.
-Shift plus letter E: Opens the combat log viewer menu, if pressed.
-Shift plus letter H: Opens the command help menu, if pressed.
-Letter, B: Opens the Builder menu, if pressed.
-Shift plus letter V: Opens the points menu, if pressed.
+Menus.
+Alt plus letter W. Open the weapons menu.
+Alt plus letter S. Open the shields menu.
+Alt plus letter E. Open the object viewer.
+Shift plus alt plus letter E. Open the combat log viewer.
+Shift plus letter H. Open the command help menu.
+Shift plus letter V. Open the points menu.
+Letter, B. Open the builder menu (disabled on compiled maps).
+Letter, U. Open the map editor menu (disabled on compiled maps).
+
+System.
+Slash. Open the command prompt. Type a slash command and press enter to run it. Multiple commands can be chained with semicolons.
+Enter. Interact with whatever is at your feet, including doors, signs, clocks, calendars, passages, dialogs, and menu items.
+Letter, P. Pause or resume the game.
+Escape. Exit the current map and return to the last menu.
+
+Macros (script keys).
+The macro system gives you 42 keyboard slots that each fire a slash command, with optional cooldown and spoken confirmation.
+Backtick, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, minus, equals, backspace. Bank 1 (14 slots).
+Shift plus any of the above. Bank 2 (14 slots).
+Shift plus alt plus any of the above. Bank 3 (14 slots).
+Macros are configured per pack and selected with the slash macset and slash mc commands.
 
 Creating sound packs.
-This game allows you to create customizeable global and map-based sound packs that you can use in various situations.
+Each top level folder in the sounds directory is a swappable pack. The active pack is chosen through the soundpack setting. The sections below list the clip names the engine looks for in each category. The lookup is glob based, so numbered variants (taunt1.ogg, taunt2.ogg, taunt3.ogg) are all picked up under the same base name (taunt.ogg). Add as many variants as you like and the engine will pick one at random.
 
-Character sound listing, general: 27 total.
-bleed.ogg: This sound is played when your character bleeds.
-buy.ogg: This sound is played when your character purchases upgrades.
-break.ogg: This sound is played when a character breaks a certain bone in their body.
-change.ogg: This sound is played when your character changes something on a map.
-crit.ogg: This sound is played when your character gets criticly hurt.
-death.ogg: This sound is played when your character dies.
-fail.ogg: This sound is played when a character's broken bone starts  to kill them from too much pain.
-fall.ogg: This sound is played when your character starts falling.
-give.ogg: This sound is played when your character gives themselves an item.
-healing.ogg: This sound is played When your character is healing.
-healstart.ogg: This sound is played when your character starts healing.
-healstop.ogg: This sound is played when your character stops healing.
-hurt.ogg: This sound is played when your character gets mildly hurt.
-inv.ogg: This sound is played when your character cycles through there inventory.
-jump.ogg: This sound is played when your character starts jumping.
-kill.ogg: This sound is played when your character kills an entity.
-land.ogg: This sound is played when your character lands on a platform.
-lev.ogg: This sound is played when your character levels up.
-life.ogg: This sound is played when your character loses a life.
-pain.ogg: This sound is played when a character's broken bone starts to hurt them while moving or performing other tasks.
-pause.ogg: This sound is played when your character pauses the game.
-plummet.ogg: This sound is played when your character is falling.
-resume.ogg: This sound is played when your character resumes the game.
-take.ogg: This sound is played when your character recycles an item from their inventory.
-rise.ogg: This sound is played when your character is jumping.
-swing.ogg: This sound is played when your character swings a melee weapon.
-turn.ogg: This sound is played when your character turns on the spot.
+Character general (sounds/<pack>/characters/<name>/general/).
+bleed.ogg: Played when your character bleeds.
+break.ogg: Played when your character breaks a bone.
+buy.ogg: Played when your character purchases an upgrade.
+change.ogg: Played when your character adjusts a setting like speed or jump height.
+crit.ogg: Played when your character takes critical damage.
+death.ogg: Played when your character dies.
+fail.ogg: Played when a broken bone starts to kill your character from pain.
+fall.ogg: Played when your character starts falling.
+give.ogg: Played when your character gives themselves an item.
+healing.ogg: Played in a loop while your character is healing.
+healstart.ogg: Played when your character starts healing.
+healstop.ogg: Played when your character stops healing.
+hurt.ogg: Played when your character takes damage.
+inv.ogg: Played when your character cycles through their inventory.
+jump.ogg: Played when your character starts jumping.
+kill.ogg: Played when your character kills an entity.
+lev.ogg: Played when your character levels up.
+life.ogg: Played when your character loses a life.
+pain.ogg: Played when a broken bone hurts your character while they move.
+pause.ogg: Played when your character pauses the game.
+plummet.ogg: Played in a loop while your character is falling.
+resume.ogg: Played when your character resumes the game.
+rotate.ogg: Played when your character rotates with Q or E.
+take.ogg: Played when your character returns an item to their inventory.
+turn.ogg: Played when your character turns to face a different direction.
 
-Keyboard sound listing: 5 total.
-cap.ogg: This sound is played when a capital letter is being typed on the keyboard.
-delete.ogg: This sound is played when a character is being deleted on the keyboard.
-return.ogg: This sound is played when a new line character is being typed on the keyboard.
-space.ogg: This sound is played when a space character is being typed on the keyboard.
-type.ogg: This sound is played when characters excluding spaces and new lines are being typed on the keyboard.
+Character map (sounds/<pack>/characters/<name>/map/).
+camair.ogg: Played when the camera passes over an air tile.
+camclear.ogg: Played when camera selection markers are cleared.
+camhazard.ogg: Played when the camera detects a hazard.
+camplayer.ogg: Played when the camera lands on the player.
+camset.ogg: Played when a camera selection marker is set.
+camtile.ogg: Played when the camera passes over a normal tile.
+camwall.ogg: Played when the camera detects a wall.
+delete.ogg: Played when something is deleted from the map in the builder.
+finish.ogg: Played when you finish a map through a travelpoint.
+hookcatch.ogg: Played when the grappling hook catches.
+hookclimb.ogg: Played in a loop while climbing on the hook.
+hookdrop.ogg: Played when the hook fails to catch.
+hookrelease.ogg: Played when the hook is released.
+hookthrow.ogg: Played when the hook is thrown.
+load.ogg: Played when a map is loading.
+move.ogg: Played when something is moved on the map in the builder.
+sonair.ogg: Played when sonar detects air.
+sondown.ogg: Played when sonar detects a staircase going down.
+sonhazard.ogg: Played when sonar detects a hazard.
+sontile.ogg: Played when sonar detects a tile.
+sonup.ogg: Played when sonar detects a staircase going up.
+sonvanish.ogg: Played when sonar detects a vanishing platform.
+sonwall.ogg: Played when sonar detects a wall.
+start.ogg: Played when a map starts.
+stop.ogg: Played when a map stops.
+update.ogg: Played when the map is edited live in the builder.
 
-Menu sound listing: 9 total.
-click.ogg: This sound is played when you go through menu items.
-close.ogg: This sound is played when a menu is being closed.
-edge.ogg: This sound is played when a menu has reached a boundary.
-enter.ogg: This sound is played when a menu item has been selected.
-music.ogg: This sound is played when a menu has music.
-open.ogg: This sound is played when a menu is being opened.
-speaker.ogg: This sound is played when a menu has a speaker test option.
-wrap.ogg: This sound is played when a menu is being wrapped.
+Keyboards (sounds/<pack>/keyboards/<theme>/).
+cap.ogg: Played when a capital letter is typed.
+delete.ogg: Played when a character is deleted.
+return.ogg: Played when enter is pressed in a text field.
+space.ogg: Played when the space bar is pressed.
+type.ogg: Played when any other character is typed.
 
-Item sound listing: 6 total.
-break.ogg: This sound is played when an item is being broken.
-drop.ogg: This sound is played when an item is being dropped.
-fire.ogg: This sound is played when an item is being used.
-get.ogg: This sound is played when an item is being grabbed.
-hit.ogg: This sound is played when an item is used.
-loop.ogg: This sound is played when an item is being looped.
+Menus (sounds/<pack>/menus/<theme>/).
+click.ogg: Played when scrolling through menu items.
+close.ogg: Played when a menu closes.
+edge.ogg: Played when a menu hits a boundary.
+enter.ogg: Played when a menu item is selected.
+music.ogg: Played in a loop as menu background music.
+open.ogg: Played when a menu opens.
+speaker.ogg: Played by the speaker test option in the main menu.
+wrap.ogg: Played when a menu wraps from end to start.
 
-Shield sound listing: 6 total.
-break.ogg: This sound is played when a shield is being broken.
-draw.ogg: This sound is played when a shield is being drawn.
-hit.ogg: This sound is played when a shield is being hit.
-loop.ogg: This sound is played when a shield is being looped while wearing it.
-remove.ogg: This sound is played when a shield is being removed.
-wear.ogg: This sound is played when a shield is being worn.
+Misc (sounds/<pack>/misc/).
+gamestart.ogg: Played when the game is unfrozen.
+gamestop.ogg: Played when the game is frozen.
+menu.ogg: Played as a generic menu cue.
+punch.ogg: Played as a generic impact cue.
+switchoff.ogg: Played when a feature toggle (zones, tracking, etc.) is switched off.
+switchon.ogg: Played when a feature toggle is switched on.
+toggleoff.ogg: Played when a runtime toggle (camera dexterity, mfwc, etc.) is switched off.
+toggleon.ogg: Played when a runtime toggle is switched on.
+trackon.ogg: Played when an object starts being tracked.
+trackoff.ogg: Played when tracking stops.
+tracked.ogg: Played when a tracked object is announced.
+tracking.ogg: Played in a loop while an object is being tracked.
 
-Weapon sound listing: 12 total.
-block.ogg: This sound is played when a melee weapon reflects an attack from an entity.
-draw.ogg: This sound is played when a weapon is being drawn.
-empty.ogg: This sound is played when a non melee weapon is being emptyed.
-fire.ogg: This sound is played when a weapon is being used.
-hit.ogg: This sound is played when a weapon is used.
-loop.ogg: This sound is played when a weapon is being looped while using it.
-off.ogg: This sound is played when a melee weapon has reflection mode turned off.
-on.ogg: This sound is played when a melee weapon has reflection mode turned on.
-ping.ogg: This sound is played when a non melee weapon has been reloaded with ammo.
-reload.ogg: This sound is played when a non melee weapon is being reloaded with ammo.
-rico.ogg: This sound is played when a weapon is being ricocheted.
-shell.ogg: This sound is played when a non melee weapon dropps ammo shells.
+Shields (sounds/<pack>/equipments/shields/<name>/).
+break.ogg: Played when the shield breaks.
+draw.ogg: Played when the shield is drawn.
+hit.ogg: Played when the shield is hit.
+loop.ogg: Played in a loop while the shield is worn.
+remove.ogg: Played when the shield is put away.
+wear.ogg: Played when the shield is worn.
 
-Npc sound listing: 12 total.
-death.ogg: This sound is played when an entity dies.
-heal.ogg: This sound is played when an entity is healing.
-hit.ogg: This sound is played when an entity hits your character.
-hurt.ogg: This sound is played when an entity gets hurt.
-launch.ogg: This sound is played when an entity launches another entity or object.
-life.ogg: This sound is played when an entity loses a life.
-loop.ogg: This sound is played when an entity is being looped.
-remove.ogg: This sound is played when an entity is being removed.
-spawn.ogg: This sound is played when an entity is being spawned.
-step.ogg: This sound is played when an entity is moving.
-taunt.ogg: This sound is played when an entity is taunting your character.
-tel.ogg: This sound is played when an entity teleports on the x or y axes of a map.
+Weapons (sounds/<pack>/equipments/weapons/<category>/<name>/).
+block.ogg: Played when a melee weapon reflects an attack.
+draw.ogg: Played when the weapon is drawn.
+empty.ogg: Played when a non melee weapon runs out of ammo.
+fire.ogg: Played when the weapon fires.
+hit.ogg: Played when the weapon hits a target.
+loop.ogg: Played in a loop while the weapon is in use.
+off.ogg: Played when reflection mode is turned off (melee only).
+on.ogg: Played when reflection mode is turned on (melee only).
+ping.ogg: Played when a non melee weapon finishes reloading.
+ref.ogg: Played in a loop while reflection mode is active (melee only).
+reload.ogg: Played while a non melee weapon is reloading.
+rico.ogg: Played when a bullet ricochets.
+shell.ogg: Played when a non melee weapon drops ammo shells.
+
+NPCs (sounds/<pack>/kombat/npc/<group>/<name>/).
+death.ogg: Played when the NPC dies.
+heal.ogg: Played when the NPC heals.
+hit.ogg: Played when the NPC strikes the player.
+hurt.ogg: Played when the NPC takes damage.
+launch.ogg: Played when the NPC launches a minion.
+life.ogg: Played when the NPC loses a life.
+remove.ogg: Played when the NPC is removed from the map.
+spawn.ogg: Played when the NPC spawns.
+step.ogg: Played when the NPC moves a step.
+taunt.ogg: Played when the NPC taunts the player.
+tel.ogg: Played when the NPC teleports.
+
+Projectiles (sounds/<pack>/kombat/projectiles/<name>/).
+death.ogg: Played when the projectile is destroyed.
+hit.ogg: Played when the projectile hits a target.
+hurt.ogg: Played when the projectile takes damage from a hit.
+loop.ogg: Played in a loop while the projectile is in flight.
+
+Items (sounds/<pack>/objects/items/<group>/<name>/).
+break.ogg: Played when the item breaks.
+fire.ogg: Played when the item is used.
+get.ogg: Played when the item is picked up.
+hit.ogg: Played when the item makes contact.
+loop.ogg: Played in a loop while the item is active.
+
+Map objects (sounds/<pack>/objects/<entity>/...).
+The objects folder holds clips for every entity type that can be placed on a map. Each entity type has its own folder, and inside it the per-instance clips are organized by name. Below is the typical clip set for each entity type, but as with the rest of the pack the lookup is glob based, so adding extra clips with the same base name is fine.
+
+aircrafts: alarm, appear, beacon, change, crash, death, enter, flight, gear, hurt, land, loop, pass, start, turn.
+belts: loop.
+bikes: per-bike misc and platform clips.
+bombs: fall, plus per-bomb explosion clips.
+calendars: break, loop, press.
+cameras: alarm, alert, death, hurt, turn.
+checkpoints: get, loop.
+clocks: break, loop, press.
+dialogs: close, copy, open, scroll.
+doors: per-door close, dest, lock clips named by the door variant.
+elevators: per-elevator beep, close, loop clips.
+fires: hit, loop.
+floor breakers: remove, spawn.
+force fields: hit, off, on.
+hazards: fall, loop.
+heal zones: heal, take.
+lifts: in (unused), loop, out (unused).
+mines: explode, hit, light, loop, spawn.
+moving platforms: loop.
+platforms: death, fall, hurt, land, step.
+safe zones: in, out.
+signs: break, loop, press, step.
+spikes: death, loop.
+switches: loop, press.
+teleporters: hit, loop.
+time bombs: land, tick.
+vanishing platforms: loop.
+vehicles: beacon, death, hit, horn, hurt, motor, turn.
+walls: bump, death, hurt.
+
+Soundtracks (sounds/<pack>/soundtracks/<theme>/).
+loop.ogg: Played in a loop as the map's background music. Each soundtrack folder is one theme.
