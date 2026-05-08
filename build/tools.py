@@ -252,6 +252,21 @@ def copy_tag(sha):
         clip(tag)
         print(f"Tag copied to clipboard: {tag}")
 
+def do_create_tag():
+    raw = input("Commit to tag (press Enter for HEAD): ").strip()
+    target = raw if raw else "HEAD"
+    sha = run_out(["git", "rev-parse", "--verify", target])
+    if not sha:
+        print(f"ERROR: Could not resolve commit '{target}'.")
+        return
+    short = sha[:7]
+    msg = run_out(["git", "log", "--format=%s", "-1", sha])
+    print(f"{target} is at: {short} {msg}")
+    if not ask(f"Tag this commit?"):
+        print("Cancelled.")
+        return
+    create_tag(sha)
+
 def do_reset(sha):
     print("WARNING: Resetting will move HEAD to this commit.")
     print()
@@ -319,7 +334,7 @@ def do_website_update(version, tag, skip_website):
         return
     print("Website committed and pushed.\n")
 
-def run_release(skip_compile, skip_package, skip_release, skip_website, skip_empty_release):
+def run_release(skip_compile, skip_package, skip_release, skip_website, skip_empty_release, interactive=True):
     version = get_version()
     if not version:
         print("ERROR: Could not read version from version.txt.")
@@ -332,6 +347,34 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
     print(f"Tag:     {tag}")
     print(f"Title:   {title}\n")
 
+    if skip_release != SILENT_SKIP:
+        head_sha = run_out(["git", "rev-parse", "--verify", "HEAD"])
+        existing_tag_sha = run_out(["git", "rev-parse", "--verify", "--quiet", f"refs/tags/{tag}"])
+        existing_release = subprocess.run([GH, "release", "view", tag], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=REPO_DIR).returncode == 0
+        if existing_tag_sha or existing_release:
+            print(f"WARNING: {tag} already exists.")
+            if existing_tag_sha:
+                short = existing_tag_sha[:7]
+                msg = run_out(["git", "log", "--format=%s", "-1", existing_tag_sha])
+                if existing_tag_sha != head_sha:
+                    head_short = head_sha[:7] if head_sha else "?"
+                    head_msg = run_out(["git", "log", "--format=%s", "-1", "HEAD"])
+                    print(f"  Tag points to {short} {msg}")
+                    print(f"  This release will MOVE the tag to HEAD ({head_short} {head_msg}).")
+                else:
+                    print(f"  Tag already points to HEAD, so it will not move.")
+            if existing_release:
+                print(f"  GitHub release {tag} will be deleted and recreated with new assets.")
+            print()
+            if interactive:
+                if not ask("Continue with the release?"):
+                    print("Release cancelled.")
+                    return
+            else:
+                print("ERROR: Refusing to overwrite an existing tag or release in non-interactive mode.")
+                print("       Delete the tag and release manually first, or run tools.py interactively.")
+                return
+
     # Compile
     do_compile = False
     if skip_compile == DO:
@@ -340,7 +383,8 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
         do_compile = ask("Do you want to compile this project?")
 
     if do_compile:
-        shutil.copy(os.path.join(SCRIPT_DIR, "version.txt"), os.path.join(REPO_DIR, "docks", "version.txt"))
+        with open(os.path.join(REPO_DIR, "includes", "version.nvgt"), "w", encoding="utf-8", newline="") as vf:
+            vf.write(f'string version = "{version}";\r\n')
         print("Compiling NVGT source...")
         if not run_cmd([NVGT, "-c", "-Q", os.path.join(REPO_DIR, NVGT_FILE)]):
             print("ERROR: NVGT compilation failed.")
@@ -457,14 +501,15 @@ def menu():
         print(f" 2. Undo last commit (unpushed: {unpushed})")
         print(f" 3. Push commits (unpushed: {unpushed})")
         print(" 4. Show commit history")
+        print(" 5. Create tag manually")
         print(" --- Release ---")
-        print(" 5. Full release")
-        print(" 6. Compile only")
-        print(" 7. Package only")
-        print(" 8. Release only")
-        print(" 9. Website only")
+        print(" 6. Full release")
+        print(" 7. Compile only")
+        print(" 8. Package only")
+        print(" 9. Release only")
+        print(" 10. Website only")
         print(" ---")
-        print(" 10. Exit")
+        print(" 11. Exit")
         print("========================")
         choice = input("Choose an option: ").strip()
         print()
@@ -477,24 +522,26 @@ def menu():
         elif choice == "4":
             do_history()
         elif choice == "5":
-            run_release(SKIP, SKIP, SKIP, SKIP, SKIP)
+            do_create_tag()
         elif choice == "6":
-            run_release(DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
+            run_release(SKIP, SKIP, SKIP, SKIP, SKIP)
         elif choice == "7":
-            run_release(SILENT_SKIP, DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
+            run_release(DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
         elif choice == "8":
-            run_release(SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP, DO)
+            run_release(SILENT_SKIP, DO, SILENT_SKIP, SILENT_SKIP, SILENT_SKIP)
         elif choice == "9":
-            run_release(SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP)
+            run_release(SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP, DO)
         elif choice == "10":
+            run_release(SILENT_SKIP, SILENT_SKIP, SILENT_SKIP, DO, SILENT_SKIP)
+        elif choice == "11":
             sys.exit(0)
         else:
-            print("Invalid choice. Please enter 1-10.")
+            print("Invalid choice. Please enter 1-11.")
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     if len(args) >= 5:
         flags = [int(a) for a in args[:5]]
-        run_release(*flags)
+        run_release(*flags, interactive=False)
     else:
         menu()
