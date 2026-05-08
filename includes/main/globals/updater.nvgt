@@ -128,8 +128,11 @@ string get_download_url(string projectname, string new_version)
 void downloadsounds()
 {
 quest=question("Error", "There are no sounds detected in the game! Would you like to download them now?");
-if (quest==1)
+if (quest != 1)
 {
+mainmenu();
+return;
+}
 if (file_exists("sounds.7z"))
 {
 alert("file found", "This file already exists. The downloader will now skip to the extraction process.");
@@ -142,6 +145,7 @@ if (result != "finished")
 alert("download error", "Download failed or was canceled.");
 if(file_exists("sounds.7z")) file_delete("sounds.7z");
 mainmenu();
+return;
 }
 alert("finished", "Download completed successfully.");
 }
@@ -149,23 +153,16 @@ alert("extracting", "Extracting files.");
 progs.load_url("https://tsatria03.github.io/projects/games/SimpleFighter/sounds/pi2.ogg");
 progs.play_looped();
 if(!directory_exists("sounds")) directory_create("sounds");
-bool result=run("lib/7zr.exe", "x sounds.7z -o\"sounds\" -y", true, true);
-if (result==true)
+bool extr=run("lib/7zr.exe", "x sounds.7z -o\"sounds\" -y", true, true);
+if (extr)
 {
 progs.stop();
 alert("extraction_complete", "Extraction finished successfully.");
 if(file_exists("sounds.7z")) file_delete("sounds.7z");
 alert("restarting", "The game will now restart to apply changes.");
 restart("sf.exe");
+return;
 }
-else
-{
 alert("extraction_error", "Error occurred during extraction.");
 mainmenu();
-}
-}
-else
-{
-mainmenu();
-}
 }
