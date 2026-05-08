@@ -1,0 +1,64 @@
+TTS enemies.
+
+TTS enemies are voice-acted combatants whose taunts, hurt cries, and death lines are rendered live from text using the system's installed text to speech voices, instead of pre-recorded audio clips. They are the watered down siblings of NPCs: a TTS enemy walks toward you, draws a randomly picked weapon, fires when it reaches your tile, and falls dead with a final spoken line. They have no ranges, no AI states, no levels, no lives, no item drops, and no helpers, so the design space is deliberately small. What makes them interesting isn't combat depth, it's personality, since every TTS enemy can have its own voice, rate, volume, and pitch.
+
+TTS enemies are 2d only. The 3d port is intentionally deferred until the 2d feature is fully proven, so attempting to spawn one on a topdown or 3d map is silently rejected.
+
+Combat behavior.
+
+A TTS enemy walks one tile per movement tick toward the player on the x and y axes, slowing down on per tile step sounds the same way the player and other entities do, and updates its taunt audio's spatial position as it moves. When it reaches the player's tile, the fire timer governs how often it can attack. On each fire tick the enemy plays its weapon's fire clip from its position, the weapon's hit and shell clips at the listener, and applies max(1, attack - defense times three) damage to the player. If the player has a shield raised, the damage is routed to the shield strength using the shield's defense stat instead, and only the shield hit clip plays since the weapon fire would be muffled behind the shield in that case. The player's character hurt or critical clip plays based on what fraction of max health the hit consumed.
+
+Damage taken from the player is symmetric: the player's bullet does max(1, bullet damage - tts enemy defense times three) on contact. When a hit lands, the enemy's taunt audio pauses for the duration of its hurt clip, the hurt clip plays, and the taunt resumes from where it left off, giving every connection a clean audio recoil. Movement is not interrupted, so the enemy keeps closing on you through hits, which prevents stun lock exploits while still letting the player feel the strike land. Killing blows skip the hurt clip and play the death line followed by a body fall sized to the death audio's length.
+
+Zero value shortcuts.
+
+The attack and speed fields each accept zero as a special meaning that disables that side of the entity entirely.
+
+Setting attack to zero makes the enemy never fire at the player, even on its tile and even with the fire timer ready. The fire block is gated behind attack greater than zero, so a zero attack TTS enemy walks up to you and just yells without doing damage.
+
+Setting speed to zero roots the enemy to its spawn tile forever. The movement block is gated behind speed greater than zero, so a zero speed TTS enemy never takes a step.
+
+Combining these gives four archetypes from the same entity type:
+
+Stationary turret: speed zero, attack greater than zero. Fires at you when you walk onto its tile.
+Stationary talker: speed zero, attack zero. Pure ambient voice that has to be approached to be heard up close.
+Patient menace: speed greater than zero, attack zero. Walks up but never hurts you, just talks at you.
+Standard combatant: speed greater than zero, attack greater than zero. The default duelist shape.
+
+Voice configuration.
+
+Every TTS enemy stores its own voice settings on the spawn line, so two enemies on the same map can sound completely distinct even with identical combat stats.
+
+Voice. The literal SAPI voice name as the system reports it, like Microsoft David Desktop - English (United States). The engine matches this string against the installed voice list at spawn time, falls back to the default system voice if no match is found, and uses that voice to render the taunt, hurt, and death audio for that specific enemy.
+
+Rate. The SAPI speech rate, ranging from negative ten for very slow speech to positive ten for very fast speech, with zero as normal pace. The form exposes this as a slider in those units.
+
+Volume. The SAPI speech volume, ranging from zero for silent to one hundred for full volume. The form exposes this as a slider with five point steps.
+
+Pitch. An absolute middle pitch shift in the same negative ten to positive ten range as rate, applied via inline SAPI XML markup at render time. Zero leaves the voice at its natural pitch, negative values drop it deeper, positive values raise it higher. The form exposes this as a slider in those units.
+
+The taunt and hurt clips are rendered once at spawn into the system temp folder so the looping taunt and per hit hurt audio cost nothing during gameplay. The death clip is rendered on the killing blow, played, and the temp file deleted along with the taunt and hurt files when the enemy is removed from the map.
+
+TTS enemy builder.
+
+Opening the TTS enemy entry under the kombat tab on a 2d map brings up a single form with x and y inputs prefilled from the camera markers, numeric inputs for health, attack, defense, fire time, and speed, three plain text inputs for the taunt, hurt, and death lines, a list of installed SAPI voices populated from the system, three sliders for rate, volume, and pitch, a preview taunt button, and the standard okay and cancel buttons.
+
+The voice list filters out the engine's builtin fallback voice, leaving only real installed SAPI voices that will produce useful audio on the player's machine. If the system has no real voices the form refuses to open with an error.
+
+Pressing the preview taunt button renders the current taunt text with the currently selected voice and slider values into a temp preview file, then plays it through the builder's audio pool, so you can hear what an enemy will sound like before placing them in the map. Each press overwrites the previous preview. The text and slider values can be tweaked between presses to dial in exactly the voice you want.
+
+The taunt, hurt, and death text fields accept any characters except double quotes, which are silently stripped at write time because the on disk format uses double quotes as field delimiters. Authors type plain natural language sentences without quote marks; the engine adds quotes when serializing and removes them when parsing.
+
+Required field validation. The form refuses to submit until every field except the sliders is filled in. The sliders always have a value because they default to a position when the form opens.
+
+On submit, the line is appended to the map's info.sif and the enemy is spawned immediately so you can hear and test the result without reloading.
+
+Spawn line format.
+
+The spawn line format on disk is the following:
+
+ttsenemie x y health attack defense firetime speed "taunt" "hurt" "death" "voice" rate volume pitch
+
+The first eight fields are space separated numbers, followed by four space separated strings each wrapped in double quotes (which is what allows the multi word taunt, hurt, death, and voice fields to round trip through the parser without needing escape characters), followed by three space separated numbers for the SAPI voice settings.
+
+The line is parsed back into spawn_ttsenemie on map load, so editing this file by hand is a valid way to bulk place enemies, swap voice assignments across an entire map, or tune combat stats without going through the form. The line editor in the builder shows the raw line as it appears on disk, including the quotes and the full SAPI voice name, since both are part of the contract that lets the same line reload into the same enemy on the next map load.

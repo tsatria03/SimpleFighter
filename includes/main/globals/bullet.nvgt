@@ -237,7 +237,14 @@ bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("equipments/weapo
 int dmg = max(0, int(bullets[i].damage * 0.5) - npcs[j].defence*3);
 npcs[j].health -= dmg;
 kombatlog.insert_last(dmg+" damage to "+npcs[j].subtype+" by "+bullets[i].bulltype2+"'s weapon attack.");
-if(dmg>0) npcs[j].hurtsound=npool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"),me.x,me.y,me.z,npcs[j].x,npcs[j].y,npcs[j].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(dmg>0 and npcs[j].health>0)
+{
+npool.pause_sound(npcs[j].mainsound);
+npcs[j].hurtsound=npool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"),me.x,me.y,me.z,npcs[j].x,npcs[j].y,npcs[j].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+npcs[j].hurtdelay=round(npool.get_sound_length(npcs[j].hurtsound),0);
+npcs[j].hurttimer.restart();
+npcs[j].hurting=true;
+}
 if(bullets[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=bullets[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
 bullets.remove_at(i);
 return;
@@ -248,8 +255,36 @@ bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("equipments/weapo
 int dmg = max(0, bullets[i].damage - npcs[j].defence*3);
 npcs[j].health -= dmg;
 kombatlog.insert_last(dmg+" damage to "+npcs[j].subtype+" by "+bullets[i].bulltype2+"'s weapon attack.");
-if(dmg>0) npcs[j].hurtsound=npool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"),me.x,me.y,me.z,npcs[j].x,npcs[j].y,npcs[j].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(dmg>0 and npcs[j].health>0)
+{
+npool.pause_sound(npcs[j].mainsound);
+npcs[j].hurtsound=npool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"),me.x,me.y,me.z,npcs[j].x,npcs[j].y,npcs[j].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+npcs[j].hurtdelay=round(npool.get_sound_length(npcs[j].hurtsound),0);
+npcs[j].hurttimer.restart();
+npcs[j].hurting=true;
+}
 if(bullets[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=bullets[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
+bullets.remove_at(i);
+return;
+}
+}
+for(uint jt=0; jt<ttsenemies.length(); jt++)
+{
+if(ttsenemies[jt].ttsemx==bullets[i].bullx and ttsenemies[jt].ttsemy==bullets[i].bully and mapmode == "2d")
+{
+bulletpool.destroy_sound(bullets[i].bullsound);
+bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+int dmg = max(0, bullets[i].damage - ttsenemies[jt].defense*3);
+ttsenemies[jt].ttsenehealth -= dmg;
+if(dmg>0 and ttsenemies[jt].ttsenehealth>0)
+{
+ttsempool.pause_sound(ttsenemies[jt].ttsemsound);
+ttsenemies[jt].hurtsound=ttsempool.play_extended_2d(ttsenemies[jt].hurt_file,me.x,me.y,ttsenemies[jt].ttsemx,ttsenemies[jt].ttsemy,0,0,0,0,false,0,0,0,100,false);
+ttsenemies[jt].hurtdelay=round(ttsempool.get_sound_length(ttsenemies[jt].hurtsound),0);
+ttsenemies[jt].hurttimer.restart();
+ttsenemies[jt].hurting=true;
+}
 bullets.remove_at(i);
 return;
 }

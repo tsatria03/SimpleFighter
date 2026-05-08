@@ -28,6 +28,12 @@ void npcloop()
         string sound_base = "kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype;
         bool human_armed = (npcs[i].category == "humans" && npcs[i].wephum.cad != "");
 
+        if(npcs[i].hurting and npcs[i].hurttimer.elapsed >= npcs[i].hurtdelay)
+        {
+            pool.resume_sound(npcs[i].mainsound);
+            npcs[i].hurting = false;
+        }
+
         // tick the human's reload timer
         if(human_armed) npcs[i].wephum.check_reload(npcs[i].x, npcs[i].y, npcs[i].z);
 
@@ -474,7 +480,7 @@ void npcloop()
         }
 
         // taunt
-        if(npcs[i].taunttimer.elapsed >= npcs[i].taunttime)
+        if(npcs[i].taunttimer.elapsed >= npcs[i].taunttime and !npcs[i].hurting)
         {
             npcs[i].mainsound = pool.play_extended_3d(get_map_sound(sound_base+"/*taunt*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             int delay = round(pool.get_sound_length(npcs[i].mainsound), 0);

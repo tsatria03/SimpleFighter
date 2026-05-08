@@ -1,3 +1,41 @@
+array<string> extract_quoted(const string&in source, string&out remainder)
+{
+array<string> fields;
+int pos = 0;
+while(true)
+{
+int q1 = source.find_first_of("\"", pos);
+if(q1 == -1) break;
+int q2 = source.find_first_of("\"", q1 + 1);
+if(q2 == -1) break;
+fields.insert_last(source.substr(q1 + 1, q2 - q1 - 1));
+pos = q2 + 1;
+}
+remainder = source.substr(pos);
+return fields;
+}
+
+bool generate_tts(string path, string text, string voice_name = "", int rate = 0, int volume = 100, int pitch = 0)
+{
+    tts_voice tv;
+    if (voice_name != "")
+    {
+        array<string>@ voices = tv.list_voices();
+        for (uint i = 0; i < voices.length(); i++)
+        {
+            if (voices[i] == voice_name)
+            {
+                tv.set_voice(i);
+                break;
+            }
+        }
+    }
+    tv.rate = rate;
+    tv.volume = volume;
+    tv.pitch = pitch;
+    return tv.speak_to_file(path, text);
+}
+
 bool is_admin()
 {
 library l;
