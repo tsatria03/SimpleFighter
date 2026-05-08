@@ -383,8 +383,6 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
         do_compile = ask("Do you want to compile this project?")
 
     if do_compile:
-        with open(os.path.join(REPO_DIR, "includes", "version.nvgt"), "w", encoding="utf-8", newline="") as vf:
-            vf.write(f'string version = "{version}";\r\n')
         print("Compiling NVGT source...")
         if not run_cmd([NVGT, "-c", "-Q", os.path.join(REPO_DIR, NVGT_FILE)]):
             print("ERROR: NVGT compilation failed.")
