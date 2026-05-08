@@ -319,13 +319,25 @@ def do_website_update(version, tag, skip_website):
         return
     print("Website updated.\n")
 
+    version_txt = os.path.join(os.path.dirname(SITE_HTML), "version.txt")
+    version_txt_relpath = os.path.dirname(SITE_PATH).replace("\\", "/") + "/version.txt"
+    version_txt_updated = False
+    if os.path.exists(version_txt):
+        with open(version_txt, "w", encoding="utf-8") as f:
+            f.write(version)
+        print(f"Updated {version_txt} to {version}.\n")
+        version_txt_updated = True
+
     print("Committing website changes...")
     log = subprocess.run(["git", "log", "--oneline"], cwd=SITE_REPO, capture_output=True, text=True).stdout
     if f"Updated {GAME} to version {version}." in log:
         print("WARNING: Commit already exists. Skipping commit.\n")
         return
 
-    run_cmd(["git", "add", SITE_PATH], cwd=SITE_REPO)
+    add_targets = [SITE_PATH]
+    if version_txt_updated:
+        add_targets.append(version_txt_relpath)
+    run_cmd(["git", "add"] + add_targets, cwd=SITE_REPO)
     if not run_cmd(["git", "commit", "-m", f"Updated {GAME} to version {version}."], cwd=SITE_REPO):
         print("ERROR: Failed to commit website changes.")
         return
