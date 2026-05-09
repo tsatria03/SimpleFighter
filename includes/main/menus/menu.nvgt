@@ -389,7 +389,7 @@ m.add_item_tts("You're currently on level"+level+"with"+xp+"experience. Your nex
 m.add_item_tts("You have"+points+"points available to spend");
 m.add_item_tts("upgrade maximum character attack,"+"currently set to;"+attack, "umat");
 m.add_item_tts("upgrade maximum character defence,"+"currently set to;"+defence, "umd");
-if(melee==false) m.add_item_tts("upgrade maximum weapon ammo,"+"currently set to;"+wepchar.max_ammo, "uma");
+if(!wepchar.melee) m.add_item_tts("upgrade maximum weapon ammo,"+"currently set to;"+wepchar.max_ammo, "uma");
 m.add_item_tts("upgrade maximum character health,"+"currently set to;"+maxhealth, "umh");
 m.add_item_tts("upgrade maximum character stamina,"+"currently set to;"+maxstamina, "umt");
 m.add_item_tts("upgrade maximum character lives,"+"currently set to;"+lifecard, "umlf");
@@ -711,123 +711,37 @@ return;
 }
 void weaponsmenu()
 {
-setupmenu();
-m.add_item_tts("archery", "arro");
-m.add_item_tts("artillery", "shoot");
-m.add_item_tts("explosive", "bomb");
-m.add_item_tts("melee", "swing");
-int mres=m.run("Weapons menu",true);
-string wpsm=m.get_item_name(mres);
-if(mres==0)
-{
-resume_pools();
-speak("canceled");
-return;
-}
-if(wpsm=="arro")
-{
-string[] archers=get_pack_sound_folders("equipments/weapons/archery/*");
-if(archers.length()==0)
-{
-dlg("Error. There are no archery weapons available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-wepchar.parse(wepchar.cad, wepchar.sub);
-string res=weaponcatmenu("archery");
-if(res!="")
-{
-melee=false;
-p.destroy_sound(refslot);
-wepdef=0;
-wepchar.cad="archery";
-t.destroy_sound(prevslot);
-wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y), int(me.z));
-speak(wepchar.sub + " equipped");
-}
-}
-}
-if(wpsm=="shoot")
-{
-string[] fighters=get_pack_sound_folders("equipments/weapons/artillery/*");
-if(fighters.length()==0)
-{
-dlg("Error. There are no artillery weapons available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-wepchar.parse(wepchar.cad, wepchar.sub);
-string res=weaponcatmenu("artillery");
-if(res!="")
-{
-melee=false;
-p.destroy_sound(refslot);
-wepdef=0;
-wepchar.cad="artillery";
-t.destroy_sound(prevslot);
-wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y), int(me.z));
-speak(wepchar.sub + " equipped");
-}
-}
-}
-if(wpsm=="bomb")
-{
-string[] killers=get_pack_sound_folders("equipments/weapons/explosive/*");
-if(killers.length()==0)
-{
-dlg("Error. There are no explosive weapons available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-wepchar.parse(wepchar.cad, wepchar.sub);
-string res=weaponcatmenu("explosive");
-if(res!="")
-{
-melee=false;
-p.destroy_sound(refslot);
-wepdef=0;
-wepchar.cad="explosive";
-t.destroy_sound(prevslot);
-wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y), int(me.z));
-speak(wepchar.sub + " equipped");
-}
-}
-}
-if(wpsm=="swing")
-{
-string[] brawlers=get_pack_sound_folders("equipments/weapons/melee/*");
-if(brawlers.length()==0)
-{
-dlg("Error. There are no melee weapons available to view. Press enter to continue.");
-resume_pools();
-return;
-}
-else
-{
-wepchar.parse(wepchar.cad, wepchar.sub);
-string res=weaponcatmenu("melee");
-if(res!="")
-{
-melee=true;
-p.destroy_sound(refslot);
-wepdef=0;
-wepchar.cad="melee";
-t.destroy_sound(prevslot);
-wepchar.sub=res;
-wepchar.play_draw(int(me.x), int(me.y), int(me.z));
-speak(wepchar.sub + " equipped");
-}
-}
-}
+    setupmenu();
+    string[] cats = get_pack_sound_folders("equipments/weapons/*");
+    for(uint i = 0; i < cats.length(); i++)
+        m.add_item_tts(cats[i], cats[i]);
+    int mres = m.run("Weapons menu", true);
+    string wpsm = m.get_item_name(mres);
+    if(mres == 0)
+    {
+        resume_pools();
+        speak("canceled");
+        return;
+    }
+    string[] weapons = get_pack_sound_folders("equipments/weapons/" + wpsm + "/*");
+    if(weapons.length() == 0)
+    {
+        dlg("Error. There are no " + wpsm + " weapons available to view. Press enter to continue.");
+        resume_pools();
+        return;
+    }
+    wepchar.parse(wepchar.cad, wepchar.sub);
+    string res = weaponcatmenu(wpsm);
+    if(res != "")
+    {
+        p.destroy_sound(refslot);
+        wepdef = 0;
+        wepchar.cad = wpsm;
+        t.destroy_sound(prevslot);
+        wepchar.sub = res;
+        wepchar.play_draw(int(me.x), int(me.y), int(me.z));
+        speak(wepchar.sub + " equipped");
+    }
 }
 void pausemenu()
 {

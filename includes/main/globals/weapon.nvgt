@@ -24,6 +24,11 @@ class weapon
     double loaded_ammo;
     double level;
 
+    // category-of-use flags (per-weapon, defaulted by category if absent in info.sif)
+    bool melee;
+    bool reflection;
+    int refchance;
+
     // reload state
     bool is_reloading;
     double pending_ammo;
@@ -57,6 +62,9 @@ class weapon
         level = 1;
         launch_type = "bullet";
         launch_subtype = "";
+        melee = true;
+        reflection = true;
+        refchance = 80;
         is_reloading = false;
         pending_ammo = 0;
         reload_duration = 0;
@@ -65,13 +73,16 @@ class weapon
 
     bool is_melee()
     {
-        return cad == "melee";
+        return melee;
     }
 
     void parse(string c, string s)
     {
         cad = c;
         sub = s;
+        melee = (cad == "melee");
+        reflection = (cad == "melee");
+        refchance = 80;
         string path = "sounds/" + soundpack + "/equipments/weapons/" + cad + "/" + sub + "/info.sif";
         if(!file_exists(path)) return;
         if(!info.open(path, "rb")) return;
@@ -119,6 +130,15 @@ class weapon
                 int enabled = (toks.length() >= 1 && toks[0] != "") ? parse_int(toks[0]) : 0;
                 int dur = (toks.length() >= 2 && toks[1] != "") ? parse_int(toks[1]) : 0;
                 stun = (enabled == 1 && dur > 0) ? dur : 0;
+            }
+            else if(data[0] == "melee") melee = (data[1] == "true");
+            else if(data[0] == "reflection") reflection = (data[1] == "true");
+            else if(data[0] == "refchance")
+            {
+                int v = parse_int(data[1]);
+                if(v < 0) v = 0;
+                if(v > 100) v = 100;
+                refchance = v;
             }
         }
     }
@@ -174,7 +194,7 @@ class weapon
             sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*empty*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             return;
         }
-        bool player_reflecting = (melee == true && wepchar.cad == "melee" && wepdef == 1);
+        bool player_reflecting = (wepchar.reflection && wepdef == 1);
         if(!(firer_npc != -1 && (shieldon == 1 || player_reflecting)))
             sound_slot = p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*fire*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         int dmg = damage + extra_damage;
