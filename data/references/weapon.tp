@@ -2,7 +2,7 @@ Weapons.
 
 A weapon is what the player and armed humans fire. The same weapon file produces the same behavior whether the player draws it or a human picks it up at spawn, so every stat written below applies equally to both wielders.
 
-Each weapon lives in its own folder under one of four categories: archery, artillery, explosive, or melee. The full file path is equipments/weapons/<category>/<weapon>/info.sif inside the sound pack.
+Each weapon lives in its own folder under a category folder. The four categories that ship by default are archery, artillery, explosive, and melee, but the engine treats whatever folders exist under equipments/weapons/ as valid categories — drop a new folder there (e.g. specials, magic, throwing) and the buy menu, the /draw slash command, and randomly armed enemies all start using it automatically with no code change. The full file path to a weapon is equipments/weapons/<category>/<weapon>/info.sif inside the sound pack.
 
 Sound packs and info.sif files.
 
@@ -19,6 +19,8 @@ Every field in info.sif uses the form key=value, one per line. Missing fields fa
 damage (int): The weapon's base damage per hit. The wielder's own attack bonus is added on top: the player's flat attack stat in the player's case, the human's effective attack times level in the human's case. Defaults to 1.
 
 fire mode (int): How the weapon fires. 0 is manual fire, where each press of the fire key triggers one shot, paced by spam time. 1 is auto fire, where holding the fire key triggers a continuous stream, paced by repeat time. Defaults to 0.
+
+melee (bool): Whether the weapon uses melee combat math instead of ranged combat math. true means it swings instead of fires, ignores ammo entirely, and the X key reports "this weapon does not take any ammo." false means it consumes loaded ammo per shot, plays the fire clip, and uses range based bullet physics. Defaults to true for weapons in the melee category folder and false for weapons in any other folder, so the field is optional unless you want to override the folder's default — for example, a club authored under specials with melee=true behaves like a melee weapon despite its folder.
 
 x range (int): How far in tiles the bullet flies along the x axis before vanishing. Defaults to 1.
 y range (int): How far in tiles the bullet flies along the y axis before vanishing. Defaults to 1.
@@ -40,3 +42,7 @@ unlock level (double): The minimum character level required to draw this weapon 
 launch type (string): What the weapon fires when the trigger is pulled. The default is bullet, which sends out a regular bullet that travels along the wielder's facing axis. Setting launch type=projectile:<name> sends out the named projectile from kombat/projectiles/<name> instead, with the weapon's damage, speed, and range carried over to the projectile's flight. Projectiles fired by a wielder travel one way and disappear on first entity hit, giving rocket launchers and needle launchers a clean fire and forget feel.
 
 stun mode (int pair): Whether and how long the weapon's bullet or projectile freezes its target on hit, written as enabled:duration where enabled is 1 to turn the rider on and 0 to turn it off, and duration is the stun time in milliseconds. stun mode=1:500 makes a 500 millisecond stun on every successful hit. stun mode=0 (or 1:0, which is functionally the same) disables the rider entirely. The stun applies in both directions, so a human with a tazer rifle freezes the player and a player with the same weapon freezes a human, and is gated on damage actually going through, so a melee block or a full shield absorption ducks the stun the same way it ducks the hurt clip.
+
+reflection (bool): Whether the weapon supports the T key reflection toggle. When true, pressing T while the weapon is drawn enters reflection mode, where incoming bullets and projectiles have a chance to deflect off you instead of dealing damage. The weapon's folder must contain on, off, ref, and block clips for the toggle audio and deflection sound to play. Defaults to true for weapons in the melee category folder and false for weapons in any other folder, so the field is optional unless you want to give a non melee weapon reflective ability (e.g. a magic staff or a sci fi pistol with a built in deflector) or take reflection away from a specific melee weapon (e.g. a brittle dagger that can't bat bullets aside).
+
+refchance (int): The percent chance that an incoming attack gets deflected while the weapon is in reflection mode. Only consulted when reflection=true and the wielder has the T key toggled on; weapons with reflection=false ignore this field entirely. The value is clamped to 0 through 100 on read, so a typo in the file can't push the rate outside the valid range. Defaults to 80, matching the long standing fixed deflection rate, but you can author a brittle deflector at refchance=30, a perfect shield at refchance=100, or a roleplay only "shield up" stance at refchance=0 that plays the toggle audio without ever blocking anything.
