@@ -1,4 +1,6 @@
+int tts_id_counter = 0;
 ttsenemie@[] ttsenemies(0);
+
 class ttsenemie
 {
     int ttsemsound;
@@ -23,11 +25,10 @@ class ttsenemie
     string voice;
     string weapontype;
     string weapontype2;
-    string ttsid = format_int(ttsenemies.length(), 3);
+    string ttsid = format_int(tts_id_counter++, 6);
     string taunt_file = DIRECTORY_TEMP + "\\taunt_" + ttsid + ".ogg";
     string hurt_file = DIRECTORY_TEMP + "\\hurt_" + ttsid + ".ogg";
-    string ttsid2 = format_int(ttsenemies.length(), 3);
-    string death_file = DIRECTORY_TEMP + "\\death_" + ttsid2 + ".ogg";
+    string death_file = DIRECTORY_TEMP + "\\death_" + ttsid + ".ogg";
     timer ttsenemietimer;
     timer hurttimer;
     timer firetimer;
@@ -128,9 +129,10 @@ ttsenemies[i].firetimer.restart();
 }
 if(ttsenemies[i].ttsenehealth<=0)
 {
+ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
+ttsempool.destroy_sound(ttsenemies[i].hurtsound);
     if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file);
     generate_tts(ttsenemies[i].death_file, ttsenemies[i].ttsemdeath, ttsenemies[i].voice, ttsenemies[i].rate, ttsenemies[i].volume, ttsenemies[i].pitch);
-ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
 ttsenemies[i].defsound = ttsempool.play_extended_2d(ttsenemies[i].death_file, me.x, me.y, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 int falldelay = round(ttsempool.get_sound_length(ttsenemies[i].defsound), 0);
 spawn_bodyfall(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, (falldelay <= 0 ? random(500, 1000) : falldelay));
