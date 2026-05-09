@@ -176,251 +176,72 @@ prevslot=t.play_stationary(get_pack_sound("menus/"+menuchanges+"/*wrap*"), false
 return 0;
 }
 
-string archersmenu()
+string weaponcatmenu(string cad)
 {
-    string[] archers =get_pack_sound_folders("equipments/weapons/archery/*");
+    string[] weapons = get_pack_sound_folders("equipments/weapons/" + cad + "/*");
     setupmenu();
-    m.set_callback(@archers_callback, "");
-    for (uint i = 0; i < archers.length(); i++)
+    m.set_callback(@weaponcat_callback, cad);
+    for (uint i = 0; i < weapons.length(); i++)
     {
-        string weapon_name = archers[i];
+        string weapon_name = weapons[i];
         weapon temp;
-        temp.parse("archery", weapon_name);
+        temp.parse(cad, weapon_name);
         double unlock_level = temp.level;
         bool is_unlocked = level >= unlock_level;
-string label = weapon_name;
-if (!is_unlocked)
-    label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+        string label = weapon_name;
+        if (!is_unlocked)
+            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
         m.add_item_tts(label, weapon_name, "", is_unlocked);
     }
-    int mres = m.run("Archery menu", true);
+    string title = cad.substr(0, 1).upper() + cad.substr(1) + " menu";
+    int mres = m.run(title, true);
     if (mres == 0) weaponsmenu();
-    if (mres > 0 && mres <= archers.length())
+    if (mres > 0 && mres <= weapons.length())
     {
         resume_pools();
-        wepchar.parse("archery", archers[mres - 1]);
+        wepchar.parse(cad, weapons[mres - 1]);
     }
     return m.get_item_name(mres);
 }
-int archers_callback(dynamic_menu_pro@ m, string data)
+int weaponcat_callback(dynamic_menu_pro@ m, string data)
 {
-string archers;
-if(m.menu_position>0)
-archers=m.item_list[m.menu_position-1].name;
+    string cad = data;
+    string weapon_name;
+    if(m.menu_position > 0)
+        weapon_name = m.item_list[m.menu_position - 1].name;
+    string folder = "equipments/weapons/" + cad + "/" + weapon_name + "/";
     if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/archery/"+archers+"/*fire*"), false);
-keytimer.restart();
-}
-if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/archery/"+archers+"/*fire*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/archery/"+archers+"/*draw*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/archery/"+archers+"/*hit*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_E) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_E) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/archery/"+archers+"/*empty*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_R) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_R) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/archery/"+archers+"/*reload*"), false);
-}
-return 0;
-}
-string gunsmenu()
-{
-    string[] fighters =get_pack_sound_folders("equipments/weapons/artillery/*");
-    setupmenu();
-    m.set_callback(@guns_callback, "");
-    for (uint i = 0; i < fighters.length(); i++)
     {
-        string weapon_name = fighters[i];
-        weapon temp;
-        temp.parse("artillery", weapon_name);
-        double unlock_level = temp.level;
-        bool is_unlocked = level >= unlock_level;
-        string label = weapon_name;
-        if (!is_unlocked)
-            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-        m.add_item_tts(label, weapon_name, "", is_unlocked);
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*fire*"), false);
+        keytimer.restart();
     }
-    int mres = m.run("Artillery menu", true);
-    if (mres == 0) weaponsmenu();
-    if (mres > 0 && mres <= fighters.length())
+    if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
     {
-        resume_pools();
-        wepchar.parse("artillery", fighters[mres - 1]);
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*fire*"), false);
     }
-    return m.get_item_name(mres);
-}
-int guns_callback(dynamic_menu_pro@ m, string data)
-{
-string fighters;
-if(m.menu_position>0)
-fighters=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/artillery/"+fighters+"/*fire*"), false);
-keytimer.restart();
-}
-if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/artillery/"+fighters+"/*fire*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/artillery/"+fighters+"/*draw*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/artillery/"+fighters+"/*hit*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_E) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_E) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/artillery/"+fighters+"/*empty*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_R) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_R) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/artillery/"+fighters+"/*reload*"), false);
-}
-return 0;
-}
-string explosesmenu()
-{
-    string[] killers =get_pack_sound_folders("equipments/weapons/explosive/*");
-    setupmenu();
-    m.set_callback(@bombs_callback, "");
-    for (uint i = 0; i < killers.length(); i++)
+    if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_L) and m.menu_position>0)
     {
-        string weapon_name = killers[i];
-        weapon temp;
-        temp.parse("explosive", weapon_name);
-        double unlock_level = temp.level;
-        bool is_unlocked = level >= unlock_level;
-        string label = weapon_name;
-        if (!is_unlocked)
-            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-        m.add_item_tts(label, weapon_name, "", is_unlocked);
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*draw*"), false);
     }
-    int mres = m.run("Explosive menu", true);
-    if (mres == 0) weaponsmenu();
-    if (mres > 0 && mres <= killers.length())
+    if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_H) and m.menu_position>0)
     {
-        resume_pools();
-        wepchar.parse("explosive", killers[mres - 1]);
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*hit*"), false);
     }
-    return m.get_item_name(mres);
-}
-int bombs_callback(dynamic_menu_pro@ m, string data)
-{
-string killers;
-if(m.menu_position>0)
-killers=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/explosive/"+killers+"/*fire*"), false);
-keytimer.restart();
-}
-if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/explosive/"+killers+"/*fire*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/explosive/"+killers+"/*draw*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/explosive/"+killers+"/*hit*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_E) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_E) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/explosive/"+killers+"/*empty*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_R) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_R) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/explosive/"+killers+"/*reload*"), false);
-}
-return 0;
-}
-string meleesmenu()
-{
-    string[] brawlers =get_pack_sound_folders("equipments/weapons/melee/*");
-    setupmenu();
-    m.set_callback(@swords_callback, "");
-    for (uint i = 0; i < brawlers.length(); i++)
+    if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_E) and m.menu_position>0)
     {
-        string weapon_name = brawlers[i];
-        weapon temp;
-        temp.parse("melee", weapon_name);
-        double unlock_level = temp.level;
-        bool is_unlocked = level >= unlock_level;
-        string label = weapon_name;
-        if (!is_unlocked)
-            label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-        m.add_item_tts(label, weapon_name, "", is_unlocked);
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*empty*"), false);
     }
-    int mres = m.run("Melee menu", true);
-    if (mres == 0) weaponsmenu();
-    if (mres > 0 && mres <= brawlers.length())
+    if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_R) and m.menu_position>0)
     {
-        resume_pools();
-        wepchar.parse("melee", brawlers[mres - 1]);
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*reload*"), false);
     }
-    return m.get_item_name(mres);
-}
-int swords_callback(dynamic_menu_pro@ m, string data)
-{
-string brawlers;
-if(m.menu_position>0)
-brawlers=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/melee/"+brawlers+"/*fire*"), false);
-keytimer.restart();
-}
-if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/melee/"+brawlers+"/*fire*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/melee/"+brawlers+"/*draw*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/weapons/melee/"+brawlers+"/*hit*"), false);
-}
-return 0;
+    return 0;
 }
 string shieldsmenu()
 {
