@@ -28,9 +28,11 @@ class weapon
     bool melee;
     bool reflection;
     int refchance;
+    bool refcushion;
 
     // multi-target / wind-up
-    bool scadder;
+    int scadder_radius;
+    int scadder_count;
     int swing_speed;
 
     // reload state
@@ -74,7 +76,9 @@ class weapon
         melee = true;
         reflection = true;
         refchance = 80;
-        scadder = false;
+        refcushion = false;
+        scadder_radius = 0;
+        scadder_count = 0;
         swing_speed = 0;
         is_swinging = false;
         pending_dmg = 0;
@@ -96,7 +100,9 @@ class weapon
         melee = (cad == "melee");
         reflection = (cad == "melee");
         refchance = 80;
-        scadder = false;
+        refcushion = false;
+        scadder_radius = 0;
+        scadder_count = 0;
         swing_speed = 0;
         is_swinging = false;
         pending_dmg = 0;
@@ -150,7 +156,16 @@ class weapon
             }
             else if(data[0] == "melee") melee = (data[1] == "true");
             else if(data[0] == "reflection") reflection = (data[1] == "true");
-            else if(data[0] == "scadder") scadder = (data[1] == "true");
+            else if(data[0] == "scadder")
+            {
+                string[] sc_parts = string_split(data[1], ":", true);
+                int sr = (sc_parts.length() >= 1 && sc_parts[0] != "") ? parse_int(sc_parts[0]) : 0;
+                int sc = (sc_parts.length() >= 2 && sc_parts[1] != "") ? parse_int(sc_parts[1]) : 0;
+                if(sr < 0) sr = 0;
+                if(sc < 0) sc = 0;
+                scadder_radius = sr;
+                scadder_count = sc;
+            }
             else if(data[0] == "swing speed")
             {
                 int v = parse_int(data[1]);
@@ -159,10 +174,12 @@ class weapon
             }
             else if(data[0] == "refchance")
             {
-                int v = parse_int(data[1]);
+                string[] rc_parts = string_split(data[1], ":", true);
+                int v = (rc_parts.length() >= 1 && rc_parts[0] != "") ? parse_int(rc_parts[0]) : 80;
                 if(v < 0) v = 0;
                 if(v > 100) v = 100;
                 refchance = v;
+                if(rc_parts.length() >= 2) refcushion = (rc_parts[1] == "true");
             }
         }
     }
@@ -267,7 +284,7 @@ class weapon
         }
         else
         {
-            spawn_bullet(x, y, range, range2, dmg, speed, facing, cad, sub, stun, firer_npc, z, range3);
+            spawn_bullet(x, y, range, range2, dmg, speed, facing, cad, sub, stun, firer_npc, z, range3, scadder_radius, scadder_count);
         }
         if(!is_melee()) loaded_ammo -= 1;
     }
@@ -291,7 +308,7 @@ class weapon
                 }
                 if(shieldon == 1 and shield_blocks())
                 {
-                    int sdm = max(1, int(dmg * 0.5) - shielddefence * 3);
+                    int sdm = max(1, (wepchar.refcushion ? int(dmg * 0.5) : dmg) - shielddefence * 3);
                     shieldstrength -= sdm;
                     kombatlog.insert_last(sub + "'s attack took " + shieldtype + " " + sdm + " damage.");
                     shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
@@ -299,7 +316,7 @@ class weapon
                 }
                 p.play_stationary(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*hit*"), false);
                 p.play_stationary(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*shell*"), false);
-                int hit_dmg = max(1, int(dmg * 0.5) - defence * 3);
+                int hit_dmg = max(1, (wepchar.refcushion ? int(dmg * 0.5) : dmg) - defence * 3);
                 health -= hit_dmg;
                 kombatlog.insert_last(sub + "'s attack took you " + hit_dmg + " damage.");
                 play_player_pain(hit_dmg);
@@ -324,9 +341,9 @@ class weapon
             return;
         }
         bool is_3d = (mapmode == "3d");
-        if(scadder)
+        if(scadder_radius > 0)
         {
-            melee_strike_all(fx, fy, fz, dmg, facing, is_3d);
+            melee_strike_all(fx, fy, fz, dmg, facing, is_3d, scadder_radius, scadder_count);
             return;
         }
         // player swinging melee — find nearest valid target across all bullet-targetable types
@@ -560,7 +577,7 @@ class weapon
                     return;
                 }
                 play_melee_hit_at(npcs[j].x, npcs[j].y, npcs[j].z);
-                int hit_dmg = max(0, int(dmg * 0.5) - npcs[j].defence * 3);
+                int hit_dmg = max(0, (npcs[j].wephum.refcushion ? int(dmg * 0.5) : dmg) - npcs[j].defence * 3);
                 npcs[j].health -= hit_dmg;
                 kombatlog.insert_last(hit_dmg + " damage to " + npcs[j].subtype + " by " + sub + "'s weapon attack.");
                 if(hit_dmg > 0 and npcs[j].health > 0)
@@ -801,7 +818,7 @@ class weapon
         p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*shell*"), me.x, me.y, me.z, tx, ty, tz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
     }
 
-    void melee_strike_all(int fx, int fy, int fz, int dmg, string facing, bool is_3d)
+    void melee_strike_all(int fx, int fy, int fz, int dmg, string facing, bool is_3d, int sr, int sc)
     {
         // npcs
         for(uint j = 0; j < npcs.length(); j++)
@@ -813,6 +830,8 @@ class weapon
             int dz = absolute(int(npcs[j].z) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             sound_pool@ npool = npc_pool(npcs[j].category);
             if(npcs[j].category == "humans" and npcs[j].wephum.reflection and npcs[j].refon)
             {
@@ -827,7 +846,7 @@ class weapon
                     continue;
                 }
                 play_melee_hit_at(npcs[j].x, npcs[j].y, npcs[j].z);
-                int hd = max(0, int(dmg * 0.5) - npcs[j].defence * 3);
+                int hd = max(0, (npcs[j].wephum.refcushion ? int(dmg * 0.5) : dmg) - npcs[j].defence * 3);
                 npcs[j].health -= hd;
                 kombatlog.insert_last(hd + " damage to " + npcs[j].subtype + " by " + sub + "'s weapon attack.");
                 if(hd > 0 and npcs[j].health > 0)
@@ -840,6 +859,7 @@ class weapon
                     npcs[j].hurting = true;
                 }
                 if(stun > 0) { stuntimer.restart(); stunned = true; stundir = stun; npcs[j].fireable = false; npcs[j].move_x = false; npcs[j].move_y = false; npcs[j].move_z = false; }
+                if(sc > 0) { sc--; if(sc <= 0) return; }
                 continue;
             }
             play_melee_hit_at(npcs[j].x, npcs[j].y, npcs[j].z);
@@ -856,6 +876,7 @@ class weapon
                 npcs[j].hurting = true;
             }
             if(stun > 0) { stuntimer.restart(); stunned = true; stundir = stun; npcs[j].fireable = false; npcs[j].move_x = false; npcs[j].move_y = false; npcs[j].move_z = false; }
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // tts enemies (2d only)
         if(!is_3d)
@@ -866,6 +887,7 @@ class weapon
                 int dx = absolute(int(ttsenemies[jt].ttsemx) - fx);
                 int dy = absolute(int(ttsenemies[jt].ttsemy) - fy);
                 if(dx > range or dy > range2) continue;
+                if(dx > sr or dy > sr) continue;
                 ttsempool.play_extended_2d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*hit*"), me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 ttsempool.play_extended_2d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*shell*"), me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 int hd = max(0, dmg - ttsenemies[jt].defense * 3);
@@ -880,6 +902,7 @@ class weapon
                     ttsenemies[jt].hurttimer.restart();
                     ttsenemies[jt].hurting = true;
                 }
+                if(sc > 0) { sc--; if(sc <= 0) return; }
             }
         }
         // calendars (destroy on hit; iterate backward)
@@ -892,10 +915,13 @@ class weapon
             int dz = absolute(int(calendars[i].calendarz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             calpool.destroy_sound(calendars[i].calendarsound);
             play_melee_hit_at(calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz);
             calendars[i].hurtsound = calpool.play_extended_3d(get_map_sound("objects/calendars/"+calendars[i].calendartype+"/*break*"), me.x, me.y, me.z, calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             calendars.remove_at(uint(i));
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // clocks (destroy; backward)
         for(int i = int(clocks.length()) - 1; i >= 0; i--)
@@ -907,10 +933,13 @@ class weapon
             int dz = absolute(int(clocks[i].clockz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             clockpool.destroy_sound(clocks[i].clocksound);
             play_melee_hit_at(clocks[i].clockx, clocks[i].clocky, clocks[i].clockz);
             clocks[i].hurtsound = clockpool.play_extended_3d(get_map_sound("objects/clocks/"+clocks[i].clocktype+"/*break*"), me.x, me.y, me.z, clocks[i].clockx, clocks[i].clocky, clocks[i].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             clocks.remove_at(uint(i));
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // doors (damage)
         for(uint i = 0; i < doors.length(); i++)
@@ -922,11 +951,14 @@ class weapon
             int dz = is_3d ? max(0, max(int(doors[i].minz) - fz, fz - int(doors[i].maxz))) : 0;
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(doors[i].minx, doors[i].miny, doors[i].minz);
             int hd = max(0, dmg);
             doors[i].doorhealth -= hd;
             kombatlog.insert_last(hd + " damage to door by " + sub + "'s weapon attack.");
             if(hd > 0) doors[i].hurtsound = doorpool.play_extended_3d(get_map_sound("objects/doors/dest/"+doors[i].desttype+"/*hurt*"), me.x, me.y, me.z, doors[i].minx, doors[i].miny, doors[i].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // objs/items (destroy; backward)
         for(int i = int(objs.length()) - 1; i >= 0; i--)
@@ -937,10 +969,13 @@ class weapon
             int dz = absolute(int(objs[i].itz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             itempool.destroy_sound(objs[i].objsound);
             play_melee_hit_at(objs[i].itx, objs[i].ity, objs[i].itz);
             objs[i].hurtsound = itempool.play_extended_3d(get_map_sound("objects/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*break*"), me.x, me.y, me.z, objs[i].itx, objs[i].ity, objs[i].itz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             objs.remove_at(uint(i));
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // signs (destroy; backward)
         for(int i = int(signs.length()) - 1; i >= 0; i--)
@@ -952,10 +987,13 @@ class weapon
             int dz = absolute(int(signs[i].signz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             signpool.destroy_sound(signs[i].signsound);
             play_melee_hit_at(signs[i].signx, signs[i].signy, signs[i].signz);
             signs[i].hurtsound = signpool.play_extended_3d(get_map_sound("objects/signs/"+signs[i].signtype+"/*break*"), me.x, me.y, me.z, signs[i].signx, signs[i].signy, signs[i].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             signs.remove_at(uint(i));
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // spikes (damage)
         for(uint i = 0; i < spikes.length(); i++)
@@ -967,6 +1005,8 @@ class weapon
             int dz = is_3d ? max(0, max(int(spikes[i].minz) - fz, fz - int(spikes[i].maxz))) : 0;
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(spikes[i].minx, spikes[i].miny, spikes[i].minz);
             int hd = max(0, dmg);
             spikes[i].spikehealth -= hd;
@@ -977,6 +1017,7 @@ class weapon
                 spikepool.update_sound_3d(spikes[i].hurtsound, spikes[i].minx, spikes[i].miny, 0);
                 spikepool.update_sound_range_3d(spikes[i].hurtsound, 0, spikes[i].maxx-spikes[i].minx, 0, spikes[i].maxy-spikes[i].miny, 0, 0);
             }
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // sucams (damage)
         for(uint i = 0; i < sucams.length(); i++)
@@ -987,11 +1028,14 @@ class weapon
             int dz = absolute(int(sucams[i].sucamz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(sucams[i].sucamx, sucams[i].sucamy, sucams[i].sucamz);
             int hd = max(0, dmg);
             sucams[i].camhealth -= hd;
             kombatlog.insert_last(hd + " damage to " + sucams[i].cameratype + " by " + sub + "'s weapon attack.");
             if(hd > 0) sucams[i].hurtsound = campool.play_extended_3d(get_map_sound("objects/cameras/"+sucams[i].cameratype+"/*hurt*"), me.x, me.y, me.z, sucams[i].sucamx, sucams[i].sucamy, sucams[i].sucamz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // parked vehicles (damage)
         for(uint i = 0; i < vehicles.length(); i++)
@@ -1003,11 +1047,14 @@ class weapon
             int dz = absolute(int(vehicles[i].vehz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(vehicles[i].vehx, vehicles[i].vehy, vehicles[i].vehz);
             int hd = max(0, dmg);
             vehicles[i].vehhealth -= hd;
             kombatlog.insert_last(hd + " damage to " + vehicles[i].vehtype + " by " + sub + "'s weapon attack.");
             if(hd > 0) vehicles[i].hurtsound = vehpool.play_extended_3d(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*hurt*"), me.x, me.y, me.z, vehicles[i].vehx, vehicles[i].vehy, vehicles[i].vehz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // walls — destructible take damage; indestructible play rico and skip damage
         for(uint i = 0; i < walls.length(); i++)
@@ -1018,6 +1065,8 @@ class weapon
             int dz = is_3d ? max(0, max(int(walls[i].minz) - fz, fz - int(walls[i].maxz))) : 0;
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             if(!walls[i].destroyable)
             {
                 play_melee_rico_at(walls[i].minx, walls[i].miny, walls[i].minz);
@@ -1033,6 +1082,7 @@ class weapon
                 p.update_sound_3d(walls[i].hurtsound, walls[i].minx, walls[i].miny, 0);
                 p.update_sound_range_3d(walls[i].hurtsound, 0, walls[i].maxx-walls[i].minx, 0, walls[i].maxy-walls[i].miny, 0, 0);
             }
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // staircases (damage)
         for(uint i = 0; i < staircases.length(); i++)
@@ -1044,6 +1094,8 @@ class weapon
             int dz = is_3d ? max(0, max(int(staircases[i].minz) - fz, fz - int(staircases[i].maxz))) : 0;
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(staircases[i].minx, staircases[i].miny, staircases[i].minz);
             int hd = max(0, dmg);
             staircases[i].stairshealth -= hd;
@@ -1054,6 +1106,7 @@ class weapon
                 p.update_sound_3d(staircases[i].hurtsound, staircases[i].minx, staircases[i].miny, 0);
                 p.update_sound_range_3d(staircases[i].hurtsound, 0, staircases[i].maxx-staircases[i].minx, 0, staircases[i].maxy-staircases[i].miny, 0, 0);
             }
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // platforms (damage; z exact on 3d)
         for(uint i = 0; i < platforms.length(); i++)
@@ -1065,6 +1118,8 @@ class weapon
             int dz = is_3d ? absolute(int(platforms[i].z) - fz) : 0;
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(platforms[i].minx, platforms[i].miny, platforms[i].z);
             int hd = max(0, dmg);
             platforms[i].plathealth -= hd;
@@ -1075,6 +1130,7 @@ class weapon
                 p.update_sound_3d(platforms[i].hurtsound, platforms[i].minx, platforms[i].miny, 0);
                 p.update_sound_range_3d(platforms[i].hurtsound, 0, platforms[i].maxx-platforms[i].minx, 0, platforms[i].maxy-platforms[i].miny, 0, 0);
             }
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // parked aircrafts (damage)
         for(uint i = 0; i < aircrafts.length(); i++)
@@ -1086,11 +1142,14 @@ class weapon
             int dz = absolute(int(aircrafts[i].plainz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(aircrafts[i].plainx, aircrafts[i].plainy, aircrafts[i].plainz);
             int hd = max(0, dmg);
             aircrafts[i].plainhealth -= hd;
             kombatlog.insert_last(hd + " damage to " + aircrafts[i].plaintype + " by " + sub + "'s weapon attack.");
             if(hd > 0) aircrafts[i].hurtsound = plainpool.play_extended_3d(get_map_sound("objects/aircrafts/"+aircrafts[i].plaintype+"/*hurt*"), me.x, me.y, me.z, aircrafts[i].plainx, aircrafts[i].plainy, aircrafts[i].plainz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // projectiles (damage; backward because death triggers destroy_projectile)
         for(int i = int(projectiles.length()) - 1; i >= 0; i--)
@@ -1102,6 +1161,8 @@ class weapon
             int dz = absolute(int(projectiles[i].proz) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(projectiles[i].prox, projectiles[i].proy, projectiles[i].proz);
             int hd = max(0, dmg);
             projectiles[i].projhealth -= hd;
@@ -1112,6 +1173,7 @@ class weapon
                 projpool.play_extended_3d(get_map_sound("kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, projectiles[i].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 destroy_projectile(uint(i));
             }
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // parked bikes (damage)
         for(uint i = 0; i < bikes.length(); i++)
@@ -1123,11 +1185,14 @@ class weapon
             int dz = absolute(int(bikes[i].bikez) - fz);
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(dx > sr or dy > sr) continue;
+            if(is_3d and dz > sr) continue;
             play_melee_hit_at(bikes[i].bikex, bikes[i].bikey, bikes[i].bikez);
             int hd = max(0, dmg);
             bikes[i].bikehealth -= hd;
             kombatlog.insert_last(hd + " damage to " + bikes[i].biketype + " by " + sub + "'s weapon attack.");
             if(hd > 0) bikes[i].hurtsound = bikepool.play_extended_3d(get_map_sound("objects/bikes/"+bikes[i].biketype+"/misc/*hurt*"), me.x, me.y, me.z, bikes[i].bikex, bikes[i].bikey, bikes[i].bikez, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
     }
 
