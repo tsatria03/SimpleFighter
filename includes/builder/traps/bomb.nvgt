@@ -28,58 +28,6 @@ if(bombs[i].bombtimer.elapsed>=bombs[i].bombtime)
 {
 bombpool.update_sound_3d(bombs[i].fallsound,bombs[i].bombx,bombs[i].bomby, 0);
 bombs[i].bombtimer.restart();
-if(me.x<bombs[i].bombx and paused==0)
-{
-bombpool.destroy_sound(bombs[i].fallsound);
-bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-bombs.remove_at(i);
-return;
-}
-if(me.x>bombs[i].bombx and paused==0)
-{
-bombpool.destroy_sound(bombs[i].fallsound);
-bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-bombs.remove_at(i);
-return;
-}
-if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me.z==bombs[i].bombz) and shieldon==1 and paused==0)
-{
-bombpool.destroy_sound(bombs[i].fallsound);
-shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
-int sdm = max(1, (bombs[i].damage) - (shielddefence * 3));
-shieldstrength -= sdm;
-kombatlog.insert_last(bombs[i].bombtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
-bombs.remove_at(i);
-return;
-}
-else if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me.z==bombs[i].bombz) and shieldon==0 and paused==0)
-{
-bombpool.destroy_sound(bombs[i].fallsound);
-bombs[i].landsound=bombpool.play_stationary_extended(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),false,0,0,0,100,false);
-int dmg = max(1, (bombs[i].damage) - (defence * 3));
-health -= dmg;
-kombatlog.insert_last(bombs[i].bombtype + "'s attack took you " + dmg + " damage.");
-{
-string painfile;
-int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
-if (damage_percent <= 1)
-{
-painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
-}
-else if (damage_percent >= 10)
-{
-painfile = get_pack_sound("characters/" + chartype+"/general/*crit*");
-}
-else
-{
-painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
-}
-painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
-}
-bombs.remove_at(i);
-return;
-}
-}
 for(uint j=0; j<npcs.length(); j++)
 {
 if(npcs[j].x==bombs[i].bombx and npcs[j].y==bombs[i].bomby and (mapmode != "3d" or npcs[j].z==bombs[i].bombz))
@@ -204,6 +152,51 @@ bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 doors[i15].hurtsound=doorpool.play_extended_3d(get_map_sound("objects/doors/dest/"+doors[i15].desttype+"/*hurt*"),me.x,me.y,me.z,doors[i15].minx,doors[i15].miny,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 doors[i15].doorhealth-=bombs[i].damage;
+bombs.remove_at(i);
+return;
+}
+}
+if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me.z==bombs[i].bombz) and shieldon==1 and paused==0)
+{
+bombpool.destroy_sound(bombs[i].fallsound);
+shieldslot=p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
+int sdm = max(1, (bombs[i].damage) - (shielddefence * 3));
+shieldstrength -= sdm;
+kombatlog.insert_last(bombs[i].bombtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+bombs.remove_at(i);
+return;
+}
+else if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me.z==bombs[i].bombz) and shieldon==0 and paused==0)
+{
+bombpool.destroy_sound(bombs[i].fallsound);
+bombs[i].landsound=bombpool.play_stationary_extended(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),false,0,0,0,100,false);
+int dmg = max(1, (bombs[i].damage) - (defence * 3));
+health -= dmg;
+kombatlog.insert_last(bombs[i].bombtype + "'s attack took you " + dmg + " damage.");
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("characters/" + chartype+"/general/*crit*");
+}
+else
+{
+painfile = get_pack_sound("characters/" + chartype+"/general/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+}
+bombs.remove_at(i);
+return;
+}
+if(me.x!=bombs[i].bombx and paused==0)
+{
+bombpool.destroy_sound(bombs[i].fallsound);
+bombs[i].landsound=bombpool.play_extended_3d(get_map_sound("objects/bombs/"+bombs[i].bombtype+"/*land*"),me.x,me.y,me.z,bombs[i].bombx,bombs[i].bomby,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bombs.remove_at(i);
 return;
 }
