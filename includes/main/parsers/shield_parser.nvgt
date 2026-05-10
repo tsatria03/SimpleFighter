@@ -2,6 +2,12 @@ void shieldparse()
 {
 shieldblockchance=100;
 shieldcushion=false;
+shield_launch_type="";
+shield_launch_subtype="";
+shield_launch_xrange=0;
+shield_launch_yrange=0;
+shield_launch_zrange=0;
+shield_launch_speed=30;
 if(file_exists("sounds/" + soundpack + "/equipments/shields/"+shieldtype+"/info.sif"))
 {
 bool success=info.open("sounds/" + soundpack + "/equipments/shields/"+shieldtype+"/info.sif", "rb");
@@ -49,6 +55,45 @@ if (data[0]=="unlock level")
 {
 shieldlevel=parse_double(data[1]);
 }
+if (data[0]=="launch type")
+{
+string val=data[1];
+int colon=string_contains(val,":",1);
+if(colon>=0)
+{
+shield_launch_type=string_left(val,colon);
+shield_launch_subtype=string_mid(val,colon+2,val.length()-colon-1);
+}
+else
+{
+shield_launch_type=val;
+shield_launch_subtype="";
+}
+}
+if (data[0]=="x launch range")
+{
+int v=parse_int(data[1]);
+if(v<0) v=0;
+shield_launch_xrange=v;
+}
+if (data[0]=="y launch range")
+{
+int v=parse_int(data[1]);
+if(v<0) v=0;
+shield_launch_yrange=v;
+}
+if (data[0]=="z launch range")
+{
+int v=parse_int(data[1]);
+if(v<0) v=0;
+shield_launch_zrange=v;
+}
+if (data[0]=="launch speed")
+{
+int v=parse_int(data[1]);
+if(v<1) v=1;
+shield_launch_speed=v;
+}
 }
 }
 }
@@ -58,6 +103,72 @@ bool shield_blocks()
 if(shieldblockchance>=100) return true;
 if(shieldblockchance<=0) return false;
 return random(1,100)<=shieldblockchance;
+}
+
+// Fires the shield's configured projectile or bomb back toward the attacker after a successful absorption.
+// (atk_x, atk_y, atk_z) is the attacker's position. dmg is the absorbed damage to mirror back.
+void try_shield_launch(int atk_x, int atk_y, int atk_z, int dmg)
+{
+if(shield_launch_type=="" || shield_launch_subtype=="") return;
+if(dmg<=0) return;
+bool is_3d=(mapmode=="3d");
+int dx=atk_x-int(me.x);
+int dy=atk_y-int(me.y);
+int dz=atk_z-int(me.z);
+int adx=absolute(dx);
+int ady=absolute(dy);
+int adz=absolute(dz);
+string facing="right";
+if(is_3d && adz>=adx && adz>=ady)
+facing=(dz>=0)?"up":"down";
+else if(adx>=ady)
+facing=(dx>=0)?"right":"left";
+else
+facing=(dy>=0)?"forward":"backward";
+int x=int(me.x), y=int(me.y), z=int(me.z);
+int rng=shield_launch_xrange;
+int rng2=shield_launch_yrange;
+int rng3=shield_launch_zrange;
+int spd=shield_launch_speed;
+if(shield_launch_type=="projectile")
+{
+int pmnx=x, pmxx=x, pmny=y, pmxy=y, pmnz=z, pmxz=z;
+int pdir=0;
+if(facing=="right") { pmxx=x+rng; pdir=0; }
+else if(facing=="left") { pmnx=x-rng; pdir=4; }
+else if(facing=="forward") { pmxy=y+rng2; pdir=1; }
+else if(facing=="backward") { pmny=y-rng2; pdir=5; }
+else if(facing=="up")
+{
+if(is_3d) { pmxz=z+rng3; pdir=8; }
+else { pmxy=y+rng2; pdir=1; }
+}
+else if(facing=="down")
+{
+if(is_3d) { pmnz=z-rng3; pdir=9; }
+else { pmny=y-rng2; pdir=5; }
+}
+spawn_projectile(x, y, pmnx, pmxx, pmny, pmxy, pdir, 1, dmg, spd, shield_launch_subtype, false, false, true, true, 0, z, pmnz, pmxz);
+}
+else if(shield_launch_type=="bomb")
+{
+int bx=x, by=y, bz=z;
+if(facing=="right") bx=x+rng;
+else if(facing=="left") bx=x-rng;
+else if(facing=="forward") by=y+rng2;
+else if(facing=="backward") by=y-rng2;
+else if(facing=="up")
+{
+if(is_3d) bz=z+rng3;
+else by=y+rng2;
+}
+else if(facing=="down")
+{
+if(is_3d) bz=z-rng3;
+else by=y-rng2;
+}
+spawn_bomb(bx, by, dmg, spd, shield_launch_subtype, bz);
+}
 }
 
 void update_shield_max_strength(double new_max_strength)
