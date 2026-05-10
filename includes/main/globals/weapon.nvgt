@@ -289,7 +289,7 @@ class weapon
                     wepchar.sound_slot = p.play_stationary_extended(get_pack_sound("equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*block*"), false, 0, 0, 0, 100, false);
                     return;
                 }
-                if(shieldon == 1)
+                if(shieldon == 1 and shield_blocks())
                 {
                     int sdm = max(1, int(dmg * 0.5) - shielddefence * 3);
                     shieldstrength -= sdm;
@@ -306,9 +306,9 @@ class weapon
                 if(stun > 0) stun_target("me", "", stun);
                 return;
             }
-            if(shieldon == 1)
+            if(shieldon == 1 and shield_blocks())
             {
-                int sdm = max(1, dmg - shielddefence * 3);
+                int sdm = max(1, int(dmg * 0.5) - shielddefence * 3);
                 shieldstrength -= sdm;
                 kombatlog.insert_last(sub + "'s attack took " + shieldtype + " " + sdm + " damage.");
                 shieldslot = p.play_stationary_extended(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
@@ -332,6 +332,7 @@ class weapon
         // player swinging melee — find nearest valid target across all bullet-targetable types
         // type tags: 1=npc 2=tts 3=calendar 4=clock 5=door 6=obj 7=sign 8=spike 9=sucam
         //            10=vehicle 11=wall 12=staircase 13=platform 14=aircraft 15=projectile 16=bike
+        //            17=indestructible_wall (rico, no damage)
         int best_type = 0;
         int best_idx = -1;
         int best_dist = -1;
@@ -463,10 +464,9 @@ class weapon
             int d = dx + dy + (is_3d ? dz : 0);
             if(best_dist < 0 or d < best_dist) { best_type = 10; best_idx = int(i); best_dist = d; }
         }
-        // walls (box, destroyable)
+        // walls (box) — destructible take damage; indestructible block the swing and play rico
         for(uint i = 0; i < walls.length(); i++)
         {
-            if(!walls[i].destroyable) continue;
             if(!target_in_facing(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, walls[i].minz, walls[i].maxz, fx, fy, fz, facing, is_3d)) continue;
             int dx = max(0, max(int(walls[i].minx) - fx, fx - int(walls[i].maxx)));
             int dy = max(0, max(int(walls[i].miny) - fy, fy - int(walls[i].maxy)));
@@ -474,7 +474,7 @@ class weapon
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
             int d = dx + dy + dz;
-            if(best_dist < 0 or d < best_dist) { best_type = 11; best_idx = int(i); best_dist = d; }
+            if(best_dist < 0 or d < best_dist) { best_type = walls[i].destroyable ? 11 : 17; best_idx = int(i); best_dist = d; }
         }
         // staircases (box, destroyable)
         for(uint i = 0; i < staircases.length(); i++)
@@ -706,6 +706,12 @@ class weapon
             }
             return;
         }
+        if(best_type == 17)
+        {
+            uint i = uint(best_idx);
+            play_melee_rico_at(walls[i].minx, walls[i].miny, walls[i].minz);
+            return;
+        }
         if(best_type == 12)
         {
             uint i = uint(best_idx);
@@ -787,6 +793,11 @@ class weapon
     void play_melee_hit_at(int tx, int ty, int tz)
     {
         p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*hit*"), me.x, me.y, me.z, tx, ty, tz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+    }
+
+    void play_melee_rico_at(int tx, int ty, int tz)
+    {
+        p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*rico*"), me.x, me.y, me.z, tx, ty, tz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         p.play_extended_3d(get_pack_sound("equipments/weapons/"+cad+"/"+sub+"/*shell*"), me.x, me.y, me.z, tx, ty, tz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
     }
 
@@ -998,16 +1009,20 @@ class weapon
             kombatlog.insert_last(hd + " damage to " + vehicles[i].vehtype + " by " + sub + "'s weapon attack.");
             if(hd > 0) vehicles[i].hurtsound = vehpool.play_extended_3d(get_map_sound("objects/vehicles/"+vehicles[i].vehtype+"/*hurt*"), me.x, me.y, me.z, vehicles[i].vehx, vehicles[i].vehy, vehicles[i].vehz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         }
-        // walls (damage)
+        // walls — destructible take damage; indestructible play rico and skip damage
         for(uint i = 0; i < walls.length(); i++)
         {
-            if(!walls[i].destroyable) continue;
             if(!target_in_facing(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, walls[i].minz, walls[i].maxz, fx, fy, fz, facing, is_3d)) continue;
             int dx = max(0, max(int(walls[i].minx) - fx, fx - int(walls[i].maxx)));
             int dy = max(0, max(int(walls[i].miny) - fy, fy - int(walls[i].maxy)));
             int dz = is_3d ? max(0, max(int(walls[i].minz) - fz, fz - int(walls[i].maxz))) : 0;
             if(dx > range or dy > range2) continue;
             if(is_3d and dz > range3) continue;
+            if(!walls[i].destroyable)
+            {
+                play_melee_rico_at(walls[i].minx, walls[i].miny, walls[i].minz);
+                continue;
+            }
             play_melee_hit_at(walls[i].minx, walls[i].miny, walls[i].minz);
             int hd = max(0, dmg);
             walls[i].wallhealth -= hd;
