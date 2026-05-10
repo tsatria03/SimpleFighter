@@ -718,10 +718,16 @@ void weaponsmenu()
         resume_pools();
         return;
     }
-    // Build per-category weapon lists with unlock-level labels
-    string[][] weapon_labels(cats.length());
-    string[][] weapon_ids(cats.length());
-    bool[][] weapon_unlocked(cats.length());
+    // Build tab list with "all" at index 0 followed by each real category.
+    string[] tab_cats;
+    tab_cats.insert_last("all");
+    for(uint i = 0; i < cats.length(); i++) tab_cats.insert_last(cats[i]);
+    // Per-tab parallel arrays of weapon labels, ids, unlock state, and source category
+    // (source category matters because the "all" tab aggregates from multiple categories).
+    string[][] weapon_labels(tab_cats.length());
+    string[][] weapon_ids(tab_cats.length());
+    bool[][] weapon_unlocked(tab_cats.length());
+    string[][] weapon_source_cat(tab_cats.length());
     for(uint i = 0; i < cats.length(); i++)
     {
         string[] weps = get_pack_sound_folders("equipments/weapons/" + cats[i] + "/*");
@@ -733,21 +739,57 @@ void weaponsmenu()
             bool is_unlocked = level >= unlock_level;
             string label = weps[j];
             if(!is_unlocked) label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-            weapon_labels[i].insert_last(label);
-            weapon_ids[i].insert_last(weps[j]);
-            weapon_unlocked[i].insert_last(is_unlocked);
+            // Per-category tab (i+1 because "all" is index 0)
+            weapon_labels[i+1].insert_last(label);
+            weapon_ids[i+1].insert_last(weps[j]);
+            weapon_unlocked[i+1].insert_last(is_unlocked);
+            weapon_source_cat[i+1].insert_last(cats[i]);
+            // "All" tab — aggregate everything
+            weapon_labels[0].insert_last(label);
+            weapon_ids[0].insert_last(weps[j]);
+            weapon_unlocked[0].insert_last(is_unlocked);
+            weapon_source_cat[0].insert_last(cats[i]);
         }
     }
+    // Sort the "all" tab alphabetically by label, keeping the parallel arrays in sync.
+    int[] order(weapon_labels[0].length());
+    for(uint i = 0; i < order.length(); i++) order[i] = int(i);
+    for(uint i = 1; i < order.length(); i++)
+    {
+        int key = order[i];
+        int j = int(i) - 1;
+        while(j >= 0 && weapon_labels[0][order[j]] > weapon_labels[0][key])
+        {
+            order[j+1] = order[j];
+            j--;
+        }
+        order[j+1] = key;
+    }
+    string[] sorted_labels(order.length());
+    string[] sorted_ids(order.length());
+    bool[] sorted_unlocked(order.length());
+    string[] sorted_sources(order.length());
+    for(uint i = 0; i < order.length(); i++)
+    {
+        sorted_labels[i] = weapon_labels[0][order[i]];
+        sorted_ids[i] = weapon_ids[0][order[i]];
+        sorted_unlocked[i] = weapon_unlocked[0][order[i]];
+        sorted_sources[i] = weapon_source_cat[0][order[i]];
+    }
+    weapon_labels[0] = sorted_labels;
+    weapon_ids[0] = sorted_ids;
+    weapon_unlocked[0] = sorted_unlocked;
+    weapon_source_cat[0] = sorted_sources;
     form.reset();
     form.create_window("Weapons menu", false);
     int cat_tab = form.create_tab_panel("category");
-    for(uint i = 0; i < cats.length(); i++)
-        form.add_list_item(cat_tab, cats[i], cats[i]);
+    for(uint i = 0; i < tab_cats.length(); i++)
+        form.add_list_item(cat_tab, tab_cats[i], tab_cats[i]);
     form.set_list_position(cat_tab, 0, false);
-    int[] wep_lists(cats.length());
-    for(uint i = 0; i < cats.length(); i++)
+    int[] wep_lists(tab_cats.length());
+    for(uint i = 0; i < tab_cats.length(); i++)
     {
-        wep_lists[i] = form.create_list(cats[i]);
+        wep_lists[i] = form.create_list(tab_cats[i]);
         for(uint j = 0; j < weapon_labels[i].length(); j++)
             form.add_list_item(wep_lists[i], weapon_labels[i][j], weapon_ids[i][j]);
         if(weapon_labels[i].length() > 0) form.set_list_position(wep_lists[i], 0, false);
@@ -769,7 +811,8 @@ void weaponsmenu()
             int sel = form.get_list_position(active_list);
             if(sel >= 0 && sel < int(weapon_ids[tab_pos].length()))
             {
-                string folder = "equipments/weapons/" + cats[tab_pos] + "/" + weapon_ids[tab_pos][sel] + "/";
+                string source_cat = weapon_source_cat[tab_pos][sel];
+                string folder = "equipments/weapons/" + source_cat + "/" + weapon_ids[tab_pos][sel] + "/";
                 if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
                 {
                     t.destroy_sound(prevslot);
@@ -814,14 +857,15 @@ void weaponsmenu()
                 speak(weapon_labels[tab_pos][sel]);
                 continue;
             }
+            string source_cat = weapon_source_cat[tab_pos][sel];
             string id = weapon_ids[tab_pos][sel];
             t.destroy_sound(prevslot);
             resume_pools();
             p.destroy_sound(refslot);
             wepdef = 0;
-            wepchar.cad = cats[tab_pos];
+            wepchar.cad = source_cat;
             wepchar.sub = id;
-            wepchar.parse(cats[tab_pos], id);
+            wepchar.parse(source_cat, id);
             wepchar.play_draw(int(me.x), int(me.y), int(me.z));
             speak(id + " equipped");
             return;
