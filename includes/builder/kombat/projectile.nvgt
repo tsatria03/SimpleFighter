@@ -2,6 +2,7 @@ projectile@[]projectiles(0);
 class projectile
 {
     bool bounce_at_edge, destroyable, fireable, single_use;
+    bool first_tick, check_spawn_contact;
     int projsound, wepsound;
     int prox, proy, proz;
     int minx, maxx, miny, maxy;
@@ -14,7 +15,7 @@ class projectile
     int stun;
     string projtype;
     timer projtimer;
-    projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, int mnz=0, int mxz=0)
+    projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, int mnz=0, int mxz=0, bool csc=false)
     {
         prox = px;
         proy = py;
@@ -36,6 +37,8 @@ class projectile
         maxprojhealth = hp;
         destroyable = dest;
         stun = sn;
+        first_tick = true;
+        check_spawn_contact = csc;
         cur_x_step = 0;
         cur_y_step = 0;
         cur_z_step = 0;
@@ -92,6 +95,29 @@ void projloop()
         projpool.update_sound_3d(projectiles[i].projsound, projectiles[i].prox, projectiles[i].proy, soundz);
         projectiles[i].projtimer.restart();
         if(paused != 0) continue;
+        bool was_first_tick = projectiles[i].first_tick;
+        projectiles[i].first_tick = false;
+        if(was_first_tick && projectiles[i].check_spawn_contact && projectiles[i].fireable)
+        {
+            // Check NPC contact at the spawn tile before any movement, so a projectile
+            // launched onto a tile already occupied by an enemy connects on tick one.
+            // Player is implicitly skipped because the player isn't iterated here.
+            for(uint j = 0; j < npcs.length(); j++)
+            {
+                if(npcs[j].x == projectiles[i].prox && npcs[j].y == projectiles[i].proy && (mapmode != "3d" || npcs[j].z == projectiles[i].proz))
+                {
+                    if(npcs[j].targets.length() == 0) continue;
+                    play_projectile_hit_2d(i);
+                    sound_pool@ npool = npc_pool(npcs[j].category);
+                    npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    npcs[j].health -= projectiles[i].damage;
+                    kombatlog.insert_last(projectiles[i].damage + " damage to " + npcs[j].subtype + " by " + projectiles[i].projtype + ".");
+                    if(projectiles[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=projectiles[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
+                    if(projectiles[i].single_use) { destroy_projectile(i); return; }
+                    break;
+                }
+            }
+        }
         if(projectiles[i].cur_x_step != 0)
         {
             int next_x = projectiles[i].prox + projectiles[i].cur_x_step;
@@ -337,9 +363,9 @@ void projloop()
     }
 }
 
-void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, int mnz=0, int mxz=0)
+void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, int mnz=0, int mxz=0, bool csc=false)
 {
-    projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz);
+    projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz, csc);
     projectiles.insert_last(p1);
 }
 
