@@ -52,6 +52,8 @@ class form_menu {
 		form.create_window();
 		f_lists.resize(0);
 		f_list_enabled.resize(0);
+		f_list_navigated.resize(0);
+		tab_navigated = false;
 		f_tab_names.resize(0);
 		f_tab_panel = -1;
 		f_list = -1;
@@ -106,6 +108,7 @@ class form_menu {
 		f_lists.insert_last(list);
 		bool[] empty_flags;
 		f_list_enabled.insert_last(empty_flags);
+		f_list_navigated.insert_last(false);
 		f_tab_names.insert_last(name);
 		return tab_index;
 	}
@@ -311,6 +314,8 @@ wait (delay);
 	private int f_tab_panel;
 	private int[] f_lists;
 	private bool[][] f_list_enabled; // parallel to f_lists; per-item enabled flag
+	private bool[] f_list_navigated; // parallel to f_lists; false until the user has navigated the list at least once. Used to suppress the wrap sound on first up/left press from the uninitialized list_position=-1, which the audio_form reports as a wrap event but is really initial positioning.
+	private bool tab_navigated = false; // same idea for the tab panel.
 	private string[] f_tab_names;
 	private int last_selected_index;
 	private string last_selected_id;
@@ -327,6 +332,7 @@ wait (delay);
 		f_lists.insert_last(f_list);
 		bool[] empty_flags;
 		f_list_enabled.insert_last(empty_flags);
+		f_list_navigated.insert_last(false);
 		return f_list;
 	}
 	private int active_list() {
@@ -410,8 +416,14 @@ wait (delay);
 
 	private int on_form_list_event(audio_form@ f, int c, control_event_type event, dictionary@ args) {
 		if (event != event_list_cursor) return 0;
+		int bucket = -1;
+		for (uint i = 0; i < f_lists.length(); i++) if (f_lists[i] == c) { bucket = int(i); break; }
+		bool first_nav = (bucket >= 0 && bucket < int(f_list_navigated.length())) ? !f_list_navigated[bucket] : false;
+		if (bucket >= 0 && bucket < int(f_list_navigated.length())) f_list_navigated[bucket] = true;
 		if (args.exists("wrap")) {
-			play_at_cursor(wrap_sound);
+			// Suppress the wrap sound on the very first navigation. The audio_form fires a wrap event when up/left is pressed from list_position=-1 (uninitialized), which feels like a fake wrap to the player — they were just positioning the cursor for the first time. Play the regular click sound instead so the cursor announces normally.
+			if (first_nav) play_at_cursor(click_sound);
+			else play_at_cursor(wrap_sound);
 		}
 		else if (args.exists("boundary")) {
 			if (!wrap) {
@@ -440,8 +452,11 @@ wait (delay);
 	}
 	private int on_form_tab_event(audio_form@ f, int c, control_event_type event, dictionary@ args) {
 		if (event != event_list_cursor) return 0;
+		bool first_nav = !tab_navigated;
+		tab_navigated = true;
 		if (args.exists("wrap")) {
-			play_panned(wrap_sound, c);
+			if (first_nav) play_panned(click_sound, c);
+			else play_panned(wrap_sound, c);
 		}
 		else if (args.exists("boundary")) {
 			if (!wrap) {
