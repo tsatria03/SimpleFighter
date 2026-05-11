@@ -239,14 +239,14 @@ class npc
         last_health = maxhealth;
         currentlives = lives;
         sound_pool@ pool = npc_pool(category);
-        spawnsound = pool.play_extended_3d(get_map_sound("kombat/npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+        spawnsound = pool.play_extended_3d(get_map_sound("builder/kombat/npc/"+category+"/"+subtype+"/*spawn*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         wephum.cad = "";
         wephum.sub = "";
         if(category == "humans" && fireable && targets.length() > 0)
         {
-            string[] wepcads = get_pack_sound_folders("equipments/weapons/*");
+            string[] wepcads = get_pack_sound_folders("main/equipments/weapons/*");
             string rolled_cat = random_string(wepcads);
-            string[] weapons = get_pack_sound_folders("equipments/weapons/"+rolled_cat+"/*");
+            string[] weapons = get_pack_sound_folders("main/equipments/weapons/"+rolled_cat+"/*");
             if(weapons.length() > 0)
             {
                 string rolled_sub = random_string(weapons);
@@ -272,8 +272,8 @@ sound_pool@ npc_pool(string category)
 string resolve_npc_step_sound(npc@ self)
 {
     string mode = self.use_steps;
-    string platform_path = "objects/platforms/"+gmt(self.x, self.y)+"/*step*";
-    string own_path = "kombat/npc/"+self.category+"/"+self.subtype+"/*step*";
+    string platform_path = "builder/construction/platforms/"+gmt(self.x, self.y)+"/*step*";
+    string own_path = "builder/kombat/npc/"+self.category+"/"+self.subtype+"/*step*";
     if(mode == "never") return "";
     if(mode == "own") return get_map_sound(own_path);
     if(mode == "player") return get_map_sound(platform_path);
@@ -285,8 +285,8 @@ string resolve_npc_step_sound(npc@ self)
 string resolve_npc_fall_sound(npc@ self)
 {
     string mode = self.use_falls;
-    string platform_path = "objects/platforms/"+gmt(self.x, self.y)+"/*fall*";
-    string own_path = "kombat/npc/"+self.category+"/"+self.subtype+"/*fall*";
+    string platform_path = "builder/construction/platforms/"+gmt(self.x, self.y)+"/*fall*";
+    string own_path = "builder/kombat/npc/"+self.category+"/"+self.subtype+"/*fall*";
     if(mode == "never") return "skip";
     if(mode == "own")
     {
@@ -305,8 +305,8 @@ string resolve_npc_fall_sound(npc@ self)
 
 string get_npc_info_path(string category, string subtype, string path = "any")
 {
-    string maplocal = "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+category+"/"+subtype+"/info.sif";
-    string global_path = "sounds/"+soundpack+"/kombat/npc/"+category+"/"+subtype+"/info.sif";
+    string maplocal = "data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/"+subtype+"/info.sif";
+    string global_path = "sounds/"+soundpack+"/builder/kombat/npc/"+category+"/"+subtype+"/info.sif";
     if(path == "map")
         return file_exists(maplocal) ? maplocal : "";
     if(path == "global")
@@ -318,8 +318,8 @@ string get_npc_info_path(string category, string subtype, string path = "any")
 
 string get_npc_category_info_path(string category, string path = "any")
 {
-    string maplocal = "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+category+"/info.sif";
-    string global_path = "sounds/"+soundpack+"/kombat/npc/"+category+"/info.sif";
+    string maplocal = "data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/info.sif";
+    string global_path = "sounds/"+soundpack+"/builder/kombat/npc/"+category+"/info.sif";
     if(path == "map")
         return file_exists(maplocal) ? maplocal : "";
     if(path == "global")
@@ -624,7 +624,7 @@ void destroy_all_npcs()
     {
         sound_pool@ pool = npc_pool(npcs[i].category);
         if(npcs[i].category == "helpers")
-            pool.play_3d(get_map_sound("kombat/npc/helpers/"+npcs[i].subtype+"/*remove*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), false);
+            pool.play_3d(get_map_sound("builder/kombat/npc/helpers/"+npcs[i].subtype+"/*remove*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), false);
         pool.destroy_sound(npcs[i].mainsound);
         pool.destroy_sound(npcs[i].spawnsound);
         pool.destroy_sound(npcs[i].refsound);
@@ -701,8 +701,8 @@ void build_npc()
                 if(mapmode == "3d") saved_z = form.get_text(mz);
                 saved_lev = form.get_text(lev);
             }
-            string global_base = "sounds/"+soundpack+"/kombat/npc/"+categories[saved_cat_pos];
-            string map_base = "data/maps/decompiled/"+mapname+"/assets/kombat/npc/"+categories[saved_cat_pos];
+            string global_base = "sounds/"+soundpack+"/builder/kombat/npc/"+categories[saved_cat_pos];
+            string map_base = "data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
             sub_data.resize(0);
             if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "global")
             {
@@ -791,18 +791,18 @@ void build_npc()
             t.destroy_sound(prevslot);
             prevslot = -1;
             if(cur_focus == sub_list && cur_sub > 0 && cur_sub <= int(sub_data.length()))
-                prevslot = t.play_stationary(get_map_sound("kombat/npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*hurt*"), false);
+                prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*hurt*"), false);
             keytimer.restart();
         }
         if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_L) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
         {
             t.destroy_sound(prevslot);
-            prevslot = t.play_stationary(get_map_sound("kombat/npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*taunt*"), false);
+            prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*taunt*"), false);
         }
         if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_H) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
         {
             t.destroy_sound(prevslot);
-            prevslot = t.play_stationary(get_map_sound("kombat/npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*death*"), false);
+            prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/"+categories[saved_cat_pos]+"/"+sub_data[cur_sub - 1]+"/*death*"), false);
         }
         if(key_pressed(KEY_ESCAPE))
         {
@@ -851,7 +851,7 @@ void build_npc()
             write_npc(bx, by, blev, bpath, bcat, bsub, bz);
             spawn_npc(bx, by, blev, bpath, bcat, bsub, bz);
             load_map(mapname, mapowner);
-            mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
+            mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
             speak("Map updated.");
             return;
         }
