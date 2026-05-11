@@ -18,6 +18,10 @@ Every map is created in one of three modes, set when the map is first built. The
 Topdown. The x axis is left and right; the y axis is north and south. There's no altitude axis, so jumping, hooking, jump height changes, and most height related entities are disabled. Body rotation applies, so movement, sonar, spire, and camera keys all rotate with your body.
 3d. The x axis is left and right; the y axis is north and south; the z axis is altitude. Body rotation applies. Hooking and jumping are vertical, so they ignore body rotation.
 
+Map bounds and negative coordinates.
+Every map sets a minimum and maximum value for each of its axes when it's first created (minx/maxx, miny/maxy, and on 3d maps minz/maxz). The minimum and maximum can be any whole number including negatives, so a 3d map could span from minz minus 5 up to maxz 10 to give you five basement floors below ground level zero plus ten floors above. Type a leading minus sign followed by the number in any of the bound input boxes when creating a new map, and any platform, wall, zone, or other entity you build afterward can also be placed at the negative coordinates - the builder accepts the same minus syntax in its own bound inputs.
+Useful patterns. Set minz to a negative value to model basements, sewers, mines, or anything else underground that an elevator could descend to. Set minx or miny to a negative value if you want the spawn point in the middle of a region that extends in both directions instead of starting from a corner. The default fallback spawn point clamps zero into the map's bounds on each axis when the map has no spawnpoint, so a map whose bounds don't include zero will land you at the nearest in-bounds corner instead of dropping you outside the map.
+
 The folder structure.
 
 Data folder.
