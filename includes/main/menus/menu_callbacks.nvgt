@@ -1,22 +1,42 @@
+// Per-shield/weapon unlock levels, populated by shieldsmenu/weaponsmenu so the disabled_callback can speak the requirement when the player tries to equip a locked item.
+dictionary shield_unlock_levels;
+dictionary weapon_unlock_levels;
+// weaponsmenu also tracks each item's source category per-tab so the "all" tab can equip from the right folder. Indexed [tab][item].
+string[][] weapon_source_cat;
+void shield_locked_callback(form_menu@ m, string id)
+{
+double req = 0;
+shield_unlock_levels.get(id, req);
+speak(id + " is locked. Reach level " + int_to_string(int(req)) + " to unlock.");
+}
+void weapon_locked_callback(form_menu@ m, string id)
+{
+double req = 0;
+weapon_unlock_levels.get(id, req);
+speak(id + " is locked. Reach level " + int_to_string(int(req)) + " to unlock.");
+}
+
 string charsmenu(bool ingame=false)
 {
 string[] chars=get_pack_sound_folders("characters/*");
 setupmenu();
-m.set_callback(@chars_callback,"");
+@m.background_callback=@chars_callback;
+m.intro_text="Character themes menu";
 for (uint i=0; i<chars.length(); i++)
 {
-m.add_item_tts(chars[i],chars[i],"",true);
+m.add_item(chars[i],chars[i]);
 }
-int mres=m.run("Character themes menu", true);
-if(mres==0)
+int mres=m.run();
+if(mres<0)
 {
 speak("canceled");
 if(ingame==false) settingsmenu();
 if(ingame==true) resume_pools();
+return "";
 }
-if(mres>0 and mres<=chars.length())
+if(mres>=0 and mres<int(chars.length()))
 {
-chartype=chars[mres-1];
+chartype=chars[mres];
 charparse();
 if(ingame==false)
 {
@@ -30,157 +50,157 @@ speak("Character theme set to "+chartype+".");
 writepreffs();
 }
 }
-return m.get_item_name(mres);
+return m.get_item_id(mres);
 }
-int chars_callback(dynamic_menu_pro@ m, string data)
+void chars_callback(form_menu@ m, string data)
 {
-string chars;
-if(m.menu_position>0)
-chars=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+int pos=m.focused_item;
+if(pos<0) return;
+string chars=m.get_item_id(pos);
+if(key_down(KEY_SPACE) and keytimer.elapsed>=keytime)
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("characters/"+chars+"/general/*hurt*"), false);
 keytimer.restart();
 }
-if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("characters/"+chars+"/general/*hurt*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_D) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_D) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_D))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("characters/"+chars+"/general/*death*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_J) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_J) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_J))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("characters/"+chars+"/general/*jump*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_U) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_U) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_U))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("characters/"+chars+"/general/*turn*"), false);
 }
-return 0;
 }
 string keyboardchoosers()
 {
 string[] keyboardchanges=get_pack_sound_folders("keyboards/*");
 setupmenu();
-m.set_callback(@keyboardchanges_callback,"");
+@m.background_callback=@keyboardchanges_callback;
+m.intro_text="Choose the keyboard theme you'd like to use in all input boxes.";
 for (uint i=0; i<keyboardchanges.length(); i++)
 {
-m.add_item_tts(keyboardchanges[i],keyboardchanges[i],"",true);
+m.add_item(keyboardchanges[i],keyboardchanges[i]);
 }
-int mres=m.run("Choose the keyboard theme you'd like to use in all input boxes.",true);
-if(mres==0)
+int mres=m.run();
+if(mres<0)
 {
 speak("canceled");
 settingsmenu();
+return "";
 }
-if(mres>0 and mres<=keyboardchanges.length())
+if(mres>=0 and mres<int(keyboardchanges.length()))
 {
-keyboardtheme=keyboardchanges[mres-1];
+keyboardtheme=keyboardchanges[mres];
 dlg("Keyboard theme set. Press enter to continue.");
 settingsmenu();
 }
-return m.get_item_name(mres);
+return m.get_item_id(mres);
 }
-int keyboardchanges_callback(dynamic_menu_pro@ m, string data)
+void keyboardchanges_callback(form_menu@ m, string data)
 {
-string keyboardchanges;
-if(m.menu_position>0)
-keyboardchanges=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_T) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_T) and m.menu_position>0)
+int pos=m.focused_item;
+if(pos<0) return;
+string keyboardchanges=m.get_item_id(pos);
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_T))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("keyboards/"+keyboardchanges+"/*type*"),false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_S) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_S) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_S))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("keyboards/"+keyboardchanges+"/*space*"),false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_R) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_R) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_R))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("keyboards/"+keyboardchanges+"/*return*"),false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_D) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_D) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_D))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("keyboards/"+keyboardchanges+"/*delete*"),false);
 }
-return 0;
 }
 string menuchoosers()
 {
 string[] menuchanges=get_pack_sound_folders("menus/*");
 setupmenu();
-m.set_callback(@menuchanges_callback,"");
+@m.background_callback=@menuchanges_callback;
+m.intro_text="Choose the menu theme you'd like to use in all menus.";
 for (uint i=0; i<menuchanges.length(); i++)
 {
-m.add_item_tts(menuchanges[i],menuchanges[i],"",true);
+m.add_item(menuchanges[i],menuchanges[i]);
 }
-int mres=m.run("Choose the menu theme you'd like to use in all menus.",true);
-if(mres==0)
+int mres=m.run();
+if(mres<0)
 {
 speak("canceled");
 settingsmenu();
+return "";
 }
-if(mres>0 and mres<=menuchanges.length())
+if(mres>=0 and mres<int(menuchanges.length()))
 {
-menutype=menuchanges[mres-1];
+menutype=menuchanges[mres];
 dlg("Menu theme set. Press enter to continue.");
 settingsmenu();
 }
-return m.get_item_name(mres);
+return m.get_item_id(mres);
 }
-int menuchanges_callback(dynamic_menu_pro@ m, string data)
+void menuchanges_callback(form_menu@ m, string data)
 {
-string menuchanges;
-if(m.menu_position>0)
-menuchanges=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_C) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_C) and m.menu_position>0)
+int pos=m.focused_item;
+if(pos<0) return;
+string menuchanges=m.get_item_id(pos);
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_C))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("menus/"+menuchanges+"/*click*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_L))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("menus/"+menuchanges+"/*close*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_D) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_D) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_D))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("menus/"+menuchanges+"/*edge*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_N) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_N) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_N))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("menus/"+menuchanges+"/*enter*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_O) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_O) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_O))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("menus/"+menuchanges+"/*open*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_P) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_P) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_P))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("menus/"+menuchanges+"/*wrap*"), false);
 }
-return 0;
 }
 
 string shieldsmenu()
 {
     string[] armors = get_pack_sound_folders("equipments/shields/*");
     setupmenu();
-    m.set_callback(@shields_callback, "");
+    @m.background_callback=@shields_callback;
+    @m.disabled_callback=@shield_locked_callback;
+    m.disabled_sound=get_pack_sound("menus/"+menutype+"/*error*");
+    m.intro_text="Shields menu";
+    shield_unlock_levels.delete_all();
     for (uint i = 0; i < armors.length(); i++)
     {
         string shield_name = armors[i];
@@ -202,72 +222,69 @@ string shieldsmenu()
                 }
             }
         }
+        shield_unlock_levels.set(shield_name, unlock_level);
         bool is_unlocked = level >= unlock_level;
         string label = shield_name;
         if (!is_unlocked)
             label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-        m.add_item_tts(label, shield_name, "", is_unlocked);
+        m.add_item(label, shield_name, -1, is_unlocked);
     }
-    int mres = m.run("Shields menu", true);
-    if (mres == 0)
+    int mres = m.run();
+    if (mres < 0)
     {
         resume_pools();
         speak("Canceled");
+        return "";
     }
-    if (mres > 0 && mres <= armors.length())
+    if (mres >= 0 && mres < int(armors.length()))
     {
         resume_pools();
-        shieldtype = armors[mres - 1];
+        shieldtype = m.get_item_id(mres);
         shieldparse();
         t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("equipments/shields/"+shieldtype+"/*draw*"), false);
         speak(shieldtype + " " + "equipped");
     }
-    return m.get_item_name(mres);
+    return m.get_item_id(mres);
 }
-int shields_callback(dynamic_menu_pro@ m, string data)
+void shields_callback(form_menu@ m, string data)
 {
-string shieldtype;
-if(m.menu_position>0)
-shieldtype=m.item_list[m.menu_position-1].name;
-if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+int pos=m.focused_item;
+if(pos<0) return;
+string shieldtype=m.get_item_id(pos);
+if(key_down(KEY_SPACE) and keytimer.elapsed>=keytime)
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false);
 keytimer.restart();
 }
-if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
-{
-t.destroy_sound(prevslot);
-prevslot=t.play_stationary(get_pack_sound("equipments/shields/"+shieldtype+"/*hit*"), false);
-}
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_L) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_L) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_L))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("equipments/shields/"+shieldtype+"/*draw*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_H) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_H) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_H))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("equipments/shields/"+shieldtype+"/*break*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_R) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_R) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_R))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("equipments/shields/"+shieldtype+"/*remove*"), false);
 }
-if(key_down(KEY_LCONTROL) and key_repeating(KEY_W) and m.menu_position>0 or key_down(KEY_RCONTROL) and key_repeating(KEY_W) and m.menu_position>0)
+if((key_down(KEY_LCONTROL) or key_down(KEY_RCONTROL)) and key_repeating(KEY_W))
 {
 t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("equipments/shields/"+shieldtype+"/*wear*"), false);
 }
-return 0;
 }
 string invmenu()
 {
     setupmenu();
+    m.intro_text="Inventory menu.";
     int total = count_total_items();
-m.add_item_tts("Total items " + total + ".");
+    m.add_item("Total items " + total + ".");
     string[] keys = inv.get_keys();
     keys.sort_ascending();
     for (uint i = 0; i < keys.length(); i++)
@@ -275,27 +292,173 @@ m.add_item_tts("Total items " + total + ".");
         int amt;
         inv.get(keys[i], amt);
         string label = keys[i] + (amt == 1 ? "" : "s") + ", you have " + amt;
-        m.add_item_tts(label, keys[i]);
+        m.add_item(label, keys[i]);
     }
-    int mres = m.run("Inventory menu.", true);
-    if (mres <= 0)
+    int mres = m.run();
+    if (mres < 0)
     {
-resume_pools();
+        resume_pools();
         speak("Canceled");
         return "";
     }
-    string choice = m.get_item_name(mres);
+    string choice = m.get_item_id(mres);
     if (choice == "")
     {
-resume_pools();
+        resume_pools();
         return "";
     }
-resume_pools();
+    resume_pools();
     focus_item(choice);
     double invpan = convert_to_pan(keys.length(), invpos, -25, 25);
     invslot = p.play_stationary_extended(get_pack_sound("characters/" + chartype+"/general/*inv*"), false, 0, invpan, 0, 100, false);
-int amt;
-inv.get(choice, amt);
-speak(choice + (amt == 1 ? "" : "s") + " focused");
-    return m.get_item_name(mres);
+    int amt;
+    inv.get(choice, amt);
+    speak(choice + (amt == 1 ? "" : "s") + " focused");
+    return choice;
+}
+void weapons_callback(form_menu@ m, string data)
+{
+    int tab = m.active_tab;
+    int idx = m.focused_item;
+    if(tab < 0 || tab >= int(weapon_source_cat.length())) return;
+    if(idx < 0 || idx >= int(weapon_source_cat[tab].length())) return;
+    string folder = "equipments/weapons/" + weapon_source_cat[tab][idx] + "/" + m.get_item_id(idx) + "/";
+    if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+    {
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*fire*"), false);
+        keytimer.restart();
+    }
+    if(control_is_down() && key_repeating(KEY_L))
+    {
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*draw*"), false);
+    }
+    if(control_is_down() && key_repeating(KEY_H))
+    {
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*hit*"), false);
+    }
+    if(control_is_down() && key_repeating(KEY_E))
+    {
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*empty*"), false);
+    }
+    if(control_is_down() && key_repeating(KEY_R))
+    {
+        t.destroy_sound(prevslot);
+        prevslot = t.play_stationary(get_pack_sound(folder + "*reload*"), false);
+    }
+}
+void weaponsmenu()
+{
+    string[] cats = get_pack_sound_folders("equipments/weapons/*");
+    if(cats.length() == 0)
+    {
+        dlg("Error. There are no weapon categories available to view. Press enter to continue.");
+        resume_pools();
+        return;
+    }
+    // Build tab list with "all" at index 0 followed by each real category.
+    string[] tab_cats;
+    tab_cats.insert_last("all");
+    for(uint i = 0; i < cats.length(); i++) tab_cats.insert_last(cats[i]);
+    // Per-tab parallel arrays of weapon labels, ids, unlock state, and source category. The source-category array is module-level (weapon_source_cat) so the background callback can resolve folders for sound previews.
+    string[][] weapon_labels(tab_cats.length());
+    string[][] weapon_ids(tab_cats.length());
+    bool[][] weapon_unlocked(tab_cats.length());
+    weapon_source_cat.resize(tab_cats.length());
+    for(uint i = 0; i < tab_cats.length(); i++) weapon_source_cat[i].resize(0);
+    weapon_unlock_levels.delete_all();
+    for(uint i = 0; i < cats.length(); i++)
+    {
+        string[] weps = get_pack_sound_folders("equipments/weapons/" + cats[i] + "/*");
+        for(uint j = 0; j < weps.length(); j++)
+        {
+            weapon temp;
+            temp.parse(cats[i], weps[j]);
+            double unlock_level = temp.level;
+            bool is_unlocked = level >= unlock_level;
+            string label = weps[j];
+            if(!is_unlocked) label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+            weapon_unlock_levels.set(weps[j], unlock_level);
+            // Per-category tab (i+1 because "all" is index 0)
+            weapon_labels[i+1].insert_last(label);
+            weapon_ids[i+1].insert_last(weps[j]);
+            weapon_unlocked[i+1].insert_last(is_unlocked);
+            weapon_source_cat[i+1].insert_last(cats[i]);
+            // "All" tab — aggregate everything
+            weapon_labels[0].insert_last(label);
+            weapon_ids[0].insert_last(weps[j]);
+            weapon_unlocked[0].insert_last(is_unlocked);
+            weapon_source_cat[0].insert_last(cats[i]);
+        }
+    }
+    // Sort the "all" tab alphabetically by label, keeping the parallel arrays in sync.
+    int[] order(weapon_labels[0].length());
+    for(uint i = 0; i < order.length(); i++) order[i] = int(i);
+    for(uint i = 1; i < order.length(); i++)
+    {
+        int key = order[i];
+        int j = int(i) - 1;
+        while(j >= 0 && weapon_labels[0][order[j]] > weapon_labels[0][key])
+        {
+            order[j+1] = order[j];
+            j--;
+        }
+        order[j+1] = key;
+    }
+    string[] sorted_labels(order.length());
+    string[] sorted_ids(order.length());
+    bool[] sorted_unlocked(order.length());
+    string[] sorted_sources(order.length());
+    for(uint i = 0; i < order.length(); i++)
+    {
+        sorted_labels[i] = weapon_labels[0][order[i]];
+        sorted_ids[i] = weapon_ids[0][order[i]];
+        sorted_unlocked[i] = weapon_unlocked[0][order[i]];
+        sorted_sources[i] = weapon_source_cat[0][order[i]];
+    }
+    weapon_labels[0] = sorted_labels;
+    weapon_ids[0] = sorted_ids;
+    weapon_unlocked[0] = sorted_unlocked;
+    weapon_source_cat[0] = sorted_sources;
+
+    setupmenu();
+    @m.background_callback = @weapons_callback;
+    @m.disabled_callback = @weapon_locked_callback;
+    m.disabled_sound = get_pack_sound("menus/" + menutype + "/*error*");
+    m.intro_text = "Weapons menu";
+    m.tab_caption = "Category";
+    for(uint i = 0; i < tab_cats.length(); i++)
+    {
+        int t_idx = m.add_tab(tab_cats[i]);
+        for(uint j = 0; j < weapon_labels[i].length(); j++)
+            m.add_item_to_tab(t_idx, weapon_labels[i][j], weapon_ids[i][j], -1, weapon_unlocked[i][j]);
+    }
+    int mres = m.run(-1, true, false);
+    if(mres < 0)
+    {
+        t.destroy_sound(prevslot);
+        resume_pools();
+        speak("canceled");
+        return;
+    }
+    int tab = m.selected_tab;
+    if(tab < 0 || tab >= int(weapon_source_cat.length()) || mres < 0 || mres >= int(weapon_source_cat[tab].length()))
+    {
+        resume_pools();
+        return;
+    }
+    string source_cat = weapon_source_cat[tab][mres];
+    string id = m.selected_item_id;
+    t.destroy_sound(prevslot);
+    resume_pools();
+    p.destroy_sound(refslot);
+    wepdef = 0;
+    wepchar.cad = source_cat;
+    wepchar.sub = id;
+    wepchar.parse(source_cat, id);
+    wepchar.play_draw(int(me.x), int(me.y), int(me.z));
+    speak(id + " equipped");
 }

@@ -1,3 +1,105 @@
+void buildmenu()
+{
+string[] cat_names = {"all", "audio", "construction", "interaction", "kombat", "misc", "transitions", "traps", "transportation", "zones"};
+string[][] entry_names = {
+{},
+{"effect space", "sound ambience", "sound source", "timed ambience", "timed source"},
+{"blockage", "conveyor belt", "elevator floor", "moving platform", "platform", "staircase", "vanishing platform", "wall"},
+{"calendar", "clock", "dialog", "item", "sign", "switch", "text square"},
+{"npc", "projectile", "tts enemie"},
+{"character blocker", "checkpoint", "command blocker", "spawnpoint", "timed text", "travelpoint"},
+{"door", "item door", "ranged door", "ranged item door", "elevator", "lift", "passage", "item passage", "teleporter"},
+{"bomb", "fire", "floor breaker", "force field", "hazard", "mine", "moving hazard", "security camera", "spike", "time bomb", "vanishing hazard"},
+{"aircraft", "aircraft beacon", "bike", "vehicle"},
+{"bomb zone", "heal zone", "item zone", "menu zone", "npc zone", "obscurity zone", "projectile zone", "safe zone", "text zone"}
+};
+string[][] entry_ids = {
+{},
+{"effect_space", "sound_ambience", "sound_source", "timed_ambience", "timed_source"},
+{"blockage", "conveyor_belt", "elevator_floor", "moving_platform", "platform", "staircase", "vanishing_platform", "wall"},
+{"calendar", "clock", "dialog", "item", "sign", "switch", "text_square"},
+{"npc", "projectile", "tts_enemie"},
+{"character_blocker", "checkpoint", "command_blocker", "spawnpoint", "timed_text", "travelpoint"},
+{"door", "item_door", "ranged_door", "ranged_item_door", "elevator", "lift", "passage", "item_passage", "teleporter"},
+{"bomb", "fire", "floor_breaker", "force_field", "hazard", "mine", "moving_hazard", "security_camera", "spike", "time_bomb", "vanishing_hazard"},
+{"aircraft", "aircraft_beacon", "bike", "vehicle"},
+{"bomb_zone", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "projectile_zone", "safe_zone", "text_zone"}
+};
+string[] converted_3d = {"blockage", "bomb_zone", "character_blocker", "command_blocker", "conveyor_belt", "dialog", "effect_space", "force_field", "hazard", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "platform", "bike", "projectile", "projectile_zone", "vehicle", "safe_zone", "door", "elevator", "elevator_floor", "item_door", "item_passage", "lift", "moving_hazard", "moving_platform", "passage", "ranged_door", "ranged_item_door", "sound_ambience", "sound_source", "spike", "staircase", "teleporter", "timed_ambience", "timed_source", "timed_text", "travelpoint", "vanishing_hazard", "vanishing_platform", "wall", "text_zone", "aircraft", "aircraft_beacon", "checkpoint", "spawnpoint", "clock", "calendar", "sign", "text_square", "floor_breaker", "item", "switch", "bomb", "fire", "mine", "time_bomb", "security_camera", "npc"};
+if(mapmode == "3d")
+{
+for(uint i = 1; i < entry_ids.length(); i++)
+{
+for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
+{
+bool keep = false;
+for(uint k = 0; k < converted_3d.length(); k++)
+{
+if(entry_ids[i][j] == converted_3d[k]) { keep = true; break; }
+}
+if(!keep)
+{
+entry_ids[i].remove_at(j);
+entry_names[i].remove_at(j);
+}
+}
+}
+}
+string[] excluded_topdown = {"floor_breaker", "lift", "elevator", "elevator_floor", "vanishing_platform", "tts_enemie"};
+if(mapmode == "topdown")
+{
+for(uint i = 1; i < entry_ids.length(); i++)
+{
+for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
+{
+for(uint k = 0; k < excluded_topdown.length(); k++)
+{
+if(entry_ids[i][j] == excluded_topdown[k])
+{
+entry_ids[i].remove_at(j);
+entry_names[i].remove_at(j);
+break;
+}
+}
+}
+}
+}
+string[] all_names;
+dictionary all_id_lookup;
+for(uint i = 1; i < cat_names.length(); i++)
+{
+for(uint j = 0; j < entry_names[i].length(); j++)
+{
+all_names.insert_last(entry_names[i][j]);
+all_id_lookup[entry_names[i][j]] = entry_ids[i][j];
+}
+}
+all_names.sort_ascending();
+for(uint i = 0; i < all_names.length(); i++)
+{
+string id;
+all_id_lookup.get(all_names[i], id);
+entry_names[0].insert_last(all_names[i]);
+entry_ids[0].insert_last(id);
+}
+setupmenu();
+m.intro_text = "Build menu";
+m.tab_caption = "Category";
+for(uint i = 0; i < cat_names.length(); i++)
+{
+int t_idx = m.add_tab(cat_names[i]);
+for(uint j = 0; j < entry_names[i].length(); j++)
+m.add_item_to_tab(t_idx, entry_names[i][j], entry_ids[i][j]);
+}
+int mres = m.run(-1, true, false);
+if(mres < 0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+buildobj(m.selected_item_id);
+}
 void zonesmenu()
 {
 if(text_zones.length() == 0)
@@ -20,17 +122,18 @@ else
 {
 zone_desc = text_zones[i].text + ", " + int(width) + " x " + int(height) + " text zone, at " + int(text_zones[i].minx) + ", " + int(text_zones[i].miny);
 }
-m.add_item_tts(zone_desc, text_zones[i].text);
+m.add_item(zone_desc, text_zones[i].text);
 }
-int mres = m.run("Choose the text zone you'd like to go to. There are " + text_zones.length() + " text zones available on this map.", true);
-if(mres == 0)
+m.intro_text = "Choose the text zone you'd like to go to. There are " + text_zones.length() + " text zones available on this map.";
+int mres = m.run();
+if(mres < 0)
 {
 speak("canceled");
 return;
 }
-if(mres > 0 and mres <= text_zones.length())
+if(mres >= 0 and mres < int(text_zones.length()))
 {
-text_zone@ selected_zone = text_zones[mres - 1];
+text_zone@ selected_zone = text_zones[mres];
 gop("me", "", selected_zone.minx, selected_zone.miny, selected_zone.minz);
 }
 }
@@ -221,141 +324,20 @@ return true;
 }
 return false;
 }
-void buildmenu()
-{
-string[] cat_names = {"all", "audio", "construction", "interaction", "kombat", "misc", "transitions", "traps", "transportation", "zones"};
-string[][] entry_names = {
-{},
-{"effect space", "sound ambience", "sound source", "timed ambience", "timed source"},
-{"blockage", "conveyor belt", "elevator floor", "moving platform", "platform", "staircase", "vanishing platform", "wall"},
-{"calendar", "clock", "dialog", "item", "sign", "switch", "text square"},
-{"npc", "projectile", "tts enemie"},
-{"character blocker", "checkpoint", "command blocker", "spawnpoint", "timed text", "travelpoint"},
-{"door", "item door", "ranged door", "ranged item door", "elevator", "lift", "passage", "item passage", "teleporter"},
-{"bomb", "fire", "floor breaker", "force field", "hazard", "mine", "moving hazard", "security camera", "spike", "time bomb", "vanishing hazard"},
-{"aircraft", "aircraft beacon", "bike", "vehicle"},
-{"bomb zone", "heal zone", "item zone", "menu zone", "npc zone", "obscurity zone", "projectile zone", "safe zone", "text zone"}
-};
-string[][] entry_ids = {
-{},
-{"effect_space", "sound_ambience", "sound_source", "timed_ambience", "timed_source"},
-{"blockage", "conveyor_belt", "elevator_floor", "moving_platform", "platform", "staircase", "vanishing_platform", "wall"},
-{"calendar", "clock", "dialog", "item", "sign", "switch", "text_square"},
-{"npc", "projectile", "tts_enemie"},
-{"character_blocker", "checkpoint", "command_blocker", "spawnpoint", "timed_text", "travelpoint"},
-{"door", "item_door", "ranged_door", "ranged_item_door", "elevator", "lift", "passage", "item_passage", "teleporter"},
-{"bomb", "fire", "floor_breaker", "force_field", "hazard", "mine", "moving_hazard", "security_camera", "spike", "time_bomb", "vanishing_hazard"},
-{"aircraft", "aircraft_beacon", "bike", "vehicle"},
-{"bomb_zone", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "projectile_zone", "safe_zone", "text_zone"}
-};
-string[] converted_3d = {"blockage", "bomb_zone", "character_blocker", "command_blocker", "conveyor_belt", "dialog", "effect_space", "force_field", "hazard", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "platform", "bike", "projectile", "projectile_zone", "vehicle", "safe_zone", "door", "elevator", "elevator_floor", "item_door", "item_passage", "lift", "moving_hazard", "moving_platform", "passage", "ranged_door", "ranged_item_door", "sound_ambience", "sound_source", "spike", "staircase", "teleporter", "timed_ambience", "timed_source", "timed_text", "travelpoint", "vanishing_hazard", "vanishing_platform", "wall", "text_zone", "aircraft", "aircraft_beacon", "checkpoint", "spawnpoint", "clock", "calendar", "sign", "text_square", "floor_breaker", "item", "switch", "bomb", "fire", "mine", "time_bomb", "security_camera", "npc"};
-if(mapmode == "3d")
-{
-for(uint i = 1; i < entry_ids.length(); i++)
-{
-for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
-{
-bool keep = false;
-for(uint k = 0; k < converted_3d.length(); k++)
-{
-if(entry_ids[i][j] == converted_3d[k]) { keep = true; break; }
-}
-if(!keep)
-{
-entry_ids[i].remove_at(j);
-entry_names[i].remove_at(j);
-}
-}
-}
-}
-string[] excluded_topdown = {"floor_breaker", "lift", "elevator", "elevator_floor", "vanishing_platform", "tts_enemie"};
-if(mapmode == "topdown")
-{
-for(uint i = 1; i < entry_ids.length(); i++)
-{
-for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
-{
-for(uint k = 0; k < excluded_topdown.length(); k++)
-{
-if(entry_ids[i][j] == excluded_topdown[k])
-{
-entry_ids[i].remove_at(j);
-entry_names[i].remove_at(j);
-break;
-}
-}
-}
-}
-}
-string[] all_names;
-dictionary all_id_lookup;
-for(uint i = 1; i < cat_names.length(); i++)
-{
-for(uint j = 0; j < entry_names[i].length(); j++)
-{
-all_names.insert_last(entry_names[i][j]);
-all_id_lookup[entry_names[i][j]] = entry_ids[i][j];
-}
-}
-all_names.sort_ascending();
-for(uint i = 0; i < all_names.length(); i++)
-{
-string id;
-all_id_lookup.get(all_names[i], id);
-entry_names[0].insert_last(all_names[i]);
-entry_ids[0].insert_last(id);
-}
-form.reset();
-form.create_window("Build menu", false);
-int cat = form.create_tab_panel("category");
-for(uint i = 0; i < cat_names.length(); i++)
-form.add_list_item(cat, cat_names[i], cat_names[i]);
-form.set_list_position(cat, 0, false);
-int[] entry_lists(cat_names.length());
-for(uint i = 0; i < cat_names.length(); i++)
-{
-entry_lists[i] = form.create_list(cat_names[i]);
-for(uint j = 0; j < entry_names[i].length(); j++)
-form.add_list_item(entry_lists[i], entry_names[i][j], entry_ids[i][j]);
-form.set_list_position(entry_lists[i], 0, false);
-form.assign_to_tab(entry_lists[i], cat, i);
-}
-int ok = form.create_button("&okay", true);
-int cn = form.create_button("&cancel", false, true);
-form.focus(entry_lists[0]);
-while(true)
-{
-wait(5);
-form.monitor();
-if(key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
-{
-resume_pools();
-speak("canceled");
-return;
-}
-if(form.is_pressed(ok))
-{
-int tab_pos = form.get_list_position(cat);
-int active_list = entry_lists[tab_pos];
-int sel = form.get_list_position(active_list);
-string id = form.get_list_item_id(active_list, sel);
-buildobj(id);
-return;
-}
-}
-}
+
 void mapmenu()
 {
 setupmenu(true);
-m.add_item_tts("load compiled map", "mg");
-m.add_item_tts("load decompiled map", "mg2");
-m.add_item_tts("compile map", "cpm");
-m.add_item_tts("decompile map", "dpm");
-m.add_item_tts("new map", "nm");
-m.add_item_tts("back", "back");
-int mres=m.run("Map menu",true);
-string buildem=m.get_item_name(mres);
-if(mres==0)
+m.add_item("load compiled map", "mg");
+m.add_item("load decompiled map", "mg2");
+m.add_item("compile map", "cpm");
+m.add_item("decompile map", "dpm");
+m.add_item("new map", "nm");
+m.add_item("back", "back");
+m.intro_text="Map menu";
+int mres=m.run();
+string buildem=mres<0?"":m.selected_item_id;
+if(mres<0)
 {
 mainmenu();
 }
@@ -399,16 +381,17 @@ if (temp_mode != "" && temp_owner != "") break;
 }
     uint64 size = file_get_size(map_path);
     string readable_size = measure_file_size(size);
-    m.add_item_tts(temp_map_name + ", " + temp_mode + " map (by " + temp_owner + ": total size: " + readable_size + ")");
+    m.add_item(temp_map_name + ", " + temp_mode + " map (by " + temp_owner + ": total size: " + readable_size + ")");
 }
-int mres=m.run("Compiled maps menu", true);
-if(mres==0)
+m.intro_text="Compiled maps menu";
+int mres=m.run();
+if(mres<0)
 {
 mapmenu();
 }
-if (mres>0 and mres<=maps.length())
+if (mres>=0 and mres<int(maps.length()))
 {
-mapname=maps[mres-1];
+mapname=maps[mres];
 mapname=string_replace(mapname, ".map", "", true);
 load_map(mapname, mapowner, force_compiled:true, force_spawned:true);
 game();
@@ -446,16 +429,17 @@ if (temp_mode != "" && temp_owner != "") break;
 }
 uint64 size = get_directory_size("data/maps/decompiled/" + maps[i]);
 string readable_size = measure_file_size(size);
-m.add_item_tts(temp_map_name + ", " + temp_mode + " map (by " + temp_owner + ": total size: " + readable_size+")", maps[i]);
+m.add_item(temp_map_name + ", " + temp_mode + " map (by " + temp_owner + ": total size: " + readable_size+")", maps[i]);
 }
-int mres=m.run("Decompiled maps menu", true);
-if(mres==0)
+m.intro_text="Decompiled maps menu";
+int mres=m.run();
+if(mres<0)
 {
 mapmenu();
 }
-if (mres>0 and mres<=maps.length())
+if (mres>=0 and mres<int(maps.length()))
 {
-mapname=maps[mres-1];
+mapname=maps[mres];
 mapname=string_replace(mapname, ".sif", "", true);
 load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
 game();
@@ -489,19 +473,20 @@ mainmenu();
 void mapmenu2()
 {
 setupmenu();
-m.add_item_tts("add a line", "addline");
-m.add_item_tts("edit a line", "editline");
-m.add_item_tts("remove a line", "remline");
-m.add_item_tts("copy raw map data to clipboard", "clboard");
-m.add_item_tts("paste raw map data from clipboard", "clboard2");
-m.add_item_tts("Go to a text zone on the map","gmz");
-m.add_item_tts("delete map", "dcm");
-m.add_item_tts("load decompiled map", "lm");
-m.add_item_tts("new map", "nm");
-m.add_item_tts("reload map", "rcm");
-int mres=m.run("Map menu",true);
-string mapem=m.get_item_name(mres);
-if(mres==0)
+m.add_item("add a line", "addline");
+m.add_item("edit a line", "editline");
+m.add_item("remove a line", "remline");
+m.add_item("copy raw map data to clipboard", "clboard");
+m.add_item("paste raw map data from clipboard", "clboard2");
+m.add_item("Go to a text zone on the map","gmz");
+m.add_item("delete map", "dcm");
+m.add_item("load decompiled map", "lm");
+m.add_item("new map", "nm");
+m.add_item("reload map", "rcm");
+m.intro_text="Map menu";
+int mres=m.run();
+string mapem=mres<0?"":m.selected_item_id;
+if(mres<0)
 {
 resume_pools();
 speak("canceled");
@@ -541,24 +526,25 @@ filter_empty_lines(lines, filtered_lines, original_lines);
 setupmenu();
 for (uint i=0; i<filtered_lines.length(); i++)
 {
-m.add_item_tts(filtered_lines[i],filtered_lines[i], "", true);
+m.add_item(filtered_lines[i],filtered_lines[i]);
 }
-int mres=m.run("Select a line to remove", true);
-if(mres==0)
+m.intro_text="Select a line to remove";
+int mres=m.run();
+if(mres<0)
 {
 resume_pools();
 speak("canceled");
 return;
 }
-if(mres>=1 and mres<=6)
+if(mres>=0 and mres<=5)
 {
 resume_pools();
 speak("This line cannot be removed.");
 return;
 }
-if(mres>6 and mres<=filtered_lines.length())
+if(mres>=6 and mres<int(filtered_lines.length()))
 {
-uint original_index=original_lines[mres-1];
+uint original_index=original_lines[mres];
 lines.remove_at(original_index);
 string final;
 for (uint i=0; i<lines.length(); i++)
@@ -588,19 +574,20 @@ filter_empty_lines(lines, filtered_lines, original_lines);
 setupmenu();
 for (uint i=0; i<filtered_lines.length(); i++)
 {
-m.add_item_tts(filtered_lines[i],filtered_lines[i], "", true);
+m.add_item(filtered_lines[i],filtered_lines[i]);
 }
-int mres=m.run("Select a line to edit", true);
-if(mres==0)
+m.intro_text="Select a line to edit";
+int mres=m.run();
+if(mres<0)
 {
 resume_pools();
 speak("canceled");
 return;
 }
-if(mres>0 and mres<=filtered_lines.length())
+if(mres>=0 and mres<int(filtered_lines.length()))
 {
-uint original_index=original_lines[mres-1];
-if(string_starts_with(filtered_lines[mres-1], "mode "))
+uint original_index=original_lines[mres];
+if(string_starts_with(filtered_lines[mres], "mode "))
 {
 resume_pools();
 speak("This line cannot be edited.");
@@ -633,20 +620,17 @@ speak("Map updated.");
 if(mapem=="dcm")
 {
 setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Are you sure you want to delete "+mapname+"? This action cannot be undone.",true);
-if(mres==0)
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to delete "+mapname+"? This action cannot be undone.";
+int mres=m.run();
+if(mres<0)
 {
 resume_pools();
 speak("canceled");
 return;
 }
-if(mres==1)
+if(mres==0)
 {
 if(fademode==0) fade_multi_pool(0);
 if(fademode==1) fade_multi_pool(1);
@@ -661,7 +645,7 @@ destroymap();
 exit_game = true;
 return;
 }
-if(mres==2)
+if(mres==1)
 {
 resume_pools();
 speak("canceled");
@@ -685,20 +669,17 @@ mapper.close();
 if(mapem=="clboard2")
 {
 setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Are you sure you want to overwrite all existing map data with what's on your clipboard?",true);
-if(mres==0)
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to overwrite all existing map data with what's on your clipboard?";
+int mres=m.run();
+if(mres<0)
 {
 resume_pools();
 speak("canceled");
 return;
 }
-if(mres==1)
+if(mres==0)
 {
 string clipboard_data = clipboard_read_text();
 if (clipboard_data == "")
@@ -722,7 +703,7 @@ load_map(mapname, mapowner, force_spawned:true);
 mpool.play_stationary(get_pack_sound("characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
 }
-if(mres==2)
+if(mres==1)
 {
 resume_pools();
 speak("canceled");
@@ -759,19 +740,20 @@ if (temp_mode != "" && temp_owner != "") break;
 }
 uint64 size = get_directory_size("data/maps/decompiled/" + maps[i]);
 string readable_size = measure_file_size(size);
-m.add_item_tts(temp_map_name + ", " + temp_mode + " map (by " + temp_owner + ": total size: " + readable_size+")", maps[i]);
+m.add_item(temp_map_name + ", " + temp_mode + " map (by " + temp_owner + ": total size: " + readable_size+")", maps[i]);
 }
-int mres=m.run("Decompiled maps menu", true);
-if(mres==0)
+m.intro_text="Decompiled maps menu";
+int mres=m.run();
+if(mres<0)
 {
 resume_pools();
 speak("canceled");
 return;
 }
-if (mres>0 and mres<=maps.length())
+if (mres>=0 and mres<int(maps.length()))
 {
 resume_pools();
-mapname=maps[mres-1];
+mapname=maps[mres];
 mapname=string_replace(mapname, ".sif", "", true);
 load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
 }
@@ -785,26 +767,23 @@ new_map_form();
 if(mapem=="rcm")
 {
 setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Are you sure you want to reload "+mapname+"?",true);
-if(mres==0)
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to reload "+mapname+"?";
+int mres=m.run();
+if(mres<0)
 {
 resume_pools();
 speak("canceled");
 return;
 }
-if(mres==1)
+if(mres==0)
 {
 resume_pools();
 load_map(mapname, mapowner, anounce_mapload:false, force_compiled:map_is_compiled, force_spawned:true);
 speak("map reloaded");
 }
-if(mres==2)
+if(mres==1)
 {
 resume_pools();
 speak("canceled");

@@ -1,18 +1,19 @@
 void mainmenu()
 {
 setupmenu(true);
-if(hidedocks==false) m.add_item_tts("documentation menu", "help");
-if(hidemaps==false) m.add_item_tts("map menu", "map");
-if(hidesets==false) m.add_item_tts("settings menu", "settings");
-m.add_item_tts("Change game version. Currently set to "+version, "cgv");
-m.add_item_tts("check for updates", "chup");
-m.add_item_tts("redownload all sounds", "rdl");
-m.add_item_tts("test speakers", "st");
-m.add_item_tts("restart game", "rx");
-m.add_item_tts("exit game", "ex");
-int mres=m.run("Main menu. Please choose an option with your arrow keys, then press enter to activate one.",true);
-string main=m.get_item_name(mres);
-if(mres==0)
+if(hidedocks==false) m.add_item("documentation menu", "help");
+if(hidemaps==false) m.add_item("map menu", "map");
+if(hidesets==false) m.add_item("settings menu", "settings");
+m.add_item("Change game version. Currently set to "+version, "cgv");
+m.add_item("check for updates", "chup");
+m.add_item("redownload all sounds", "rdl");
+m.add_item("test speakers", "st");
+m.add_item("restart game", "rx");
+m.add_item("exit game", "ex");
+m.intro_text="Main menu. Please choose an option with your arrow keys, then press enter to activate one.";
+int mres=m.run();
+string main=mres<0?"":m.selected_item_id;
+if(mres<0)
 {
 speak("exiting");
 m.fade_music();
@@ -30,24 +31,21 @@ if(main=="rdl")
 {
 m.fade_music();
 setupmenu();
-m.wrap_sound="none.ogg";
-m.click_sound=get_pack_sound("misc/menu1.ogg");
-m.enter_sound=get_pack_sound("misc/menu2.ogg");
-m.open_sound=get_pack_sound("misc/menu3.ogg");
-m.add_item_tts("yes");
-m.add_item_tts("no");
-int mres=m.run("Are you sure you want to redownload all sounds? This action cannot be undone.",true);
-if(mres==0)
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to redownload all sounds? This action cannot be undone.";
+int mres=m.run();
+if(mres<0)
 {
 speak("canceled");
 mainmenu();
 }
-if(mres==1)
+if(mres==0)
 {
 if(directory_exists("sounds")) directory_delete("sounds");
 downloadsounds();
 }
-if(mres==2)
+if(mres==1)
 {
 mainmenu();
 }
@@ -100,14 +98,15 @@ settingsmenu();
 void docksmenu()
 {
 setupmenu(true);
-m.add_item_tts("changelog", "changelog");
-m.add_item_tts("credits", "credits");
-m.add_item_tts("readme", "readme");
-m.add_item_tts("todo_list", "todo_list");
-m.add_item_tts("back", "back");
-int mres=m.run("Documentation menu",true);
-string dnm=m.get_item_name(mres);
-if(mres==0)
+m.add_item("changelog", "changelog");
+m.add_item("credits", "credits");
+m.add_item("readme", "readme");
+m.add_item("todo_list", "todo_list");
+m.add_item("back", "back");
+m.intro_text="Documentation menu";
+int mres=m.run();
+string dnm=mres<0?"":m.selected_item_id;
+if(mres<0)
 {
 mainmenu();
 }
@@ -163,13 +162,14 @@ else
 hidstatus3="hidden";
 }
 setupmenu();
-m.add_item_tts("Documentation menu. Status, "+hidstatus, "docks");
-m.add_item_tts("Map menu. Status, "+hidstatus2, "maps");
-m.add_item_tts("Settings menu. Status, "+hidstatus3, "settings");
-m.add_item_tts("back", "back");
-int mres=m.run("Choose the main menu items you'd like to show or hide.",true);
-string hdm=m.get_item_name(mres);
-if(mres==0)
+m.add_item("Documentation menu. Status, "+hidstatus, "docks");
+m.add_item("Map menu. Status, "+hidstatus2, "maps");
+m.add_item("Settings menu. Status, "+hidstatus3, "settings");
+m.add_item("back", "back");
+m.intro_text="Choose the main menu items you'd like to show or hide.";
+int mres=m.run();
+string hdm=mres<0?"":m.selected_item_id;
+if(mres<0)
 {
 speak("canceled");
 settingsmenu();
@@ -259,23 +259,23 @@ setupmenu();
 string[] entry_types;
 int[] entry_indices;
 string[] entry_labels;
-m.add_item_tts("total objects " + total_objes);
+m.add_item("total objects " + total_objes);
 for(uint i=0; i<aircrafts.length(); i++)
 {
 if(is_obscured("aircraft", "menu")) continue;
-m.add_item_tts(aircrafts[i].plaintype+" "+"at "+aircrafts[i].plainx+" "+aircrafts[i].plainy+(mapmode == "3d" ? " "+aircrafts[i].plainz : "")+" "+"HP"+round(aircrafts[i].plainhealth/aircrafts[i].plainmaxhealth*100,2)+"percent");
+m.add_item(aircrafts[i].plaintype+" "+"at "+aircrafts[i].plainx+" "+aircrafts[i].plainy+(mapmode == "3d" ? " "+aircrafts[i].plainz : "")+" "+"HP"+round(aircrafts[i].plainhealth/aircrafts[i].plainmaxhealth*100,2)+"percent");
 entry_types.insert_last("aircraft"); entry_indices.insert_last(i); entry_labels.insert_last(aircrafts[i].plaintype);
 }
 for(uint i=0; i<npcs.length(); i++)
 {
 if(is_obscured("npc", "menu")) continue;
-m.add_item_tts(npcs[i].subtype+" "+"at;"+npcs[i].x+" "+npcs[i].y+(mapmode == "3d" ? " "+npcs[i].z : "")+" "+"HP"+round(npcs[i].health/npcs[i].maxhealth*100,2)+"percent"+" "+"level"+npcs[i].level);
+m.add_item(npcs[i].subtype+" "+"at;"+npcs[i].x+" "+npcs[i].y+(mapmode == "3d" ? " "+npcs[i].z : "")+" "+"HP"+round(npcs[i].health/npcs[i].maxhealth*100,2)+"percent"+" "+"level"+npcs[i].level);
 entry_types.insert_last("npc"); entry_indices.insert_last(i); entry_labels.insert_last(npcs[i].subtype);
 }
 for(uint i=0; i<ttsenemies.length(); i++)
 {
 if(is_obscured("tts enemie", "menu")) continue;
-m.add_item_tts("tts enemie at;"+ttsenemies[i].ttsemx+" "+ttsenemies[i].ttsemy+" HP"+round(ttsenemies[i].ttsenehealth/ttsenemies[i].ttsenemaxhealth*100,2)+"percent");
+m.add_item("tts enemie at;"+ttsenemies[i].ttsemx+" "+ttsenemies[i].ttsemy+" HP"+round(ttsenemies[i].ttsenehealth/ttsenemies[i].ttsenemaxhealth*100,2)+"percent");
 entry_types.insert_last("tts enemie"); entry_indices.insert_last(i); entry_labels.insert_last("tts enemie");
 }
 for(uint i=0; i<bikes.length(); i++)
@@ -283,7 +283,7 @@ for(uint i=0; i<bikes.length(); i++)
 if(is_obscured("bike", "menu")) continue;
 string bkpos = bikes[i].bikex+" "+bikes[i].bikey;
 if(mapmode == "3d") bkpos += " "+bikes[i].bikez;
-m.add_item_tts(bikes[i].biketype+" "+"at;"+bkpos+" "+"HP"+round(bikes[i].bikehealth/bikes[i].bikemaxhealth*100,2)+"percent");
+m.add_item(bikes[i].biketype+" "+"at;"+bkpos+" "+"HP"+round(bikes[i].bikehealth/bikes[i].bikemaxhealth*100,2)+"percent");
 entry_types.insert_last("bike"); entry_indices.insert_last(i); entry_labels.insert_last(bikes[i].biketype);
 }
 for(uint i=0; i<doors.length(); i++)
@@ -293,7 +293,7 @@ string base = (doors[i].lockmode=="none") ? "door" : "locked door";
 string prefix = doors[i].is_ranged ? "ranged " : "";
 string at = doors[i].minx+" "+doors[i].miny;
 if(mapmode == "3d") at += " "+doors[i].minz;
-m.add_item_tts(prefix+base+" at;"+at+" "+"HP"+round(doors[i].doorhealth/doors[i].doormaxhealth*100,2)+"percent");
+m.add_item(prefix+base+" at;"+at+" "+"HP"+round(doors[i].doorhealth/doors[i].doormaxhealth*100,2)+"percent");
 entry_types.insert_last("door"); entry_indices.insert_last(i); entry_labels.insert_last(prefix+base);
 }
 for(uint i=0; i<platforms.length(); i++)
@@ -303,7 +303,7 @@ for(uint i=0; i<platforms.length(); i++)
     if(is_obscured("platform", "menu")) continue;
     string pos = platforms[i].minx+" "+platforms[i].miny;
     if(mapmode == "3d") pos += " "+platforms[i].z;
-    m.add_item_tts(platforms[i].tile+" platform at "+ pos + " HP"+ round(platforms[i].plathealth/platforms[i].platmaxhealth*100,2)+ " percent");
+    m.add_item(platforms[i].tile+" platform at "+ pos + " HP"+ round(platforms[i].plathealth/platforms[i].platmaxhealth*100,2)+ " percent");
     entry_types.insert_last("platform"); entry_indices.insert_last(i); entry_labels.insert_last(platforms[i].tile+" platform");
 }
 for(uint i=0; i<projectiles.length(); i++)
@@ -311,7 +311,7 @@ for(uint i=0; i<projectiles.length(); i++)
 if(is_obscured("projectile", "menu")) continue;
 string ppos = projectiles[i].prox+" "+projectiles[i].proy;
 if(mapmode == "3d") ppos += " "+projectiles[i].proz;
-m.add_item_tts(projectiles[i].projtype+" "+"at;"+ppos+" "+"HP"+round(projectiles[i].projhealth/projectiles[i].maxprojhealth*100,2)+"percent");
+m.add_item(projectiles[i].projtype+" "+"at;"+ppos+" "+"HP"+round(projectiles[i].projhealth/projectiles[i].maxprojhealth*100,2)+"percent");
 entry_types.insert_last("projectile"); entry_indices.insert_last(i); entry_labels.insert_last(projectiles[i].projtype);
 }
 for(uint i=0; i<spikes.length(); i++)
@@ -319,7 +319,7 @@ for(uint i=0; i<spikes.length(); i++)
 if(is_obscured("spike", "menu")) continue;
 string sppos = spikes[i].minx+" "+spikes[i].miny;
 if(mapmode == "3d") sppos += " "+spikes[i].minz;
-m.add_item_tts(spikes[i].spiketype+" "+"at;"+sppos+" "+"HP"+round(spikes[i].spikehealth/spikes[i].spikemaxhealth*100,2)+"percent");
+m.add_item(spikes[i].spiketype+" "+"at;"+sppos+" "+"HP"+round(spikes[i].spikehealth/spikes[i].spikemaxhealth*100,2)+"percent");
 entry_types.insert_last("spike"); entry_indices.insert_last(i); entry_labels.insert_last(spikes[i].spiketype);
 }
 for(uint i=0; i<staircases.length(); i++)
@@ -327,13 +327,13 @@ for(uint i=0; i<staircases.length(); i++)
 if(is_obscured("staircase", "menu")) continue;
 string spos = staircases[i].minx+" "+staircases[i].miny;
 if(mapmode == "3d") spos += " "+staircases[i].minz;
-m.add_item_tts(staircases[i].tile+" staircase "+"at;"+spos+" "+"HP"+round(staircases[i].stairshealth/staircases[i].stairsmaxhealth*100,2)+"percent");
+m.add_item(staircases[i].tile+" staircase "+"at;"+spos+" "+"HP"+round(staircases[i].stairshealth/staircases[i].stairsmaxhealth*100,2)+"percent");
 entry_types.insert_last("staircase"); entry_indices.insert_last(i); entry_labels.insert_last(staircases[i].tile+" staircase");
 }
 for(uint i=0; i<sucams.length(); i++)
 {
 if(is_obscured("security camera", "menu")) continue;
-m.add_item_tts(sucams[i].cameratype + " at " + sucams[i].sucamx + " " + sucams[i].sucamy + (mapmode == "3d" ? " " + sucams[i].sucamz : "") + " facing " + (sucams[i].camdir == 1 ? "left" : "right") + " HP " + round(sucams[i].camhealth / sucams[i].cammaxhealth * 100, 2) + " percent" + " level " + sucams[i].camlevel);
+m.add_item(sucams[i].cameratype + " at " + sucams[i].sucamx + " " + sucams[i].sucamy + (mapmode == "3d" ? " " + sucams[i].sucamz : "") + " facing " + (sucams[i].camdir == 1 ? "left" : "right") + " HP " + round(sucams[i].camhealth / sucams[i].cammaxhealth * 100, 2) + " percent" + " level " + sucams[i].camlevel);
 entry_types.insert_last("security camera"); entry_indices.insert_last(i); entry_labels.insert_last(sucams[i].cameratype);
 }
 for(uint i=0; i<vehicles.length(); i++)
@@ -341,7 +341,7 @@ for(uint i=0; i<vehicles.length(); i++)
 if(is_obscured("vehicle", "menu")) continue;
 string vhpos = vehicles[i].vehx+" "+vehicles[i].vehy;
 if(mapmode == "3d") vhpos += " "+vehicles[i].vehz;
-m.add_item_tts(vehicles[i].vehtype+" "+"at;"+vhpos+" "+"HP"+round(vehicles[i].vehhealth/vehicles[i].vehmaxhealth*100,2)+"percent");
+m.add_item(vehicles[i].vehtype+" "+"at;"+vhpos+" "+"HP"+round(vehicles[i].vehhealth/vehicles[i].vehmaxhealth*100,2)+"percent");
 entry_types.insert_last("vehicle"); entry_indices.insert_last(i); entry_labels.insert_last(vehicles[i].vehtype);
 }
 for(uint i=0; i<walls.length(); i++)
@@ -349,19 +349,20 @@ for(uint i=0; i<walls.length(); i++)
 if(is_obscured("wall", "menu")) continue;
 string wpos = walls[i].minx+" "+walls[i].miny;
 if(mapmode == "3d") wpos += " "+walls[i].minz;
-m.add_item_tts(string_replace(walls[i].wall, "wall", "", true)+" wall "+"at;"+wpos+" "+"HP"+round(walls[i].wallhealth/walls[i].wallmaxhealth*100,2)+"percent");
+m.add_item(string_replace(walls[i].wall, "wall", "", true)+" wall "+"at;"+wpos+" "+"HP"+round(walls[i].wallhealth/walls[i].wallmaxhealth*100,2)+"percent");
 entry_types.insert_last("wall"); entry_indices.insert_last(i); entry_labels.insert_last(string_replace(walls[i].wall, "wall", "", true)+" wall");
 }
-int mres=m.run("Object info", true);
+m.intro_text="Object info";
+int mres=m.run();
 resume_pools();
-if(mres == 0)
+if(mres < 0)
 {
 speak("canceled");
 return;
 }
-if(mres > 1)
+if(mres >= 1)
 {
-int entry_idx = mres - 2;
+int entry_idx = mres - 1;
 if(entry_idx >= 0 && entry_idx < int(entry_types.length()))
 start_tracking(entry_types[entry_idx], entry_indices[entry_idx], entry_labels[entry_idx]);
 }
@@ -370,38 +371,37 @@ return;
 void komlogmenu()
 {
 setupmenu();
-m.add_item_tts("total entries "+kombatlog.length());
+m.add_item("total entries "+kombatlog.length());
 for (uint i = 0; i < kombatlog.length(); i++)
 {
-m.add_item_tts(kombatlog[i]);
+m.add_item(kombatlog[i]);
 }
-int mres = m.run("Combat log", true);
-if (mres >= 0)
-{
+m.intro_text="Combat log";
+int mres = m.run();
 resume_pools();
 return;
-}
 }
 void pointsmenu()
 {
 setupmenu();
-m.add_item_tts("You're currently on level"+level+"with"+xp+"experience. Your next level requires"+(xprequiered-xp)+"experience");
-m.add_item_tts("You have"+points+"points available to spend");
-m.add_item_tts("upgrade maximum character attack,"+"currently set to;"+attack, "umat");
-m.add_item_tts("upgrade maximum character defence,"+"currently set to;"+defence, "umd");
-if(!wepchar.melee) m.add_item_tts("upgrade maximum weapon ammo,"+"currently set to;"+wepchar.max_ammo, "uma");
-m.add_item_tts("upgrade maximum character health,"+"currently set to;"+maxhealth, "umh");
-m.add_item_tts("upgrade maximum character stamina,"+"currently set to;"+maxstamina, "umt");
-m.add_item_tts("upgrade maximum character lives,"+"currently set to;"+lifecard, "umlf");
-if(drawnshield==true) m.add_item_tts("upgrade maximum shield strength,"+"currently set to;"+maxshieldstrength, "umst");
-if(drawnshield==true) m.add_item_tts("upgrade maximum shield defence,"+"currently set to;"+shielddefence, "umsd");
-m.add_item_tts("upgrade maximum x weapon range,"+"currently set to;"+wepchar.range, "umra1");
-m.add_item_tts("upgrade maximum y weapon range,"+"currently set to;"+wepchar.range2, "umra2");
-if(mapmode == "3d") m.add_item_tts("upgrade maximum z weapon range,"+"currently set to;"+wepchar.range3, "umra3");
-m.add_item_tts("back", "back");
-int mres=m.run("Points menu. ",true);
-string ptmem=m.get_item_name(mres);
-if(mres==0 or mres<=2)
+m.add_item("You're currently on level"+level+"with"+xp+"experience. Your next level requires"+(xprequiered-xp)+"experience");
+m.add_item("You have"+points+"points available to spend");
+m.add_item("upgrade maximum character attack,"+"currently set to;"+attack, "umat");
+m.add_item("upgrade maximum character defence,"+"currently set to;"+defence, "umd");
+if(!wepchar.melee) m.add_item("upgrade maximum weapon ammo,"+"currently set to;"+wepchar.max_ammo, "uma");
+m.add_item("upgrade maximum character health,"+"currently set to;"+maxhealth, "umh");
+m.add_item("upgrade maximum character stamina,"+"currently set to;"+maxstamina, "umt");
+m.add_item("upgrade maximum character lives,"+"currently set to;"+lifecard, "umlf");
+if(drawnshield==true) m.add_item("upgrade maximum shield strength,"+"currently set to;"+maxshieldstrength, "umst");
+if(drawnshield==true) m.add_item("upgrade maximum shield defence,"+"currently set to;"+shielddefence, "umsd");
+m.add_item("upgrade maximum x weapon range,"+"currently set to;"+wepchar.range, "umra1");
+m.add_item("upgrade maximum y weapon range,"+"currently set to;"+wepchar.range2, "umra2");
+if(mapmode == "3d") m.add_item("upgrade maximum z weapon range,"+"currently set to;"+wepchar.range3, "umra3");
+m.add_item("back", "back");
+m.intro_text="Points menu. ";
+int mres=m.run();
+string ptmem=mres<0?"":m.selected_item_id;
+if(mres<=1)
 {
 resume_pools();
 return;
@@ -709,177 +709,15 @@ resume_pools();
 return;
 }
 }
-void weaponsmenu()
-{
-    string[] cats = get_pack_sound_folders("equipments/weapons/*");
-    if(cats.length() == 0)
-    {
-        dlg("Error. There are no weapon categories available to view. Press enter to continue.");
-        resume_pools();
-        return;
-    }
-    // Build tab list with "all" at index 0 followed by each real category.
-    string[] tab_cats;
-    tab_cats.insert_last("all");
-    for(uint i = 0; i < cats.length(); i++) tab_cats.insert_last(cats[i]);
-    // Per-tab parallel arrays of weapon labels, ids, unlock state, and source category
-    // (source category matters because the "all" tab aggregates from multiple categories).
-    string[][] weapon_labels(tab_cats.length());
-    string[][] weapon_ids(tab_cats.length());
-    bool[][] weapon_unlocked(tab_cats.length());
-    string[][] weapon_source_cat(tab_cats.length());
-    for(uint i = 0; i < cats.length(); i++)
-    {
-        string[] weps = get_pack_sound_folders("equipments/weapons/" + cats[i] + "/*");
-        for(uint j = 0; j < weps.length(); j++)
-        {
-            weapon temp;
-            temp.parse(cats[i], weps[j]);
-            double unlock_level = temp.level;
-            bool is_unlocked = level >= unlock_level;
-            string label = weps[j];
-            if(!is_unlocked) label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-            // Per-category tab (i+1 because "all" is index 0)
-            weapon_labels[i+1].insert_last(label);
-            weapon_ids[i+1].insert_last(weps[j]);
-            weapon_unlocked[i+1].insert_last(is_unlocked);
-            weapon_source_cat[i+1].insert_last(cats[i]);
-            // "All" tab — aggregate everything
-            weapon_labels[0].insert_last(label);
-            weapon_ids[0].insert_last(weps[j]);
-            weapon_unlocked[0].insert_last(is_unlocked);
-            weapon_source_cat[0].insert_last(cats[i]);
-        }
-    }
-    // Sort the "all" tab alphabetically by label, keeping the parallel arrays in sync.
-    int[] order(weapon_labels[0].length());
-    for(uint i = 0; i < order.length(); i++) order[i] = int(i);
-    for(uint i = 1; i < order.length(); i++)
-    {
-        int key = order[i];
-        int j = int(i) - 1;
-        while(j >= 0 && weapon_labels[0][order[j]] > weapon_labels[0][key])
-        {
-            order[j+1] = order[j];
-            j--;
-        }
-        order[j+1] = key;
-    }
-    string[] sorted_labels(order.length());
-    string[] sorted_ids(order.length());
-    bool[] sorted_unlocked(order.length());
-    string[] sorted_sources(order.length());
-    for(uint i = 0; i < order.length(); i++)
-    {
-        sorted_labels[i] = weapon_labels[0][order[i]];
-        sorted_ids[i] = weapon_ids[0][order[i]];
-        sorted_unlocked[i] = weapon_unlocked[0][order[i]];
-        sorted_sources[i] = weapon_source_cat[0][order[i]];
-    }
-    weapon_labels[0] = sorted_labels;
-    weapon_ids[0] = sorted_ids;
-    weapon_unlocked[0] = sorted_unlocked;
-    weapon_source_cat[0] = sorted_sources;
-    form.reset();
-    form.create_window("Weapons menu", false);
-    int cat_tab = form.create_tab_panel("category");
-    for(uint i = 0; i < tab_cats.length(); i++)
-        form.add_list_item(cat_tab, tab_cats[i], tab_cats[i]);
-    form.set_list_position(cat_tab, 0, false);
-    int[] wep_lists(tab_cats.length());
-    for(uint i = 0; i < tab_cats.length(); i++)
-    {
-        wep_lists[i] = form.create_list(tab_cats[i]);
-        for(uint j = 0; j < weapon_labels[i].length(); j++)
-            form.add_list_item(wep_lists[i], weapon_labels[i][j], weapon_ids[i][j]);
-        if(weapon_labels[i].length() > 0) form.set_list_position(wep_lists[i], 0, false);
-        form.assign_to_tab(wep_lists[i], cat_tab, i);
-    }
-    int ok = form.create_button("&okay", true);
-    int cn = form.create_button("&cancel", false, true);
-    form.focus(wep_lists[0]);
-    while(true)
-    {
-        wait(5);
-        form.monitor();
-        int cur_focus = form.get_current_focus();
-        int tab_pos = form.get_list_position(cat_tab);
-        int active_list = wep_lists[tab_pos];
-        // Sound previews — only when a weapon list is focused
-        if(cur_focus == active_list)
-        {
-            int sel = form.get_list_position(active_list);
-            if(sel >= 0 && sel < int(weapon_ids[tab_pos].length()))
-            {
-                string source_cat = weapon_source_cat[tab_pos][sel];
-                string folder = "equipments/weapons/" + source_cat + "/" + weapon_ids[tab_pos][sel] + "/";
-                if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
-                {
-                    t.destroy_sound(prevslot);
-                    prevslot = t.play_stationary(get_pack_sound(folder + "*fire*"), false);
-                    keytimer.restart();
-                }
-                if(control_is_down() && key_repeating(KEY_L))
-                {
-                    t.destroy_sound(prevslot);
-                    prevslot = t.play_stationary(get_pack_sound(folder + "*draw*"), false);
-                }
-                if(control_is_down() && key_repeating(KEY_H))
-                {
-                    t.destroy_sound(prevslot);
-                    prevslot = t.play_stationary(get_pack_sound(folder + "*hit*"), false);
-                }
-                if(control_is_down() && key_repeating(KEY_E))
-                {
-                    t.destroy_sound(prevslot);
-                    prevslot = t.play_stationary(get_pack_sound(folder + "*empty*"), false);
-                }
-                if(control_is_down() && key_repeating(KEY_R))
-                {
-                    t.destroy_sound(prevslot);
-                    prevslot = t.play_stationary(get_pack_sound(folder + "*reload*"), false);
-                }
-            }
-        }
-        if(key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
-        {
-            t.destroy_sound(prevslot);
-            resume_pools();
-            speak("canceled");
-            return;
-        }
-        if(form.is_pressed(ok))
-        {
-            int sel = form.get_list_position(active_list);
-            if(sel < 0 || sel >= int(weapon_ids[tab_pos].length())) continue;
-            if(!weapon_unlocked[tab_pos][sel])
-            {
-                speak(weapon_labels[tab_pos][sel]);
-                continue;
-            }
-            string source_cat = weapon_source_cat[tab_pos][sel];
-            string id = weapon_ids[tab_pos][sel];
-            t.destroy_sound(prevslot);
-            resume_pools();
-            p.destroy_sound(refslot);
-            wepdef = 0;
-            wepchar.cad = source_cat;
-            wepchar.sub = id;
-            wepchar.parse(source_cat, id);
-            wepchar.play_draw(int(me.x), int(me.y), int(me.z));
-            speak(id + " equipped");
-            return;
-        }
-    }
-}
 void pausemenu()
 {
 setupmenu();
-m.add_item_tts("resume game", "rmg");
-m.add_item_tts("view statistics", "vs");
-int mres=m.run("Pause menu. ",true);
-string psmem=m.get_item_name(mres);
-if(mres==0)
+m.add_item("resume game", "rmg");
+m.add_item("view statistics", "vs");
+m.intro_text="Pause menu. ";
+int mres=m.run();
+string psmem=mres<0?"":m.selected_item_id;
+if(mres<0)
 {
 p.play_stationary(get_pack_sound("characters/"+chartype+"/general/*resume*"),false);
 resume_game();
@@ -894,5 +732,282 @@ return;
 if(psmem=="vs")
 {
 statsmenu();
+}
+}
+void statsmenu(bool ingame=false)
+{
+setupmenu();
+bool is_3d = mapmode == "3d";
+bool is_topdown = mapmode == "topdown";
+string coords = is_3d ? (me.x+", "+me.y+", "+me.z) : (me.x+", "+me.y);
+string tile = is_3d ? platform_tile_at(me.x, me.y, me.z) : gmt(me.x, me.y);
+bool no_tile = tile == "";
+if(no_tile && is_topdown) m.add_item("current location, "+coords+", facing "+facing);
+else if(no_tile) m.add_item("Current location, "+coords+". You're currently in the air, facing "+facing);
+else m.add_item("current location, "+coords+". You're walking on "+tile+", facing "+facing);
+if(lifecard>=2) m.add_item("health, "+round(health/maxhealth*100,2)+" percent, "+health+" of "+maxhealth+" hitpoints remaining, with "+lifecard+" lives left");
+else if(lifecard<=1) m.add_item("health, "+round(health/maxhealth*100,2)+" percent, "+health+" of "+maxhealth+" hitpoints remaining, with "+lifecard+" life left");
+if(shieldon==1) m.add_item("shield strength, "+round(shieldstrength/maxshieldstrength*100,2)+" percent, "+shieldstrength+" of "+maxshieldstrength+" hitpoints remaining");
+m.add_item("stamina, "+round(stamina/maxstamina*100,2)+" percent, "+stamina+" of "+maxstamina+" endurance remaining.");
+if(mapmode != "topdown") m.add_item("Your maximum jump height is "+jumpheight+" squares");
+m.add_item("Your maximum x position is "+maxx+" tiles");
+if(mapmode == "topdown") m.add_item("Your maximum depth is "+maxy+" tiles");
+else m.add_item("Your maximum y position is "+maxy+" tiles");
+if(mapmode == "3d") m.add_item("Your maximum z position is "+maxz+" tiles");
+m.add_item("You are at speed "+modspeed);
+m.add_item("You're currently on level "+level+" with "+xp+" experience. Your next level requires "+(xprequiered-xp)+" experience");
+m.add_item("You have "+points+" points available to spend");
+if(!wepchar.melee) m.add_item("you have "+wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+m.add_item("You have killed a total of "+kills+" entidies");
+if(!ingame) m.add_item("back","back");
+m.intro_text="Statistics menu";
+int mres=m.run();
+if(ingame)
+{
+resume_pools();
+return;
+}
+pausemenu();
+}
+void settingsmenu(bool ingame=false)
+{
+form.reset();
+form.create_window("preferences", false);
+int slt=-1, slk=-1, sln=-1, spk=-1, sdm=-1, defmap=-1, hideme=-1;
+if (!ingame)
+{
+if (chartype == "")
+slt = form.create_button("Select c&haracter theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slt = form.create_button("Select c&haracter theme for the " + soundpack + " sound pack. Currently set to " + chartype);
+if (keyboardtheme == "")
+slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+slk = form.create_button("Select &keyboard theme for the " + soundpack + " sound pack. Currently set to " + keyboardtheme);
+if (menutype == "")
+sln = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to nothing");
+else
+sln = form.create_button("Select &menu theme for the " + soundpack + " sound pack. Currently set to " + menutype);
+if (soundpack == "")
+spk = form.create_button("Select sound &pack. Currently set to nothing");
+else
+spk = form.create_button("Select sound &pack. Currently set to " + soundpack);
+sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
+defmap = form.create_button("Set default &owner for new maps. Currently set to " + defowner);
+hideme = form.create_button("Show or h&ide main menu items");
+}
+int autup = form.create_checkbox("Enable checking for game updates at startup", auto_check_updates);
+int runmode = form.create_checkbox("Enable auto running in maps", autorun);
+int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
+int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
+int bml = form.create_checkbox("Enable bumping into walls repeatedly", wallbump);
+int trm = form.create_checkbox("Enable turning on the spot for 2d maps", int_to_bool(turnmode));
+int mlb = form.create_checkbox("Enable auditory beeps when loading maps", int_to_bool(maploadbeeps));
+int mls = form.create_checkbox("Enable indicator sounds when loading maps", int_to_bool(maploadsounds));
+int glh = form.create_checkbox("Enable global HRTF support", hrtf);
+int esc = form.create_checkbox("Ask to exit when pressing escape", int_to_bool(gamxit));
+int rest = -1;
+if (!ingame) rest = form.create_button("&reset settings");
+int preffsok = form.create_button("&save settings", true);
+int preffscn = form.create_button("&cancel");
+if (!ingame) form.focus(slt);
+else form.focus(autup);
+while (true)
+{
+form.monitor();
+wait(5);
+auto_check_updates = form.is_checked(autup);
+autorun = form.is_checked(runmode);
+autojump = bool_to_int(form.is_checked(sjn));
+fademode = bool_to_int(form.is_checked(fdv));
+wallbump = form.is_checked(bml);
+turnmode = bool_to_int(form.is_checked(trm));
+maploadbeeps = bool_to_int(form.is_checked(mlb));
+maploadsounds = bool_to_int(form.is_checked(mls));
+hrtf = form.is_checked(glh);
+sound_global_hrtf = form.is_checked(glh);
+gamxit = bool_to_int(form.is_checked(esc));
+if (key_pressed(KEY_ESCAPE))
+{
+if (ingame) { speak("canceled"); resume_pools(); return; }
+else mainmenu();
+}
+if (!ingame && form.is_pressed(hideme))
+{
+hidemenu();
+}
+if (!ingame && form.is_pressed(defmap))
+{
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string mowner = vd.input_box("", "Enter the default owner you'd like to set for all maps.");
+if (mowner == "")
+{
+speak("canceled");
+continue;
+}
+defowner = mowner;
+dlg("Map owner set. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+if (!ingame && form.is_pressed(slt))
+{
+string[] chars = get_pack_sound_folders("characters/*");
+if (chars.length() == 0)
+{
+dlg("Error. There are no character themes available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+charparse();
+string res = charsmenu();
+if (res != "")
+{
+t.destroy_sound(prevslot);
+chartype = res;
+}
+}
+}
+if (!ingame && form.is_pressed(slk))
+{
+string[] themetype = get_pack_sound_folders("keyboards/*");
+if (themetype.length() == 0)
+{
+dlg("Error. There are no keyboard themes available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+string res = keyboardchoosers();
+if (res != "")
+{
+t.destroy_sound(prevslot);
+keyboardtheme = res;
+}
+}
+}
+if (!ingame && form.is_pressed(sln))
+{
+string[] menu = get_pack_sound_folders("menus/*");
+if (menu.length() == 0)
+{
+dlg("Error. There are no menu themes available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+string res = menuchoosers();
+if (res != "")
+{
+t.destroy_sound(prevslot);
+menutype = res;
+}
+}
+}
+if (!ingame && form.is_pressed(spk))
+{
+string[] soundpacktyp = find_directories("sounds/*");
+if (soundpacktyp.length() == 0)
+{
+dlg("Error. There are no sound packs available to view. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+else
+{
+string[] soundpacks = find_directories("sounds/*");
+setupmenu();
+for (uint i = 0; i < soundpacks.length(); i++)
+{
+uint64 size = get_directory_size("sounds/" + soundpacks[i]);
+string readable_size = measure_file_size(size);
+m.add_item(soundpacks[i] + ". Total size: " + readable_size, soundpacks[i]);
+}
+m.intro_text = "Choose the sound pack you'd like to use throughout the entire game.";
+int mres = m.run();
+if (mres < 0)
+{
+form.reset();
+settingsmenu();
+}
+if (mres >= 0 && mres < int(soundpacks.length()))
+{
+chartype = "";
+keyboardtheme = "";
+menutype = "";
+soundpack = soundpacks[mres];
+dlg("Sound pack set. Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+}
+}
+if (!ingame && form.is_pressed(sdm))
+{
+string[]@ devices = get_sound_output_devices();
+devices.remove_at(0);
+setupmenu();
+for (uint i = 0; i < devices.length(); i++)
+{
+m.add_item(devices[i], devices[i]);
+}
+m.intro_text = "Choose a sound device you'd like to use in the game.";
+int mres = m.run();
+if (mres < 0)
+{
+form.reset();
+settingsmenu();
+}
+if (mres >= 0 && mres < int(devices.length()))
+{
+soundcard = devices[mres];
+sound_output_device = mres + 1;
+dlg("Sound device set to " + soundcard + ". Press enter to continue.");
+form.reset();
+settingsmenu();
+}
+}
+if (!ingame && form.is_pressed(rest))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "Are you sure you want to reset all of your settings?";
+int mres = m.run();
+if (mres < 0)
+{
+form.reset();
+settingsmenu();
+}
+if (mres == 0)
+{
+if (file_exists(DIRECTORY_APPDATA + "tsatria03/SimpleFighter/saves/settings.spf")) file_delete(DIRECTORY_APPDATA + "tsatria03/SimpleFighter/saves/settings.spf");
+dlg("Settings reset. Press enter to continue.");
+resetpreffs();
+speak("restarting");
+wait(500);
+restart("sf.exe");
+}
+if (mres == 1)
+{
+form.reset();
+settingsmenu();
+}
+}
+if (form.is_pressed(preffscn))
+{
+if (ingame) { speak("canceled"); resume_pools(); return; }
+else mainmenu();
+}
+if (form.is_pressed(preffsok))
+{
+writepreffs();
+if (ingame) { speak("Settings saved."); resume_pools(); return; }
+else { dlg("Settings saved. Press enter to continue."); mainmenu(); }
+}
 }
 }

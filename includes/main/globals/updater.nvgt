@@ -65,16 +65,17 @@ else
     setupmenu(false);
     if (ext == "exe")
 {
-        m.add_item_tts("Run Installer", "run");
+        m.add_item("Run Installer", "run");
     }
 else if (ext == "7z" || ext == "zip")
 {
-        m.add_item_tts("Extract file", "extract");
+        m.add_item("Extract file", "extract");
     }
-    m.add_item_tts("Cancel", "cancel");
-    int mres = m.run("The update has been downloaded. What would you like to do with " + bare_name + "?", true);
-    string choice = m.get_item_name(mres);
-    if (mres == 0 || choice == "cancel")
+    m.add_item("Cancel", "cancel");
+    m.intro_text = "The update has been downloaded. What would you like to do with " + bare_name + "?";
+    int mres = m.run();
+    string choice = m.selected_item_id;
+    if (mres < 0 || choice == "cancel")
 {
         speak("Canceled");
         return false;
@@ -113,12 +114,13 @@ string get_download_url(string projectname, string new_version)
 {
     string base = "https://github.com/tsatria03/" + projectname + "/releases/download/V" + new_version+"0";
     setupmenu(false);
-    m.add_item_tts("Windows Installer", "installer");
-    m.add_item_tts("Windows Portable", "portable");
-    m.add_item_tts("cancel", "cancel");
-    int mres = m.run("Which version of the game would you like to download?", true);
-    string version_choice = m.get_item_name(mres);
-    if (mres == 0 || version_choice == "cancel") mainmenu();
+    m.add_item("Windows Installer", "installer");
+    m.add_item("Windows Portable", "portable");
+    m.add_item("cancel", "cancel");
+    m.intro_text = "Which version of the game would you like to download?";
+    int mres = m.run();
+    string version_choice = m.selected_item_id;
+    if (mres < 0 || version_choice == "cancel") mainmenu();
     if (version_choice == "portable")
         return base + "/SimpleFighter_windows_portable_password_is_SpfBuilder.7z";
     else
