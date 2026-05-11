@@ -163,9 +163,19 @@ form.reset();
 form.create_window("platform", false);
 bool y_uses_back_front = mapmode != "2d";
 string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : "";
 int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
 int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("y", saved_my);
+int my, my2 = -1;
+if(y_uses_back_front)
+{
+my = form.create_input_box("minimum y", saved_my);
+my2 = form.create_input_box("maximum y", saved_my2);
+}
+else
+{
+my = form.create_input_box("y", saved_my);
+}
 int mz = -1;
 if(mapmode == "3d")
 mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
@@ -173,6 +183,7 @@ int hp = form.create_input_box("health", "1");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(my2 != -1) form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
 if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 int tile_list = form.create_list("tile sound");
@@ -297,8 +308,14 @@ continue;
 }
 if(form.get_text(my).is_empty())
 {
-speak("Y is required.");
+speak((my2 != -1) ? "Minimum y is required." : "Y is required.");
 form.focus(my);
+continue;
+}
+if(my2 != -1 && form.get_text(my2).is_empty())
+{
+speak("Maximum y is required.");
+form.focus(my2);
 continue;
 }
 if(mz != -1 && form.get_text(mz).is_empty())
@@ -310,6 +327,7 @@ continue;
 double bx = string_to_number(form.get_text(mx));
 double bx2 = string_to_number(form.get_text(mx2));
 double by = string_to_number(form.get_text(my));
+double by2 = (my2 != -1) ? string_to_number(form.get_text(my2)) : by;
 double bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int p = form.get_list_position(tile_list);
@@ -320,8 +338,8 @@ bool bdest = form.is_checked(dest_cb);
 bool boverlap = form.is_checked(overlap_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_platform(bx, bx2, by, bhp, btile, bvol, bpit, bdest, boverlap, bz);
-spawn_platform(bx, bx2, by, by, bhp, bhp, btile, bvol, bpit, bdest, boverlap, false, bz);
+write_platform(bx, bx2, by, by2, bhp, btile, bvol, bpit, bdest, boverlap, bz);
+spawn_platform(bx, bx2, by, by2, bhp, bhp, btile, bvol, bpit, bdest, boverlap, false, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -332,15 +350,33 @@ return;
 
 void read_platform(string[] sd)
 {
+// Accepts three line shapes:
+//   2d (length 10):       platform mx mx2 my hp tile vol pit dest overlap
+//   topdown legacy (10):  same as 2d — maxy defaults to miny (one-tile-deep strip)
+//   topdown new (11):     platform mx mx2 my my2 hp tile vol pit dest overlap
+//   3d legacy (11):       platform mx mx2 my z hp tile vol pit dest overlap (maxy = miny)
+//   3d new (12):          platform mx mx2 my my2 z hp tile vol pit dest overlap
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
 double my=stn(sd[3]);
+double my2=my;
 double z=0;
 int o=4;
-if(sd.length()==11)
+if(mapmode=="topdown" && sd.length()==11)
+{
+my2=stn(sd[4]);
+o=5;
+}
+else if(mapmode=="3d" && sd.length()==11)
 {
 z=stn(sd[4]);
 o=5;
+}
+else if(mapmode=="3d" && sd.length()==12)
+{
+my2=stn(sd[4]);
+z=stn(sd[5]);
+o=6;
 }
 double hp=stn(sd[o]);
 string tiletype=sd[o+1];
@@ -348,14 +384,15 @@ double tilevol=stn(sd[o+2]);
 double tilepitch=stn(sd[o+3]);
 bool dbl=string_to_bool(sd[o+4]);
 bool rps=string_to_bool(sd[o+5]);
-spawn_platform(mx, mx2, my, my, hp, hp, tiletype, tilevol, tilepitch, dbl, rps, false, z);
+spawn_platform(mx, mx2, my, my2, hp, hp, tiletype, tilevol, tilepitch, dbl, rps, false, z);
 }
 
-void write_platform(double x, double x2, double y, double hp, string tiletype, double vol, double pitch, bool destroyable, bool overlap, double z=0)
+void write_platform(double x, double x2, double y, double y2, double hp, string tiletype, double vol, double pitch, bool destroyable, bool overlap, double z=0)
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 string coords=x+" "+x2+" "+y;
+if(mapmode!="2d") coords+=" "+y2;
 if(mapmode=="3d") coords+=" "+z;
 mapper.write("\r\n"+"platform "+coords+" "+hp+" "+tiletype+" "+vol+" "+pitch+" "+destroyable+" "+overlap);
 mapper.close();

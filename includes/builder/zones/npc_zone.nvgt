@@ -2,7 +2,7 @@ npc_zone@[] npc_zones(0);
 class npc_zone
 {
     double minx, maxx;
-    int y;
+    int y, y2;
     int z;
     int spawntime;
     int scale_level;
@@ -10,11 +10,12 @@ class npc_zone
     string category;
     string subtype;
     timer spawntimer;
-    npc_zone(double mx, double mx2, int sy, int sp, int sl, string p, string cat, string sub, int sz=0)
+    npc_zone(double mx, double mx2, int sy, int sy2, int sp, int sl, string p, string cat, string sub, int sz=0)
     {
         minx = mx;
         maxx = mx2;
         y = sy;
+        y2 = sy2;
         z = sz;
         spawntime = sp;
         scale_level = sl;
@@ -28,7 +29,7 @@ void npc_zone_loop()
 {
     for(uint i = 0; i < npc_zones.length(); i++)
     {
-        bool trigger = npc_zones[i].minx <= me.x and npc_zones[i].maxx >= me.x and npc_zones[i].y == me.y;
+        bool trigger = npc_zones[i].minx <= me.x and npc_zones[i].maxx >= me.x and npc_zones[i].y <= me.y and npc_zones[i].y2 >= me.y;
         if(mapmode == "3d") trigger = trigger and npc_zones[i].z == me.z;
         if(trigger and npc_zones[i].spawntimer.elapsed >= npc_zones[i].spawntime)
         {
@@ -39,15 +40,15 @@ void npc_zone_loop()
                 if(folders.length() > 0) sub = random_string(folders);
             }
             if(sub != "" && sub != "none")
-                spawn_npc(random(npc_zones[i].minx, npc_zones[i].maxx), npc_zones[i].y, npc_zones[i].scale_level, npc_zones[i].path, npc_zones[i].category, sub, npc_zones[i].z);
+                spawn_npc(random(npc_zones[i].minx, npc_zones[i].maxx), random(npc_zones[i].y, npc_zones[i].y2), npc_zones[i].scale_level, npc_zones[i].path, npc_zones[i].category, sub, npc_zones[i].z);
             npc_zones[i].spawntimer.restart();
         }
     }
 }
 
-void spawn_npc_zone(double x1, double x2, int y, int sp, int sl, string path, string category, string subtype, int z=0)
+void spawn_npc_zone(double x1, double x2, int y, int y2, int sp, int sl, string path, string category, string subtype, int z=0)
 {
-    npc_zone nz(x1, x2, y, sp, sl, path, category, subtype, z);
+    npc_zone nz(x1, x2, y, y2, sp, sl, path, category, subtype, z);
     npc_zones.insert_last(nz);
 }
 
@@ -58,29 +59,47 @@ void destroy_all_npc_zones()
 
 void read_npc_zone(string[] sd)
 {
+    // Line shapes:
+    //   2d (length 9) / topdown legacy (9): mx mx2 y sp sl path cat sub          (y2 = y)
+    //   topdown new (10):                   mx mx2 y y2 sp sl path cat sub
+    //   3d legacy (10):                     mx mx2 y z sp sl path cat sub        (y2 = y)
+    //   3d new (11):                        mx mx2 y y2 z sp sl path cat sub
     double mx = stn(sd[1]);
     double mx2 = stn(sd[2]);
     int y = stn(sd[3]);
+    int y2 = y;
     int z = 0;
     int o = 4;
-    if(sd.length() == 10)
+    if(mapmode == "topdown" && sd.length() == 10)
+    {
+        y2 = stn(sd[4]);
+        o = 5;
+    }
+    else if(mapmode == "3d" && sd.length() == 10)
     {
         z = stn(sd[4]);
         o = 5;
+    }
+    else if(mapmode == "3d" && sd.length() == 11)
+    {
+        y2 = stn(sd[4]);
+        z = stn(sd[5]);
+        o = 6;
     }
     int sp = stn(sd[o]);
     int sl = stn(sd[o+1]);
     string path = sd[o+2];
     string category = sd[o+3];
     string subtype = sd[o+4];
-    spawn_npc_zone(mx, mx2, y, sp, sl, path, category, subtype, z);
+    spawn_npc_zone(mx, mx2, y, y2, sp, sl, path, category, subtype, z);
 }
 
-void write_npc_zone(double x1, double x2, int y, int sp, int sl, string path, string category, string subtype, int z=0)
+void write_npc_zone(double x1, double x2, int y, int y2, int sp, int sl, string path, string category, string subtype, int z=0)
 {
     mapper.open("data/maps/decompiled/" + mapname + "/" + "info.sif", "ab");
     mapdata = mapper.read();
     string coords = x1 + " " + x2 + " " + y;
+    if(mapmode != "2d") coords += " " + y2;
     if(mapmode == "3d") coords += " " + z;
     mapper.write("\r\n" + "npc_zone " + coords + " " + sp + " " + sl + " " + path + " " + category + " " + subtype);
     mapper.close();
@@ -95,6 +114,7 @@ void build_npc_zone()
     string saved_x = sel_left_set ? sel_left : "";
     string saved_x2 = sel_right_set ? sel_right : "";
     string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+    string saved_y2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : "";
     string saved_z = sel_bottom_set ? sel_bottom : "";
     string saved_sp = "";
     string saved_lev = "0";
@@ -105,7 +125,8 @@ void build_npc_zone()
     int last_path_pos = -1;
     int last_cat_pos = -1;
     int focus_after_build = 0;
-    int mx, mx2, my, mz, sp, lev, path_list, cat_list, sub_list, ok, cn;
+    int mx, mx2, my, my2, mz, sp, lev, path_list, cat_list, sub_list, ok, cn;
+    my2 = -1;
     string[] sub_data;
     while(true)
     {
@@ -118,6 +139,7 @@ void build_npc_zone()
                 saved_x = form.get_text(mx);
                 saved_x2 = form.get_text(mx2);
                 saved_y = form.get_text(my);
+                if(my2 != -1) saved_y2 = form.get_text(my2);
                 if(mapmode == "3d") saved_z = form.get_text(mz);
                 saved_sp = form.get_text(sp);
                 saved_lev = form.get_text(lev);
@@ -148,7 +170,16 @@ void build_npc_zone()
             form.create_window("npc zone", false, true, last_cat_pos != -1);
             mx = form.create_input_box("minimum x", saved_x);
             mx2 = form.create_input_box("maximum x", saved_x2);
-            my = form.create_input_box("y", saved_y);
+            my2 = -1;
+            if(y_uses_back_front)
+            {
+                my = form.create_input_box("minimum y", saved_y);
+                my2 = form.create_input_box("maximum y", saved_y2);
+            }
+            else
+            {
+                my = form.create_input_box("y", saved_y);
+            }
             mz = -1;
             if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
             sp = form.create_input_box("spawn time", saved_sp);
@@ -156,6 +187,7 @@ void build_npc_zone()
             form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+            if(my2 != -1) form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
             if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
             form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
@@ -248,13 +280,15 @@ void build_npc_zone()
         {
             if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); continue; }
             if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); continue; }
-            if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); continue; }
+            if(form.get_text(my) == "") { speak((my2 != -1) ? "Minimum y is required." : "Y is required."); form.focus(my); continue; }
+            if(my2 != -1 && form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); continue; }
             if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
             if(form.get_text(sp) == "") { speak("Spawn time is required."); form.focus(sp); continue; }
             if(form.get_text(lev) == "") { speak("Scale level is required."); form.focus(lev); continue; }
             double bx = string_to_number(form.get_text(mx));
             double bx2 = string_to_number(form.get_text(mx2));
             int by = string_to_number(form.get_text(my));
+            int by2 = (my2 != -1) ? int(string_to_number(form.get_text(my2))) : by;
             int bz = (mz != -1) ? int(string_to_number(form.get_text(mz))) : 0;
             int bsp = string_to_number(form.get_text(sp));
             int blev = string_to_number(form.get_text(lev));
@@ -267,8 +301,8 @@ void build_npc_zone()
             string bcat = categories[saved_cat_pos];
             t.destroy_sound(prevslot);
             resume_pools();
-            write_npc_zone(bx, bx2, by, bsp, blev, bpath, bcat, bsub, bz);
-            spawn_npc_zone(bx, bx2, by, bsp, blev, bpath, bcat, bsub, bz);
+            write_npc_zone(bx, bx2, by, by2, bsp, blev, bpath, bcat, bsub, bz);
+            spawn_npc_zone(bx, bx2, by, by2, bsp, blev, bpath, bcat, bsub, bz);
             load_map(mapname, mapowner);
             mpool.play_stationary(get_pack_sound("main/characters/" + chartype + "/map/*update*"), false);
             speak("Map updated.");
