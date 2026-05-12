@@ -1,9 +1,12 @@
 menuzone@[]menuzones(0);
+string[] menu_zone_ids = {"default", "build", "settings", "stats", "zones", "info", "weapons", "shields", "character", "points", "komlog", "pause"};
+string[] menu_zone_labels = {"default - map editor", "build - build catalog", "settings - in-game preferences", "stats - player stats", "zones - text zone teleporter", "info - objects on field", "weapons - weapons inventory", "shields - shields inventory", "character - character themes", "points - spend points", "komlog - kombat log", "pause - pause menu"};
 class menuzone
 {
 double minx, maxx, miny, maxy;
 double minz, maxz;
-menuzone(double mx,double mx2,double my,double my2,double mnz=0,double mxz=0)
+string menu_name;
+menuzone(double mx,double mx2,double my,double my2,double mnz=0,double mxz=0,string menu="default")
 {
 minx=mx;
 maxx=mx2;
@@ -11,6 +14,22 @@ miny=my;
 maxy=my2;
 minz=mnz;
 maxz=mxz;
+menu_name=menu;
+}
+void run_menu()
+{
+if(menu_name == "build") { buildmenu(); return; }
+if(menu_name == "settings") { settingsmenu(true); return; }
+if(menu_name == "stats") { statsmenu(true); return; }
+if(menu_name == "zones") { zonesmenu(); return; }
+if(menu_name == "info") { infomenu(); return; }
+if(menu_name == "weapons") { weaponsmenu(); return; }
+if(menu_name == "shields") { shieldsmenu(); return; }
+if(menu_name == "character") { charsmenu(true); return; }
+if(menu_name == "points") { pointsmenu(); return; }
+if(menu_name == "komlog") { komlogmenu(); return; }
+if(menu_name == "pause") { p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*pause*"),false); pause_game(); pausemenu(); return; }
+menzmenu();
 }
 void menzmenu()
 {
@@ -332,21 +351,21 @@ bool in_zone = menuzones[i].minx<=me.x and menuzones[i].maxx>=me.x and menuzones
 if(mapmode == "3d") in_zone = in_zone and me.z >= menuzones[i].minz and me.z <= menuzones[i].maxz;
 if(in_zone and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
-if(!map_is_compiled)
-{
-pause_pools();
-menuzones[i].menzmenu();
-}
-else if(map_is_compiled)
+if(menuzones[i].menu_name == "default" and map_is_compiled)
 {
 speak("You cannot edit anything on this compiled map.");
 }
-}
-}
-}
-void spawn_menuzone(double x1,double x2,double y1,double y2,double minz=0,double maxz=0)
+else
 {
-menuzone menz1(x1,x2,y1,y2,minz,maxz);
+pause_pools();
+menuzones[i].run_menu();
+}
+}
+}
+}
+void spawn_menuzone(double x1,double x2,double y1,double y2,double minz=0,double maxz=0,string menu_name="default")
+{
+menuzone menz1(x1,x2,y1,y2,minz,maxz,menu_name);
 menuzones.insert_last(menz1);
 }
 void destroy_all_menuzones()
@@ -371,6 +390,10 @@ if(mapmode == "3d")
 mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
 mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
 }
+int menu_list = form.create_list("menu to open");
+for(uint i=0; i<menu_zone_labels.length(); i++)
+form.add_list_item(menu_list, menu_zone_labels[i], menu_zone_ids[i]);
+form.set_list_position(menu_list, 0, false);
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
@@ -437,9 +460,11 @@ form.focus(mxz);
 }
 else
 {
+int sel = form.get_list_position(menu_list);
+string chosen_menu = (sel >= 0 && sel < int(menu_zone_ids.length())) ? menu_zone_ids[sel] : "default";
 resume_pools();
-write_menu_zone(x, paxx, y, paxy, bmnz, bmxz);
-spawn_menuzone(x, paxx, y, paxy, bmnz, bmxz);
+write_menu_zone(x, paxx, y, paxy, bmnz, bmxz, chosen_menu);
+spawn_menuzone(x, paxx, y, paxy, bmnz, bmxz, chosen_menu);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -456,20 +481,31 @@ double mx2=stn(sd[2]);
 double my=stn(sd[3]);
 double my2=stn(sd[4]);
 double mnz=0, mxz=0;
-if(sd.length()==7)
+string menu_name="default";
+if(sd.length()==6)
+{
+menu_name=sd[5];
+}
+else if(sd.length()==7)
 {
 mnz=stn(sd[5]);
 mxz=stn(sd[6]);
 }
-spawn_menuzone(mx, mx2, my, my2, mnz, mxz);
+else if(sd.length()==8)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+menu_name=sd[7];
+}
+spawn_menuzone(mx, mx2, my, my2, mnz, mxz, menu_name);
 }
 
-void write_menu_zone(double x1, double x2, double y1, double y2, double minz=0, double maxz=0)
+void write_menu_zone(double x1, double x2, double y1, double y2, double minz=0, double maxz=0, string menu_name="default")
 {
 mapper.open("data/maps/decompiled/"+mapname+"/"+"info.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode=="3d") coords+=" "+minz+" "+maxz;
-mapper.write("\r\n"+"menu_zone "+coords);
+mapper.write("\r\n"+"menu_zone "+coords+" "+menu_name);
 mapper.close();
 }
