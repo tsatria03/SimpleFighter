@@ -368,18 +368,16 @@ class weapon
             int d = dx + dy + (is_3d ? dz : 0);
             if(best_dist < 0 or d < best_dist) { best_type = 1; best_idx = int(j); best_dist = d; }
         }
-        // tts enemies (2d only)
-        if(!is_3d)
+        // tts enemies
+        for(uint jt = 0; jt < ttsenemies.length(); jt++)
         {
-            for(uint jt = 0; jt < ttsenemies.length(); jt++)
-            {
-                if(!target_in_facing(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemy, 0, 0, fx, fy, fz, facing, is_3d)) continue;
-                int dx = absolute(int(ttsenemies[jt].ttsemx) - fx);
-                int dy = absolute(int(ttsenemies[jt].ttsemy) - fy);
-                if(dx > range or dy > range2) continue;
-                int d = dx + dy;
-                if(best_dist < 0 or d < best_dist) { best_type = 2; best_idx = int(jt); best_dist = d; }
-            }
+            if(!target_in_facing(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, ttsenemies[jt].ttsemz, fx, fy, fz, facing, is_3d)) continue;
+            int dx = absolute(int(ttsenemies[jt].ttsemx) - fx);
+            int dy = absolute(int(ttsenemies[jt].ttsemy) - fy);
+            int dz = is_3d ? absolute(int(ttsenemies[jt].ttsemz) - fz) : 0;
+            if(dx > range or dy > range2 or dz > range3) continue;
+            int d = dx + dy + dz;
+            if(best_dist < 0 or d < best_dist) { best_type = 2; best_idx = int(jt); best_dist = d; }
         }
         // calendars (single tile, destroyable)
         for(uint i = 0; i < calendars.length(); i++)
@@ -613,8 +611,8 @@ class weapon
         if(best_type == 2)
         {
             uint jt = uint(best_idx);
-            ttsempool.play_extended_2d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-            ttsempool.play_extended_2d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             int hit_dmg = max(0, dmg - ttsenemies[jt].defense * 3);
             ttsenemies[jt].ttsenehealth -= hit_dmg;
             kombatlog.insert_last(hit_dmg + " damage to tts enemie by " + sub + "'s weapon attack.");
@@ -622,7 +620,7 @@ class weapon
             {
                 ttsempool.destroy_sound(ttsenemies[jt].hurtsound);
                 ttsempool.pause_sound(ttsenemies[jt].ttsemsound);
-                ttsenemies[jt].hurtsound = ttsempool.play_extended_2d(ttsenemies[jt].hurt_file, me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                ttsenemies[jt].hurtsound = ttsempool.play_extended_3d(ttsenemies[jt].hurt_file, me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
                 ttsenemies[jt].hurtdelay = round(ttsempool.get_sound_length(ttsenemies[jt].hurtsound), 0);
                 ttsenemies[jt].hurttimer.restart();
                 ttsenemies[jt].hurting = true;
@@ -881,31 +879,29 @@ class weapon
             if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // tts enemies (2d only)
-        if(!is_3d)
+        for(uint jt = 0; jt < ttsenemies.length(); jt++)
         {
-            for(uint jt = 0; jt < ttsenemies.length(); jt++)
+            if(!target_in_facing(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, ttsenemies[jt].ttsemz, fx, fy, fz, facing, is_3d)) continue;
+            int dx = absolute(int(ttsenemies[jt].ttsemx) - fx);
+            int dy = absolute(int(ttsenemies[jt].ttsemy) - fy);
+            int dz = is_3d ? absolute(int(ttsenemies[jt].ttsemz) - fz) : 0;
+            if(dx > range or dy > range2 or dz > range3) continue;
+            if(dx > sr or dy > sr or dz > sr) continue;
+            ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            int hd = max(0, dmg - ttsenemies[jt].defense * 3);
+            ttsenemies[jt].ttsenehealth -= hd;
+            kombatlog.insert_last(hd + " damage to tts enemie by " + sub + "'s weapon attack.");
+            if(hd > 0 and ttsenemies[jt].ttsenehealth > 0)
             {
-                if(!target_in_facing(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemy, 0, 0, fx, fy, fz, facing, is_3d)) continue;
-                int dx = absolute(int(ttsenemies[jt].ttsemx) - fx);
-                int dy = absolute(int(ttsenemies[jt].ttsemy) - fy);
-                if(dx > range or dy > range2) continue;
-                if(dx > sr or dy > sr) continue;
-                ttsempool.play_extended_2d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                ttsempool.play_extended_2d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                int hd = max(0, dmg - ttsenemies[jt].defense * 3);
-                ttsenemies[jt].ttsenehealth -= hd;
-                kombatlog.insert_last(hd + " damage to tts enemie by " + sub + "'s weapon attack.");
-                if(hd > 0 and ttsenemies[jt].ttsenehealth > 0)
-                {
-                    ttsempool.destroy_sound(ttsenemies[jt].hurtsound);
-                    ttsempool.pause_sound(ttsenemies[jt].ttsemsound);
-                    ttsenemies[jt].hurtsound = ttsempool.play_extended_2d(ttsenemies[jt].hurt_file, me.x, me.y, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                    ttsenemies[jt].hurtdelay = round(ttsempool.get_sound_length(ttsenemies[jt].hurtsound), 0);
-                    ttsenemies[jt].hurttimer.restart();
-                    ttsenemies[jt].hurting = true;
-                }
-                if(sc > 0) { sc--; if(sc <= 0) return; }
+                ttsempool.destroy_sound(ttsenemies[jt].hurtsound);
+                ttsempool.pause_sound(ttsenemies[jt].ttsemsound);
+                ttsenemies[jt].hurtsound = ttsempool.play_extended_3d(ttsenemies[jt].hurt_file, me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                ttsenemies[jt].hurtdelay = round(ttsempool.get_sound_length(ttsenemies[jt].hurtsound), 0);
+                ttsenemies[jt].hurttimer.restart();
+                ttsenemies[jt].hurting = true;
             }
+            if(sc > 0) { sc--; if(sc <= 0) return; }
         }
         // calendars (destroy on hit; iterate backward)
         for(int i = int(calendars.length()) - 1; i >= 0; i--)

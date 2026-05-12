@@ -13,6 +13,7 @@ class ttsenemie
     double ttsenemaxhealth;
     int ttsemx;
     int ttsemy;
+    int ttsemz;
     int ttsenemietime;
     int firetime;
     int attack;
@@ -35,10 +36,11 @@ class ttsenemie
     timer firetimer;
     int hurtdelay;
     bool hurting;
-    ttsenemie(int x, int y, double hp, int atk, int def, int ft, int sp, string txt, string ht, string dt, string vc, int rt, int vl, int pt)
+    ttsenemie(int x, int y, double hp, int atk, int def, int ft, int sp, string txt, string ht, string dt, string vc, int rt, int vl, int pt, int z = 0)
     {
         ttsemx = x;
         ttsemy = y;
+        ttsemz = z;
         ttsenehealth = hp;
         ttsenemaxhealth = hp;
         attack = atk;
@@ -58,18 +60,17 @@ class ttsenemie
         if(weapon.length() > 0)
         {
             weapontype2 = random_string(weapon);
-            drawsound = ttsempool.play_extended_2d(get_pack_sound("main/equipments/weapons/" + weapontype + "/" + weapontype2 + "/*draw*"), me.x, me.y, ttsemx, ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            drawsound = ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/" + weapontype + "/" + weapontype2 + "/*draw*"), me.x, me.y, me.z, ttsemx, ttsemy, ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
         }
         if (file_exists(taunt_file)) file_delete(taunt_file);
         generate_tts(taunt_file, ttsemtext, voice, rate, volume, pitch);
         if (file_exists(hurt_file)) file_delete(hurt_file);
         generate_tts(hurt_file, ttsemhurt, voice, rate, volume, pitch);
-        ttsemsound = ttsempool.play_extended_2d(taunt_file, me.x, me.y, ttsemx, ttsemy, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+        ttsemsound = ttsempool.play_extended_3d(taunt_file, me.x, me.y, me.z, ttsemx, ttsemy, ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
     }
 }
 void ttseneloop()
 {
-if(mapmode != "2d") return;
 for(uint i=0; i<ttsenemies.length(); i++)
 {
 if(ttsenemies[i].hurting and ttsenemies[i].hurttimer.elapsed>=ttsenemies[i].hurtdelay)
@@ -79,9 +80,13 @@ ttsenemies[i].hurting=false;
 }
 if(ttsenemies[i].ttsenemietime>0 and ttsenemies[i].ttsenemietimer.elapsed>=ttsenemies[i].ttsenemietime)
 {
-if(ttsenemies[i].stepsound==1 and paused==0) ttsenemies[i].tilesound=p.play_extended_2d(get_map_sound("builder/construction/platforms/"+gmt(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy)+"/*step*"),me.x,me.y,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
+if(ttsenemies[i].stepsound==1 and paused==0)
+{
+    string tile = (mapmode == "3d") ? gmt(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, ttsenemies[i].ttsemz) : gmt(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy);
+    ttsenemies[i].tilesound=p.play_extended_3d(get_map_sound("builder/construction/platforms/"+tile+"/*step*"),me.x,me.y,me.z,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,ttsenemies[i].ttsemz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
+}
 ttsenemies[i].stepsound=0;
-ttsempool.update_sound_2d(ttsenemies[i].ttsemsound,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy);
+ttsempool.update_sound_3d(ttsenemies[i].ttsemsound,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,ttsenemies[i].ttsemz);
 ttsenemies[i].ttsenemietimer.restart();
 if(ttsenemies[i].ttsemx<me.x and paused==0)
 {
@@ -103,8 +108,20 @@ if(ttsenemies[i].ttsemy>me.y and paused==0)
 ttsenemies[i].ttsemy--;
 ttsenemies[i].stepsound=1;
 }
+if(mapmode == "3d" and ttsenemies[i].ttsemz<me.z and paused==0)
+{
+ttsenemies[i].ttsemz++;
+ttsenemies[i].stepsound=1;
 }
-if(ttsenemies[i].ttsemx==me.x and ttsenemies[i].ttsemy==me.y and ttsenemies[i].attack>0 and ttsenemies[i].firetimer.elapsed>=ttsenemies[i].firetime and inplain==false and invehicle==false and onbike==false and paused==0)
+if(mapmode == "3d" and ttsenemies[i].ttsemz>me.z and paused==0)
+{
+ttsenemies[i].ttsemz--;
+ttsenemies[i].stepsound=1;
+}
+}
+bool on_player_tile = (ttsenemies[i].ttsemx==me.x and ttsenemies[i].ttsemy==me.y);
+if(mapmode == "3d") on_player_tile = on_player_tile and ttsenemies[i].ttsemz==me.z;
+if(on_player_tile and ttsenemies[i].attack>0 and ttsenemies[i].firetimer.elapsed>=ttsenemies[i].firetime and inplain==false and invehicle==false and onbike==false and paused==0)
 {
 if(shieldon==1 and shield_blocks())
 {
@@ -112,12 +129,12 @@ int sdm = max(1, (shieldcushion ? int(ttsenemies[i].attack * 0.5) : ttsenemies[i
 shieldstrength -= sdm;
 kombatlog.insert_last("tts enemie's attack took "+shieldtype+" "+sdm+" damage.");
 shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/*hit*"),false,0,0,0,100,false);
-try_shield_launch(int(ttsenemies[i].ttsemx), int(ttsenemies[i].ttsemy), 0, ttsenemies[i].attack);
+try_shield_launch(int(ttsenemies[i].ttsemx), int(ttsenemies[i].ttsemy), ttsenemies[i].ttsemz, ttsenemies[i].attack);
 }
 else
 {
 if(!(wepchar.reflection && wepdef == 1))
-ttsenemies[i].firesound = ttsempool.play_extended_2d(get_pack_sound("main/equipments/weapons/"+ttsenemies[i].weapontype+"/"+ttsenemies[i].weapontype2+"/*fire*"),me.x,me.y,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,0,0,0,0,false,0,0,0,100,false);
+ttsenemies[i].firesound = ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+ttsenemies[i].weapontype+"/"+ttsenemies[i].weapontype2+"/*fire*"),me.x,me.y,me.z,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,ttsenemies[i].ttsemz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 ttsenemies[i].hitsound = ttsempool.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+ttsenemies[i].weapontype+"/"+ttsenemies[i].weapontype2+"/*hit*"),false,0,0,0,100,false);
 ttsenemies[i].shellsound = ttsempool.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+ttsenemies[i].weapontype+"/"+ttsenemies[i].weapontype2+"/*shell*"),false,0,0,0,100,false);
 int dmg = max(1, ttsenemies[i].attack - defence*3);
@@ -141,7 +158,7 @@ ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
 ttsempool.destroy_sound(ttsenemies[i].hurtsound);
     if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file);
     generate_tts(ttsenemies[i].death_file, ttsenemies[i].ttsemdeath, ttsenemies[i].voice, ttsenemies[i].rate, ttsenemies[i].volume, ttsenemies[i].pitch);
-ttsenemies[i].defsound = ttsempool.play_extended_2d(ttsenemies[i].death_file, me.x, me.y, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+ttsenemies[i].defsound = ttsempool.play_extended_3d(ttsenemies[i].death_file, me.x, me.y, me.z, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, ttsenemies[i].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 int falldelay = round(ttsempool.get_sound_length(ttsenemies[i].defsound), 0);
 spawn_bodyfall(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, (falldelay <= 0 ? random(500, 1000) : falldelay));
             if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
@@ -152,10 +169,9 @@ return;
 }
 }
 }
-void spawn_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string ttsemtext, string ttsemhurt, string ttsemdeath, string voice, int rate, int volume, int pitch)
+void spawn_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string ttsemtext, string ttsemhurt, string ttsemdeath, string voice, int rate, int volume, int pitch, int z = 0)
 {
-    if(mapmode != "2d") return;
-    ttsenemie ttsen1(x, y, hp, attack, defense, firetime, sp, ttsemtext, ttsemhurt, ttsemdeath, voice, rate, volume, pitch);
+    ttsenemie ttsen1(x, y, hp, attack, defense, firetime, sp, ttsemtext, ttsemhurt, ttsemdeath, voice, rate, volume, pitch, z);
     ttsenemies.insert_last(ttsen1);
 }
 void destroy_all_ttsenemies()
@@ -174,12 +190,19 @@ void read_ttsenemie(string[] sd)
 {
     int x = stn(sd[1]);
     int y = stn(sd[2]);
-    double hp = stn(sd[3]);
-    int attack = stn(sd[4]);
-    int defense = stn(sd[5]);
-    int firetime = stn(sd[6]);
-    int sp = stn(sd[7]);
-    string combined = join_string_array(sd, 8, sd.length());
+    int z = 0;
+    int o = 3;
+    if(mapmode == "3d")
+    {
+        z = stn(sd[3]);
+        o = 4;
+    }
+    double hp = stn(sd[o]);
+    int attack = stn(sd[o+1]);
+    int defense = stn(sd[o+2]);
+    int firetime = stn(sd[o+3]);
+    int sp = stn(sd[o+4]);
+    string combined = join_string_array(sd, o+5, sd.length());
     string remainder;
     array<string> quoted = extract_quoted(combined, remainder);
     if(quoted.length() < 4) return;
@@ -192,10 +215,10 @@ void read_ttsenemie(string[] sd)
     int rate = stn(parts[0]);
     int volume = stn(parts[1]);
     int pitch = stn(parts[2]);
-    spawn_ttsenemie(x, y, hp, attack, defense, firetime, sp, taunt, hurt, death, voice, rate, volume, pitch);
+    spawn_ttsenemie(x, y, hp, attack, defense, firetime, sp, taunt, hurt, death, voice, rate, volume, pitch, z);
 }
 
-void write_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string taunt, string hurt, string death, string voice, int rate, int volume, int pitch)
+void write_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string taunt, string hurt, string death, string voice, int rate, int volume, int pitch, int z = 0)
 {
     string clean_taunt = string_replace(taunt, "\"", "", true);
     string clean_hurt = string_replace(hurt, "\"", "", true);
@@ -203,18 +226,14 @@ void write_ttsenemie(int x, int y, double hp, int attack, int defense, int firet
     string clean_voice = string_replace(voice, "\"", "", true);
     mapper.open("data/maps/decompiled/"+mapname+"/info.sif", "ab");
     mapdata = mapper.read();
-    mapper.write("\r\n"+"ttsenemie "+x+" "+y+" "+hp+" "+attack+" "+defense+" "+firetime+" "+sp+" \""+clean_taunt+"\" \""+clean_hurt+"\" \""+clean_death+"\" \""+clean_voice+"\" "+rate+" "+volume+" "+pitch);
+    string coords = ""+x+" "+y;
+    if(mapmode == "3d") coords += " "+z;
+    mapper.write("\r\n"+"ttsenemie "+coords+" "+hp+" "+attack+" "+defense+" "+firetime+" "+sp+" \""+clean_taunt+"\" \""+clean_hurt+"\" \""+clean_death+"\" \""+clean_voice+"\" "+rate+" "+volume+" "+pitch);
     mapper.close();
 }
 
 void build_ttsenemie()
 {
-    if(mapmode != "2d")
-    {
-        dlg("Error. TTS enemies can only be built on 2d maps. Press enter to continue.");
-        resume_pools();
-        return;
-    }
     tts_voice tv;
     array<string>@ all_voices = tv.list_voices();
     array<string> voice_names;
@@ -230,10 +249,15 @@ void build_ttsenemie()
     }
     string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
     string preview_file = "";
+    bool y_uses_back = mapmode != "2d";
+    string saved_y = y_uses_back ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+    string saved_z = sel_bottom_set ? sel_bottom : "";
     form.reset();
     form.create_window("tts enemy", false);
     int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-    int my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+    int my = form.create_input_box("y", saved_y);
+    int mz = -1;
+    if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
     int hp = form.create_input_box("health", "1");
     int atk = form.create_input_box("attack");
     int def = form.create_input_box("defense");
@@ -254,6 +278,7 @@ void build_ttsenemie()
     int cn = form.create_button("&cancel");
     form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
     form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+    if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
     form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
     form.set_disallowed_chars(atk, disallowed_nums, false, "This character is not allowed.");
     form.set_disallowed_chars(def, disallowed_nums, false, "This character is not allowed.");
@@ -294,6 +319,11 @@ void build_ttsenemie()
         {
             int[] required = {mx, my, hp, atk, def, ft, sp, taunt_box, hurt_box, death_box};
             string[] required_names = {"x", "y", "health", "attack", "defense", "fire time", "speed", "taunt text", "hurt text", "death text"};
+            if(mz != -1)
+            {
+                required.insert_at(2, mz);
+                required_names.insert_at(2, "z");
+            }
             bool blank = false;
             for(uint k = 0; k < required.length(); k++)
             {
@@ -308,6 +338,7 @@ void build_ttsenemie()
             if(blank) continue;
             int bx = string_to_number(form.get_text(mx));
             int by = string_to_number(form.get_text(my));
+            int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
             double bhp = string_to_number(form.get_text(hp));
             int batk = string_to_number(form.get_text(atk));
             int bdef = string_to_number(form.get_text(def));
@@ -323,8 +354,8 @@ void build_ttsenemie()
             t.destroy_sound(prevslot);
             if(file_exists(preview_file)) file_delete(preview_file);
             resume_pools();
-            write_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bv, bp);
-            spawn_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bv, bp);
+            write_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bv, bp, bz);
+            spawn_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bv, bp, bz);
             load_map(mapname, mapowner);
             mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
             speak("Map updated.");
