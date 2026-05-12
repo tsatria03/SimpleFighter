@@ -504,7 +504,12 @@ void npcloop()
         // attack chosen target
         if(npcs[i].fleeing && npcs[i].flee_time > 0 && npcs[i].flee_timer.elapsed >= npcs[i].flee_time)
             npcs[i].fleeing = false;
-        if(combat_found && absolute(combat_tx - npcs[i].x) <= eff_hrange && absolute(combat_ty - npcs[i].y) <= eff_vrange && (mapmode != "3d" || absolute(combat_tz - npcs[i].z) <= eff_zrange) && npcs[i].firetimer.elapsed >= eff_firetime && npcs[i].fireable && paused == 0 && !npcs[i].fleeing)
+        if(human_armed && npcs[i].wephum.is_swinging)
+            npcs[i].wephum.check_swing(int(npcs[i].x), int(npcs[i].y), int(npcs[i].z), npcs[i].swing_facing, int(i));
+        bool basic_combat_ready = combat_found && absolute(combat_tx - npcs[i].x) <= eff_hrange && absolute(combat_ty - npcs[i].y) <= eff_vrange && (mapmode != "3d" || absolute(combat_tz - npcs[i].z) <= eff_zrange) && npcs[i].fireable && paused == 0 && !npcs[i].fleeing;
+        bool unarmed_timer_ready = npcs[i].firetimer.elapsed >= eff_firetime;
+        bool did_attack = false;
+        if(basic_combat_ready)
         {
             npcs[i].step_active = false;
             if(human_armed)
@@ -533,47 +538,78 @@ void npcloop()
                 }
                 else if(!npcs[i].wephum.is_reloading)
                 {
-                    npcs[i].wephum.fire(npcs[i].x, npcs[i].y, h_dir, int(eff_attack * eff_level), int(i), npcs[i].z);
+                    if(npcs[i].wephum.fire_mode == 1)
+                    {
+                        if(npcs[i].wephum.firetimer.elapsed >= npcs[i].wephum.firetime)
+                        {
+                            npcs[i].wephum.firetimer.restart();
+                            npcs[i].wephum.fire(npcs[i].x, npcs[i].y, h_dir, int(eff_attack * eff_level), int(i), npcs[i].z);
+                            did_attack = true;
+                        }
+                    }
+                    else if(!npcs[i].wephum.is_swinging && npcs[i].wephum.firetimer2.elapsed >= npcs[i].wephum.firetime2)
+                    {
+                        npcs[i].wephum.firetimer2.restart();
+                        if(npcs[i].wephum.is_melee())
+                            p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*swing*"), false);
+                        if(npcs[i].wephum.is_melee() && npcs[i].wephum.swing_speed > 0)
+                        {
+                            npcs[i].wephum.sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+npcs[i].wephum.cad+"/"+npcs[i].wephum.sub+"/*fire*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                            npcs[i].wephum.is_swinging = true;
+                            npcs[i].wephum.swing_timer.restart();
+                            npcs[i].wephum.pending_dmg = npcs[i].wephum.damage + int(eff_attack * eff_level);
+                            npcs[i].swing_facing = h_dir;
+                        }
+                        else
+                        {
+                            npcs[i].wephum.fire(npcs[i].x, npcs[i].y, h_dir, int(eff_attack * eff_level), int(i), npcs[i].z);
+                        }
+                        did_attack = true;
+                    }
                 }
             }
-            else if(target_is_player)
+            else if(unarmed_timer_ready)
             {
-                if(shieldon == 1 and shield_blocks())
+                if(target_is_player)
                 {
-                    shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
-                    int sdm = max(1, (shieldcushion ? int((eff_attack * eff_level) * 0.5) : (eff_attack * eff_level)) - (shielddefence * 3));
-                    shieldstrength -= sdm;
-                    kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
-                    try_shield_launch(int(npcs[i].x), int(npcs[i].y), int(npcs[i].z), int(eff_attack * eff_level));
+                    if(shieldon == 1 and shield_blocks())
+                    {
+                        shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
+                        int sdm = max(1, (shieldcushion ? int((eff_attack * eff_level) * 0.5) : (eff_attack * eff_level)) - (shielddefence * 3));
+                        shieldstrength -= sdm;
+                        kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+                        try_shield_launch(int(npcs[i].x), int(npcs[i].y), int(npcs[i].z), int(eff_attack * eff_level));
+                    }
+                    else
+                    {
+                        npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
+                        int dmg = max(1, (eff_attack * eff_level) - (defence * 3));
+                        health -= dmg;
+                        kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
+                        npc_play_pain(dmg);
+                        npc_apply_break_charbones(dmg, npcs[i].category);
+                    }
                 }
                 else
                 {
-                    npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
-                    int dmg = max(1, (eff_attack * eff_level) - (defence * 3));
-                    health -= dmg;
-                    kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
-                    npc_play_pain(dmg);
-                    npc_apply_break_charbones(dmg, npcs[i].category);
+                    int j = target_npc;
+                    npcs[i].wepsound = pool.play_extended_3d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    sound_pool@ vpool = npc_pool(npcs[j].category);
+                    vpool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                    int j_defence = npcs[j].defence;
+                    if(npc_below_threshold(npcs[j]))
+                    {
+                        bool j_in_w_sight = absolute(npcs[i].x - npcs[j].x) <= npcs[j].w_hsight && absolute(npcs[i].y - npcs[j].y) <= npcs[j].w_vsight && (mapmode != "3d" || absolute(npcs[i].z - npcs[j].z) <= npcs[j].w_zsight);
+                        j_defence = j_in_w_sight ? npcs[j].w_defence : npcs[j].h_defence;
+                    }
+                    int dmg = max(1, (eff_attack * eff_level) - (j_defence * 3));
+                    npcs[j].health -= dmg;
+                    kombatlog.insert_last(npcs[i].subtype + " attacked " + npcs[j].subtype + " for " + dmg + " damage.");
                 }
+                npcs[i].firetimer.restart();
+                did_attack = true;
             }
-            else
-            {
-                int j = target_npc;
-                npcs[i].wepsound = pool.play_extended_3d(get_map_sound(sound_base+"/*hit*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                sound_pool@ vpool = npc_pool(npcs[j].category);
-                vpool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-                int j_defence = npcs[j].defence;
-                if(npc_below_threshold(npcs[j]))
-                {
-                    bool j_in_w_sight = absolute(npcs[i].x - npcs[j].x) <= npcs[j].w_hsight && absolute(npcs[i].y - npcs[j].y) <= npcs[j].w_vsight && (mapmode != "3d" || absolute(npcs[i].z - npcs[j].z) <= npcs[j].w_zsight);
-                    j_defence = j_in_w_sight ? npcs[j].w_defence : npcs[j].h_defence;
-                }
-                int dmg = max(1, (eff_attack * eff_level) - (j_defence * 3));
-                npcs[j].health -= dmg;
-                kombatlog.insert_last(npcs[i].subtype + " attacked " + npcs[j].subtype + " for " + dmg + " damage.");
-            }
-            npcs[i].firetimer.restart();
-            if(npcs[i].hit_and_run && npcs[i].flee_time > 0)
+            if(did_attack && npcs[i].hit_and_run && npcs[i].flee_time > 0)
             {
                 npcs[i].fleeing = true;
                 npcs[i].flee_timer.restart();
