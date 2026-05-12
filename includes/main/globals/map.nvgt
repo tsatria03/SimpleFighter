@@ -529,24 +529,27 @@ if(mfc==false) safezones[i].safesound=campool.play_extended_3d(get_map_sound("bu
 safezones[i].cam_in_zone=false;
 }
 }
-if (string_contains(camtile,"wall",1)>-1)
 {
-    if(is_transparent_wall(cam.x, cam.y))
+string camwallname = (mapmode == "3d") ? wall_tile_at(cam.x, cam.y, cam.z) : wall_tile_at(cam.x, cam.y);
+if (camwallname != "")
+{
+    if((mapmode == "3d") ? is_transparent_wall(cam.x, cam.y, cam.z) : is_transparent_wall(cam.x, cam.y))
     {
 if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),false,0,0,0,100,false);
 if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("builder/construction/walls/"+camtile+"/*bump*"),false,0,0,0,100);
-if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construction/walls/"+camtile+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200);
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),false,0,0,0,100);
+if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200);
 return;
     }
 else
 {
 if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),false,0,0,0,100,false);
 if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("builder/construction/walls/"+camtile+"/*bump*"),false,0,0,0,100);
-if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construction/walls/"+camtile+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200);
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),false,0,0,0,100);
+if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200);
 cbounce();
 return;
+}
 }
 }
 if(cam_on_player)
@@ -701,11 +704,14 @@ safezones[i].safesound=safepool.play_stationary(get_map_sound("builder/zones/saf
 safezones[i].player_in_zone = false;
 }
 }
-if(string_contains(gmt(me.x,me.y),"wall",1)>-1)
 {
-wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+gmt(me.x,me.y)+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
+string wname = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
+if(string_contains(wname,"wall",1)>-1)
+{
+wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+wname+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
 pbounce();
 return;
+}
 }
 array<string> tiles;
 array<double> vols;
@@ -761,11 +767,14 @@ safezones[i].safesound=safepool.play_stationary(get_map_sound("builder/zones/saf
 safezones[i].player_in_zone = false;
 }
 }
-if (string_contains(gmt(me.x,me.y),"wall",1)>-1)
 {
-wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+gmt(me.x,me.y)+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
+string wname = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
+if(string_contains(wname,"wall",1)>-1)
+{
+wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+wname+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
 pbounce();
 return;
+}
 }
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*land*"),false);
 array<string> tiles;
@@ -990,10 +999,10 @@ void checkforplatforms()
 }
 void checkforwalls()
 {
-    string tile = gmt(me.x, me.y);
+    string tile = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
 if(tile!="" and string_contains(tile,"wall",1)>-1)
 {
-wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+gmt(me.x,me.y)+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
+wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+tile+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
 ascending=false;
 jumptimer.restart();
 atapex=true;

@@ -74,7 +74,11 @@ bool wall_blocks(double x, double y, double z)
         if(x >= walls[i].minx && x <= walls[i].maxx
         && y >= walls[i].miny && y <= walls[i].maxy
         && z >= walls[i].minz && z <= walls[i].maxz)
+        {
+            if(point_in_open_passage(x, y, z)) continue;
+            if(user_platform_at(x, y, z)) continue;
             return true;
+        }
     }
     return false;
 }
@@ -93,12 +97,45 @@ void bump_wall_at(double x, double y, double z)
         }
     }
 }
+string wall_tile_at(double x, double y)
+{
+    for(uint i = 0; i < walls.length(); i++)
+    {
+        if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+            return walls[i].wall;
+    }
+    return "";
+}
+string wall_tile_at(double x, double y, double z)
+{
+    for(uint i = 0; i < walls.length(); i++)
+    {
+        if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+        {
+            if(mapmode == "3d" && (z < walls[i].minz || z > walls[i].maxz)) continue;
+            return walls[i].wall;
+        }
+    }
+    return "";
+}
 bool is_transparent_wall(int x, int y)
 {
     for(uint i = 0; i < walls.length(); i++)
     {
         if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
         {
+            return walls[i].transparent;
+        }
+    }
+    return false;
+}
+bool is_transparent_wall(int x, int y, int z)
+{
+    for(uint i = 0; i < walls.length(); i++)
+    {
+        if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+        {
+            if(mapmode == "3d" && (z < walls[i].minz || z > walls[i].maxz)) continue;
             return walls[i].transparent;
         }
     }
