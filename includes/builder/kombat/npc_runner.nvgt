@@ -190,7 +190,18 @@ void npcloop()
             }
             if(lsub == "random")
             {
-                string[] folders = get_map_sound_folders("builder/kombat/npc/"+lcat+"/*");
+                string[] folders;
+                dictionary seen;
+                if(npcs[i].launch_path == "any" || npcs[i].launch_path == "map")
+                {
+                    string[] md = find_directories("data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+lcat+"/*");
+                    for(uint k=0; k<md.length(); k++) { if(!seen.exists(md[k])) { seen[md[k]] = true; folders.insert_last(md[k]); } }
+                }
+                if(npcs[i].launch_path == "any" || npcs[i].launch_path == "global")
+                {
+                    string[] gd = find_directories("sounds/"+soundpack+"/builder/kombat/npc/"+lcat+"/*");
+                    for(uint k=0; k<gd.length(); k++) { if(!seen.exists(gd[k])) { seen[gd[k]] = true; folders.insert_last(gd[k]); } }
+                }
                 if(folders.length() > 0) lsub = random_string(folders);
             }
             if(lsub != "" && lsub != "none" && lsub != "random" && (lcat == "animals" || lcat == "bosses" || lcat == "helpers" || lcat == "humans" || lcat == "robots" || lcat == "specials" || lcat == "zombies"))
