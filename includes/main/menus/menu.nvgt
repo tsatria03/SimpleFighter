@@ -385,338 +385,72 @@ int mres = m.run();
 resume_pools();
 return;
 }
-void pointsmenu()
+double buy_stat(string title, string prompt, string noun)
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
+string s=vd.input_box(title, prompt);
+if(s=="")
+{
+speak("canceled");
+return 0;
+}
+double v=string_to_number(s);
+if(v>points)
+{
+dlg("Error, you don't have enough points to purchase "+v+" "+noun+".", dlgsound:true);
+return 0;
+}
+p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
+speak("Perchis completed.");
+points-=v;
+return v;
+}
+void shopmenu()
+{
+int saved_tab=0;
+int saved_pos=-1;
+while(true)
 {
 setupmenu();
-m.add_item("You're currently on level"+level+"with"+xp+"experience. Your next level requires"+(xprequiered-xp)+"experience");
-m.add_item("You have"+points+"points available to spend");
-m.add_item("upgrade maximum character attack,"+"currently set to;"+attack, "umat");
-m.add_item("upgrade maximum character defence,"+"currently set to;"+defence, "umd");
-if(!wepchar.melee) m.add_item("upgrade maximum weapon ammo,"+"currently set to;"+wepchar.max_ammo, "uma");
-m.add_item("upgrade maximum character health,"+"currently set to;"+maxhealth, "umh");
-m.add_item("upgrade maximum character stamina,"+"currently set to;"+maxstamina, "umt");
-m.add_item("upgrade maximum character lives,"+"currently set to;"+lifecard, "umlf");
-if(drawnshield==true) m.add_item("upgrade maximum shield strength,"+"currently set to;"+maxshieldstrength, "umst");
-if(drawnshield==true) m.add_item("upgrade maximum shield defence,"+"currently set to;"+shielddefence, "umsd");
-m.add_item("upgrade maximum x weapon range,"+"currently set to;"+wepchar.range, "umra1");
-m.add_item("upgrade maximum y weapon range,"+"currently set to;"+wepchar.range2, "umra2");
-if(mapmode == "3d") m.add_item("upgrade maximum z weapon range,"+"currently set to;"+wepchar.range3, "umra3");
-m.add_item("back", "back");
-m.intro_text="Points menu. ";
-int mres=m.run();
-string ptmem=mres<0?"":m.selected_item_id;
+m.intro_text="Shop menu. You have "+points+" points available to spend.";
+m.tab_caption="Category";
+int t_player=m.add_tab("player");
+m.add_item_to_tab(t_player, "attack, costs 1 point. You currently have "+attack+" strength points.", "umat");
+m.add_item_to_tab(t_player, "defence, costs 1 point. You currently have "+defence+" defense points.", "umd");
+m.add_item_to_tab(t_player, "health, costs 1 point. You currently have "+maxhealth+" health points.", "umh");
+m.add_item_to_tab(t_player, "stamina, costs 1 point. You currently have "+maxstamina+" stamina points.", "umt");
+m.add_item_to_tab(t_player, "lives, costs 1 point. You currently have "+lifecard+" life points.", "umlf");
+if(drawnshield)
+{
+int t_shield=m.add_tab("shield");
+m.add_item_to_tab(t_shield, "shield strength, costs 1 point. You currently have "+maxshieldstrength+" endurance points.", "umst");
+m.add_item_to_tab(t_shield, "shield defence, costs 1 point. You currently have "+shielddefence+" endurance points.", "umsd");
+}
+int t_weapon=m.add_tab("weapon");
+m.add_item_to_tab(t_weapon, "x range, costs 1 point. You currently have "+wepchar.range+" range points.", "umra1");
+m.add_item_to_tab(t_weapon, "y range, costs 1 point. You currently have "+wepchar.range2+" range points.", "umra2");
+if(mapmode == "3d") m.add_item_to_tab(t_weapon, "z range, costs 1 point. You currently have "+wepchar.range3+" range points.", "umra3");
+if(saved_tab>0) m.set_active_tab_silent(saved_tab);
+int mres=m.run(saved_pos, true, false);
 if(mres<0)
 {
 speak("canceled");
 resume_pools();
 return;
 }
-if(mres<=1)
-{
-resume_pools();
-return;
-}
-if(ptmem=="umat")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string att=vd.input_box("Attack","How much attack would you like to buy?");
-if(att=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(att);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-attack+=tempstat;
-points-=tempstat;
-update_char_attack(attack);
-}
-}
-if(ptmem=="umd")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string def=vd.input_box("Defence","How much defence would you like to buy?");
-if(def=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(def);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-defence+=tempstat;
-points-=tempstat;
-update_char_defence(defence);
-}
-}
-if(ptmem=="uma")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string amm=vd.input_box("Ammo","How much ammo would you like to buy?");
-if(amm=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(amm);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-wepchar.ammo+=tempstat;
-points-=tempstat;
-wepchar.update_ammo(wepchar.ammo);
-}
-}
-if(ptmem=="umh")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string hp=vd.input_box("Health","How much health would you like to buy?");
-if(hp=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(hp);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-maxhealth+=tempstat;
-points-=tempstat;
-update_char_maxhealth(maxhealth);
-}
-}
-if(ptmem=="umt")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string stm=vd.input_box("Stamina","How much stamina would you like to buy?");
-if(stm=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(stm);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-maxstamina+=tempstat;
-points-=tempstat;
-update_char_maxstamina(maxstamina);
-}
-}
-if(ptmem=="umlf")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string lc=vd.input_box("Lives","How many lives would you like to buy?");
-if(lc=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(lc);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-lifecard+=tempstat;
-points-=tempstat;
-update_char_lives(lifecard);
-}
-}
-if(ptmem=="umst")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string sg=vd.input_box("Shield strength","How much shield strength would you like to buy?");
-if(sg=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(sg);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-maxshieldstrength+=tempstat;
-points-=tempstat;
-update_shield_max_strength(maxshieldstrength);
-}
-}
-if(ptmem=="umsd")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string sd=vd.input_box("Shield defence","How much shield defence would you like to buy?");
-if(sd=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(sd);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-shielddefence+=tempstat;
-points-=tempstat;
-update_shield_defence(shielddefence);
-}
-}
-if(ptmem=="umra1")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string rg1=vd.input_box("X weapon range","How much x weapon range would you like to buy?");
-if(rg1=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(rg1);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-wepchar.range+=tempstat;
-points-=tempstat;
-wepchar.update_x_range(wepchar.range);
-}
-}
-if(ptmem=="umra2")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string rg2=vd.input_box("Y weapon range","How much y weapon range would you like to buy?");
-if(rg2=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(rg2);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-wepchar.range2+=tempstat;
-points-=tempstat;
-wepchar.update_y_range(wepchar.range2);
-}
-}
-if(ptmem=="umra3")
-{
-if(points<=0)
-{
-dlg("Error, you don't have enough points to complete this action. Press enter to continue.");
-resume_pools();
-return;
-}
-else if(points>=1)
-{
-vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~", false, "This character is not allowed.");
-string rg3=vd.input_box("Z weapon range","How much z weapon range would you like to buy?");
-if(rg3=="")
-{
-speak("canceled");
-pointsmenu();
-return;
-}
-double tempstat=string_to_number(rg3);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
-resume_pools();
-speak("Perchis completed.");
-wepchar.range3+=tempstat;
-points-=tempstat;
-wepchar.update_z_range(wepchar.range3);
-}
-}
-if(ptmem=="back")
-{
-resume_pools();
-return;
+saved_tab=m.active_tab;
+saved_pos=mres;
+string ptmem=m.selected_item_id;
+if(ptmem=="umat") { double v=buy_stat("Attack","How much attack would you like to buy?","strength points"); if(v>0) { attack+=v; update_char_attack(attack); } }
+else if(ptmem=="umd") { double v=buy_stat("Defence","How much defence would you like to buy?","defense points"); if(v>0) { defence+=v; update_char_defence(defence); } }
+else if(ptmem=="umh") { double v=buy_stat("Health","How much health would you like to buy?","health points"); if(v>0) { maxhealth+=v; update_char_maxhealth(maxhealth); } }
+else if(ptmem=="umt") { double v=buy_stat("Stamina","How much stamina would you like to buy?","stamina points"); if(v>0) { maxstamina+=v; update_char_maxstamina(maxstamina); } }
+else if(ptmem=="umlf") { double v=buy_stat("Lives","How many lives would you like to buy?","life points"); if(v>0) { lifecard+=v; update_char_lives(lifecard); } }
+else if(ptmem=="umst") { double v=buy_stat("Shield strength","How much shield strength would you like to buy?","endurance points"); if(v>0) { maxshieldstrength+=v; update_shield_max_strength(maxshieldstrength); } }
+else if(ptmem=="umsd") { double v=buy_stat("Shield defence","How much shield defence would you like to buy?","endurance points"); if(v>0) { shielddefence+=v; update_shield_defence(shielddefence); } }
+else if(ptmem=="umra1") { double v=buy_stat("X weapon range","How much x weapon range would you like to buy?","range points"); if(v>0) { wepchar.range+=v; wepchar.update_x_range(wepchar.range); } }
+else if(ptmem=="umra2") { double v=buy_stat("Y weapon range","How much y weapon range would you like to buy?","range points"); if(v>0) { wepchar.range2+=v; wepchar.update_y_range(wepchar.range2); } }
+else if(ptmem=="umra3") { double v=buy_stat("Z weapon range","How much z weapon range would you like to buy?","range points"); if(v>0) { wepchar.range3+=v; wepchar.update_z_range(wepchar.range3); } }
 }
 }
 void pausemenu()
