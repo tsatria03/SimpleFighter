@@ -55,6 +55,15 @@ bool add_npc_form(string path_choice, string category, string subtype)
     }
     form.set_list_position(steps_list, 0, false);
     form.set_list_position(falls_list, 0, false);
+    string[] wt_opts;
+    string[] wt2_opts;
+    build_npc_weapon_lists(wt_opts, wt2_opts);
+    int wt_list = form.create_list("weapon type");
+    int wt2_list = form.create_list("weapon type2");
+    for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
+    for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
+    form.set_list_position(wt_list, 0, false);
+    form.set_list_position(wt2_list, 0, false);
     int[] checkboxes;
     for(uint i=0; i<cb_keys.length(); i++)
         checkboxes.insert_last(form.create_checkbox(cb_keys[i]));
@@ -100,6 +109,8 @@ bool add_npc_form(string path_choice, string category, string subtype)
                 content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
             content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
             content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
+            content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
+            content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
             file fout;
             if(!fout.open(target_path, "w"))
             {
@@ -378,6 +389,20 @@ bool edit_npc_form(string target_path, string subtype)
     }
     form.set_list_position(steps_list, steps_idx, false);
     form.set_list_position(falls_list, falls_idx, false);
+    string[] wt_opts;
+    string[] wt2_opts;
+    build_npc_weapon_lists(wt_opts, wt2_opts);
+    int wt_list = form.create_list("weapon type");
+    int wt2_list = form.create_list("weapon type2");
+    for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
+    for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
+    string wt_pre = "random"; if(existing.exists("weapon type")) existing.get("weapon type", wt_pre);
+    string wt2_pre = "random"; if(existing.exists("weapon type2")) existing.get("weapon type2", wt2_pre);
+    int wt_idx = 0, wt2_idx = 0;
+    for(uint i=0; i<wt_opts.length(); i++) if(wt_opts[i] == wt_pre) wt_idx = i;
+    for(uint i=0; i<wt2_opts.length(); i++) if(wt2_opts[i] == wt2_pre) wt2_idx = i;
+    form.set_list_position(wt_list, wt_idx, false);
+    form.set_list_position(wt2_list, wt2_idx, false);
     int[] checkboxes;
     for(uint i=0; i<cb_keys.length(); i++)
     {
@@ -418,6 +443,8 @@ bool edit_npc_form(string target_path, string subtype)
                 content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
             content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
             content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
+            content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
+            content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
             file fout;
             if(!fout.open(target_path, "w"))
             {
@@ -431,6 +458,26 @@ bool edit_npc_form(string target_path, string subtype)
         }
     }
     return false;
+}
+
+void build_npc_weapon_lists(string[]@ types, string[]@ subs)
+{
+    types.resize(0);
+    subs.resize(0);
+    types.insert_last("random");
+    subs.insert_last("random");
+    string[] cats = get_pack_sound_folders("main/equipments/weapons/*");
+    cats.sort_ascending();
+    for(uint i=0; i<cats.length(); i++) types.insert_last(cats[i]);
+    string[] all_subs;
+    for(uint i=0; i<cats.length(); i++)
+    {
+        string[] s = get_pack_sound_folders("main/equipments/weapons/"+cats[i]+"/*");
+        for(uint j=0; j<s.length(); j++)
+            if(all_subs.find(s[j]) < 0) all_subs.insert_last(s[j]);
+    }
+    all_subs.sort_ascending();
+    for(uint i=0; i<all_subs.length(); i++) subs.insert_last(all_subs[i]);
 }
 
 void edit_npc()

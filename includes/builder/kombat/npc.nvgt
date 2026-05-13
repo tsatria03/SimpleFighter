@@ -90,6 +90,8 @@ class npc
     int hurtdelay;
     bool hurting;
     weapon wephum;
+    string weapon_type;
+    string weapon_type2;
     string swing_facing;
     int drawsound, refsound, refsound2, firesound, hitsound, shellsound;
     bool refon;
@@ -168,6 +170,8 @@ class npc
         patrol_x_terrain = false;
         patrol_y_terrain = false;
         patrol_z_terrain = false;
+        weapon_type = "random";
+        weapon_type2 = "random";
         npc_parse(this);
         if(patrol_x_terrain)
         {
@@ -245,12 +249,11 @@ class npc
         wephum.sub = "";
         if(category == "humans" && fireable && targets.length() > 0)
         {
-            string[] wepcads = get_pack_sound_folders("main/equipments/weapons/*");
-            string rolled_cat = random_string(wepcads);
-            string[] weapons = get_pack_sound_folders("main/equipments/weapons/"+rolled_cat+"/*");
-            if(weapons.length() > 0)
+            string rolled_cat = weapon_type;
+            string rolled_sub = weapon_type2;
+            resolve_weapon_pins(rolled_cat, rolled_sub);
+            if(rolled_cat != "" && rolled_sub != "")
             {
-                string rolled_sub = random_string(weapons);
                 wephum.parse(rolled_cat, rolled_sub);
                 wephum.play_draw(x, y, z);
             }
@@ -459,6 +462,8 @@ void npc_parse_file(npc@ self, string path)
         else if(k == "flee_speed") self.flee_speed = roll_slot_int(v);
         else if(k == "provoke_speed") self.provoke_speed = roll_slot_int(v);
         else if(k == "chase_terrains") self.chase_terrains = string_to_bool(v);
+        else if(k == "weapon type") self.weapon_type = v;
+        else if(k == "weapon type2") self.weapon_type2 = v;
         else if(k == "launching") self.launching = string_to_bool(v);
         else if(k == "launch path") self.launch_path = v;
         else if(k == "launch category") self.launch_category = v;
