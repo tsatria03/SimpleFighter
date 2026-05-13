@@ -1,323 +1,323 @@
 npc_zone@[] npc_zones(0);
 class npc_zone
 {
-    double minx, maxx;
-    int y, y2;
-    int z;
-    int spawntime;
-    int scale_level;
-    string path;
-    string category;
-    string subtype;
-    timer spawntimer;
-    npc_zone(double mx, double mx2, int sy, int sy2, int sp, int sl, string p, string cat, string sub, int sz=0)
-    {
-        minx = mx;
-        maxx = mx2;
-        y = sy;
-        y2 = sy2;
-        z = sz;
-        spawntime = sp;
-        scale_level = sl;
-        path = p;
-        category = cat;
-        subtype = sub;
-    }
+	double minx, maxx;
+	int y, y2;
+	int z;
+	int spawntime;
+	int scale_level;
+	string path;
+	string category;
+	string subtype;
+	timer spawntimer;
+	npc_zone(double mx, double mx2, int sy, int sy2, int sp, int sl, string p, string cat, string sub, int sz=0)
+	{
+		minx = mx;
+		maxx = mx2;
+		y = sy;
+		y2 = sy2;
+		z = sz;
+		spawntime = sp;
+		scale_level = sl;
+		path = p;
+		category = cat;
+		subtype = sub;
+	}
 }
 
 void npc_zone_loop()
 {
-    for(uint i = 0; i < npc_zones.length(); i++)
-    {
-        bool trigger = npc_zones[i].minx <= me.x and npc_zones[i].maxx >= me.x and npc_zones[i].y <= me.y and npc_zones[i].y2 >= me.y;
-        if(mapmode == "3d") trigger = trigger and npc_zones[i].z == me.z;
-        if(trigger and npc_zones[i].spawntimer.elapsed >= npc_zones[i].spawntime)
-        {
-            string sub = npc_zones[i].subtype;
-            if(sub == "random")
-            {
-                string[] folders;
-                dictionary seen;
-                if(npc_zones[i].path == "any" || npc_zones[i].path == "map")
-                {
-                    string[] md = find_directories("data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+npc_zones[i].category+"/*");
-                    for(uint k=0; k<md.length(); k++) { if(!seen.exists(md[k])) { seen[md[k]] = true; folders.insert_last(md[k]); } }
-                }
-                if(npc_zones[i].path == "any" || npc_zones[i].path == "global")
-                {
-                    string[] gd = find_directories("sounds/"+soundpack+"/builder/kombat/npc/"+npc_zones[i].category+"/*");
-                    for(uint k=0; k<gd.length(); k++) { if(!seen.exists(gd[k])) { seen[gd[k]] = true; folders.insert_last(gd[k]); } }
-                }
-                if(folders.length() > 0) sub = random_string(folders);
-            }
-            if(sub != "" && sub != "none")
-                spawn_npc(random(npc_zones[i].minx, npc_zones[i].maxx), random(npc_zones[i].y, npc_zones[i].y2), npc_zones[i].scale_level, npc_zones[i].path, npc_zones[i].category, sub, npc_zones[i].z);
-            npc_zones[i].spawntimer.restart();
-        }
-    }
+	for(uint i = 0; i < npc_zones.length(); i++)
+	{
+		bool trigger = npc_zones[i].minx <= me.x and npc_zones[i].maxx >= me.x and npc_zones[i].y <= me.y and npc_zones[i].y2 >= me.y;
+		if(mapmode == "3d") trigger = trigger and npc_zones[i].z == me.z;
+		if(trigger and npc_zones[i].spawntimer.elapsed >= npc_zones[i].spawntime)
+		{
+			string sub = npc_zones[i].subtype;
+			if(sub == "random")
+			{
+				string[] folders;
+				dictionary seen;
+				if(npc_zones[i].path == "any" || npc_zones[i].path == "map")
+				{
+					string[] md = find_directories("data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+npc_zones[i].category+"/*");
+					for(uint k=0; k<md.length(); k++) { if(!seen.exists(md[k])) { seen[md[k]] = true; folders.insert_last(md[k]); } }
+				}
+				if(npc_zones[i].path == "any" || npc_zones[i].path == "global")
+				{
+					string[] gd = find_directories("sounds/"+soundpack+"/builder/kombat/npc/"+npc_zones[i].category+"/*");
+					for(uint k=0; k<gd.length(); k++) { if(!seen.exists(gd[k])) { seen[gd[k]] = true; folders.insert_last(gd[k]); } }
+				}
+				if(folders.length() > 0) sub = random_string(folders);
+			}
+			if(sub != "" && sub != "none")
+				spawn_npc(random(npc_zones[i].minx, npc_zones[i].maxx), random(npc_zones[i].y, npc_zones[i].y2), npc_zones[i].scale_level, npc_zones[i].path, npc_zones[i].category, sub, npc_zones[i].z);
+			npc_zones[i].spawntimer.restart();
+		}
+	}
 }
 
 void spawn_npc_zone(double x1, double x2, int y, int y2, int sp, int sl, string path, string category, string subtype, int z=0)
 {
-    npc_zone nz(x1, x2, y, y2, sp, sl, path, category, subtype, z);
-    npc_zones.insert_last(nz);
+	npc_zone nz(x1, x2, y, y2, sp, sl, path, category, subtype, z);
+	npc_zones.insert_last(nz);
 }
 
 void destroy_all_npc_zones()
 {
-    npc_zones.resize(0);
+	npc_zones.resize(0);
 }
 
 void read_npc_zone(string[] sd)
 {
-    // Line shapes:
-    //   2d (length 9) / topdown legacy (9): mx mx2 y sp sl path cat sub          (y2 = y)
-    //   topdown new (10):                   mx mx2 y y2 sp sl path cat sub
-    //   3d legacy (10):                     mx mx2 y z sp sl path cat sub        (y2 = y)
-    //   3d new (11):                        mx mx2 y y2 z sp sl path cat sub
-    double mx = stn(sd[1]);
-    double mx2 = stn(sd[2]);
-    int y = stn(sd[3]);
-    int y2 = y;
-    int z = 0;
-    int o = 4;
-    if(mapmode == "topdown" && sd.length() == 10)
-    {
-        y2 = stn(sd[4]);
-        o = 5;
-    }
-    else if(mapmode == "3d" && sd.length() == 10)
-    {
-        z = stn(sd[4]);
-        o = 5;
-    }
-    else if(mapmode == "3d" && sd.length() == 11)
-    {
-        y2 = stn(sd[4]);
-        z = stn(sd[5]);
-        o = 6;
-    }
-    int sp = stn(sd[o]);
-    int sl = stn(sd[o+1]);
-    string path = sd[o+2];
-    string category = sd[o+3];
-    string subtype = sd[o+4];
-    spawn_npc_zone(mx, mx2, y, y2, sp, sl, path, category, subtype, z);
+	// Line shapes:
+	//   2d (length 9) / topdown legacy (9): mx mx2 y sp sl path cat sub          (y2 = y)
+	//   topdown new (10):                   mx mx2 y y2 sp sl path cat sub
+	//   3d legacy (10):                     mx mx2 y z sp sl path cat sub        (y2 = y)
+	//   3d new (11):                        mx mx2 y y2 z sp sl path cat sub
+	double mx = stn(sd[1]);
+	double mx2 = stn(sd[2]);
+	int y = stn(sd[3]);
+	int y2 = y;
+	int z = 0;
+	int o = 4;
+	if(mapmode == "topdown" && sd.length() == 10)
+	{
+		y2 = stn(sd[4]);
+		o = 5;
+	}
+	else if(mapmode == "3d" && sd.length() == 10)
+	{
+		z = stn(sd[4]);
+		o = 5;
+	}
+	else if(mapmode == "3d" && sd.length() == 11)
+	{
+		y2 = stn(sd[4]);
+		z = stn(sd[5]);
+		o = 6;
+	}
+	int sp = stn(sd[o]);
+	int sl = stn(sd[o+1]);
+	string path = sd[o+2];
+	string category = sd[o+3];
+	string subtype = sd[o+4];
+	spawn_npc_zone(mx, mx2, y, y2, sp, sl, path, category, subtype, z);
 }
 
 void write_npc_zone(double x1, double x2, int y, int y2, int sp, int sl, string path, string category, string subtype, int z=0)
 {
-    mapper.open("data/maps/decompiled/" + mapname + "/" + "info.sif", "ab");
-    mapdata = mapper.read();
-    string coords = x1 + " " + x2 + " " + y;
-    if(mapmode != "2d") coords += " " + y2;
-    if(mapmode == "3d") coords += " " + z;
-    mapper.write("\r\n" + "npc_zone " + coords + " " + sp + " " + sl + " " + path + " " + category + " " + subtype);
-    mapper.close();
+	mapper.open("data/maps/decompiled/" + mapname + "/" + "info.sif", "ab");
+	mapdata = mapper.read();
+	string coords = x1 + " " + x2 + " " + y;
+	if(mapmode != "2d") coords += " " + y2;
+	if(mapmode == "3d") coords += " " + z;
+	mapper.write("\r\n" + "npc_zone " + coords + " " + sp + " " + sl + " " + path + " " + category + " " + subtype);
+	mapper.close();
 }
 
 void build_npc_zone()
 {
-    string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
-    string[] paths = {"any", "global", "map"};
-    string[] categories = {"animals", "humans", "robots", "specials", "zombies"};
-    bool y_uses_back_front = mapmode != "2d";
-    string saved_x = sel_left_set ? sel_left : "";
-    string saved_x2 = sel_right_set ? sel_right : "";
-    string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
-    string saved_y2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : "";
-    string saved_z = sel_bottom_set ? sel_bottom : "";
-    string saved_sp = "";
-    string saved_lev = "0";
-    int saved_path_pos = 0;
-    int saved_cat_pos = 0;
-    int saved_sub_pos = 0;
-    bool do_build = true;
-    int last_path_pos = -1;
-    int last_cat_pos = -1;
-    int focus_after_build = 0;
-    int mx, mx2, my, my2, mz, sp, lev, path_list, cat_list, sub_list, ok, cn;
-    my2 = -1;
-    string[] sub_data;
-    while(true)
-    {
-        wait(5);
-        if(do_build)
-        {
-            do_build = false;
-            if(last_cat_pos != -1)
-            {
-                saved_x = form.get_text(mx);
-                saved_x2 = form.get_text(mx2);
-                saved_y = form.get_text(my);
-                if(my2 != -1) saved_y2 = form.get_text(my2);
-                if(mapmode == "3d") saved_z = form.get_text(mz);
-                saved_sp = form.get_text(sp);
-                saved_lev = form.get_text(lev);
-            }
-            string global_base = "sounds/"+soundpack+"/builder/kombat/npc/"+categories[saved_cat_pos];
-            string map_base = "data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
-            sub_data.resize(0);
-            if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "global")
-            {
-                string[] gd = find_directories(global_base+"/*");
-                for(uint i=0; i<gd.length(); i++)
-                {
-                    if(file_exists(global_base+"/"+gd[i]+"/info.sif") && sub_data.find(gd[i]) < 0)
-                        sub_data.insert_last(gd[i]);
-                }
-            }
-            if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "map")
-            {
-                string[] md = find_directories(map_base+"/*");
-                for(uint i=0; i<md.length(); i++)
-                {
-                    if(file_exists(map_base+"/"+md[i]+"/info.sif") && sub_data.find(md[i]) < 0)
-                        sub_data.insert_last(md[i]);
-                }
-            }
-            if(sub_data.length() > 0) sort_naturally(sub_data);
-            form.reset();
-            form.create_window("npc zone", false, true, last_cat_pos != -1);
-            mx = form.create_input_box("minimum x", saved_x);
-            mx2 = form.create_input_box("maximum x", saved_x2);
-            my2 = -1;
-            if(y_uses_back_front)
-            {
-                my = form.create_input_box("minimum y", saved_y);
-                my2 = form.create_input_box("maximum y", saved_y2);
-            }
-            else
-            {
-                my = form.create_input_box("y", saved_y);
-            }
-            mz = -1;
-            if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
-            sp = form.create_input_box("spawn time", saved_sp);
-            lev = form.create_input_box("scale level", saved_lev);
-            form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
-            form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
-            form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
-            if(my2 != -1) form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
-            if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
-            form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
-            form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
-            path_list = form.create_list("path");
-            for(uint i = 0; i < paths.length(); i++)
-                form.add_list_item(path_list, paths[i], paths[i]);
-            form.set_list_position(path_list, saved_path_pos, false);
-            cat_list = form.create_list("category");
-            for(uint i = 0; i < categories.length(); i++)
-                form.add_list_item(cat_list, categories[i], categories[i]);
-            form.set_list_position(cat_list, saved_cat_pos, false);
-            sub_list = form.create_list("subtype");
-            form.add_list_item(sub_list, "none", "none");
-            for(uint i = 0; i < sub_data.length(); i++)
-                form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-            form.add_list_item(sub_list, "random", "random");
-            int sp_pos = (saved_sub_pos < int(sub_data.length()) + 2) ? saved_sub_pos : 0;
-            form.set_list_position(sub_list, sp_pos, false);
-            ok = form.create_button("&okay", true);
-            cn = form.create_button("&cancel");
-            if(last_cat_pos == -1)
-            {
-                form.focus(mx);
-            }
-            else if(focus_after_build == 1)
-                form.focus_silently(cat_list);
-            else
-                form.focus_silently(path_list);
-            last_path_pos = saved_path_pos;
-            last_cat_pos = saved_cat_pos;
-        }
-        form.monitor();
-        int cur_path = form.get_list_position(path_list);
-        if(cur_path != -1 && cur_path != last_path_pos)
-        {
-            saved_path_pos = cur_path;
-            saved_sub_pos = 0;
-            t.destroy_sound(prevslot);
-            prevslot = -1;
-            focus_after_build = 0;
-            do_build = true;
-            continue;
-        }
-        int cur_cat = form.get_list_position(cat_list);
-        if(cur_cat != -1 && cur_cat != last_cat_pos)
-        {
-            saved_cat_pos = cur_cat;
-            saved_sub_pos = 0;
-            t.destroy_sound(prevslot);
-            prevslot = -1;
-            focus_after_build = 1;
-            do_build = true;
-            continue;
-        }
-        int cur_focus = form.get_current_focus();
-        int cur_sub = form.get_list_position(sub_list);
-        if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
-        {
-            t.destroy_sound(prevslot);
-            prevslot = -1;
-            if(cur_focus == sub_list && cur_sub > 0 && cur_sub <= int(sub_data.length()))
-                prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/" + categories[saved_cat_pos] + "/" + sub_data[cur_sub - 1] + "/*hurt*"), false);
-            keytimer.restart();
-        }
-        if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_L) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
-        {
-            t.destroy_sound(prevslot);
-            prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/" + categories[saved_cat_pos] + "/" + sub_data[cur_sub - 1] + "/*taunt*"), false);
-        }
-        if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_H) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
-        {
-            t.destroy_sound(prevslot);
-            prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/" + categories[saved_cat_pos] + "/" + sub_data[cur_sub - 1] + "/*death*"), false);
-        }
-        if(key_pressed(KEY_ESCAPE))
-        {
-            t.destroy_sound(prevslot);
-            resume_pools();
-            speak("canceled");
-            return;
-        }
-        if(form.is_pressed(cn))
-        {
-            t.destroy_sound(prevslot);
-            resume_pools();
-            speak("canceled");
-            return;
-        }
-        if(form.is_pressed(ok))
-        {
-            if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); continue; }
-            if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); continue; }
-            if(form.get_text(my) == "") { speak((my2 != -1) ? "Minimum y is required." : "Y is required."); form.focus(my); continue; }
-            if(my2 != -1 && form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); continue; }
-            if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
-            if(form.get_text(sp) == "") { speak("Spawn time is required."); form.focus(sp); continue; }
-            if(form.get_text(lev) == "") { speak("Scale level is required."); form.focus(lev); continue; }
-            double bx = string_to_number(form.get_text(mx));
-            double bx2 = string_to_number(form.get_text(mx2));
-            int by = string_to_number(form.get_text(my));
-            int by2 = (my2 != -1) ? int(string_to_number(form.get_text(my2))) : by;
-            int bz = (mz != -1) ? int(string_to_number(form.get_text(mz))) : 0;
-            int bsp = string_to_number(form.get_text(sp));
-            int blev = string_to_number(form.get_text(lev));
-            int p = form.get_list_position(sub_list);
-            string bsub;
-            if(p == 0) bsub = "none";
-            else if(p == int(sub_data.length()) + 1) bsub = "random";
-            else bsub = sub_data[p - 1];
-            string bpath = paths[saved_path_pos];
-            string bcat = categories[saved_cat_pos];
-            t.destroy_sound(prevslot);
-            resume_pools();
-            write_npc_zone(bx, bx2, by, by2, bsp, blev, bpath, bcat, bsub, bz);
-            spawn_npc_zone(bx, bx2, by, by2, bsp, blev, bpath, bcat, bsub, bz);
-            load_map(mapname, mapowner);
-            mpool.play_stationary(get_pack_sound("main/characters/" + chartype + "/map/*update*"), false);
-            speak("Map updated.");
-            return;
-        }
-    }
+	string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+	string[] paths = {"any", "global", "map"};
+	string[] categories = {"animals", "humans", "robots", "specials", "zombies"};
+	bool y_uses_back_front = mapmode != "2d";
+	string saved_x = sel_left_set ? sel_left : "";
+	string saved_x2 = sel_right_set ? sel_right : "";
+	string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+	string saved_y2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : "";
+	string saved_z = sel_bottom_set ? sel_bottom : "";
+	string saved_sp = "";
+	string saved_lev = "0";
+	int saved_path_pos = 0;
+	int saved_cat_pos = 0;
+	int saved_sub_pos = 0;
+	bool do_build = true;
+	int last_path_pos = -1;
+	int last_cat_pos = -1;
+	int focus_after_build = 0;
+	int mx, mx2, my, my2, mz, sp, lev, path_list, cat_list, sub_list, ok, cn;
+	my2 = -1;
+	string[] sub_data;
+	while(true)
+	{
+		wait(5);
+		if(do_build)
+		{
+			do_build = false;
+			if(last_cat_pos != -1)
+			{
+				saved_x = form.get_text(mx);
+				saved_x2 = form.get_text(mx2);
+				saved_y = form.get_text(my);
+				if(my2 != -1) saved_y2 = form.get_text(my2);
+				if(mapmode == "3d") saved_z = form.get_text(mz);
+				saved_sp = form.get_text(sp);
+				saved_lev = form.get_text(lev);
+			}
+			string global_base = "sounds/"+soundpack+"/builder/kombat/npc/"+categories[saved_cat_pos];
+			string map_base = "data/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
+			sub_data.resize(0);
+			if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "global")
+			{
+				string[] gd = find_directories(global_base+"/*");
+				for(uint i=0; i<gd.length(); i++)
+				{
+					if(file_exists(global_base+"/"+gd[i]+"/data/info.sif") && sub_data.find(gd[i]) < 0)
+						sub_data.insert_last(gd[i]);
+				}
+			}
+			if(paths[saved_path_pos] == "any" || paths[saved_path_pos] == "map")
+			{
+				string[] md = find_directories(map_base+"/*");
+				for(uint i=0; i<md.length(); i++)
+				{
+					if(file_exists(map_base+"/"+md[i]+"/data/info.sif") && sub_data.find(md[i]) < 0)
+						sub_data.insert_last(md[i]);
+				}
+			}
+			if(sub_data.length() > 0) sort_naturally(sub_data);
+			form.reset();
+			form.create_window("npc zone", false, true, last_cat_pos != -1);
+			mx = form.create_input_box("minimum x", saved_x);
+			mx2 = form.create_input_box("maximum x", saved_x2);
+			my2 = -1;
+			if(y_uses_back_front)
+			{
+				my = form.create_input_box("minimum y", saved_y);
+				my2 = form.create_input_box("maximum y", saved_y2);
+			}
+			else
+			{
+				my = form.create_input_box("y", saved_y);
+			}
+			mz = -1;
+			if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
+			sp = form.create_input_box("spawn time", saved_sp);
+			lev = form.create_input_box("scale level", saved_lev);
+			form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+			if(my2 != -1) form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+			if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
+			path_list = form.create_list("path");
+			for(uint i = 0; i < paths.length(); i++)
+				form.add_list_item(path_list, paths[i], paths[i]);
+			form.set_list_position(path_list, saved_path_pos, false);
+			cat_list = form.create_list("category");
+			for(uint i = 0; i < categories.length(); i++)
+				form.add_list_item(cat_list, categories[i], categories[i]);
+			form.set_list_position(cat_list, saved_cat_pos, false);
+			sub_list = form.create_list("subtype");
+			form.add_list_item(sub_list, "none", "none");
+			for(uint i = 0; i < sub_data.length(); i++)
+				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+			form.add_list_item(sub_list, "random", "random");
+			int sp_pos = (saved_sub_pos < int(sub_data.length()) + 2) ? saved_sub_pos : 0;
+			form.set_list_position(sub_list, sp_pos, false);
+			ok = form.create_button("&okay", true);
+			cn = form.create_button("&cancel");
+			if(last_cat_pos == -1)
+			{
+				form.focus(mx);
+			}
+			else if(focus_after_build == 1)
+				form.focus_silently(cat_list);
+			else
+				form.focus_silently(path_list);
+			last_path_pos = saved_path_pos;
+			last_cat_pos = saved_cat_pos;
+		}
+		form.monitor();
+		int cur_path = form.get_list_position(path_list);
+		if(cur_path != -1 && cur_path != last_path_pos)
+		{
+			saved_path_pos = cur_path;
+			saved_sub_pos = 0;
+			t.destroy_sound(prevslot);
+			prevslot = -1;
+			focus_after_build = 0;
+			do_build = true;
+			continue;
+		}
+		int cur_cat = form.get_list_position(cat_list);
+		if(cur_cat != -1 && cur_cat != last_cat_pos)
+		{
+			saved_cat_pos = cur_cat;
+			saved_sub_pos = 0;
+			t.destroy_sound(prevslot);
+			prevslot = -1;
+			focus_after_build = 1;
+			do_build = true;
+			continue;
+		}
+		int cur_focus = form.get_current_focus();
+		int cur_sub = form.get_list_position(sub_list);
+		if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+		{
+			t.destroy_sound(prevslot);
+			prevslot = -1;
+			if(cur_focus == sub_list && cur_sub > 0 && cur_sub <= int(sub_data.length()))
+				prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/" + categories[saved_cat_pos] + "/" + sub_data[cur_sub - 1] + "/general/*hurt*"), false);
+			keytimer.restart();
+		}
+		if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_L) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
+		{
+			t.destroy_sound(prevslot);
+			prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/" + categories[saved_cat_pos] + "/" + sub_data[cur_sub - 1] + "/general/*taunt*"), false);
+		}
+		if(cur_focus == sub_list && control_is_down() && key_repeating(KEY_H) && cur_sub > 0 && cur_sub <= int(sub_data.length()))
+		{
+			t.destroy_sound(prevslot);
+			prevslot = t.play_stationary(get_map_sound("builder/kombat/npc/" + categories[saved_cat_pos] + "/" + sub_data[cur_sub - 1] + "/general/*death*"), false);
+		}
+		if(key_pressed(KEY_ESCAPE))
+		{
+			t.destroy_sound(prevslot);
+			resume_pools();
+			speak("canceled");
+			return;
+		}
+		if(form.is_pressed(cn))
+		{
+			t.destroy_sound(prevslot);
+			resume_pools();
+			speak("canceled");
+			return;
+		}
+		if(form.is_pressed(ok))
+		{
+			if(form.get_text(mx) == "") { speak("Minimum x is required."); form.focus(mx); continue; }
+			if(form.get_text(mx2) == "") { speak("Maximum x is required."); form.focus(mx2); continue; }
+			if(form.get_text(my) == "") { speak((my2 != -1) ? "Minimum y is required." : "Y is required."); form.focus(my); continue; }
+			if(my2 != -1 && form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); continue; }
+			if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
+			if(form.get_text(sp) == "") { speak("Spawn time is required."); form.focus(sp); continue; }
+			if(form.get_text(lev) == "") { speak("Scale level is required."); form.focus(lev); continue; }
+			double bx = string_to_number(form.get_text(mx));
+			double bx2 = string_to_number(form.get_text(mx2));
+			int by = string_to_number(form.get_text(my));
+			int by2 = (my2 != -1) ? int(string_to_number(form.get_text(my2))) : by;
+			int bz = (mz != -1) ? int(string_to_number(form.get_text(mz))) : 0;
+			int bsp = string_to_number(form.get_text(sp));
+			int blev = string_to_number(form.get_text(lev));
+			int p = form.get_list_position(sub_list);
+			string bsub;
+			if(p == 0) bsub = "none";
+			else if(p == int(sub_data.length()) + 1) bsub = "random";
+			else bsub = sub_data[p - 1];
+			string bpath = paths[saved_path_pos];
+			string bcat = categories[saved_cat_pos];
+			t.destroy_sound(prevslot);
+			resume_pools();
+			write_npc_zone(bx, bx2, by, by2, bsp, blev, bpath, bcat, bsub, bz);
+			spawn_npc_zone(bx, bx2, by, by2, bsp, blev, bpath, bcat, bsub, bz);
+			load_map(mapname, mapowner);
+			mpool.play_stationary(get_pack_sound("main/characters/" + chartype + "/map/*update*"), false);
+			speak("Map updated.");
+			return;
+		}
+	}
 }

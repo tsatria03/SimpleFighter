@@ -1,58 +1,58 @@
 void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false, bool force_spawned=false)
 {
-    mapname = name;
-    mapowner = owner;
-    mapmode = "";
-    minz = 0;
-    maxz = 0;
-    maploadbeeps = loadbeeps;
-    maploadsounds = loadsounds;
-    clearmap();
-    destroymap();
-    if (string_ends_with(mapname, ".sif"))
-        mapname = string_replace(mapname, ".sif", "", true);
-    if (string_ends_with(mapname, ".map"))
-        mapname = string_replace(mapname, ".map", "", true);
-    string decompiled_info_path = "data/maps/decompiled/" + mapname + "/info.sif";
-    string compiled_path = "data/maps/compiled/" + mapname + ".map";
-    string mapdata = "";
-    bool loaded = false;
-    map_is_compiled = false;
-    if (!force_compiled && file_exists(decompiled_info_path))
-    {
-        set_sound_storage("");
-        set_sound_decryption_key("", true);
-        map_pack_loaded = false;
-        mapper.open(decompiled_info_path, "rb");
-        mapdata = mapper.read();
-        mapper.close();
-        loaded = true;
-        map_is_compiled = false;
-    }
-    else if (file_exists(compiled_path))
-    {
-        if (!load_map_pack(mapname, ""))
-        {
-            dlg("Error: Map failed to load.");
-            mapmenu();
-        }
-        if (map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
-        {
-            if (map_pack.file_exists("info.sif"))
-            {
-                uint size = map_pack.get_file_size("info.sif");
-                mapdata = map_pack.read_file("info.sif", 0, size);
-                loaded = true;
-                map_is_compiled = true;
-            }
-            map_pack.close();
-        }
-    }
-    if (!loaded)
-    {
-        dlg("Error: Map not found or missing info.sif.");
-        mapmenu();
-    }
+	mapname = name;
+	mapowner = owner;
+	mapmode = "";
+	minz = 0;
+	maxz = 0;
+	maploadbeeps = loadbeeps;
+	maploadsounds = loadsounds;
+	clearmap();
+	destroymap();
+	if (string_ends_with(mapname, ".sif"))
+		mapname = string_replace(mapname, ".sif", "", true);
+	if (string_ends_with(mapname, ".map"))
+		mapname = string_replace(mapname, ".map", "", true);
+	string decompiled_info_path = "data/maps/decompiled/" + mapname + "/info.sif";
+	string compiled_path = "data/maps/compiled/" + mapname + ".map";
+	string mapdata = "";
+	bool loaded = false;
+	map_is_compiled = false;
+	if (!force_compiled && file_exists(decompiled_info_path))
+	{
+		set_sound_storage("");
+		set_sound_decryption_key("", true);
+		map_pack_loaded = false;
+		mapper.open(decompiled_info_path, "rb");
+		mapdata = mapper.read();
+		mapper.close();
+		loaded = true;
+		map_is_compiled = false;
+	}
+	else if (file_exists(compiled_path))
+	{
+		if (!load_map_pack(mapname, ""))
+		{
+			dlg("Error: Map failed to load.");
+			mapmenu();
+		}
+		if (map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+		{
+			if (map_pack.file_exists("info.sif"))
+			{
+				uint size = map_pack.get_file_size("info.sif");
+				mapdata = map_pack.read_file("info.sif", 0, size);
+				loaded = true;
+				map_is_compiled = true;
+			}
+			map_pack.close();
+		}
+	}
+	if (!loaded)
+	{
+		dlg("Error: Map not found or missing info.sif.");
+		mapmenu();
+	}
 uint64 map_total_bytes = map_is_compiled ? file_get_size(compiled_path) : get_directory_size("data/maps/decompiled/" + mapname);
 string map_total_readable = measure_file_size(map_total_bytes);
 string load_help = "Loading map. Press Space for percentage, 1 2 and 3 keys for detailed progress, or escape to cancel. Press h to read this help message again.";
@@ -274,28 +274,28 @@ return;
 apply_map_pool();
 if (force_spawned)
 {
-    if (last_spawnpoint !is null)
-    {
-        me.x = last_spawnpoint.spawnx;
-        me.y = last_spawnpoint.spawny;
-        me.z = (mapmode == "3d") ? last_spawnpoint.spawnz : 0;
-    }
-    else if (spawnpoints.length() > 0)
-    {
-        me.x = spawnpoints[0].spawnx;
-        me.y = spawnpoints[0].spawny;
-        me.z = (mapmode == "3d") ? spawnpoints[0].spawnz : 0;
-    }
-    else
-    {
-        // No spawnpoint — fall back to (0,0,0), clamped to the map's bounds so a map whose bounds don't include zero (e.g. minx=5 maxx=20) doesn't drop the player outside the map.
-        me.x = (0 < minx) ? minx : ((0 > maxx) ? maxx : 0);
-        me.y = (0 < miny) ? miny : ((0 > maxy) ? maxy : 0);
-        me.z = (mapmode == "3d") ? ((0 < minz) ? minz : ((0 > maxz) ? maxz : 0)) : 0;
-    }
-    fallcounter = 0;
-    jumping = 0;
-    falling = false;
+	if (last_spawnpoint !is null)
+	{
+		me.x = last_spawnpoint.spawnx;
+		me.y = last_spawnpoint.spawny;
+		me.z = (mapmode == "3d") ? last_spawnpoint.spawnz : 0;
+	}
+	else if (spawnpoints.length() > 0)
+	{
+		me.x = spawnpoints[0].spawnx;
+		me.y = spawnpoints[0].spawny;
+		me.z = (mapmode == "3d") ? spawnpoints[0].spawnz : 0;
+	}
+	else
+	{
+		// No spawnpoint — fall back to (0,0,0), clamped to the map's bounds so a map whose bounds don't include zero (e.g. minx=5 maxx=20) doesn't drop the player outside the map.
+		me.x = (0 < minx) ? minx : ((0 > maxx) ? maxx : 0);
+		me.y = (0 < miny) ? miny : ((0 > maxy) ? maxy : 0);
+		me.z = (mapmode == "3d") ? ((0 < minz) ? minz : ((0 > maxz) ? maxz : 0)) : 0;
+	}
+	fallcounter = 0;
+	jumping = 0;
+	falling = false;
 }
 if(loadsounds==1) mapload.stop();
 if(loadsounds==1) mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*stop*"),false);

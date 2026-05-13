@@ -3,216 +3,216 @@ bool platformmove;
 moving_platform@[]moving_platforms(0);
 class moving_platform
 {
-    int platsound;
-    int platform_id;
-    double minx, maxx, miny, maxy;
-    double minz, maxz;
-    double currentx, currenty, currentz;
-    double sizex, sizey;
-    string tile;
-    string mplattype;
-    int move_mode;
-    int snap_mode;
-    int speed;
-    bool moving_forward;
-    timer move_timer;
-    double tilevolume;
-    double tilepitch;
-    double mplatvolume;
-    double mplatpitch;
-    double offset_volume;
+	int platsound;
+	int platform_id;
+	double minx, maxx, miny, maxy;
+	double minz, maxz;
+	double currentx, currenty, currentz;
+	double sizex, sizey;
+	string tile;
+	string mplattype;
+	int move_mode;
+	int snap_mode;
+	int speed;
+	bool moving_forward;
+	timer move_timer;
+	double tilevolume;
+	double tilepitch;
+	double mplatvolume;
+	double mplatpitch;
+	double offset_volume;
 
-    moving_platform(double left_x, double right_x, double bottom_y, double top_y, double x_length, int direction, int snap, int speed_in, string ty, double vol, double semitone, string mptype, double vol2, double semitone2, double vol_offset, double bottom_z=0, double top_z=0, double y_length=1)
-    {
-        minx = left_x;
-        maxx = right_x;
-        miny = bottom_y;
-        maxy = top_y;
-        minz = bottom_z;
-        maxz = top_z;
-        sizex = x_length;
-        sizey = y_length;
-        currentx = minx;
-        currenty = miny;
-        currentz = minz;
-        move_mode = direction;
-        snap_mode = snap;
-        if (speed_in <= 0) speed_in = 1;
-        speed = speed_in;
-        tile = ty;
-        tilevolume = vol;
-        tilepitch = semitone;
-        mplattype = mptype;
-        mplatvolume = vol2;
-        mplatpitch = semitone2;
-        offset_volume = vol_offset;
-        moving_forward = true;
-        if(mapmode == "3d")
-            platform_id = spawn_platform(left_x, left_x + x_length, bottom_y, bottom_y + y_length, 1, 1, tile, tilevolume, tilepitch, false, false, true, currentz);
-        else
-            platform_id = spawn_platform(left_x, left_x + x_length, bottom_y, bottom_y + 1, 1, 1, tile, tilevolume, tilepitch, false, false, true);
-        double soundz = (mapmode == "3d") ? currentz : 0;
-        platsound = platpool.play_extended_3d(get_map_sound("builder/construction/moving platforms/" + mplattype + "/*loop*"), me.x, me.y, me.z, currentx, currenty, soundz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, mplatvolume, mplatpitch, false);
-        update_platform_sound();
-    }
+	moving_platform(double left_x, double right_x, double bottom_y, double top_y, double x_length, int direction, int snap, int speed_in, string ty, double vol, double semitone, string mptype, double vol2, double semitone2, double vol_offset, double bottom_z=0, double top_z=0, double y_length=1)
+	{
+		minx = left_x;
+		maxx = right_x;
+		miny = bottom_y;
+		maxy = top_y;
+		minz = bottom_z;
+		maxz = top_z;
+		sizex = x_length;
+		sizey = y_length;
+		currentx = minx;
+		currenty = miny;
+		currentz = minz;
+		move_mode = direction;
+		snap_mode = snap;
+		if (speed_in <= 0) speed_in = 1;
+		speed = speed_in;
+		tile = ty;
+		tilevolume = vol;
+		tilepitch = semitone;
+		mplattype = mptype;
+		mplatvolume = vol2;
+		mplatpitch = semitone2;
+		offset_volume = vol_offset;
+		moving_forward = true;
+		if(mapmode == "3d")
+			platform_id = spawn_platform(left_x, left_x + x_length, bottom_y, bottom_y + y_length, 1, 1, tile, tilevolume, tilepitch, false, false, true, currentz);
+		else
+			platform_id = spawn_platform(left_x, left_x + x_length, bottom_y, bottom_y + 1, 1, 1, tile, tilevolume, tilepitch, false, false, true);
+		double soundz = (mapmode == "3d") ? currentz : 0;
+		platsound = platpool.play_extended_3d(get_map_sound("builder/construction/moving platforms/" + mplattype + "/*loop*"), me.x, me.y, me.z, currentx, currenty, soundz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, mplatvolume, mplatpitch, false);
+		update_platform_sound();
+	}
 void update_platform_sound()
-    {
-        double centerx = currentx + sizex / 2;
-        double depth = (mapmode == "3d") ? sizey : 1;
-        double centery = currenty + depth / 2;
-        double soundz = (mapmode == "3d") ? currentz : 0;
-        platpool.update_sound_3d(platsound, centerx, centery, soundz);
-        platpool.update_sound_range_3d(platsound, 0, sizex, 0, depth, 0, 0);
-    }
+	{
+		double centerx = currentx + sizex / 2;
+		double depth = (mapmode == "3d") ? sizey : 1;
+		double centery = currenty + depth / 2;
+		double soundz = (mapmode == "3d") ? currentz : 0;
+		platpool.update_sound_3d(platsound, centerx, centery, soundz);
+		platpool.update_sound_range_3d(platsound, 0, sizex, 0, depth, 0, 0);
+	}
 
-    bool is_on_platform()
-    {
-        if(mapmode == "3d")
-        {
-            return me.x >= currentx - 0.5 && me.x <= currentx + sizex + 0.5
-                && me.y >= currenty - 0.5 && me.y <= currenty + sizey + 0.5
-                && (me.z == currentz || me.z == currentz - 1 || me.z == currentz + 1);
-        }
-        return (me.x >= currentx - 0.5 && me.x <= currentx + sizex + 0.5 &&
-                (me.y == currenty || me.y == currenty - 1 || me.y == currenty + 1));
-    }
+	bool is_on_platform()
+	{
+		if(mapmode == "3d")
+		{
+			return me.x >= currentx - 0.5 && me.x <= currentx + sizex + 0.5
+				&& me.y >= currenty - 0.5 && me.y <= currenty + sizey + 0.5
+				&& (me.z == currentz || me.z == currentz - 1 || me.z == currentz + 1);
+		}
+		return (me.x >= currentx - 0.5 && me.x <= currentx + sizex + 0.5 &&
+				(me.y == currenty || me.y == currenty - 1 || me.y == currenty + 1));
+	}
 
-    void check_player()
-    {
-        platformmove = is_on_platform();
-        if (platformmove)
-        {
-            if(mapmode == "3d") me.z = currentz;
-            else me.y = currenty;
-        }
-    }
+	void check_player()
+	{
+		platformmove = is_on_platform();
+		if (platformmove)
+		{
+			if(mapmode == "3d") me.z = currentz;
+			else me.y = currenty;
+		}
+	}
 
-    void move()
-    {
-        if (move_timer.elapsed < speed) return;
-        move_timer.restart();
-        double old_x = currentx;
-        double old_y = currenty;
-        double old_z = currentz;
-        int dx = 0, dy = 0, dz = 0;
-        bool reached_endpoint = false;
+	void move()
+	{
+		if (move_timer.elapsed < speed) return;
+		move_timer.restart();
+		double old_x = currentx;
+		double old_y = currenty;
+		double old_z = currentz;
+		int dx = 0, dy = 0, dz = 0;
+		bool reached_endpoint = false;
 
-        switch(move_mode)
-        {
-            case 0: case 4:
-                dx = (move_mode == 0 ? 1 : -1) * (moving_forward ? 1 : -1);
-                reached_endpoint = (moving_forward && currentx >= maxx) || (!moving_forward && currentx <= minx);
-                break;
-            case 1: case 5:
-                dy = (move_mode == 1 ? 1 : -1) * (moving_forward ? 1 : -1);
-                reached_endpoint = (moving_forward && currenty >= maxy) || (!moving_forward && currenty <= miny);
-                break;
-            case 2: case 6:
-                dx = (move_mode == 2 ? 1 : -1) * (moving_forward ? 1 : -1);
-                dy = (move_mode == 2 ? 1 : -1) * (moving_forward ? 1 : -1);
-                reached_endpoint = (moving_forward && (currentx >= maxx || currenty >= maxy)) || (!moving_forward && (currentx <= minx || currenty <= miny));
-                break;
-            case 3: case 7:
-                dx = (move_mode == 3 ? -1 : 1) * (moving_forward ? 1 : -1);
-                dy = (move_mode == 3 ? 1 : -1) * (moving_forward ? 1 : -1);
-                reached_endpoint = (moving_forward && (currentx <= minx || currenty >= maxy)) || (!moving_forward && (currentx >= maxx || currenty <= miny));
-                break;
-            case 8: case 9:
-                dz = (move_mode == 8 ? 1 : -1) * (moving_forward ? 1 : -1);
-                reached_endpoint = (moving_forward && (move_mode == 8 ? currentz >= maxz : currentz <= minz)) || (!moving_forward && (move_mode == 8 ? currentz <= minz : currentz >= maxz));
-                break;
-        }
+		switch(move_mode)
+		{
+			case 0: case 4:
+				dx = (move_mode == 0 ? 1 : -1) * (moving_forward ? 1 : -1);
+				reached_endpoint = (moving_forward && currentx >= maxx) || (!moving_forward && currentx <= minx);
+				break;
+			case 1: case 5:
+				dy = (move_mode == 1 ? 1 : -1) * (moving_forward ? 1 : -1);
+				reached_endpoint = (moving_forward && currenty >= maxy) || (!moving_forward && currenty <= miny);
+				break;
+			case 2: case 6:
+				dx = (move_mode == 2 ? 1 : -1) * (moving_forward ? 1 : -1);
+				dy = (move_mode == 2 ? 1 : -1) * (moving_forward ? 1 : -1);
+				reached_endpoint = (moving_forward && (currentx >= maxx || currenty >= maxy)) || (!moving_forward && (currentx <= minx || currenty <= miny));
+				break;
+			case 3: case 7:
+				dx = (move_mode == 3 ? -1 : 1) * (moving_forward ? 1 : -1);
+				dy = (move_mode == 3 ? 1 : -1) * (moving_forward ? 1 : -1);
+				reached_endpoint = (moving_forward && (currentx <= minx || currenty >= maxy)) || (!moving_forward && (currentx >= maxx || currenty <= miny));
+				break;
+			case 8: case 9:
+				dz = (move_mode == 8 ? 1 : -1) * (moving_forward ? 1 : -1);
+				reached_endpoint = (moving_forward && (move_mode == 8 ? currentz >= maxz : currentz <= minz)) || (!moving_forward && (move_mode == 8 ? currentz <= minz : currentz >= maxz));
+				break;
+		}
 
-        currentx += dx;
-        currenty += dy;
-        currentz += dz;
+		currentx += dx;
+		currenty += dy;
+		currentz += dz;
 
-        bool z_mode = (move_mode == 8 || move_mode == 9);
-        if(reached_endpoint)
-        {
-            switch(snap_mode)
-            {
-                case 0:
-                    moving_forward = !moving_forward;
-                    break;
-                case 1:
-                    if(moving_forward)
-                    {
-                        if(z_mode) currentz = (move_mode == 8) ? minz : maxz;
-                        else { currentx = minx; currenty = miny; }
-                    }
-                    break;
-                case 2:
-                    if(!moving_forward)
-                    {
-                        if(z_mode) currentz = (move_mode == 8) ? maxz : minz;
-                        else { currentx = maxx; currenty = maxy; }
-                    }
-                    break;
-                case 3:
-                    if(moving_forward)
-                    {
-                        if(z_mode) currentz = (move_mode == 8) ? maxz : minz;
-                        else { currentx = maxx; currenty = maxy; }
-                    }
-                    else
-                    {
-                        if(z_mode) currentz = (move_mode == 8) ? minz : maxz;
-                        else { currentx = minx; currenty = miny; }
-                    }
-                    break;
-            }
-        }
+		bool z_mode = (move_mode == 8 || move_mode == 9);
+		if(reached_endpoint)
+		{
+			switch(snap_mode)
+			{
+				case 0:
+					moving_forward = !moving_forward;
+					break;
+				case 1:
+					if(moving_forward)
+					{
+						if(z_mode) currentz = (move_mode == 8) ? minz : maxz;
+						else { currentx = minx; currenty = miny; }
+					}
+					break;
+				case 2:
+					if(!moving_forward)
+					{
+						if(z_mode) currentz = (move_mode == 8) ? maxz : minz;
+						else { currentx = maxx; currenty = maxy; }
+					}
+					break;
+				case 3:
+					if(moving_forward)
+					{
+						if(z_mode) currentz = (move_mode == 8) ? maxz : minz;
+						else { currentx = maxx; currenty = maxy; }
+					}
+					else
+					{
+						if(z_mode) currentz = (move_mode == 8) ? minz : maxz;
+						else { currentx = minx; currenty = miny; }
+					}
+					break;
+			}
+		}
 
-        currentx = clamp(currentx, minx, maxx);
-        currenty = clamp(currenty, miny, maxy);
-        if(mapmode == "3d") currentz = clamp(currentz, minz, maxz);
-        double depth = (mapmode == "3d") ? sizey : 1;
-        update_platform(platform_id, currentx, currentx + sizex, currenty, currenty + depth, currentz);
-        if(platformmove)
-        {
-            me.x += (currentx - old_x);
-            me.y += (currenty - old_y);
-            if(mapmode == "3d") me.z += (currentz - old_z);
-            me.x = clamp(me.x, currentx, currentx + sizex);
-            me.y = clamp(me.y, currenty, currenty + depth);
-        }
-        update_platform_sound();
-        if(platformmove)
-        {
-            platpool.update_sound_start_values(platsound, -1, mplatvolume + offset_volume, -1);
-        }
-        else
-        {
-            platpool.update_sound_start_values(platsound, -1, mplatvolume, -1);
-        }
-    }
+		currentx = clamp(currentx, minx, maxx);
+		currenty = clamp(currenty, miny, maxy);
+		if(mapmode == "3d") currentz = clamp(currentz, minz, maxz);
+		double depth = (mapmode == "3d") ? sizey : 1;
+		update_platform(platform_id, currentx, currentx + sizex, currenty, currenty + depth, currentz);
+		if(platformmove)
+		{
+			me.x += (currentx - old_x);
+			me.y += (currenty - old_y);
+			if(mapmode == "3d") me.z += (currentz - old_z);
+			me.x = clamp(me.x, currentx, currentx + sizex);
+			me.y = clamp(me.y, currenty, currenty + depth);
+		}
+		update_platform_sound();
+		if(platformmove)
+		{
+			platpool.update_sound_start_values(platsound, -1, mplatvolume + offset_volume, -1);
+		}
+		else
+		{
+			platpool.update_sound_start_values(platsound, -1, mplatvolume, -1);
+		}
+	}
 };
 
 void mplatcheck()
 {
-    for(uint i = 0; i < moving_platforms.length(); i++)
-    {
-        moving_platforms[i].check_player();
-        moving_platforms[i].move();
-    }
-    hk.follow_moving_platform();
+	for(uint i = 0; i < moving_platforms.length(); i++)
+	{
+		moving_platforms[i].check_player();
+		moving_platforms[i].move();
+	}
+	hk.follow_moving_platform();
 }
 void spawn_moving_platform(double left_x, double right_x, double bottom_y, double top_y, double x_length, int direction, int snap, int speed, string ty, double vol, double semitone, string mptype, double vol2, double semitone2, double vol_offset, double bottom_z=0, double top_z=0, double y_length=1)
 {
-    moving_platform mp1(left_x, right_x, bottom_y, top_y, x_length, direction, snap, speed, ty, vol, semitone, mptype, vol2, semitone2, vol_offset, bottom_z, top_z, y_length);
-    moving_platforms.insert_last(mp1);
+	moving_platform mp1(left_x, right_x, bottom_y, top_y, x_length, direction, snap, speed, ty, vol, semitone, mptype, vol2, semitone2, vol_offset, bottom_z, top_z, y_length);
+	moving_platforms.insert_last(mp1);
 }
 
 void destroy_all_moving_platforms()
 {
-    for(uint i = 0; i < moving_platforms.length(); i++)
-    {
-        platpool.destroy_sound(moving_platforms[i].platsound);
-        remove_platform(moving_platforms[i].platform_id);
-    }
-    moving_platforms.resize(0);
-    platformmove = false;
+	for(uint i = 0; i < moving_platforms.length(); i++)
+	{
+		platpool.destroy_sound(moving_platforms[i].platsound);
+		remove_platform(moving_platforms[i].platform_id);
+	}
+	moving_platforms.resize(0);
+	platformmove = false;
 }
 
 void build_moving_platform()

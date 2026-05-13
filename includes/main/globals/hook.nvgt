@@ -7,407 +7,407 @@ class hook
 int base_hook_delay = 100;
 int current_hook_delay = 0;
 int hook_extencions=98;
-    int hook_max_range = 20;
-    int hook_direction = 0;
+	int hook_max_range = 20;
+	int hook_direction = 0;
 double hook_start_x;
 double hook_start_y;
 double hook_start_z;
-    double hook_target_x;
-    double hook_target_y;
-    double hook_target_z;
-    int hook_type = 0;
-    int hook_target_index = -1;
+	double hook_target_x;
+	double hook_target_y;
+	double hook_target_z;
+	int hook_type = 0;
+	int hook_target_index = -1;
 int throw_dx = 0;
 int throw_dy = 0;
 int throw_dz = 0;
 int throw_aim_x = 0;
 int throw_aim_y = 0;
-    bool hook_pending = false;
-    bool hook_catch = false;
-    double pending_x;
-    double pending_y;
-    double pending_z;
-    int pending_type;
-    int pending_index;
-    timer hooktimer;
-    void set_direction(int dir)
-    {
-        hook_direction = dir;
-    }
-    bool tile_valid(double tx, double ty, double tz=0)
-    {
-        pending_z = tz;
-        if(mapmode != "3d")
-        {
-            string t = gmt(tx, ty);
-            if(t != "" && t != "air")
-            {
-                pending_type = 1;
-                pending_index = -1;
-                return true;
-            }
-        }
-        for(uint i=0;i<walls.length();i++)
-        {
-            if(tx>=walls[i].minx && tx<=walls[i].maxx && ty>=walls[i].miny && ty<=walls[i].maxy)
-            {
-                if(mapmode == "3d" && (tz < walls[i].minz || tz > walls[i].maxz)) continue;
-                pending_type = 2;
-                pending_index = i;
-                return true;
-            }
-        }
-        for(uint i=0;i<staircases.length();i++)
-        {
-            if(tx>=staircases[i].minx && tx<=staircases[i].maxx && ty>=staircases[i].miny && ty<=staircases[i].maxy)
-            {
-                if(mapmode == "3d" && (tz < staircases[i].minz || tz > staircases[i].maxz)) continue;
-                pending_type = 3;
-                pending_index = i;
-                return true;
-            }
-        }
-        for(uint i=0;i<vanishing_platforms.length();i++)
-        {
-            if(!vanishing_platforms[i].vanished && tx>=vanishing_platforms[i].minx && tx<=vanishing_platforms[i].maxx && ty>=vanishing_platforms[i].miny && ty<=vanishing_platforms[i].maxy)
-            {
-                if(mapmode == "3d" && tz != vanishing_platforms[i].z) continue;
-                pending_type = 4;
-                pending_index = i;
-                return true;
-            }
-        }
-        for(uint i=0;i<moving_platforms.length();i++)
-        {
-            if(tx>=moving_platforms[i].currentx && tx<=moving_platforms[i].currentx+moving_platforms[i].sizex && ty>=moving_platforms[i].currenty && ty<=moving_platforms[i].currenty+moving_platforms[i].sizey)
-            {
-                if(mapmode == "3d" && tz != moving_platforms[i].currentz) continue;
-                pending_type = 5;
-                pending_index = i;
-                return true;
-            }
-        }
-        if(mapmode == "3d")
-        {
-            for(uint i=0;i<platforms.length();i++)
-            {
-                if(tx>=platforms[i].minx && tx<=platforms[i].maxx && ty>=platforms[i].miny && ty<=platforms[i].maxy && tz==platforms[i].z)
-                {
-                    pending_type = 1;
-                    pending_index = -1;
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+	bool hook_pending = false;
+	bool hook_catch = false;
+	double pending_x;
+	double pending_y;
+	double pending_z;
+	int pending_type;
+	int pending_index;
+	timer hooktimer;
+	void set_direction(int dir)
+	{
+		hook_direction = dir;
+	}
+	bool tile_valid(double tx, double ty, double tz=0)
+	{
+		pending_z = tz;
+		if(mapmode != "3d")
+		{
+			string t = gmt(tx, ty);
+			if(t != "" && t != "air")
+			{
+				pending_type = 1;
+				pending_index = -1;
+				return true;
+			}
+		}
+		for(uint i=0;i<walls.length();i++)
+		{
+			if(tx>=walls[i].minx && tx<=walls[i].maxx && ty>=walls[i].miny && ty<=walls[i].maxy)
+			{
+				if(mapmode == "3d" && (tz < walls[i].minz || tz > walls[i].maxz)) continue;
+				pending_type = 2;
+				pending_index = i;
+				return true;
+			}
+		}
+		for(uint i=0;i<staircases.length();i++)
+		{
+			if(tx>=staircases[i].minx && tx<=staircases[i].maxx && ty>=staircases[i].miny && ty<=staircases[i].maxy)
+			{
+				if(mapmode == "3d" && (tz < staircases[i].minz || tz > staircases[i].maxz)) continue;
+				pending_type = 3;
+				pending_index = i;
+				return true;
+			}
+		}
+		for(uint i=0;i<vanishing_platforms.length();i++)
+		{
+			if(!vanishing_platforms[i].vanished && tx>=vanishing_platforms[i].minx && tx<=vanishing_platforms[i].maxx && ty>=vanishing_platforms[i].miny && ty<=vanishing_platforms[i].maxy)
+			{
+				if(mapmode == "3d" && tz != vanishing_platforms[i].z) continue;
+				pending_type = 4;
+				pending_index = i;
+				return true;
+			}
+		}
+		for(uint i=0;i<moving_platforms.length();i++)
+		{
+			if(tx>=moving_platforms[i].currentx && tx<=moving_platforms[i].currentx+moving_platforms[i].sizex && ty>=moving_platforms[i].currenty && ty<=moving_platforms[i].currenty+moving_platforms[i].sizey)
+			{
+				if(mapmode == "3d" && tz != moving_platforms[i].currentz) continue;
+				pending_type = 5;
+				pending_index = i;
+				return true;
+			}
+		}
+		if(mapmode == "3d")
+		{
+			for(uint i=0;i<platforms.length();i++)
+			{
+				if(tx>=platforms[i].minx && tx<=platforms[i].maxx && ty>=platforms[i].miny && ty<=platforms[i].maxy && tz==platforms[i].z)
+				{
+					pending_type = 1;
+					pending_index = -1;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 void throw_hook()
 {
-    if(onhook || hook_pending) return;
-    hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookthrow*"), false);
-    int dx = 0;
-    int dy = 0;
-    int dz = 0;
-    int aim_x = 0;
-    int aim_y = 0;
-    if(mapmode == "3d")
-    {
-        if(hook_direction==4) dz=1;
-        else if(hook_direction==5) dz=-1;
-        else dz=1;
-        if(hook_direction != 4)
-        {
-            body_world_delta(0, aim_x, aim_y);
-            string rot_snapped = body_to_spy_dir(0);
-            if((facing == "right" || facing == "left" || facing == "forward" || facing == "backward") && facing != rot_snapped)
-            {
-                aim_x = 0; aim_y = 0;
-                if(facing == "right") aim_x = 1;
-                else if(facing == "left") aim_x = -1;
-                else if(facing == "forward") aim_y = 1;
-                else if(facing == "backward") aim_y = -1;
-            }
-            else if(facing == "up" || facing == "down")
-            {
-                aim_x = 0; aim_y = 0;
-            }
-            if(me.x + aim_x < minx || me.x + aim_x > maxx) aim_x = 0;
-            if(me.y + aim_y < miny || me.y + aim_y > maxy) aim_y = 0;
-        }
-    }
-    else
-    {
-        if(hook_direction==0) dx=1;
-        if(hook_direction==1) dx=-1;
-        if(hook_direction==2) dy=1;
-        if(hook_direction==3) dy=-1;
-        if(dx == 0)
-        {
-            if(facing == "right") aim_x = 1;
-            else if(facing == "left") aim_x = -1;
-        }
-    }
-    throw_dx = dx;
-    throw_dy = dy;
-    throw_dz = dz;
-    throw_aim_x = aim_x;
-    throw_aim_y = aim_y;
-    double cx = me.x;
-    double cy = me.y;
-    double cz = me.z;
-    hook_catch = false;
-    int maxdist = hook_max_range + hook_extencions * 10;
-    for(int i=1; i<=maxdist; i++)
-    {
-        double tx = (mapmode == "3d") ? cx + aim_x : cx + dx*i;
-        double ty = (mapmode == "3d") ? cy + aim_y : cy + dy*i;
-        double tz = (mapmode == "3d") ? cz + dz*i : 0;
-        if(mapmode != "3d" && dx == 0)
-            tx = cx + aim_x;
-        if(tx < minx || tx > maxx || ty < miny || ty > maxy)
-            break;
-        if(mapmode == "3d" && (tz < minz || tz > maxz))
-            break;
-        if(tile_valid(tx, ty, tz))
-        {
-            hook_catch = true;
-            pending_x = tx;
-            pending_y = ty;
-            pending_z = tz;
-            break;
-        }
-    }
-    if(base_hook_delay <= 0)
-    {
-        apply_hook(throw_dx, throw_dy, throw_dz);
-    }
-    else
-    {
-        hook_pending = true;
-        hooktimer.restart();
-        current_hook_delay = base_hook_delay + hook_max_range + hook_extencions;
-    }
+	if(onhook || hook_pending) return;
+	hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookthrow*"), false);
+	int dx = 0;
+	int dy = 0;
+	int dz = 0;
+	int aim_x = 0;
+	int aim_y = 0;
+	if(mapmode == "3d")
+	{
+		if(hook_direction==4) dz=1;
+		else if(hook_direction==5) dz=-1;
+		else dz=1;
+		if(hook_direction != 4)
+		{
+			body_world_delta(0, aim_x, aim_y);
+			string rot_snapped = body_to_spy_dir(0);
+			if((facing == "right" || facing == "left" || facing == "forward" || facing == "backward") && facing != rot_snapped)
+			{
+				aim_x = 0; aim_y = 0;
+				if(facing == "right") aim_x = 1;
+				else if(facing == "left") aim_x = -1;
+				else if(facing == "forward") aim_y = 1;
+				else if(facing == "backward") aim_y = -1;
+			}
+			else if(facing == "up" || facing == "down")
+			{
+				aim_x = 0; aim_y = 0;
+			}
+			if(me.x + aim_x < minx || me.x + aim_x > maxx) aim_x = 0;
+			if(me.y + aim_y < miny || me.y + aim_y > maxy) aim_y = 0;
+		}
+	}
+	else
+	{
+		if(hook_direction==0) dx=1;
+		if(hook_direction==1) dx=-1;
+		if(hook_direction==2) dy=1;
+		if(hook_direction==3) dy=-1;
+		if(dx == 0)
+		{
+			if(facing == "right") aim_x = 1;
+			else if(facing == "left") aim_x = -1;
+		}
+	}
+	throw_dx = dx;
+	throw_dy = dy;
+	throw_dz = dz;
+	throw_aim_x = aim_x;
+	throw_aim_y = aim_y;
+	double cx = me.x;
+	double cy = me.y;
+	double cz = me.z;
+	hook_catch = false;
+	int maxdist = hook_max_range + hook_extencions * 10;
+	for(int i=1; i<=maxdist; i++)
+	{
+		double tx = (mapmode == "3d") ? cx + aim_x : cx + dx*i;
+		double ty = (mapmode == "3d") ? cy + aim_y : cy + dy*i;
+		double tz = (mapmode == "3d") ? cz + dz*i : 0;
+		if(mapmode != "3d" && dx == 0)
+			tx = cx + aim_x;
+		if(tx < minx || tx > maxx || ty < miny || ty > maxy)
+			break;
+		if(mapmode == "3d" && (tz < minz || tz > maxz))
+			break;
+		if(tile_valid(tx, ty, tz))
+		{
+			hook_catch = true;
+			pending_x = tx;
+			pending_y = ty;
+			pending_z = tz;
+			break;
+		}
+	}
+	if(base_hook_delay <= 0)
+	{
+		apply_hook(throw_dx, throw_dy, throw_dz);
+	}
+	else
+	{
+		hook_pending = true;
+		hooktimer.restart();
+		current_hook_delay = base_hook_delay + hook_max_range + hook_extencions;
+	}
 }
 void update_hook()
 {
-    if(!hook_pending) return;
-    if(hooktimer.elapsed >= current_hook_delay)
-    {
-        hook_pending = false;
-        apply_hook(throw_dx, throw_dy, throw_dz);
-    }
+	if(!hook_pending) return;
+	if(hooktimer.elapsed >= current_hook_delay)
+	{
+		hook_pending = false;
+		apply_hook(throw_dx, throw_dy, throw_dz);
+	}
 }
-    void apply_hook(int dx, int dy, int dz=0)
-    {
-        if(hook_catch)
-        {
-            hook_target_x = pending_x;
-            hook_target_y = pending_y;
-            hook_target_z = pending_z;
-            hook_type = pending_type;
-            hook_target_index = pending_index;
+	void apply_hook(int dx, int dy, int dz=0)
+	{
+		if(hook_catch)
+		{
+			hook_target_x = pending_x;
+			hook_target_y = pending_y;
+			hook_target_z = pending_z;
+			hook_type = pending_type;
+			hook_target_index = pending_index;
 hook_start_x = me.x;
 hook_start_y = me.y;
 hook_start_z = me.z;
 if(mapmode == "3d")
 {
-    if(throw_aim_x != 0) me.x += throw_aim_x;
-    if(throw_aim_y != 0) me.y += throw_aim_y;
-    if(dz != 0)
-        me.z += dz;
+	if(throw_aim_x != 0) me.x += throw_aim_x;
+	if(throw_aim_y != 0) me.y += throw_aim_y;
+	if(dz != 0)
+		me.z += dz;
 }
 else
 {
-    if(dx == 0 && throw_aim_x != 0)
-        me.x += throw_aim_x;
-    if(dx != 0)
-        me.x += dx;
-    if(dy != 0)
-        me.y += dy;
+	if(dx == 0 && throw_aim_x != 0)
+		me.x += throw_aim_x;
+	if(dx != 0)
+		me.x += dx;
+	if(dy != 0)
+		me.y += dy;
 }
-            onhook = true;
+			onhook = true;
 falling = false;
 fallcounter = 0;
 falltimer.restart();
 p.destroy_sound(fallslot);
-            hookslot = hookpool.play_3d(get_pack_sound("main/characters/"+chartype+"/map/*hookcatch*"), me.x, me.y, me.z, hook_target_x, hook_target_y, hook_target_z, calculate_theta(me_rotation), false);
-        }
-        else
-        {
-            hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookdrop*"), false);
-        }
-    }
-    void release_hook()
-    {
-        if(!onhook) return;
-        onhook = false;
-    falltimer.restart();
-        hook_type = 0;
-        hook_target_index = -1;
-        hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookrelease*"), false);
-    }
+			hookslot = hookpool.play_3d(get_pack_sound("main/characters/"+chartype+"/map/*hookcatch*"), me.x, me.y, me.z, hook_target_x, hook_target_y, hook_target_z, calculate_theta(me_rotation), false);
+		}
+		else
+		{
+			hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookdrop*"), false);
+		}
+	}
+	void release_hook()
+	{
+		if(!onhook) return;
+		onhook = false;
+	falltimer.restart();
+		hook_type = 0;
+		hook_target_index = -1;
+		hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookrelease*"), false);
+	}
 void move_hook(int dx, int dy, int dz=0)
 {
-    if(!onhook) return;
-    if(mapmode == "3d")
-    {
-        if(dz == 0) return;
-        double nz = me.z + dz;
-        if(nz < minz || nz > maxz) return;
-        double lowZ = (hook_start_z < hook_target_z) ? hook_start_z : hook_target_z;
-        double highZ = (hook_start_z > hook_target_z) ? hook_start_z : hook_target_z;
-        if(dz > 0 && nz >= highZ)
-        {
-            me.z = highZ;
-            playstep();
-            release_hook();
-            return;
-        }
-        if(dz < 0 && nz <= lowZ)
-        {
-            me.z = lowZ;
-            playstep();
-            release_hook();
-            return;
-        }
-        me.z = nz;
-        if(jumping==0) hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookclimb*"), false);
-        return;
-    }
-    double nx = me.x + dx;
-    double ny = me.y + dy;
-    if(nx < minx || nx > maxx) return;
-    if(ny < miny || ny > maxy) return;
-    if(hook_direction == 2 || hook_direction == 3)
-    {
-        nx = hook_target_x;
-        double lowY  = (hook_start_y < hook_target_y) ? hook_start_y : hook_target_y;
-        double highY = (hook_start_y > hook_target_y) ? hook_start_y : hook_target_y;
-        if(dy > 0 && ny >= highY)
-        {
-            me.x = nx;
-            me.y = highY;
-            playstep();
-            release_hook();
-            return;
-        }
-        if(dy < 0 && ny <= lowY)
-        {
-            me.x = nx;
-            me.y = lowY;
-            playstep();
-            release_hook();
-            return;
-        }
-    }
-    if(hook_direction == 0 || hook_direction == 1)
-    {
-        ny = hook_target_y;
-        double lowX  = (hook_start_x < hook_target_x) ? hook_start_x : hook_target_x;
-        double highX = (hook_start_x > hook_target_x) ? hook_start_x : hook_target_x;
-        if(dx > 0 && nx >= highX)
-        {
-            me.x = highX;
-            me.y = ny;
-            playstep();
-            release_hook();
-            return;
-        }
-        if(dx < 0 && nx <= lowX)
-        {
-            me.x = lowX;
-            me.y = ny;
-            playstep();
-            release_hook();
-            return;
-        }
-    }
-    me.x = nx;
-    me.y = ny;
-    if(jumping==0) hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookclimb*"), false);
+	if(!onhook) return;
+	if(mapmode == "3d")
+	{
+		if(dz == 0) return;
+		double nz = me.z + dz;
+		if(nz < minz || nz > maxz) return;
+		double lowZ = (hook_start_z < hook_target_z) ? hook_start_z : hook_target_z;
+		double highZ = (hook_start_z > hook_target_z) ? hook_start_z : hook_target_z;
+		if(dz > 0 && nz >= highZ)
+		{
+			me.z = highZ;
+			playstep();
+			release_hook();
+			return;
+		}
+		if(dz < 0 && nz <= lowZ)
+		{
+			me.z = lowZ;
+			playstep();
+			release_hook();
+			return;
+		}
+		me.z = nz;
+		if(jumping==0) hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookclimb*"), false);
+		return;
+	}
+	double nx = me.x + dx;
+	double ny = me.y + dy;
+	if(nx < minx || nx > maxx) return;
+	if(ny < miny || ny > maxy) return;
+	if(hook_direction == 2 || hook_direction == 3)
+	{
+		nx = hook_target_x;
+		double lowY  = (hook_start_y < hook_target_y) ? hook_start_y : hook_target_y;
+		double highY = (hook_start_y > hook_target_y) ? hook_start_y : hook_target_y;
+		if(dy > 0 && ny >= highY)
+		{
+			me.x = nx;
+			me.y = highY;
+			playstep();
+			release_hook();
+			return;
+		}
+		if(dy < 0 && ny <= lowY)
+		{
+			me.x = nx;
+			me.y = lowY;
+			playstep();
+			release_hook();
+			return;
+		}
+	}
+	if(hook_direction == 0 || hook_direction == 1)
+	{
+		ny = hook_target_y;
+		double lowX  = (hook_start_x < hook_target_x) ? hook_start_x : hook_target_x;
+		double highX = (hook_start_x > hook_target_x) ? hook_start_x : hook_target_x;
+		if(dx > 0 && nx >= highX)
+		{
+			me.x = highX;
+			me.y = ny;
+			playstep();
+			release_hook();
+			return;
+		}
+		if(dx < 0 && nx <= lowX)
+		{
+			me.x = lowX;
+			me.y = ny;
+			playstep();
+			release_hook();
+			return;
+		}
+	}
+	me.x = nx;
+	me.y = ny;
+	if(jumping==0) hookslot = hookpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*hookclimb*"), false);
 }
 void validate_hook()
 {
-    if(!onhook) return;
-    if(hook_type == 1)
-    {
-        if(mapmode == "3d")
-        {
-            for(uint i=0;i<platforms.length();i++)
-            {
-                if(hook_target_x>=platforms[i].minx && hook_target_x<=platforms[i].maxx && hook_target_y>=platforms[i].miny && hook_target_y<=platforms[i].maxy && hook_target_z==platforms[i].z)
-                    return;
-            }
-            release_hook();
-            return;
-        }
-        string t = gmt(hook_target_x, hook_target_y);
-        if(t == "" || t == "air")
-        {
-            release_hook();
-        }
-        return;
-    }
-    if(hook_type == 2)
-    {
-        if(hook_target_index < 0 || hook_target_index >= walls.length())
-        {
-            release_hook();
-            return;
-        }
-        if(walls[hook_target_index].wallhealth <= 0)
-        {
-            release_hook();
-            return;
-        }
-        return;
-    }
-    if(hook_type == 3)
-    {
-        if(hook_target_index < 0 || hook_target_index >= staircases.length())
-        {
-            release_hook();
-            return;
-        }
-        if(staircases[hook_target_index].stairshealth <= 0)
-        {
-            release_hook();
-            return;
-        }
-        return;
-    }
-    if(hook_type == 4)
-    {
-        if(hook_target_index < 0 || hook_target_index >= vanishing_platforms.length())
-        {
-            release_hook();
-            return;
-        }
-        if(vanishing_platforms[hook_target_index].vanished)
-        {
-            release_hook();
-            return;
-        }
-        return;
-    }
-    if(hook_type == 5)
-    {
-        if(hook_target_index < 0 || hook_target_index >= moving_platforms.length())
-        {
-            release_hook();
-            return;
-        }
-        return;
-    }
+	if(!onhook) return;
+	if(hook_type == 1)
+	{
+		if(mapmode == "3d")
+		{
+			for(uint i=0;i<platforms.length();i++)
+			{
+				if(hook_target_x>=platforms[i].minx && hook_target_x<=platforms[i].maxx && hook_target_y>=platforms[i].miny && hook_target_y<=platforms[i].maxy && hook_target_z==platforms[i].z)
+					return;
+			}
+			release_hook();
+			return;
+		}
+		string t = gmt(hook_target_x, hook_target_y);
+		if(t == "" || t == "air")
+		{
+			release_hook();
+		}
+		return;
+	}
+	if(hook_type == 2)
+	{
+		if(hook_target_index < 0 || hook_target_index >= walls.length())
+		{
+			release_hook();
+			return;
+		}
+		if(walls[hook_target_index].wallhealth <= 0)
+		{
+			release_hook();
+			return;
+		}
+		return;
+	}
+	if(hook_type == 3)
+	{
+		if(hook_target_index < 0 || hook_target_index >= staircases.length())
+		{
+			release_hook();
+			return;
+		}
+		if(staircases[hook_target_index].stairshealth <= 0)
+		{
+			release_hook();
+			return;
+		}
+		return;
+	}
+	if(hook_type == 4)
+	{
+		if(hook_target_index < 0 || hook_target_index >= vanishing_platforms.length())
+		{
+			release_hook();
+			return;
+		}
+		if(vanishing_platforms[hook_target_index].vanished)
+		{
+			release_hook();
+			return;
+		}
+		return;
+	}
+	if(hook_type == 5)
+	{
+		if(hook_target_index < 0 || hook_target_index >= moving_platforms.length())
+		{
+			release_hook();
+			return;
+		}
+		return;
+	}
 }
-    void follow_moving_platform()
-    {
-        if(!onhook) return;
-        if(hook_type != 5) return;
-        if(hook_target_index < 0 || hook_target_index >= moving_platforms.length()) return;
-        me.x += (moving_platforms[hook_target_index].currentx - hook_target_x);
-        me.y += (moving_platforms[hook_target_index].currenty - hook_target_y);
-        hook_target_x = moving_platforms[hook_target_index].currentx;
-        hook_target_y = moving_platforms[hook_target_index].currenty;
-    }
+	void follow_moving_platform()
+	{
+		if(!onhook) return;
+		if(hook_type != 5) return;
+		if(hook_target_index < 0 || hook_target_index >= moving_platforms.length()) return;
+		me.x += (moving_platforms[hook_target_index].currentx - hook_target_x);
+		me.y += (moving_platforms[hook_target_index].currenty - hook_target_y);
+		hook_target_x = moving_platforms[hook_target_index].currentx;
+		hook_target_y = moving_platforms[hook_target_index].currenty;
+	}
 }

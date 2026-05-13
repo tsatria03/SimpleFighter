@@ -3,141 +3,141 @@ bool liftmove;
 lift@[]lifts(0);
 class lift
 {
-    int liftsound;
-    int platform_id;
-    double minx, maxx, miny, maxy;
-    double minz, maxz;
+	int liftsound;
+	int platform_id;
+	double minx, maxx, miny, maxy;
+	double minz, maxz;
          int lifty;
          int liftz;
-    int liftdir;
-    int lifttime;
-    double tilevolume;
-    double tilepitch;
-    double liftvolume;
-    double liftpitch;
-    string tile;
-    string lifttype;
-    timer lifttimer;
-    lift(double mx, double mx2, double my, double my2, int dir, int sp, string ty, double vol, double semitone, string lt, double vol2, double semitone2, double mnz=0, double mxz=0)
-    {
-        minx = mx;
-        maxx = mx2;
-        miny = my;
-        maxy = my2;
-        minz = mnz;
-        maxz = mxz;
-        liftdir = dir;
-        lifttime = sp;
-        tile = ty;
-        tilevolume = vol;
-        tilepitch = semitone;
-        lifttype = lt;
-        liftvolume = vol2;
-        liftpitch = semitone2;
-        if(mapmode == "3d")
-        {
-            liftz = int(minz);
-            lifty = int(miny);
-            platform_id = spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true, liftz);
-        }
-        else
-        {
-            lifty = int(miny);
-            liftz = 0;
-            platform_id = spawn_platform(minx, maxx, lifty, lifty, 1, 1, tile, tilevolume, tilepitch, false, false, true);
-        }
-        double sz = (mapmode == "3d") ? liftz : 0;
-        double sy = (mapmode == "3d") ? miny : lifty;
-        liftsound = liftpool.play_extended_3d(get_map_sound("builder/transitions/lifts/" + lifttype + "/*loop*"), me.x, me.y, me.z, minx, sy, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, liftvolume, liftpitch, false);
-        update_lift_sound();
-    }
-    void move()
-    {
-        if (lifttimer.elapsed >= lifttime)
-        {
-            lifttimer.restart();
-            if(mapmode == "3d")
-            {
-                int old_z = liftz;
-                if (liftdir == 1 && liftz < int(maxz))
-                    liftz++;
-                else if (liftdir == 0 && liftz > int(minz))
-                    liftz--;
-                if ((liftdir == 1 && liftz >= int(maxz)) || (liftdir == 0 && liftz <= int(minz)))
-                    liftdir = 1 - liftdir;
-                if (liftmove)
-                    me.z += (liftz - old_z);
-                update_platform(platform_id, minx, maxx, miny, maxy, liftz);
-            }
-            else
-            {
-                int old_y = lifty;
-                if (liftdir == 1 && lifty < int(maxy))
-                    lifty++;
-                else if (liftdir == 0 && lifty > int(miny))
-                    lifty--;
-                if ((liftdir == 1 && lifty >= int(maxy)) || (liftdir == 0 && lifty <= int(miny)))
-                    liftdir = 1 - liftdir;
-                if (liftmove)
-                    me.y += (lifty - old_y);
-                update_platform(platform_id, minx, maxx, lifty, lifty);
-            }
-            update_lift_sound();
-        }
-    }
-    void update_lift_sound()
-    {
-        if(mapmode == "3d")
-        {
-            liftpool.update_sound_3d(liftsound, minx, miny, liftz);
-            liftpool.update_sound_range_3d(liftsound, 0, maxx - minx, 0, maxy - miny, 0, 0);
-        }
-        else
-        {
-            liftpool.update_sound_3d(liftsound, minx, lifty, 0);
-            liftpool.update_sound_range_3d(liftsound, 0, maxx - minx, 0, 0, 0, 0);
-        }
-    }
-    bool is_on_lift()
-    {
-        if(mapmode == "3d")
-            return (me.x >= minx && me.x <= maxx && me.y >= miny && me.y <= maxy && (me.z == liftz || me.z == liftz - 1 || me.z == liftz + 1));
-        return (me.x >= minx && me.x <= maxx && (me.y == lifty || me.y == lifty - 1 || me.y == lifty + 1));
-    }
-    void check_player()
-    {
-        liftmove = is_on_lift();
-        if (liftmove)
-        {
-            if(mapmode == "3d")
-                me.z = liftz;
-            else
-                me.y = lifty;
-        }
-    }
+	int liftdir;
+	int lifttime;
+	double tilevolume;
+	double tilepitch;
+	double liftvolume;
+	double liftpitch;
+	string tile;
+	string lifttype;
+	timer lifttimer;
+	lift(double mx, double mx2, double my, double my2, int dir, int sp, string ty, double vol, double semitone, string lt, double vol2, double semitone2, double mnz=0, double mxz=0)
+	{
+		minx = mx;
+		maxx = mx2;
+		miny = my;
+		maxy = my2;
+		minz = mnz;
+		maxz = mxz;
+		liftdir = dir;
+		lifttime = sp;
+		tile = ty;
+		tilevolume = vol;
+		tilepitch = semitone;
+		lifttype = lt;
+		liftvolume = vol2;
+		liftpitch = semitone2;
+		if(mapmode == "3d")
+		{
+			liftz = int(minz);
+			lifty = int(miny);
+			platform_id = spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true, liftz);
+		}
+		else
+		{
+			lifty = int(miny);
+			liftz = 0;
+			platform_id = spawn_platform(minx, maxx, lifty, lifty, 1, 1, tile, tilevolume, tilepitch, false, false, true);
+		}
+		double sz = (mapmode == "3d") ? liftz : 0;
+		double sy = (mapmode == "3d") ? miny : lifty;
+		liftsound = liftpool.play_extended_3d(get_map_sound("builder/transitions/lifts/" + lifttype + "/*loop*"), me.x, me.y, me.z, minx, sy, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, liftvolume, liftpitch, false);
+		update_lift_sound();
+	}
+	void move()
+	{
+		if (lifttimer.elapsed >= lifttime)
+		{
+			lifttimer.restart();
+			if(mapmode == "3d")
+			{
+				int old_z = liftz;
+				if (liftdir == 1 && liftz < int(maxz))
+					liftz++;
+				else if (liftdir == 0 && liftz > int(minz))
+					liftz--;
+				if ((liftdir == 1 && liftz >= int(maxz)) || (liftdir == 0 && liftz <= int(minz)))
+					liftdir = 1 - liftdir;
+				if (liftmove)
+					me.z += (liftz - old_z);
+				update_platform(platform_id, minx, maxx, miny, maxy, liftz);
+			}
+			else
+			{
+				int old_y = lifty;
+				if (liftdir == 1 && lifty < int(maxy))
+					lifty++;
+				else if (liftdir == 0 && lifty > int(miny))
+					lifty--;
+				if ((liftdir == 1 && lifty >= int(maxy)) || (liftdir == 0 && lifty <= int(miny)))
+					liftdir = 1 - liftdir;
+				if (liftmove)
+					me.y += (lifty - old_y);
+				update_platform(platform_id, minx, maxx, lifty, lifty);
+			}
+			update_lift_sound();
+		}
+	}
+	void update_lift_sound()
+	{
+		if(mapmode == "3d")
+		{
+			liftpool.update_sound_3d(liftsound, minx, miny, liftz);
+			liftpool.update_sound_range_3d(liftsound, 0, maxx - minx, 0, maxy - miny, 0, 0);
+		}
+		else
+		{
+			liftpool.update_sound_3d(liftsound, minx, lifty, 0);
+			liftpool.update_sound_range_3d(liftsound, 0, maxx - minx, 0, 0, 0, 0);
+		}
+	}
+	bool is_on_lift()
+	{
+		if(mapmode == "3d")
+			return (me.x >= minx && me.x <= maxx && me.y >= miny && me.y <= maxy && (me.z == liftz || me.z == liftz - 1 || me.z == liftz + 1));
+		return (me.x >= minx && me.x <= maxx && (me.y == lifty || me.y == lifty - 1 || me.y == lifty + 1));
+	}
+	void check_player()
+	{
+		liftmove = is_on_lift();
+		if (liftmove)
+		{
+			if(mapmode == "3d")
+				me.z = liftz;
+			else
+				me.y = lifty;
+		}
+	}
 };
 void liftloop()
 {
-    for (uint i = 0; i < lifts.length(); i++)
-    {
-        lifts[i].check_player();
-        lifts[i].move();
-    }
+	for (uint i = 0; i < lifts.length(); i++)
+	{
+		lifts[i].check_player();
+		lifts[i].move();
+	}
 }
 void spawn_lift(double minx, double maxx, double miny, double maxy, int dir, int lifttime, string tile, double tilevol, double tilepitch, string lifttype, double liftvol, double liftpitch, double minz=0, double maxz=0)
 {
-    lift lt1(minx, maxx, miny, maxy, dir, lifttime, tile, tilevol, tilepitch, lifttype, liftvol, liftpitch, minz, maxz);
-    lifts.insert_last(lt1);
+	lift lt1(minx, maxx, miny, maxy, dir, lifttime, tile, tilevol, tilepitch, lifttype, liftvol, liftpitch, minz, maxz);
+	lifts.insert_last(lt1);
 }
 void destroy_all_lifts()
 {
-    for (uint i = 0; i < lifts.length(); i++)
-    {
-        liftpool.destroy_sound(lifts[i].liftsound);
-        remove_platform(lifts[i].platform_id);
-    }
-    lifts.resize(0);
-    liftmove = false;
+	for (uint i = 0; i < lifts.length(); i++)
+	{
+		liftpool.destroy_sound(lifts[i].liftsound);
+		remove_platform(lifts[i].platform_id);
+	}
+	lifts.resize(0);
+	liftmove = false;
 }
 
 void build_lift()
