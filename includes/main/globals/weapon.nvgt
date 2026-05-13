@@ -42,6 +42,9 @@ class weapon
     int push_y;
     int push_z;
 
+    // health cost per fire (drains the firer; player or npc; clamped non-negative; can kill the firer)
+    int health_drain;
+
     // stamina cost per fire (player only; clamped non-negative)
     int stamina_drain;
 
@@ -94,6 +97,7 @@ class weapon
         push_x = 0;
         push_y = 0;
         push_z = 0;
+        health_drain = 0;
         stamina_drain = 0;
         is_swinging = false;
         pending_dmg = 0;
@@ -122,6 +126,7 @@ class weapon
         push_x = 0;
         push_y = 0;
         push_z = 0;
+        health_drain = 0;
         stamina_drain = 0;
         is_swinging = false;
         pending_dmg = 0;
@@ -203,6 +208,11 @@ class weapon
             else if(data[0] == "push x") push_x = parse_int(data[1]);
             else if(data[0] == "push y") push_y = parse_int(data[1]);
             else if(data[0] == "push z") push_z = parse_int(data[1]);
+            else if(data[0] == "health drain")
+            {
+                int v = parse_int(data[1]);
+                health_drain = (v < 0) ? 0 : v;
+            }
             else if(data[0] == "stamina drain")
             {
                 int v = parse_int(data[1]);
@@ -298,6 +308,19 @@ class weapon
         {
             stamina -= stamina_drain;
             if(stamina < 0) stamina = 0;
+        }
+        if(health_drain > 0)
+        {
+            if(firer_npc == -1)
+            {
+                health -= health_drain;
+                if(health < 0) health = 0;
+            }
+            else if(firer_npc >= 0 && uint(firer_npc) < npcs.length())
+            {
+                npcs[firer_npc].health -= health_drain;
+                if(npcs[firer_npc].health < 0) npcs[firer_npc].health = 0;
+            }
         }
         bool player_reflecting = (wepchar.reflection && wepdef == 1);
         if(!(firer_npc != -1 && (shieldon == 1 || player_reflecting)))
