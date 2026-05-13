@@ -339,5 +339,5 @@ vanishing platforms (builder/construction/vanishing platforms/): loop.
 vehicles (builder/transportation/vehicles/): beacon, death, hit, horn, hurt, motor, turn.
 walls (builder/construction/walls/): bump, death, hurt.
 
-Map music and ambience (data/maps/decompiled/<map>/assets/builder/audio/musics/ and data/maps/decompiled/<map>/assets/builder/audio/sources/).
+Map music and ambience (data/builder/maps/decompiled/<map>/assets/builder/audio/musics/ and data/builder/maps/decompiled/<map>/assets/builder/audio/sources/).
 Drop clip folders into a map's musics/ or sources/ subfolder and the audio entity builders (sound source, sound ambience, timed source, timed ambience) make them available to place on that map. Each leaf folder is one named clip set the entity picks up by name; the lookup is glob based, so numbered variants of a clip all play under the same base name.
