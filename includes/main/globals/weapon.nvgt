@@ -1277,24 +1277,24 @@ class weapon
         melee_strike(fx, fy, fz, pending_dmg, firer_npc, facing);
     }
 
-    void update_ammo(double new_ammo)
+    void update_max_ammo(double new_max)
     {
         string path = "sounds/" + soundpack + "/main/equipments/weapons/" + cad + "/" + sub + "/info.sif";
         if(!info.open(path, "r")) { speak("Failed to open file for reading."); return; }
         string content = info.read();
         info.close();
-        int ammo_pos = string_contains(content, "ammo=", 1);
-        if(ammo_pos == -1) { speak("Ammo stat not found in file."); return; }
-        int value_start = ammo_pos + 5;
+        int pos = string_contains(content, "max ammo=", 1);
+        if(pos == -1) { speak("Max ammo stat not found in file."); return; }
+        int value_start = pos + 9;
         int value_end = string_contains(content.substr(value_start), "\r\n", 1);
         if(value_end == -1) value_end = content.length() - value_start;
-        string current_ammo = string_trim_sides(content.substr(value_start, value_end));
-        content = string_replace(content, "ammo=" + current_ammo, "ammo=" + string(new_ammo), true);
+        string current = string_trim_sides(content.substr(value_start, value_end));
+        content = string_replace(content, "max ammo=" + current, "max ammo=" + string(new_max), true);
         if(!info.open(path, "w")) { speak("Failed to open file for writing."); return; }
         uint bytes_written = info.write(content);
         info.close();
-        if(bytes_written == content.length()) speak("Ammo stat updated successfully.");
-        else speak("Failed to write updated ammo stat to file.");
+        if(bytes_written == content.length()) speak("Max ammo updated successfully.");
+        else speak("Failed to write updated max ammo to file.");
     }
 
     void update_range_axis(string axis, int new_range)
