@@ -414,6 +414,27 @@ while(true)
 setupmenu();
 m.intro_text="Shop menu. You have "+points+" points available to spend.";
 m.tab_caption="Category";
+string[] shop_ammo_types = {"normal", "gas", "air", "battery", "powder", "arrow", "rocket", "water", "knife", "needle", "dart", "ball", "mana", "fuel"};
+int t_ammo=m.add_tab("ammo");
+for(uint i=0; i<shop_ammo_types.length(); i++)
+{
+string type=shop_ammo_types[i];
+double reserve=0;
+ammo_reserves.get(type, reserve);
+m.add_item_to_tab(t_ammo, type+" ammo, costs 1 point. You currently have "+reserve+" "+type+" ammo.", "buya_"+type);
+}
+int t_damage=m.add_tab("damage");
+for(uint i=0; i<shop_ammo_types.length(); i++)
+{
+string type=shop_ammo_types[i];
+bool bought=false;
+double dmg=0;
+ammo_types_bought.get(type, bought);
+damage_by_type.get(type, dmg);
+if(bought || dmg>0)
+m.add_item_to_tab(t_damage, type+" damage, costs 1 point. You currently have "+dmg+" "+type+" damage points.", "buyd_"+type);
+}
+m.add_item_to_tab(t_damage, "melee damage, costs 1 point. You currently have "+damage_melee+" melee damage points.", "buyd_melee");
 int t_player=m.add_tab("player");
 m.add_item_to_tab(t_player, "attack, costs 1 point. You currently have "+attack+" strength points.", "umat");
 m.add_item_to_tab(t_player, "defence, costs 1 point. You currently have "+defence+" defense points.", "umd");
@@ -441,7 +462,31 @@ return;
 saved_tab=m.active_tab;
 saved_pos=mres;
 string ptmem=m.selected_item_id;
-if(ptmem=="umat") { double v=buy_stat("Attack","How much attack would you like to buy?","strength points"); if(v>0) { attack+=v; update_char_attack(attack); } }
+if(ptmem.starts_with("buya_"))
+{
+string type=ptmem.substr(5);
+double current=0;
+ammo_reserves.get(type, current);
+double v=buy_stat("Buy "+type+" ammo", "How much "+type+" ammo would you like to buy?", type+" ammo");
+if(v>0) update_char_ammo_reserve(type, current+v);
+}
+else if(ptmem.starts_with("buyd_"))
+{
+string type=ptmem.substr(5);
+if(type=="melee")
+{
+double v=buy_stat("Buy melee damage", "How much melee damage would you like to buy?", "melee damage points");
+if(v>0) update_char_damage_melee(damage_melee+v);
+}
+else
+{
+double current=0;
+damage_by_type.get(type, current);
+double v=buy_stat("Buy "+type+" damage", "How much "+type+" damage would you like to buy?", type+" damage points");
+if(v>0) update_char_damage_by_type(type, current+v);
+}
+}
+else if(ptmem=="umat") { double v=buy_stat("Attack","How much attack would you like to buy?","strength points"); if(v>0) { attack+=v; update_char_attack(attack); } }
 else if(ptmem=="umd") { double v=buy_stat("Defence","How much defence would you like to buy?","defense points"); if(v>0) { defence+=v; update_char_defence(defence); } }
 else if(ptmem=="umh") { double v=buy_stat("Health","How much health would you like to buy?","health points"); if(v>0) { maxhealth+=v; update_char_maxhealth(maxhealth); } }
 else if(ptmem=="umt") { double v=buy_stat("Stamina","How much stamina would you like to buy?","stamina points"); if(v>0) { maxstamina+=v; update_char_maxstamina(maxstamina); } }
@@ -501,7 +546,7 @@ if(mapmode == "3d") m.add_item("Your maximum z position is "+maxz+" tiles");
 m.add_item("You are at speed "+modspeed);
 m.add_item("You're currently on level "+level+" with "+xp+" experience. Your next level requires "+(xprequiered-xp)+" experience");
 m.add_item("You have "+points+" points available to spend");
-if(!wepchar.melee) m.add_item("you have "+wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" ammo loaded, and "+wepchar.ammo+" ammo in reserve");
+if(!wepchar.melee) m.add_item("you have "+wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" "+wepchar.ammo_type+" ammo loaded, and "+wepchar.current_reserve()+" "+wepchar.ammo_type+" ammo in reserve");
 m.add_item("You have killed a total of "+kills+" entidies");
 if(!ingame) m.add_item("back","back");
 m.intro_text="Statistics menu";

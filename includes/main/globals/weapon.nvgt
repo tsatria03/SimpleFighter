@@ -18,6 +18,7 @@ class weapon
     string launch_type;
     string launch_subtype;
     string ammo_type;
+    bool is_player_weapon;
 
     // ammo and level
     double ammo;
@@ -203,12 +204,34 @@ class weapon
         sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*draw*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
     }
 
+    double type_bonus()
+    {
+        if(!is_player_weapon) return 0;
+        if(is_melee()) return damage_melee;
+        double b = 0;
+        damage_by_type.get(ammo_type, b);
+        return b;
+    }
+    double current_reserve()
+    {
+        if(!is_player_weapon) return ammo;
+        double r = 0;
+        ammo_reserves.get(ammo_type, r);
+        return r;
+    }
+    void deduct_reserve(double amount)
+    {
+        if(!is_player_weapon) { ammo -= amount; return; }
+        double r = current_reserve();
+        update_char_ammo_reserve(ammo_type, r - amount);
+    }
+
     void check_reload(int x, int y, int z=0)
     {
         if(is_reloading && reload_timer.elapsed >= reload_duration)
         {
             loaded_ammo += pending_ammo;
-            ammo -= pending_ammo;
+            deduct_reserve(pending_ammo);
             pending_ammo = 0;
             is_reloading = false;
             sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*ping*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
@@ -218,13 +241,14 @@ class weapon
     bool start_reload(int x, int y, int z=0)
     {
         if(is_reloading) return false;
-        if(ammo <= 0)
+        double reserve = current_reserve();
+        if(reserve <= 0)
         {
             sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*empty*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             return false;
         }
         double am;
-        if(ammo < max_ammo) am = ammo;
+        if(reserve < max_ammo) am = reserve;
         else
         {
             am = max_ammo;
@@ -249,7 +273,7 @@ class weapon
         bool player_reflecting = (wepchar.reflection && wepdef == 1);
         if(!(firer_npc != -1 && (shieldon == 1 || player_reflecting)))
             sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*fire*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-        int dmg = damage + extra_damage;
+        int dmg = damage + extra_damage + int(type_bonus());
         if(is_melee())
         {
             melee_strike(x, y, z, dmg, firer_npc, facing);
@@ -1239,7 +1263,7 @@ class weapon
             sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*fire*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
             is_swinging = true;
             swing_timer.restart();
-            pending_dmg = damage + extra_damage;
+            pending_dmg = damage + extra_damage + int(type_bonus());
             return;
         }
         fire(x, y, facing, extra_damage, -1, z);
