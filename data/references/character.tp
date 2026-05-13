@@ -6,7 +6,7 @@ The character's stats live in four plain text files alongside the sound folder �
 
 Sound packs and main.sif files.
 
-Character data lives in main.sif files inside the sound pack. The full path is sounds/<pack>/characters/<character>/data/main.sif.
+Character data lives in main.sif files inside the sound pack. The full path is sounds/<pack>/main/characters/<character>/data/main.sif.
 
 Each character has its own main.sif. The file is self contained: every stat the character uses is written explicitly, and anything left out falls through to a sensible default. Most stats default to zero or one, the starting weapon defaults to a fist, and the starting shield defaults to none, so a freshly authored character only needs to write the lines it actually wants to override.
 
@@ -14,18 +14,18 @@ None of the data files list any sounds. The engine learns what audio a character
 
 attacks.sif.
 
-attacks.sif sits at sounds/<pack>/characters/<character>/data/attacks.sif and holds a flat list of past-tense damage verbs, one per line. Whenever the character takes a bad enough fall to break a bone, the engine picks one verb from this file at random and reads back "Ouch! You just <verb> your <body part>." (where the body part comes from bodyparts.sif). The default file ships with words like snapped, fractured, crushed, sprained, smashed, abliderated, destroied, and shaddered, so each break sounds different. Adding more verbs widens the pool; removing all of them and leaving the file empty silences the verb half of the speech and reads back "Ouch! You just  your <body part>." instead, so keep at least one entry. Each entry must be a single token with no spaces (use past-tense words ending in -ed for grammatical flow). New characters can ship their own attacks.sif to give bone breaks a flavor that matches the character's voice.
+attacks.sif sits at sounds/<pack>/main/characters/<character>/data/attacks.sif and holds a flat list of past-tense damage verbs, one per line. Whenever the character takes a bad enough fall to break a bone, the engine picks one verb from this file at random and reads back "Ouch! You just <verb> your <body part>." (where the body part comes from bodyparts.sif). The default file ships with words like snapped, fractured, crushed, sprained, smashed, abliderated, destroied, and shaddered, so each break sounds different. Adding more verbs widens the pool; removing all of them and leaving the file empty silences the verb half of the speech and reads back "Ouch! You just  your <body part>." instead, so keep at least one entry. Each entry must be a single token with no spaces (use past-tense words ending in -ed for grammatical flow). New characters can ship their own attacks.sif to give bone breaks a flavor that matches the character's voice.
 
 bodyparts.sif.
 
-bodyparts.sif sits at sounds/<pack>/characters/<character>/data/bodyparts.sif and holds a flat list of body part names the character can have broken, one per line. The engine picks from this file when narrating a fresh bone break (paired with attacks.sif as described above) and also when it's time to remind the character that an existing break still hurts ("Ouch! Your <body part> hurts!"). Underscores in entries are replaced with spaces when spoken, so left_ankle reads back as "left ankle" — write the file with underscores so the engine can also store the entry as a key without ambiguity.
+bodyparts.sif sits at sounds/<pack>/main/characters/<character>/data/bodyparts.sif and holds a flat list of body part names the character can have broken, one per line. The engine picks from this file when narrating a fresh bone break (paired with attacks.sif as described above) and also when it's time to remind the character that an existing break still hurts ("Ouch! Your <body part> hurts!"). Underscores in entries are replaced with spaces when spoken, so left_ankle reads back as "left ankle" — write the file with underscores so the engine can also store the entry as a key without ambiguity.
 The default file ships with around forty entries covering scull, neck, jaw, chest, back, the major bones of each arm and leg, and so on. Each body part is also seeded into a per-character bone damage tracker the healing cast item draws down against, so a body part not listed here can never be broken and never be healed. New characters can ship their own bodyparts.sif to limit which bones the character has (e.g. a robot character with no biological parts).
 
 main.sif field reference.
 
 Every field in main.sif uses the form key=value, one per line. Missing fields fall back to the defaults shown below.
 
-weapon type (string): The category of the starting weapon, which must match an existing folder under equipments/weapons. The four folders that ship by default are archery, artillery, explosive, and melee, but any custom category folder dropped into the sound pack is also a valid value here. Defaults to melee. Pair this with weapon type2 to pick a specific subtype, otherwise the default fist applies.
+weapon type (string): The category of the starting weapon, which must match an existing folder under main/equipments/weapons. The four folders that ship by default are archery, artillery, explosive, and melee, but any custom category folder dropped into the sound pack is also a valid value here. Defaults to melee. Pair this with weapon type2 to pick a specific subtype, otherwise the default fist applies.
 weapon type2 (string): The subtype of the starting weapon under the chosen category, e.g. fist, knife5, AK47, rocket_launcher. Defaults to fist. The combination of weapon type and weapon type2 must point at an existing weapon folder under equipments/weapons, otherwise the weapon's stats fail to load.
 
 attack (double): The character's flat attack bonus, added to weapon damage when computing how much damage a player swing or shot deals. Stacks with the per-type damage bonus from kombat.sif (damage_<type> for the equipped weapon's ammo type, or damage_melee for melee weapons), so final damage is weapon damage + attack + per-type bonus. Defaults to 0.
@@ -50,7 +50,7 @@ experience required (double): The xp required to reach the next level on the fir
 
 kombat.sif field reference.
 
-kombat.sif sits alongside main.sif at sounds/<pack>/characters/<character>/data/kombat.sif and stores the character's per-type ammo reserves and damage upgrades. Every field is key=value, one per line, all defaulting to 0 when missing. The shop's ammo and damage tabs read from these and write back to them as the player buys upgrades.
+kombat.sif sits alongside main.sif at sounds/<pack>/main/characters/<character>/data/kombat.sif and stores the character's per-type ammo reserves and damage upgrades. Every field is key=value, one per line, all defaulting to 0 when missing. The shop's ammo and damage tabs read from these and write back to them as the player buys upgrades.
 
 damage_<type> (double): The per-type damage bonus added on top of the player's attack and the weapon's own damage. There are sixteen of these, one per non-melee ammo type: damage_normal, damage_gas, damage_air, damage_battery, damage_powder, damage_arrow, damage_rocket, damage_water, damage_knife, damage_needle, damage_dart, damage_ball, damage_mana, damage_fuel, damage_rock, damage_grenade. Bought through the shop's damage tab, gated on having ever bought ammo of that type. Defaults to 0.
 

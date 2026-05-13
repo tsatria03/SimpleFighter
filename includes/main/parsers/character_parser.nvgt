@@ -29,6 +29,10 @@ if (data[0]=="weapon type2")
 {
 wepchar.sub=data[1];
 }
+if (data[0]=="shield type")
+{
+shieldtype=data[1];
+}
 if (data[0]=="attack")
 {
 attack=parse_double(data[1]);
@@ -85,7 +89,53 @@ xprequiered=parse_double(data[1]);
 }
 }
 }
+resolve_character_weapon();
+resolve_character_shield();
 kombatparse();
+}
+void resolve_character_weapon()
+{
+string[] categories = get_pack_sound_folders("main/equipments/weapons/*");
+if(categories.length() == 0) return;
+string cad = wepchar.cad;
+string sub = wepchar.sub;
+if(cad == "random" and sub != "random" and sub != "")
+{
+bool found = false;
+for(uint i = 0; i < categories.length(); i++)
+{
+string[] subs_in = get_pack_sound_folders("main/equipments/weapons/"+categories[i]+"/*");
+if(subs_in.find(sub) >= 0) { cad = categories[i]; found = true; break; }
+}
+if(!found) cad = random_string(categories);
+}
+else if(cad == "random")
+{
+cad = random_string(categories);
+}
+else if(categories.find(cad) < 0)
+{
+cad = random_string(categories);
+sub = "random";
+}
+string[] subs = get_pack_sound_folders("main/equipments/weapons/"+cad+"/*");
+if(subs.length() == 0)
+{
+cad = random_string(categories);
+subs = get_pack_sound_folders("main/equipments/weapons/"+cad+"/*");
+if(subs.length() == 0) return;
+}
+if(sub == "random" or subs.find(sub) < 0) sub = random_string(subs);
+wepchar.cad = cad;
+wepchar.sub = sub;
+}
+void resolve_character_shield()
+{
+if(shieldtype == "none" or shieldtype == "") { shieldtype = "none"; return; }
+string[] shields = get_pack_sound_folders("main/equipments/shields/*");
+if(shields.length() == 0) { shieldtype = "none"; return; }
+if(shieldtype == "random" or shields.find(shieldtype) < 0) shieldtype = random_string(shields);
+shieldparse();
 }
 void kombatparse()
 {

@@ -342,22 +342,45 @@ class weapon
     {
         if(firer_npc != -1)
         {
-            // npc swinging melee at the player
-            if(absolute(int(me.x) - fx) > range) return;
-            if(absolute(int(me.y) - fy) > range2) return;
-            if(mapmode == "3d" and absolute(int(me.z) - fz) > range3) return;
-            if(inplain == true or invehicle == true or onbike == true) return;
-            if(wepchar.reflection and wepdef == 1)
+            bool player_in_range = absolute(int(me.x) - fx) <= range
+                && absolute(int(me.y) - fy) <= range2
+                && (mapmode != "3d" or absolute(int(me.z) - fz) <= range3)
+                && inplain == false and invehicle == false and onbike == false;
+            if(player_in_range)
             {
-                int roll = random(0, 100);
-                if(roll < wepchar.refchance)
+                if(wepchar.reflection and wepdef == 1)
                 {
-                    wepchar.sound_slot = p.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*block*"), false, 0, 0, 0, 100, false);
+                    int roll = random(0, 100);
+                    if(roll < wepchar.refchance)
+                    {
+                        wepchar.sound_slot = p.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/*block*"), false, 0, 0, 0, 100, false);
+                        return;
+                    }
+                    if(shieldon == 1 and shield_blocks())
+                    {
+                        int sdm = max(1, (wepchar.refcushion ? int(dmg * 0.5) : dmg) - shielddefence * 3);
+                        shieldstrength -= sdm;
+                        kombatlog.insert_last(sub + "'s attack took " + shieldtype + " " + sdm + " damage.");
+                        shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
+                        try_shield_launch(fx, fy, fz, dmg);
+                        return;
+                    }
+                    p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), false);
+                    p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), false);
+                    int hit_dmg = max(1, (wepchar.refcushion ? int(dmg * 0.5) : dmg) - defence * 3);
+                    int tx = int(me.x), ty = int(me.y), tz = int(me.z);
+                    int impact = apply_push(tx, ty, tz, int(npcs[firer_npc].x), int(npcs[firer_npc].y), int(npcs[firer_npc].z), push_x, push_y, push_z, mapmode == "3d", facing);
+                    me.x = tx; me.y = ty; me.z = tz;
+                    health -= hit_dmg + impact;
+                    kombatlog.insert_last(sub + "'s attack took you " + hit_dmg + " damage.");
+                    if(impact > 0) kombatlog.insert_last("You were slammed into a wall for " + impact + " damage.");
+                    play_player_pain(hit_dmg + impact);
+                    if(stun > 0) stun_target("me", "", stun);
                     return;
                 }
                 if(shieldon == 1 and shield_blocks())
                 {
-                    int sdm = max(1, (wepchar.refcushion ? int(dmg * 0.5) : dmg) - shielddefence * 3);
+                    int sdm = max(1, (shieldcushion ? int(dmg * 0.5) : dmg) - shielddefence * 3);
                     shieldstrength -= sdm;
                     kombatlog.insert_last(sub + "'s attack took " + shieldtype + " " + sdm + " damage.");
                     shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
@@ -366,7 +389,7 @@ class weapon
                 }
                 p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), false);
                 p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), false);
-                int hit_dmg = max(1, (wepchar.refcushion ? int(dmg * 0.5) : dmg) - defence * 3);
+                int hit_dmg = max(1, dmg - defence * 3);
                 int tx = int(me.x), ty = int(me.y), tz = int(me.z);
                 int impact = apply_push(tx, ty, tz, int(npcs[firer_npc].x), int(npcs[firer_npc].y), int(npcs[firer_npc].z), push_x, push_y, push_z, mapmode == "3d", facing);
                 me.x = tx; me.y = ty; me.z = tz;
@@ -377,26 +400,42 @@ class weapon
                 if(stun > 0) stun_target("me", "", stun);
                 return;
             }
-            if(shieldon == 1 and shield_blocks())
+            // player isn't a valid target — pick the nearest npc target the firer would attack.
+            bool npc_is_3d = (mapmode == "3d");
+            int best_npc_idx = -1;
+            int best_npc_dist = -1;
+            for(uint j = 0; j < npcs.length(); j++)
             {
-                int sdm = max(1, (shieldcushion ? int(dmg * 0.5) : dmg) - shielddefence * 3);
-                shieldstrength -= sdm;
-                kombatlog.insert_last(sub + "'s attack took " + shieldtype + " " + sdm + " damage.");
-                shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/*hit*"), false, 0, 0, 0, 100, false);
-                try_shield_launch(fx, fy, fz, dmg);
-                return;
+                if(int(j) == firer_npc) continue;
+                if(npcs[j].targets.length() == 0) continue;
+                if(!npc_targets(npcs[firer_npc], npcs[j].category)) continue;
+                if(!target_in_facing(npcs[j].x, npcs[j].x, npcs[j].y, npcs[j].y, npcs[j].z, npcs[j].z, fx, fy, fz, facing, npc_is_3d)) continue;
+                int dx = absolute(int(npcs[j].x) - fx);
+                int dy = absolute(int(npcs[j].y) - fy);
+                int dz = absolute(int(npcs[j].z) - fz);
+                if(dx > range or dy > range2) continue;
+                if(npc_is_3d and dz > range3) continue;
+                int d = dx + dy + (npc_is_3d ? dz : 0);
+                if(best_npc_dist < 0 or d < best_npc_dist) { best_npc_idx = int(j); best_npc_dist = d; }
             }
-            p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), false);
-            p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), false);
-            int hit_dmg = max(1, dmg - defence * 3);
-            int tx = int(me.x), ty = int(me.y), tz = int(me.z);
-            int impact = apply_push(tx, ty, tz, int(npcs[firer_npc].x), int(npcs[firer_npc].y), int(npcs[firer_npc].z), push_x, push_y, push_z, mapmode == "3d", facing);
-            me.x = tx; me.y = ty; me.z = tz;
-            health -= hit_dmg + impact;
-            kombatlog.insert_last(sub + "'s attack took you " + hit_dmg + " damage.");
-            if(impact > 0) kombatlog.insert_last("You were slammed into a wall for " + impact + " damage.");
-            play_player_pain(hit_dmg + impact);
-            if(stun > 0) stun_target("me", "", stun);
+            if(best_npc_idx < 0) return;
+            uint nj = uint(best_npc_idx);
+            sound_pool@ npool = npc_pool(npcs[nj].category);
+            npool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), me.x, me.y, me.z, npcs[nj].x, npcs[nj].y, npcs[nj].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+            int n_hit_dmg = max(1, dmg - npcs[nj].defence * 3);
+            int n_impact = apply_push(npcs[nj].x, npcs[nj].y, npcs[nj].z, int(npcs[firer_npc].x), int(npcs[firer_npc].y), int(npcs[firer_npc].z), push_x, push_y, push_z, npc_is_3d, facing);
+            npcs[nj].health -= n_hit_dmg + n_impact;
+            kombatlog.insert_last(npcs[firer_npc].subtype + " attacked " + npcs[nj].subtype + " for " + n_hit_dmg + " damage.");
+            if(n_impact > 0) kombatlog.insert_last(npcs[nj].subtype + " was slammed into a wall for " + n_impact + " damage.");
+            if((n_hit_dmg + n_impact) > 0 and npcs[nj].health > 0)
+            {
+                npool.destroy_sound(npcs[nj].hurtsound);
+                npool.pause_sound(npcs[nj].mainsound);
+                npcs[nj].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[nj].category+"/"+npcs[nj].subtype+"/*hurt*"), me.x, me.y, me.z, npcs[nj].x, npcs[nj].y, npcs[nj].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+                npcs[nj].hurtdelay = round(npool.get_sound_length(npcs[nj].hurtsound), 0);
+                npcs[nj].hurttimer.restart();
+                npcs[nj].hurting = true;
+            }
             return;
         }
         bool is_3d = (mapmode == "3d");
