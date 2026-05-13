@@ -1,143 +1,3 @@
-void buildmenu()
-{
-string[] cat_names = {"all", "audio", "construction", "interaction", "kombat", "misc", "transitions", "traps", "transportation", "zones"};
-string[][] entry_names = {
-{},
-{"effect space", "sound ambience", "sound source", "timed ambience", "timed source"},
-{"blockage", "conveyor belt", "elevator floor", "moving platform", "platform", "staircase", "vanishing platform", "wall"},
-{"calendar", "clock", "dialog", "item", "sign", "switch", "text square"},
-{"npc", "projectile", "tts enemie"},
-{"character blocker", "checkpoint", "command blocker", "spawnpoint", "timed text", "travelpoint"},
-{"door", "item door", "ranged door", "ranged item door", "elevator", "lift", "passage", "item passage", "teleporter"},
-{"bomb", "fire", "floor breaker", "force field", "hazard", "mine", "moving hazard", "security camera", "spike", "time bomb", "vanishing hazard"},
-{"aircraft", "aircraft beacon", "bike", "vehicle"},
-{"bomb zone", "heal zone", "item zone", "menu zone", "npc zone", "obscurity zone", "projectile zone", "safe zone", "text zone"}
-};
-string[][] entry_ids = {
-{},
-{"effect_space", "sound_ambience", "sound_source", "timed_ambience", "timed_source"},
-{"blockage", "conveyor_belt", "elevator_floor", "moving_platform", "platform", "staircase", "vanishing_platform", "wall"},
-{"calendar", "clock", "dialog", "item", "sign", "switch", "text_square"},
-{"npc", "projectile", "tts_enemie"},
-{"character_blocker", "checkpoint", "command_blocker", "spawnpoint", "timed_text", "travelpoint"},
-{"door", "item_door", "ranged_door", "ranged_item_door", "elevator", "lift", "passage", "item_passage", "teleporter"},
-{"bomb", "fire", "floor_breaker", "force_field", "hazard", "mine", "moving_hazard", "security_camera", "spike", "time_bomb", "vanishing_hazard"},
-{"aircraft", "aircraft_beacon", "bike", "vehicle"},
-{"bomb_zone", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "projectile_zone", "safe_zone", "text_zone"}
-};
-string[] converted_3d = {"blockage", "bomb_zone", "character_blocker", "command_blocker", "conveyor_belt", "dialog", "effect_space", "force_field", "hazard", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "platform", "bike", "projectile", "projectile_zone", "vehicle", "safe_zone", "door", "elevator", "elevator_floor", "item_door", "item_passage", "lift", "moving_hazard", "moving_platform", "passage", "ranged_door", "ranged_item_door", "sound_ambience", "sound_source", "spike", "staircase", "teleporter", "timed_ambience", "timed_source", "timed_text", "travelpoint", "vanishing_hazard", "vanishing_platform", "wall", "text_zone", "aircraft", "aircraft_beacon", "checkpoint", "spawnpoint", "clock", "calendar", "sign", "text_square", "floor_breaker", "item", "switch", "bomb", "fire", "mine", "time_bomb", "security_camera", "npc", "tts_enemie"};
-if(mapmode == "3d")
-{
-for(uint i = 1; i < entry_ids.length(); i++)
-{
-for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
-{
-bool keep = false;
-for(uint k = 0; k < converted_3d.length(); k++)
-{
-if(entry_ids[i][j] == converted_3d[k]) { keep = true; break; }
-}
-if(!keep)
-{
-entry_ids[i].remove_at(j);
-entry_names[i].remove_at(j);
-}
-}
-}
-}
-string[] excluded_topdown = {"floor_breaker", "lift", "elevator", "elevator_floor", "vanishing_platform"};
-if(mapmode == "topdown")
-{
-for(uint i = 1; i < entry_ids.length(); i++)
-{
-for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
-{
-for(uint k = 0; k < excluded_topdown.length(); k++)
-{
-if(entry_ids[i][j] == excluded_topdown[k])
-{
-entry_ids[i].remove_at(j);
-entry_names[i].remove_at(j);
-break;
-}
-}
-}
-}
-}
-string[] all_names;
-dictionary all_id_lookup;
-for(uint i = 1; i < cat_names.length(); i++)
-{
-for(uint j = 0; j < entry_names[i].length(); j++)
-{
-all_names.insert_last(entry_names[i][j]);
-all_id_lookup[entry_names[i][j]] = entry_ids[i][j];
-}
-}
-all_names.sort_ascending();
-for(uint i = 0; i < all_names.length(); i++)
-{
-string id;
-all_id_lookup.get(all_names[i], id);
-entry_names[0].insert_last(all_names[i]);
-entry_ids[0].insert_last(id);
-}
-setupmenu();
-m.intro_text = "Build menu";
-m.tab_caption = "Category";
-for(uint i = 0; i < cat_names.length(); i++)
-{
-int t_idx = m.add_tab(cat_names[i]);
-for(uint j = 0; j < entry_names[i].length(); j++)
-m.add_item_to_tab(t_idx, entry_names[i][j], entry_ids[i][j]);
-}
-int mres = m.run(-1, true, false);
-if(mres < 0)
-{
-resume_pools();
-speak("canceled");
-return;
-}
-buildobj(m.selected_item_id);
-}
-void zonesmenu()
-{
-if(text_zones.length() == 0)
-{
-speak("There are no text zones available on this map.");
-return;
-}
-setupmenu();
-for(uint i = 0; i < text_zones.length(); i++)
-{
-double width = text_zones[i].maxx - text_zones[i].minx + 1;
-double height = text_zones[i].maxy - text_zones[i].miny + 1;
-string zone_desc;
-if(mapmode == "3d")
-{
-double depth = text_zones[i].maxz - text_zones[i].minz + 1;
-zone_desc = text_zones[i].text + ", " + int(width) + " x " + int(height) + " x " + int(depth) + " text zone, at " + int(text_zones[i].minx) + ", " + int(text_zones[i].miny) + ", " + int(text_zones[i].minz);
-}
-else
-{
-zone_desc = text_zones[i].text + ", " + int(width) + " x " + int(height) + " text zone, at " + int(text_zones[i].minx) + ", " + int(text_zones[i].miny);
-}
-m.add_item(zone_desc, text_zones[i].text);
-}
-m.intro_text = "Choose the text zone you'd like to go to. There are " + text_zones.length() + " text zones available on this map.";
-int mres = m.run();
-if(mres < 0)
-{
-speak("canceled");
-return;
-}
-if(mres >= 0 and mres < int(text_zones.length()))
-{
-text_zone@ selected_zone = text_zones[mres];
-gop("me", "", selected_zone.minx, selected_zone.miny, selected_zone.minz);
-}
-}
-
 bool new_map_form()
 {
 string disallowed_name = "";
@@ -323,6 +183,146 @@ return true;
 }
 }
 return false;
+}
+
+void buildmenu()
+{
+string[] cat_names = {"all", "audio", "construction", "interaction", "kombat", "misc", "transitions", "traps", "transportation", "zones"};
+string[][] entry_names = {
+{},
+{"effect space", "sound ambience", "sound source", "timed ambience", "timed source"},
+{"blockage", "conveyor belt", "elevator floor", "moving platform", "platform", "staircase", "vanishing platform", "wall"},
+{"calendar", "clock", "dialog", "item", "sign", "switch", "text square"},
+{"npc", "projectile", "tts enemie"},
+{"character blocker", "checkpoint", "command blocker", "spawnpoint", "timed text", "travelpoint"},
+{"door", "item door", "ranged door", "ranged item door", "elevator", "lift", "passage", "item passage", "teleporter"},
+{"bomb", "fire", "floor breaker", "force field", "hazard", "mine", "moving hazard", "security camera", "spike", "time bomb", "vanishing hazard"},
+{"aircraft", "aircraft beacon", "bike", "vehicle"},
+{"bomb zone", "heal zone", "item zone", "menu zone", "npc zone", "obscurity zone", "projectile zone", "safe zone", "text zone"}
+};
+string[][] entry_ids = {
+{},
+{"effect_space", "sound_ambience", "sound_source", "timed_ambience", "timed_source"},
+{"blockage", "conveyor_belt", "elevator_floor", "moving_platform", "platform", "staircase", "vanishing_platform", "wall"},
+{"calendar", "clock", "dialog", "item", "sign", "switch", "text_square"},
+{"npc", "projectile", "tts_enemie"},
+{"character_blocker", "checkpoint", "command_blocker", "spawnpoint", "timed_text", "travelpoint"},
+{"door", "item_door", "ranged_door", "ranged_item_door", "elevator", "lift", "passage", "item_passage", "teleporter"},
+{"bomb", "fire", "floor_breaker", "force_field", "hazard", "mine", "moving_hazard", "security_camera", "spike", "time_bomb", "vanishing_hazard"},
+{"aircraft", "aircraft_beacon", "bike", "vehicle"},
+{"bomb_zone", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "projectile_zone", "safe_zone", "text_zone"}
+};
+string[] converted_3d = {"blockage", "bomb_zone", "character_blocker", "command_blocker", "conveyor_belt", "dialog", "effect_space", "force_field", "hazard", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "platform", "bike", "projectile", "projectile_zone", "vehicle", "safe_zone", "door", "elevator", "elevator_floor", "item_door", "item_passage", "lift", "moving_hazard", "moving_platform", "passage", "ranged_door", "ranged_item_door", "sound_ambience", "sound_source", "spike", "staircase", "teleporter", "timed_ambience", "timed_source", "timed_text", "travelpoint", "vanishing_hazard", "vanishing_platform", "wall", "text_zone", "aircraft", "aircraft_beacon", "checkpoint", "spawnpoint", "clock", "calendar", "sign", "text_square", "floor_breaker", "item", "switch", "bomb", "fire", "mine", "time_bomb", "security_camera", "npc", "tts_enemie"};
+if(mapmode == "3d")
+{
+for(uint i = 1; i < entry_ids.length(); i++)
+{
+for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
+{
+bool keep = false;
+for(uint k = 0; k < converted_3d.length(); k++)
+{
+if(entry_ids[i][j] == converted_3d[k]) { keep = true; break; }
+}
+if(!keep)
+{
+entry_ids[i].remove_at(j);
+entry_names[i].remove_at(j);
+}
+}
+}
+}
+string[] excluded_topdown = {"floor_breaker", "lift", "elevator", "elevator_floor", "vanishing_platform"};
+if(mapmode == "topdown")
+{
+for(uint i = 1; i < entry_ids.length(); i++)
+{
+for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
+{
+for(uint k = 0; k < excluded_topdown.length(); k++)
+{
+if(entry_ids[i][j] == excluded_topdown[k])
+{
+entry_ids[i].remove_at(j);
+entry_names[i].remove_at(j);
+break;
+}
+}
+}
+}
+}
+string[] all_names;
+dictionary all_id_lookup;
+for(uint i = 1; i < cat_names.length(); i++)
+{
+for(uint j = 0; j < entry_names[i].length(); j++)
+{
+all_names.insert_last(entry_names[i][j]);
+all_id_lookup[entry_names[i][j]] = entry_ids[i][j];
+}
+}
+all_names.sort_ascending();
+for(uint i = 0; i < all_names.length(); i++)
+{
+string id;
+all_id_lookup.get(all_names[i], id);
+entry_names[0].insert_last(all_names[i]);
+entry_ids[0].insert_last(id);
+}
+setupmenu();
+m.intro_text = "Build menu";
+m.tab_caption = "Category";
+for(uint i = 0; i < cat_names.length(); i++)
+{
+int t_idx = m.add_tab(cat_names[i]);
+for(uint j = 0; j < entry_names[i].length(); j++)
+m.add_item_to_tab(t_idx, entry_names[i][j], entry_ids[i][j]);
+}
+int mres = m.run(-1, true, false);
+if(mres < 0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+buildobj(m.selected_item_id);
+}
+void zonesmenu()
+{
+if(text_zones.length() == 0)
+{
+speak("There are no text zones available on this map.");
+return;
+}
+setupmenu();
+for(uint i = 0; i < text_zones.length(); i++)
+{
+double width = text_zones[i].maxx - text_zones[i].minx + 1;
+double height = text_zones[i].maxy - text_zones[i].miny + 1;
+string zone_desc;
+if(mapmode == "3d")
+{
+double depth = text_zones[i].maxz - text_zones[i].minz + 1;
+zone_desc = text_zones[i].text + ", " + int(width) + " x " + int(height) + " x " + int(depth) + " text zone, at " + int(text_zones[i].minx) + ", " + int(text_zones[i].miny) + ", " + int(text_zones[i].minz);
+}
+else
+{
+zone_desc = text_zones[i].text + ", " + int(width) + " x " + int(height) + " text zone, at " + int(text_zones[i].minx) + ", " + int(text_zones[i].miny);
+}
+m.add_item(zone_desc, text_zones[i].text);
+}
+m.intro_text = "Choose the text zone you'd like to go to. There are " + text_zones.length() + " text zones available on this map.";
+int mres = m.run();
+if(mres < 0)
+{
+speak("canceled");
+return;
+}
+if(mres >= 0 and mres < int(text_zones.length()))
+{
+text_zone@ selected_zone = text_zones[mres];
+gop("me", "", selected_zone.minx, selected_zone.miny, selected_zone.minz);
+}
 }
 
 void mapmenu()
