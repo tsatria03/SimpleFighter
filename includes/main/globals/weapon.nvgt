@@ -45,6 +45,9 @@ class weapon
     // health cost per fire (drains the firer; player or npc; clamped non-negative; can kill the firer)
     int health_drain;
 
+    // life cost per fire (consumes life cards from the firer; each card plays the life clip and refills health)
+    int life_drain;
+
     // stamina cost per fire (player only; clamped non-negative)
     int stamina_drain;
 
@@ -98,6 +101,7 @@ class weapon
         push_y = 0;
         push_z = 0;
         health_drain = 0;
+        life_drain = 0;
         stamina_drain = 0;
         is_swinging = false;
         pending_dmg = 0;
@@ -127,6 +131,7 @@ class weapon
         push_y = 0;
         push_z = 0;
         health_drain = 0;
+        life_drain = 0;
         stamina_drain = 0;
         is_swinging = false;
         pending_dmg = 0;
@@ -212,6 +217,11 @@ class weapon
             {
                 int v = parse_int(data[1]);
                 health_drain = (v < 0) ? 0 : v;
+            }
+            else if(data[0] == "life drain")
+            {
+                int v = parse_int(data[1]);
+                life_drain = (v < 0) ? 0 : v;
             }
             else if(data[0] == "stamina drain")
             {
@@ -320,6 +330,46 @@ class weapon
             {
                 npcs[firer_npc].health -= health_drain;
                 if(npcs[firer_npc].health < 0) npcs[firer_npc].health = 0;
+            }
+        }
+        if(life_drain > 0)
+        {
+            if(firer_npc == -1)
+            {
+                for(int k = 0; k < life_drain; k++)
+                {
+                    if(lifecard >= 2)
+                    {
+                        p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*life*"), false);
+                        lifecard -= 1;
+                        health = maxhealth;
+                        bonehealth = 0;
+                        broken_bones.delete_all();
+                    }
+                    else
+                    {
+                        if(lifecard > 0) lifecard -= 1;
+                        health = 0;
+                        break;
+                    }
+                }
+            }
+            else if(firer_npc >= 0 && uint(firer_npc) < npcs.length())
+            {
+                for(int k = 0; k < life_drain; k++)
+                {
+                    if(npcs[firer_npc].currentlives >= 2)
+                    {
+                        npcs[firer_npc].currentlives -= 1;
+                        npcs[firer_npc].health = npcs[firer_npc].maxhealth;
+                    }
+                    else
+                    {
+                        if(npcs[firer_npc].currentlives > 0) npcs[firer_npc].currentlives -= 1;
+                        npcs[firer_npc].health = 0;
+                        break;
+                    }
+                }
             }
         }
         bool player_reflecting = (wepchar.reflection && wepdef == 1);
