@@ -63,6 +63,8 @@ For armed humans the picture splits in two depending on the weapon's melee field
 Two melee specific fields stay player only when a human carries the weapon. The swing speed wind-up is always zero on npc swings — the strike is instant the moment the human pulls the trigger regardless of what the weapon's swing speed value says. Melee scadder is also player only — a human swinging a scadder=R melee weapon still only hits the player and never cleaves into other npcs nearby, because npc melee uses a direct contact hit instead of the player's scatter-aware melee pipeline.
 Bullet scadder, on the other hand, does work for ranged weapons in human hands. When an armed human fires a scadder ranged weapon, the spawned bullet carries the weapon's scadder radius and count and triggers the same splash on impact that a player-fired bullet does — so a human armed with a rocket launcher authored with scadder=3:5 splashes nearby targets exactly the way it would in player hands.
 
+Humans are also orthogonal to the player's per-type ammo and damage system. The player's character-wide reserve_<type> pools and damage_<type> bonuses (set in kombat.sif and bought through the shop) only apply to weapons the player carries — a human armed with the same battery rifle does not draw from your battery reserve and does not benefit from your battery damage upgrade. NPC weapons fall back to the legacy per-weapon ammo field (defaulting to 100) for their reload pool and use only their own attack stat for damage, so npc combat is fully independent of the player's economy. This is intentional: it means fighting battery-armed humans never drains your battery ammo even when you're not the one shooting, and it keeps the per-type system a player-side build choice rather than a shared resource pool with every npc on the map.
+
 x sight range (triple int): How far along the x axis the creature can see a target. The creature only pursues a target inside this range under sight based chase modes. Setting this to maxx makes the creature aware of targets anywhere on the map's x axis.
 y sight range (triple int): The y axis equivalent of x sight range.
 z sight range (triple int): The z axis (height) equivalent. Only consulted on 3d maps; on 2d and topdown maps the field is ignored.
@@ -176,7 +178,7 @@ When the Spawn button writes a creature into a map, it appends a line to the map
 The fields are space separated, where x, y, and (on 3d maps) z are the tile coordinates the creature spawns at, scale is an integer scale level, path is one of any, global, or map, and category and subtype name the folder under sounds/<pack>/npc/.
 The path value decides where the creature reads its info.sif from. Any uses the map's local copy if it exists and falls back to the global pack otherwise. Global pins the lookup to sounds/<pack>/npc/ even if a map local copy is present. Map pins it to data/maps/decompiled/<map>/assets/npc/ and refuses the global fallback. This lets two creatures of the same name on the same map intentionally read different stats by pointing at different paths.
 A subtype of none places nothing and is silently ignored at parse time, which is useful as a placeholder when blocking out a map.
-The line is parsed back into spawn_npc on map load, so editing this file by hand is a valid way to bulk place creatures without going through the builder.
+The line is read back on map load and the creature placed automatically, so editing this file by hand is a valid way to bulk place creatures without going through the builder.
 
 Scale level.
 

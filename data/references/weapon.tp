@@ -16,7 +16,7 @@ Field reference.
 
 Every field in info.sif uses the form key=value, one per line. Missing fields fall back to the defaults shown below.
 
-damage (int): The weapon's base damage per hit. The wielder's own attack bonus is added on top: the player's flat attack stat in the player's case, the human's effective attack times level in the human's case. Defaults to 1.
+damage (int): The weapon's base damage per hit. The wielder's own attack bonus is added on top: the player's flat attack stat in the player's case, the human's effective attack times level in the human's case. The player also adds a per-type damage bonus (damage_<type> from kombat.sif for non-melee, damage_melee for melee), bought through the shop's damage tab. Final damage on a player swing or shot is weapon damage + attack + per-type bonus. Humans skip the per-type bonus entirely, so npc damage is just weapon damage + npc attack. Defaults to 1.
 
 fire mode (int): How the weapon fires. 0 is manual fire, where each press of the fire key triggers one shot, paced by spam time. 1 is auto fire, where holding the fire key triggers a continuous stream, paced by repeat time. Defaults to 0.
 
@@ -46,9 +46,11 @@ spam time (int): Manual fire recovery in milliseconds. While fire mode is 0, the
 
 weight (int): How much the weapon slows the player down while drawn. Heavier weapons cost movement and reaction speed. Defaults to 1.
 
-ammo (double): How many shots the weapon has in reserve. Decreases by the loaded ammo count each time a reload completes. The weapon plays its empty clip when ammo hits zero. Melee weapons ignore ammo entirely. Defaults to 100.
-loaded ammo (double): How many shots are currently in the magazine, ready to fire without reloading. Decreases by one per fire on non melee weapons, refilled from the reserve when a reload completes. Defaults to 100.
-max ammo (double): The magazine size, used as the cap on loaded ammo and as the target a reload fills back up to. Defaults to 100.
+ammo type (string): Which character-wide reserve and damage bucket the weapon pulls from. Must be one of the sixteen recognized types: normal, gas, air, battery, powder, arrow, rocket, water, knife, needle, dart, ball, mana, fuel, rock, grenade. The default for non melee weapons is normal; for melee weapons it's none and the field is unused since melee weapons skip the ammo system entirely. Anything outside the recognized list (or a missing field on a non melee weapon) falls back to normal. The type drives both reload (player's reserve_<type> in kombat.sif refills loaded ammo) and damage (player's damage_<type> stacks on top of weapon damage and attack). Two weapons sharing the same type share the player's reserve and benefit from the same damage upgrade. Stripped from melee weapon files since they never read it.
+
+ammo (double): npc weapons only. The per-weapon ammo reserve a non-player carrier draws from when reloading. Decreases by the loaded ammo count each time the reload completes, plays the empty clip when it hits zero. Player weapons ignore this field entirely — the player's reload pulls from the character-wide reserve_<ammo type> pool in kombat.sif instead. Stripped from all default weapon files since the per-weapon model is now npc-only and the parser falls back to the constructor default of 100 when missing.
+loaded ammo (double): How many shots are currently in the magazine, ready to fire without reloading. Decreases by one per fire on non melee weapons, refilled from the active reserve when a reload completes (character-wide for the player, per-weapon for npcs). Defaults to 100.
+max ammo (double): The magazine size, used as the cap on loaded ammo and as the target a reload fills back up to. The shop's weapon tab grows this per weapon — buying max ammo while an AR15 is drawn grows the AR15's clip but not the shotgun's. Defaults to 100.
 
 unlock level (double): The minimum character level required to draw this weapon from the weapons menu. Locked weapons appear in the menu with an "(Unlocked at level X)" suffix and cannot be selected until the player levels up enough. Defaults to 1.
 
