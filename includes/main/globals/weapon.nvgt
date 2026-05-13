@@ -37,6 +37,11 @@ class weapon
     int scadder_count;
     int swing_speed;
 
+    // knockback (signed at hit-time; negative author value = pull)
+    int push_x;
+    int push_y;
+    int push_z;
+
     // reload state
     bool is_reloading;
     double pending_ammo;
@@ -83,6 +88,9 @@ class weapon
         scadder_radius = 0;
         scadder_count = 0;
         swing_speed = 0;
+        push_x = 0;
+        push_y = 0;
+        push_z = 0;
         is_swinging = false;
         pending_dmg = 0;
         is_reloading = false;
@@ -107,6 +115,9 @@ class weapon
         scadder_radius = 0;
         scadder_count = 0;
         swing_speed = 0;
+        push_x = 0;
+        push_y = 0;
+        push_z = 0;
         is_swinging = false;
         pending_dmg = 0;
         string path = "sounds/" + soundpack + "/main/equipments/weapons/" + cad + "/" + sub + "/info.sif";
@@ -184,6 +195,9 @@ class weapon
                 if(v < 0) v = 0;
                 swing_speed = v;
             }
+            else if(data[0] == "push x") push_x = parse_int(data[1]);
+            else if(data[0] == "push y") push_y = parse_int(data[1]);
+            else if(data[0] == "push z") push_z = parse_int(data[1]);
             else if(data[0] == "refchance")
             {
                 string[] rc_parts = string_split(data[1], ":", true);
@@ -319,7 +333,7 @@ class weapon
         }
         else
         {
-            spawn_bullet(x, y, range, range2, dmg, speed, facing, cad, sub, stun, firer_npc, z, range3, scadder_radius, scadder_count);
+            spawn_bullet(x, y, range, range2, dmg, speed, facing, cad, sub, stun, firer_npc, z, range3, scadder_radius, scadder_count, push_x, push_y, push_z);
         }
         if(!is_melee()) loaded_ammo -= 1;
     }
@@ -353,9 +367,13 @@ class weapon
                 p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), false);
                 p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), false);
                 int hit_dmg = max(1, (wepchar.refcushion ? int(dmg * 0.5) : dmg) - defence * 3);
-                health -= hit_dmg;
+                int tx = int(me.x), ty = int(me.y), tz = int(me.z);
+                int impact = apply_push(tx, ty, tz, int(npcs[firer_npc].x), int(npcs[firer_npc].y), int(npcs[firer_npc].z), push_x, push_y, push_z, mapmode == "3d", facing);
+                me.x = tx; me.y = ty; me.z = tz;
+                health -= hit_dmg + impact;
                 kombatlog.insert_last(sub + "'s attack took you " + hit_dmg + " damage.");
-                play_player_pain(hit_dmg);
+                if(impact > 0) kombatlog.insert_last("You were slammed into a wall for " + impact + " damage.");
+                play_player_pain(hit_dmg + impact);
                 if(stun > 0) stun_target("me", "", stun);
                 return;
             }
@@ -371,9 +389,13 @@ class weapon
             p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*hit*"), false);
             p.play_stationary(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/*shell*"), false);
             int hit_dmg = max(1, dmg - defence * 3);
-            health -= hit_dmg;
+            int tx = int(me.x), ty = int(me.y), tz = int(me.z);
+            int impact = apply_push(tx, ty, tz, int(npcs[firer_npc].x), int(npcs[firer_npc].y), int(npcs[firer_npc].z), push_x, push_y, push_z, mapmode == "3d", facing);
+            me.x = tx; me.y = ty; me.z = tz;
+            health -= hit_dmg + impact;
             kombatlog.insert_last(sub + "'s attack took you " + hit_dmg + " damage.");
-            play_player_pain(hit_dmg);
+            if(impact > 0) kombatlog.insert_last("You were slammed into a wall for " + impact + " damage.");
+            play_player_pain(hit_dmg + impact);
             if(stun > 0) stun_target("me", "", stun);
             return;
         }
@@ -613,9 +635,11 @@ class weapon
                 }
                 play_melee_hit_at(npcs[j].x, npcs[j].y, npcs[j].z);
                 int hit_dmg = max(0, (npcs[j].wephum.refcushion ? int(dmg * 0.5) : dmg) - npcs[j].defence * 3);
-                npcs[j].health -= hit_dmg;
+                int impact = apply_push(npcs[j].x, npcs[j].y, npcs[j].z, int(me.x), int(me.y), int(me.z), push_x, push_y, push_z, is_3d, facing);
+                npcs[j].health -= hit_dmg + impact;
                 kombatlog.insert_last(hit_dmg + " damage to " + npcs[j].subtype + " by " + sub + "'s weapon attack.");
-                if(hit_dmg > 0 and npcs[j].health > 0)
+                if(impact > 0) kombatlog.insert_last(npcs[j].subtype + " was slammed into a wall for " + impact + " damage.");
+                if((hit_dmg + impact) > 0 and npcs[j].health > 0)
                 {
                     npool.destroy_sound(npcs[j].hurtsound);
                     npool.pause_sound(npcs[j].mainsound);
@@ -629,9 +653,11 @@ class weapon
             }
             play_melee_hit_at(npcs[j].x, npcs[j].y, npcs[j].z);
             int hit_dmg = max(0, dmg - npcs[j].defence * 3);
-            npcs[j].health -= hit_dmg;
+            int impact = apply_push(npcs[j].x, npcs[j].y, npcs[j].z, int(me.x), int(me.y), int(me.z), push_x, push_y, push_z, is_3d, facing);
+            npcs[j].health -= hit_dmg + impact;
             kombatlog.insert_last(hit_dmg + " damage to " + npcs[j].subtype + " by " + sub + "'s weapon attack.");
-            if(hit_dmg > 0 and npcs[j].health > 0)
+            if(impact > 0) kombatlog.insert_last(npcs[j].subtype + " was slammed into a wall for " + impact + " damage.");
+            if((hit_dmg + impact) > 0 and npcs[j].health > 0)
             {
                 npool.destroy_sound(npcs[j].hurtsound);
                 npool.pause_sound(npcs[j].mainsound);
@@ -1321,5 +1347,127 @@ class weapon
     void update_x_range(int new_range) { update_range_axis("x", new_range); }
     void update_y_range(int new_range) { update_range_axis("y", new_range); }
     void update_z_range(int new_range) { update_range_axis("z", new_range); }
+}
+
+// blocked predicate for push-resolution: tile is blocked if it falls outside map bounds
+// or lies inside any wall (3d uses z, 2d ignores it). doors/platforms/vehicles are NOT
+// considered blockers here — start with the simple wall + bounds default.
+bool tile_blocked(int x, int y, int z, bool is_3d)
+{
+    if(x < int(minx) or x > int(maxx)) return true;
+    if(y < int(miny) or y > int(maxy)) return true;
+    if(is_3d and (z < int(minz) or z > int(maxz))) return true;
+    for(uint i = 0; i < walls.length(); i++)
+    {
+        if(x < int(walls[i].minx) or x > int(walls[i].maxx)) continue;
+        if(y < int(walls[i].miny) or y > int(walls[i].maxy)) continue;
+        if(is_3d)
+        {
+            if(z < int(walls[i].minz) or z > int(walls[i].maxz)) continue;
+        }
+        return true;
+    }
+    return false;
+}
+
+// Resolves a knockback against a target. Mutates tx/ty/tz in place to the final tile
+// (stopping flush against the first blocker on each axis), and returns total impact
+// damage from leftover-tile shoves the caller should add to the target's hit damage.
+//
+//   tx, ty, tz   target's current tile (in/out — updated to final tile)
+//   ax, ay, az   attacker's tile (used as melee fallback sign source)
+//   px, py, pz   weapon push magnitudes (signed: negative author value = pull)
+//   is_3d        true if mapmode == "3d"
+//   bdir         bullet direction string for ranged hits ("right", "left", "forward",
+//                "backward", "up", "down"); empty for melee. When non-empty the bullet's
+//                travel sign is preferred on the axis it points along; other axes fall
+//                back to attacker→target delta so a sideways shot can still push z.
+int apply_push(int &inout tx, int &inout ty, int &inout tz, int ax, int ay, int az, int px, int py, int pz, bool is_3d, string bdir = "")
+{
+    int impact = 0;
+    if(px != 0)
+    {
+        int sign = 0;
+        if(bdir == "right") sign = 1;
+        else if(bdir == "left") sign = -1;
+        if(sign == 0)
+        {
+            int d = tx - ax;
+            if(d > 0) sign = 1;
+            else if(d < 0) sign = -1;
+        }
+        if(px < 0) sign = -sign;
+        if(sign != 0)
+        {
+            int mag = absolute(px);
+            int walked = 0;
+            for(int s = 0; s < mag; s++)
+            {
+                int nx = tx + sign;
+                if(tile_blocked(nx, ty, tz, is_3d)) break;
+                tx = nx;
+                walked++;
+            }
+            int leftover = mag - walked;
+            if(leftover > 0) impact += leftover * absolute(px);
+        }
+    }
+    if(py != 0)
+    {
+        int sign = 0;
+        if(bdir == "forward") sign = 1;
+        else if(bdir == "backward") sign = -1;
+        else if(!is_3d and bdir == "up") sign = 1;
+        else if(!is_3d and bdir == "down") sign = -1;
+        if(sign == 0)
+        {
+            int d = ty - ay;
+            if(d > 0) sign = 1;
+            else if(d < 0) sign = -1;
+        }
+        if(py < 0) sign = -sign;
+        if(sign != 0)
+        {
+            int mag = absolute(py);
+            int walked = 0;
+            for(int s = 0; s < mag; s++)
+            {
+                int ny = ty + sign;
+                if(tile_blocked(tx, ny, tz, is_3d)) break;
+                ty = ny;
+                walked++;
+            }
+            int leftover = mag - walked;
+            if(leftover > 0) impact += leftover * absolute(py);
+        }
+    }
+    if(is_3d and pz != 0)
+    {
+        int sign = 0;
+        if(bdir == "up") sign = 1;
+        else if(bdir == "down") sign = -1;
+        if(sign == 0)
+        {
+            int d = tz - az;
+            if(d > 0) sign = 1;
+            else if(d < 0) sign = -1;
+        }
+        if(pz < 0) sign = -sign;
+        if(sign != 0)
+        {
+            int mag = absolute(pz);
+            int walked = 0;
+            for(int s = 0; s < mag; s++)
+            {
+                int nz = tz + sign;
+                if(tile_blocked(tx, ty, nz, is_3d)) break;
+                tz = nz;
+                walked++;
+            }
+            int leftover = mag - walked;
+            if(leftover > 0) impact += leftover * absolute(pz);
+        }
+    }
+    return impact;
 }
 

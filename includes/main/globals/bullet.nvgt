@@ -17,12 +17,15 @@ int stun;
 int firer_npc;
 int scadder_radius;
 int scadder_count;
+int push_x;
+int push_y;
+int push_z;
 bool first_tick;
 string direction;
 string bulltype;
 string bulltype2;
 timer speedtimer;
-bullet(int bx,int by,int br,int br2,int dmg,int sp,string dr,string bt,string bt2,int sn,int fn,int bz=0,int br3=0,int scr=0,int scc=0)
+bullet(int bx,int by,int br,int br2,int dmg,int sp,string dr,string bt,string bt2,int sn,int fn,int bz=0,int br3=0,int scr=0,int scc=0,int px=0,int py=0,int pz=0)
 {
 bullx=bx;
 bully=by;
@@ -39,6 +42,9 @@ stun=sn;
 firer_npc=fn;
 scadder_radius=scr;
 scadder_count=scc;
+push_x=px;
+push_y=py;
+push_z=pz;
 first_tick=true;
 direction=dr;
 bulltype=bt;
@@ -148,11 +154,20 @@ bulletpool.destroy_sound(bullets[i].bullsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 int dmg = max(1, (wepchar.refcushion ? int(bullets[i].damage * 0.5) : bullets[i].damage) - defence * 3);
-health -= dmg;
-kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took you " + dmg + " damage.");
+int impact = 0;
+if(bullets[i].firer_npc >= 0)
 {
+int tx = int(me.x), ty = int(me.y), tz = int(me.z);
+impact = apply_push(tx, ty, tz, bullets[i].spawn_x, bullets[i].spawn_y, bullets[i].spawn_z, bullets[i].push_x, bullets[i].push_y, bullets[i].push_z, mapmode == "3d", bullets[i].direction);
+me.x = tx; me.y = ty; me.z = tz;
+}
+health -= dmg + impact;
+kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took you " + dmg + " damage.");
+if(impact > 0) kombatlog.insert_last("You were slammed into a wall for " + impact + " damage.");
+{
+int total = dmg + impact;
 string painfile;
-int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+int damage_percent = round((float(total) / float(maxhealth)) * 100, 0);
 if (damage_percent <= 1)
 {
 painfile = get_pack_sound("main/characters/" + chartype+"/general/*hurt*");
@@ -192,11 +207,20 @@ bulletpool.destroy_sound(bullets[i].bullsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 int dmg = max(1, (bullets[i].damage) - (defence * 3));
-health -= dmg;
-kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took you " + dmg + " damage.");
+int impact = 0;
+if(bullets[i].firer_npc >= 0)
 {
+int tx = int(me.x), ty = int(me.y), tz = int(me.z);
+impact = apply_push(tx, ty, tz, bullets[i].spawn_x, bullets[i].spawn_y, bullets[i].spawn_z, bullets[i].push_x, bullets[i].push_y, bullets[i].push_z, mapmode == "3d", bullets[i].direction);
+me.x = tx; me.y = ty; me.z = tz;
+}
+health -= dmg + impact;
+kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took you " + dmg + " damage.");
+if(impact > 0) kombatlog.insert_last("You were slammed into a wall for " + impact + " damage.");
+{
+int total = dmg + impact;
 string painfile;
-int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+int damage_percent = round((float(total) / float(maxhealth)) * 100, 0);
 if (damage_percent <= 1)
 {
 painfile = get_pack_sound("main/characters/" + chartype+"/general/*hurt*");
@@ -250,9 +274,11 @@ bulletpool.destroy_sound(bullets[i].bullsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 int dmg = max(0, (npcs[j].wephum.refcushion ? int(bullets[i].damage * 0.5) : bullets[i].damage) - npcs[j].defence*3);
-npcs[j].health -= dmg;
+int impact = apply_push(npcs[j].x, npcs[j].y, npcs[j].z, bullets[i].spawn_x, bullets[i].spawn_y, bullets[i].spawn_z, bullets[i].push_x, bullets[i].push_y, bullets[i].push_z, mapmode == "3d", bullets[i].direction);
+npcs[j].health -= dmg + impact;
 kombatlog.insert_last(dmg+" damage to "+npcs[j].subtype+" by "+bullets[i].bulltype2+"'s weapon attack.");
-if(dmg>0 and npcs[j].health>0)
+if(impact > 0) kombatlog.insert_last(npcs[j].subtype + " was slammed into a wall for " + impact + " damage.");
+if((dmg + impact)>0 and npcs[j].health>0)
 {
 npool.destroy_sound(npcs[j].hurtsound);
 npool.pause_sound(npcs[j].mainsound);
@@ -270,9 +296,11 @@ bulletpool.destroy_sound(bullets[i].bullsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 int dmg = max(0, bullets[i].damage - npcs[j].defence*3);
-npcs[j].health -= dmg;
+int impact = apply_push(npcs[j].x, npcs[j].y, npcs[j].z, bullets[i].spawn_x, bullets[i].spawn_y, bullets[i].spawn_z, bullets[i].push_x, bullets[i].push_y, bullets[i].push_z, mapmode == "3d", bullets[i].direction);
+npcs[j].health -= dmg + impact;
 kombatlog.insert_last(dmg+" damage to "+npcs[j].subtype+" by "+bullets[i].bulltype2+"'s weapon attack.");
-if(dmg>0 and npcs[j].health>0)
+if(impact > 0) kombatlog.insert_last(npcs[j].subtype + " was slammed into a wall for " + impact + " damage.");
+if((dmg + impact)>0 and npcs[j].health>0)
 {
 npool.destroy_sound(npcs[j].hurtsound);
 npool.pause_sound(npcs[j].mainsound);
@@ -566,9 +594,9 @@ return;
 }
 }
 }
-void spawn_bullet(int x,int y,int range,int range2,int damage,int speed,string direction,string bulltype,string bulltype2,int stun=0,int firer_npc=-1,int z=0,int range3=0,int scadder_radius=0,int scadder_count=0)
+void spawn_bullet(int x,int y,int range,int range2,int damage,int speed,string direction,string bulltype,string bulltype2,int stun=0,int firer_npc=-1,int z=0,int range3=0,int scadder_radius=0,int scadder_count=0,int push_x=0,int push_y=0,int push_z=0)
 {
-bullet bl1(x,y,range,range2,damage,speed,direction,bulltype,bulltype2,stun,firer_npc,z,range3,scadder_radius,scadder_count);
+bullet bl1(x,y,range,range2,damage,speed,direction,bulltype,bulltype2,stun,firer_npc,z,range3,scadder_radius,scadder_count,push_x,push_y,push_z);
 bullets.insert_last(bl1);
 }
 void destroy_all_bullets()

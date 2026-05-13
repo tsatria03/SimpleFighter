@@ -6,16 +6,19 @@ Every numerical knob that controls how a creature behaves lives in a plain text 
 Every NPC belongs to one of seven categories: animals, bosses, helpers, humans, robots, zombies, or specials.
 The category determines the sound pool used for its audio, and it doubles as a target tag that other NPCs can attack or ignore.
 
-Humans are special in one respect: they auto roll a random weapon category and subtype on spawn, parse that weapon's info.sif, and fire it through the same weapon class the player uses. A human's bullet inherits the weapon's damage, range, bullet speed, fire cadence, ammo, stun mode, launch type, scadder zone, refchance, and refchance cushion, so a sniper rifle outranges a pistol, a rocket launcher actually launches rockets in human hands, a scadder weapon splash-damages targets near the impact, and a reflective weapon's failed reflection halves continuing damage if the weapon was authored with refchance=N:true. When a non melee human runs out of loaded ammo, the engine triggers the weapon's reload clip on the human's clock and resumes firing once the reload finishes, exactly like the player does. The stun rider applies symmetrically: a human armed with a tazer rifle freezes the player on hit just like the player would freeze a wolf with the same weapon, gated on the damage actually going through (a melee block or full shield absorption ducks the stun the same way it ducks the hurt clip).
+Humans are special in one respect: they auto roll a random weapon category and subtype on spawn, parse that weapon's info.sif, and fire it through the same weapon class the player uses. A human's bullet inherits the weapon's damage, range, bullet speed, fire cadence, ammo, stun mode, launch type, scadder zone, refchance, and refchance cushion, so a sniper rifle outranges a pistol, a rocket launcher actually launches rockets in human hands, a scadder weapon splash-damages targets near the impact, and a reflective weapon's failed reflection halves continuing damage if the weapon was authored with refchance=N:true. When a non melee human runs out of loaded ammo, the engine triggers the weapon's reload clip on the human's clock and resumes firing once the reload finishes, exactly like the player does.
+The stun rider applies symmetrically: a human armed with a tazer rifle freezes the player on hit just like the player would freeze a wolf with the same weapon, gated on the damage actually going through (a melee block or full shield absorption ducks the stun the same way it ducks the hurt clip). The push rider works the same way: a human carrying a weapon with push x, push y, or push z set shoves the player on hit exactly like the player would shove a wolf with the same weapon, and an npc that lands a push-equipped hit on another npc shoves it just the same, so a wind gun authored for the player turns every human carrying it into a wind gunner without any extra wiring.
 
 Specials is a catch all bucket for creatures that don't cleanly fit any of the other categories. It behaves identically to animals, robots, and zombies, with no human only weapon logic, so anything you'd normally author as an animal, robot, or zombie can live under specials instead when its theme doesn't match those names.
 Bosses is a thematic folder for big bad creatures. It behaves like specials, animals, robots, and zombies under the hood, so the slot is purely for organizing major encounters away from the everyday roster without forcing them to share a folder with the wildlife.
+
 Helpers is the friendly category. A helper inverts the targets field as a protected list and gains two helpers only overlays: it picks up dropped items on contact when the player is in its protected list, and it drifts back toward the player when no enemy is in sight and the player is in its protected list. Helpers also play a remove clip from their own folder when the map tears down, so a follower can have its own farewell sound. Everything else, terrain, chase mode, hit and run, summons, weapons, behaves identically to the other categories, so a helper is mechanically a normal npc with three extra behaviors.
 
 Each NPC has three behavior states baked in at runtime.
 
 The normal state is the default.
 The wounded state kicks in when the creature drops below a configured health threshold and the threat is still in wounded sight range, and in this state the creature flips its movement and walks away from the threat instead of toward it.
+
 The healing state takes over when the creature is below the threshold but no threat is in wounded sight, and it stops moving, drops its target, and ticks its own health back up over time.
 
 Every numeric stat can be tuned per state, so a creature can be more aggressive while wounded, weaker while healing, or anything in between.
@@ -45,6 +48,7 @@ A few fields override this convention with their own slot meanings.
 
 Health uses a:b:c where a is max health, b is the wounded threshold, and c is the heal amount per tick.
 Chase mode uses trigger:wander, with each slot a string from a fixed enum.
+
 Chase time uses calm:random:pause, with each slot a per-purpose timer rather than a per-state value.
 Teleport time uses normal:wounded:healing like most fields, but each slot accepts the literal never to disable that state, since 0 also disables.
 
@@ -59,8 +63,11 @@ y attack range (triple int): How many tiles along the y axis the creature has to
 z attack range (triple int): How many tiles along the z axis (height) the creature has to be within of its target before it can attack. Only consulted on 3d maps; on 2d and topdown maps the z gate is bypassed and the field is effectively ignored.
 
 For unarmed creatures (animals, robots, zombies, specials, helpers without weapons, and humans whose weapon roll did not pick anything) att range is the actual contact damage range, since the engine applies damage directly without spawning a bullet. Att range zero on these is fine and means a same tile bite, claw, or punch.
-For armed humans the picture splits in two depending on the weapon's melee field. A human carrying a melee weapon (melee=true in the weapon's info.sif) does direct contact damage the same way unarmed creatures do, with no bullet spawned, the swing landing the moment the human pulls the trigger, and att range serving as the actual hit range. A human carrying a ranged weapon (melee=false) spawns a real bullet from the weapon. Att range gates when the human pulls the trigger, while the weapon's own x range, y range, and z range fields govern how far the spawned bullet actually travels before despawning. The three distances do not have to match: a stand off shotgun feel can use a short att range with a long weapon range, and a sniper rifle feel can use a long att range with an even longer weapon range, but att range should never exceed weapon range or the human will trigger from far enough away that the bullet despawns before reaching you. Att range zero on an armed human still works thanks to the bullet's first tick hit check at its spawn position, so a same tile point blank fire connects without the bullet needing to travel.
+For armed humans the picture splits in two depending on the weapon's melee field. A human carrying a melee weapon (melee=true in the weapon's info.sif) does direct contact damage the same way unarmed creatures do, with no bullet spawned, the swing landing the moment the human pulls the trigger, and att range serving as the actual hit range. A human carrying a ranged weapon (melee=false) spawns a real bullet from the weapon. Att range gates when the human pulls the trigger, while the weapon's own x range, y range, and z range fields govern how far the spawned bullet actually travels before despawning.
+
+The three distances do not have to match: a stand off shotgun feel can use a short att range with a long weapon range, and a sniper rifle feel can use a long att range with an even longer weapon range, but att range should never exceed weapon range or the human will trigger from far enough away that the bullet despawns before reaching you. Att range zero on an armed human still works thanks to the bullet's first tick hit check at its spawn position, so a same tile point blank fire connects without the bullet needing to travel.
 Two melee specific fields stay player only when a human carries the weapon. The swing speed wind-up is always zero on npc swings — the strike is instant the moment the human pulls the trigger regardless of what the weapon's swing speed value says. Melee scadder is also player only — a human swinging a scadder=R melee weapon still only hits the player and never cleaves into other npcs nearby, because npc melee uses a direct contact hit instead of the player's scatter-aware melee pipeline.
+
 Bullet scadder, on the other hand, does work for ranged weapons in human hands. When an armed human fires a scadder ranged weapon, the spawned bullet carries the weapon's scadder radius and count and triggers the same splash on impact that a player-fired bullet does — so a human armed with a rocket launcher authored with scadder=3:5 splashes nearby targets exactly the way it would in player hands.
 
 Humans are also orthogonal to the player's per-type ammo and damage system. The player's character-wide reserve_<type> pools and damage_<type> bonuses (set in kombat.sif and bought through the shop) only apply to weapons the player carries — a human armed with the same battery rifle does not draw from your battery reserve and does not benefit from your battery damage upgrade. NPC weapons fall back to the legacy per-weapon ammo field (defaulting to 100) for their reload pool and use only their own attack stat for damage, so npc combat is fully independent of the player's economy. This is intentional: it means fighting battery-armed humans never drains your battery ammo even when you're not the one shooting, and it keeps the per-type system a player-side build choice rather than a shared resource pool with every npc on the map.
@@ -98,7 +105,6 @@ chase mode (string pair): Two parts joined with a colon as trigger:wander. The t
 Provoke on hit. Any creature that takes damage flips to a provoked state and starts chasing whatever attacked it, regardless of which chase trigger it was authored with. A creature with chase mode=sight that has not yet seen you will still charge after you put a bullet in it, then calm down again after losing sight for chase time's calm slot. The one exception is chase mode=never, which is the only trigger that opts out of this universal provoke override. A never creature stays put under fire, only swinging back if you walk into its attack range.
 
 chase time (triple range): Three timer slots joined with colons as calm:random:pause, all in milliseconds. Each slot supports comma ranges for a fresh random roll. Calm controls how long a provoked creature stays angry after losing sight. Random controls how long each phase of the random trigger lasts before flipping. Pause controls how long a roaming creature stops between destinations. Slots not relevant to the chosen chase mode are ignored.
-
 teleport time (triple range): Three timer slots joined with colons as normal:wounded:healing, all in milliseconds. Each slot supports comma ranges for a fresh random roll on each tick, like 5000,15000 for a teleport every five to fifteen seconds. Each slot also accepts the literal never to disable teleporting in that state, so teleport time=5000:never:never makes the creature teleport on the normal clock but never while wounded or healing. The destination uses the creature's patrol x range, patrol y range, and patrol z range gated by tel x, tel y, and tel z, the creature's *tel* clip plays at the new tile, and the loop sound follows along.
 
 tel_x (bool): Whether a teleport tick is allowed to randomize the creature's x coordinate.
@@ -151,33 +157,41 @@ The same form reopens after each action so you can chain operations without boun
 
 Add. Picks a path, category, and subtype from three lists, then opens a flat form with every parsed info.sif field as its own input plus checkboxes for the booleans.
 The path list chooses whether the file is written to the global default pack or to the current map's local pack.
+
 The category and subtype lists are populated from the actual folders on disk under the chosen path.
 Every field is required on save, with no defaults, so the saved file always has a complete entry for every key.
+
 If an info.sif already exists for the chosen NPC the form prompts to overwrite before writing.
 
 Edit. Same three list selection as Add, but the subtype list filters to only show creatures that already have an info.sif.
 Selecting one opens the same flat form prefilled with the existing values.
+
 Saving silently overwrites the file with no prompt because editing always intends to replace what's there.
 
 Remove. Picks a path and a category, then offers a multi select list of configured subtypes.
 Toggling subtypes with space adds them to the deletion set, and pressing remove brings up a confirmation prompt with the count of files about to be deleted.
+
 Only the info.sif files are removed; the audio folders themselves are left untouched.
 
 Spawn. Routes to the existing direct spawn flow, which is the same form that used to open before the chooser was added.
 Asks for x, y, scale level, a path, and a category and subtype, then writes the spawn line into the map's info.sif and immediately spawns the creature.
+
 The path list here has three options: any, global, and map. Any merges both pools into the subtype list and lets the spawned creature use the map local copy when present and the global one otherwise. Global filters the subtype list to only what's in the global pack and pins the spawn to read from there. Map filters to only what's in the map's local pack and pins the spawn to read from there. The chosen path is stored on the spawn line so each creature remembers which source to use.
 Important: path only controls which info.sif file the creature reads its stats from. It does not redirect where sounds come from. Sound lookup always runs its own search, checking the compiled map pack first, then the map's local assets folder, then the shared sound pack, no matter what path the spawn line uses. So a creature pinned to global with path=global still plays map local sounds if you've placed any in the map's assets folder, and a creature pinned to map with path=map still falls back to the shared sound pack for any clips the map doesn't ship its own copy of. The same rule applies to launch path on launching creatures.
 
 View. Picks a path, category, and subtype like the others, with the subtype list filtered to configured creatures.
 Below the lists is a read only multiline contents box that shows the raw info.sif text for the focused subtype.
+
 Arrowing through the subtype list updates the contents box in real time so you can scan multiple files without reopening the form.
 
 Spawn line format.
 
 When the Spawn button writes a creature into a map, it appends a line to the map's info.sif at data/maps/decompiled/<map>/info.sif in the form npc x y scale path category subtype on 2d and topdown maps, and npc x y z scale path category subtype on 3d maps.
 The fields are space separated, where x, y, and (on 3d maps) z are the tile coordinates the creature spawns at, scale is an integer scale level, path is one of any, global, or map, and category and subtype name the folder under sounds/<pack>/npc/.
+
 The path value decides where the creature reads its info.sif from. Any uses the map's local copy if it exists and falls back to the global pack otherwise. Global pins the lookup to sounds/<pack>/npc/ even if a map local copy is present. Map pins it to data/maps/decompiled/<map>/assets/npc/ and refuses the global fallback. This lets two creatures of the same name on the same map intentionally read different stats by pointing at different paths.
 A subtype of none places nothing and is silently ignored at parse time, which is useful as a placeholder when blocking out a map.
+
 The line is read back on map load and the creature placed automatically, so editing this file by hand is a valid way to bulk place creatures without going through the builder.
 
 Scale level.
@@ -188,14 +202,18 @@ A scale level of zero spawns the creature with the exact health, attack, ranges,
 A scale level of one or higher overrides those stats with auto generated values: attack ranges collapse to zero, sight ranges expand to the full map, max health and attack are derived from the player's current xp, lives drop to one, fire and move timers are randomized between one hundred and one thousand milliseconds, the level field is set to the chosen scale value, the xp drop equals the level, and movement and item drops are randomized booleans.
 
 Any scale level above zero scales the spawned creature to threaten the player at their current progression, which is what bosses and spawn zones use under the hood.
+
 The wounded and healing variant stats are also blanked out under scale, so an auto scaled creature has no flee or healing behavior even if the underlying info.sif configures one.
 
 NPC zones.
 
 NPC zones are the auto respawn variant of a single spawn line.
 Instead of placing one creature once, a zone defines an x range and a y coordinate (plus a z coordinate on 3d maps) that, when the player walks across it, spawns a creature on a timer.
+
 Zones live in the map info.sif as npc_zone minx maxx y spawntime scale path category subtype on 2d and topdown maps, and npc_zone minx maxx y z spawntime scale path category subtype on 3d maps. They are written by the npc zone builder under zones.
 Walking onto any tile in the zone's minx to maxx range at the matching y starts the spawn timer, and once spawntime milliseconds have elapsed a creature is spawned at a random x inside the range, the timer restarts, and the next spawn is queued.
+
 Setting subtype to random rolls a random folder from the chosen category on every spawn, so a single zone can spit out a different creature each time it fires.
+
 The scale field works the same as on spawn lines: zero uses static info.sif stats, one or higher auto scales to the player. The path field works the same way too, with any, global, and map deciding which info.sif copy each spawned creature reads from.
 Combined with random subtype and a high scale, a zone becomes an open ended encounter generator that keeps producing fresh threats as long as you stand in it.
