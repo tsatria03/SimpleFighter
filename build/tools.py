@@ -550,8 +550,23 @@ def menu():
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if len(args) >= 5:
-        flags = [int(a) for a in args[:5]]
-        run_release(*flags, interactive=False)
-    else:
+    if not args:
         menu()
+    else:
+        usage = (
+            "Usage: tools.py <skip_compile> <skip_package> <skip_release> "
+            "<skip_website> <skip_empty_release>\n"
+            f"  Each flag must be {SKIP} (ask), {DO} (force run), or {SILENT_SKIP} (skip silently)."
+        )
+        if len(args) != 5:
+            print(f"Error: expected 5 args, got {len(args)}.\n{usage}")
+            sys.exit(2)
+        try:
+            flags = [int(a) for a in args]
+        except ValueError:
+            print(f"Error: all args must be integers.\n{usage}")
+            sys.exit(2)
+        if any(f not in (SKIP, DO, SILENT_SKIP) for f in flags):
+            print(f"Error: each flag must be {SKIP}, {DO}, or {SILENT_SKIP}.\n{usage}")
+            sys.exit(2)
+        run_release(*flags, interactive=False)
