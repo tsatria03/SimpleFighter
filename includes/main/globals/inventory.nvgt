@@ -1,236 +1,248 @@
-int invpos;
-dictionary inv;
+class inventory
+{
+    dictionary items;
+    int pos = -1;
+    int sound_slot;
 
-void give(string item, int amount)
-{
-int a;
-if (!inv.exists(item))
-{
-inv.set(item,amount);
-}
-else
-{
-inv.get(item,a);
-if (a+amount<=0)
-inv.delete(item);
-else
-inv.set(item,a+amount);
-}
-}
-void focus_item(const string&in item)
-{
-    string[] keys = inv.get_keys();
-    keys.sort_ascending();
-    for (uint i = 0; i < keys.length(); i++)
+    void give(string item, int amount)
     {
-        if (keys[i] == item)
+        int a;
+        if (!items.exists(item))
         {
-            invpos = i;
-            return;
+            items.set(item, amount);
+        }
+        else
+        {
+            items.get(item, a);
+            if (a + amount <= 0)
+                items.delete(item);
+            else
+                items.set(item, a + amount);
         }
     }
-}
-void clear_inv()
-{
-inv.delete_all();
-}
-void cycle_inv(int dir)
-{
-    if (inv.get_size() == 0)
+
+    void clear()
     {
-        p.destroy_sound(invslot);
-        speak("empty");
+        items.delete_all();
+    }
+
+    void focus_item(const string&in item)
+    {
+        string[] keys = items.get_keys();
+        keys.sort_ascending();
+        for (uint i = 0; i < keys.length(); i++)
+        {
+            if (keys[i] == item)
+            {
+                pos = i;
+                return;
+            }
+        }
+    }
+
+    void cycle(int dir)
+    {
+        if (items.get_size() == 0)
+        {
+            invpool.destroy_sound(sound_slot);
+            speak("empty");
+            return;
+        }
+        string[] keys = items.get_keys();
+        keys.sort_ascending();
+        if (dir == 1)
+            pos += 1;
+        else
+            pos -= 1;
+        if (pos >= keys.length())
+            pos = 0;
+        else if (pos < 0)
+            pos = keys.length() - 1;
+        double invpan = convert_to_pan(keys.length(), pos, -25, 25);
+        sound_slot = invpool.play_stationary_extended(get_pack_sound("main/characters/" + chartype + "/general/*inv*"), false, 0, invpan, 0, 100, false);
+        int a;
+        items.get(keys[pos], a);
+        if (a == 1)
+            speak(keys[pos] + ". Item " + (pos + 1) + " of " + keys.length());
+        else
+            speak(keys[pos] + "s, " + a + ". Item " + (pos + 1) + " of " + keys.length());
+    }
+
+    string[] get_keys()
+    {
+        string[] keys = items.get_keys();
+        keys.sort_ascending();
+        return keys;
+    }
+
+    int get_size()
+    {
+        return items.get_size();
+    }
+
+    string getitem()
+    {
+        if (items.get_size() <= 0)
+            return "";
+        string[] keys = items.get_keys();
+        keys.sort_ascending();
+        if (pos < 0 || pos >= keys.length())
+            return "";
+        return keys[pos];
+    }
+
+    int count(string item)
+    {
+        if (!items.exists(item)) return 0;
+        int a = 0;
+        items.get(item, a);
+        return a;
+    }
+
+    int item_exists(string item)
+    {
+        string[] current = items.get_keys();
+        int index = current.find(item);
+        if (index > -1)
+        {
+            int ab;
+            items.get(current[index], ab);
+            return ab;
+        }
+        return -1;
+    }
+
+    string find(string pattern)
+    {
+        string[] keys = items.get_keys();
+        for (uint i = 0; i < keys.length(); i++)
+        {
+            if (glob_match(pattern, keys[i])) return keys[i];
+        }
+        return "";
+    }
+}
+
+void useitem(string current)
+{
+    if (inv.get_size() <= 0)
+    {
+        speak("No items");
         return;
     }
     string[] keys = inv.get_keys();
-    keys.sort_ascending();
-    if (dir == 1)
-        invpos += 1;
-    else
-        invpos -= 1;
-    if (invpos >= keys.length())
-        invpos = 0;
-    else if (invpos < 0)
-        invpos = keys.length() - 1;
-    double invpan = convert_to_pan(keys.length(), invpos, -25, 25);
-    invslot = p.play_stationary_extended(get_pack_sound("main/characters/" + chartype+"/general/*inv*"), false, 0, invpan, 0, 100, false);
-    int a;
-    inv.get(keys[invpos], a);
-    if (a == 1)
-        speak(keys[invpos] + ". Item " + (invpos + 1) + " of " + keys.length());
-    else
-        speak(keys[invpos] + "s, " + a + ". Item " + (invpos + 1) + " of " + keys.length());
-}
-void useitem(string current)
-{
-if (inv.get_size()<=0)
-{
-speak("No items");
-return;
-}
-else
-{
-string[] keys = inv.get_keys();
-keys.sort_ascending();
-if (invpos < 0 || invpos >= keys.length())
-    return;
-current = keys[invpos];
+    if (inv.pos < 0 || inv.pos >= keys.length())
+        return;
+    current = keys[inv.pos];
     string[] healtype = get_map_sound_folders("builder/interaction/items/health/*");
     string[] healtype2 = get_map_sound_folders("builder/interaction/items/stamina/*");
     string[] misctype = get_map_sound_folders("builder/interaction/items/other/*");
     if (healtype.find(current) != -1)
-{
-if(health>=maxhealth)
-{
-speak("You don't need to use this!");
-return;
-}
-itemslot=p.play_stationary_extended(get_map_sound("builder/interaction/items/health/"+current+"/*fire*"),false,0,0,0,100,false);
-itemslot=p.play_stationary_extended(get_map_sound("builder/interaction/items/health/"+current+"/*hit*"),false,0,0,0,100,false);
-give(current,-1);
-double heal_percent = random(5, 10);
-double heal_amount = maxhealth * (heal_percent / 100.0);
-health = min(health + heal_amount, maxhealth);
-speak("healed to"+round(health/maxhealth*100,2)+"percent health");
-return;
-}
+    {
+        if (health >= maxhealth)
+        {
+            speak("You don't need to use this!");
+            return;
+        }
+        itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/health/" + current + "/*fire*"), false, 0, 0, 0, 100, false);
+        itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/health/" + current + "/*hit*"), false, 0, 0, 0, 100, false);
+        inv.give(current, -1);
+        double heal_percent = random(5, 10);
+        double heal_amount = maxhealth * (heal_percent / 100.0);
+        health = min(health + heal_amount, maxhealth);
+        speak("healed to" + round(health / maxhealth * 100, 2) + "percent health");
+        return;
+    }
     if (healtype2.find(current) != -1)
-{
-if(stamina>=maxstamina)
-{
-speak("You don't need to use this!");
-return;
-}
-itemslot=p.play_stationary_extended(get_map_sound("builder/interaction/items/stamina/"+current+"/*fire*"),false,0,0,0,100,false);
-itemslot=p.play_stationary_extended(get_map_sound("builder/interaction/items/stamina/"+current+"/*hit*"),false,0,0,0,100,false);
-give(current,-1);
-double heal_percent = random(5, 10);
-double heal_amount = maxstamina * (heal_percent / 100.0);
-stamina = min(stamina + heal_amount, maxstamina);
-speak("healed to"+round(stamina/maxstamina*100,2)+"percent stamina");
-return;
-}
+    {
+        if (stamina >= maxstamina)
+        {
+            speak("You don't need to use this!");
+            return;
+        }
+        itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/stamina/" + current + "/*fire*"), false, 0, 0, 0, 100, false);
+        itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/stamina/" + current + "/*hit*"), false, 0, 0, 0, 100, false);
+        inv.give(current, -1);
+        double heal_percent = random(5, 10);
+        double heal_amount = maxstamina * (heal_percent / 100.0);
+        stamina = min(stamina + heal_amount, maxstamina);
+        speak("healed to" + round(stamina / maxstamina * 100, 2) + "percent stamina");
+        return;
+    }
     if (misctype.find(current) != -1)
-{
-if (current == "healing_cast")
-{
-if (broken_bones.get_size() == 0)
-{
-speak("You don't need to use this!");
-return;
-}
-itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/healing_cast/*healstart*"), false, 0, 0, 0, 100, false);
-speak("You apply the healing cast.");
-heal_bones(random(5, 10));
-return;
-}
-if(current == "health_scanner")
-{
-itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/health_scanner/*scanstart*"), false, 0, 0, 0, 100, false);
-itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/health_scanner/*scanning*"), false, 0, 0, 0, 100, false);
-speak("scanning");
-wait(random(500, 1000));
-itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/health_scanner/*scanstop*"), false, 0, 0, 0, 100, false);
-array<string> keys = broken_bones.get_keys();
-if (keys.length() == 0)
-{
-speak("The scan results show that you have no broken bones.");
-}
-else
-{
-string message = "The scan results show that you ";
-if (keys.length() == 1)
-{
-string part = keys[0];
-string status;
-broken_bones.get(part, status);
-string spoken_part = part.replace("_", " ");
-message += status + " your " + spoken_part + ".";
-}
-else
-{
-for (uint i = 0; i < keys.length(); i++)
-{
-string part = keys[i];
-string status;
-broken_bones.get(part, status);
-string spoken_part = part.replace("_", " ");
-message += status + " your " + spoken_part;
-if (i == keys.length() - 2)
-message += ", and ";
-else if (i < keys.length() - 2)
-message += ", ";
-else
-message += ".";
-}
-}
-speak(message);
-}
-return;
-}
-itemslot=p.play_stationary_extended(get_map_sound("builder/interaction/items/other/"+current+"/*fire*"),false,0,0,0,100,false);
-itemslot=p.play_stationary_extended(get_map_sound("builder/interaction/items/other/"+current+"/*hit*"),false,0,0,0,100,false);
-give(current,-1);
-speak(current+";"+"recycled");
-return;
-}
-}
-}
-
-int count_total_items()
-{
-return inv.get_keys().length();
-}
-int inv_count(string item)
-{
-if (!inv.exists(item)) return 0;
-int a = 0;
-inv.get(item, a);
-return a;
+    {
+        if (current == "healing_cast")
+        {
+            if (broken_bones.get_size() == 0)
+            {
+                speak("You don't need to use this!");
+                return;
+            }
+            itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/healing_cast/*healstart*"), false, 0, 0, 0, 100, false);
+            speak("You apply the healing cast.");
+            heal_bones(random(5, 10));
+            return;
+        }
+        if (current == "health_scanner")
+        {
+            itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/health_scanner/*scanstart*"), false, 0, 0, 0, 100, false);
+            itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/health_scanner/*scanning*"), false, 0, 0, 0, 100, false);
+            speak("scanning");
+            wait(random(500, 1000));
+            itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/health_scanner/*scanstop*"), false, 0, 0, 0, 100, false);
+            array<string> keys = broken_bones.get_keys();
+            if (keys.length() == 0)
+            {
+                speak("The scan results show that you have no broken bones.");
+            }
+            else
+            {
+                string message = "The scan results show that you ";
+                if (keys.length() == 1)
+                {
+                    string part = keys[0];
+                    string status;
+                    broken_bones.get(part, status);
+                    string spoken_part = part.replace("_", " ");
+                    message += status + " your " + spoken_part + ".";
+                }
+                else
+                {
+                    for (uint i = 0; i < keys.length(); i++)
+                    {
+                        string part = keys[i];
+                        string status;
+                        broken_bones.get(part, status);
+                        string spoken_part = part.replace("_", " ");
+                        message += status + " your " + spoken_part;
+                        if (i == keys.length() - 2)
+                            message += ", and ";
+                        else if (i < keys.length() - 2)
+                            message += ", ";
+                        else
+                            message += ".";
+                    }
+                }
+                speak(message);
+            }
+            return;
+        }
+        itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/" + current + "/*fire*"), false, 0, 0, 0, 100, false);
+        itemslot = p.play_stationary_extended(get_map_sound("builder/interaction/items/other/" + current + "/*hit*"), false, 0, 0, 0, 100, false);
+        inv.give(current, -1);
+        speak(current + ";" + "recycled");
+        return;
+    }
 }
 
-string find_inv(string pattern)
-{
-string[] keys = inv.get_keys();
-for (uint i = 0; i < keys.length(); i++)
-{
-if (glob_match(pattern, keys[i])) return keys[i];
-}
-return "";
-}
-string getitem()
-{
-if (inv.get_size()<=0)
-{
-return "";
-}
-else
-{
-string current=inv.get_keys()[invpos];
-return current;
-}
-}
-int item_exists(string item)
-{
-string[] current=inv.get_keys();
-int index=current.find(item);
-if (index>-1)
-{
-int ab;
-inv.get(current[index],ab);
-return ab;
-}
-else
-return -1;
-}
 void parse_item_spec(string spec, string &out item_id, int &out count)
 {
-count = 1;
-item_id = spec;
-int colon = spec.find(":");
-if (colon < 0) return;
-item_id = spec.substr(0, colon);
-string n = spec.substr(colon + 1);
-int parsed = string_to_int(n);
-if (parsed > 0) count = parsed;
+    count = 1;
+    item_id = spec;
+    int colon = spec.find(":");
+    if (colon < 0) return;
+    item_id = spec.substr(0, colon);
+    string n = spec.substr(colon + 1);
+    int parsed = string_to_int(n);
+    if (parsed > 0) count = parsed;
 }
