@@ -90,6 +90,19 @@ string normalized = string_replace(content, "\r\n", "\n", true);
 normalized = string_replace(normalized, "\r", "\n", true);
 return string_split(normalized, "\n", true);
 }
+// Strips a leading and trailing double-quote pair from a string. If the string is shorter than 2 chars, or doesn't start AND end with ", the original string is returned unchanged. Used to unwrap quoted values when reading from files that store user-typed text in quotes (e.g. meta.sif description, tts_enemie taunt/hurt/death/voice).
+string strip_quotes(string s)
+{
+	if (s.length() >= 2 && s.substr(0, 1) == "\"" && s.substr(s.length() - 1, 1) == "\"")
+		return s.substr(1, s.length() - 2);
+	return s;
+}
+// Wraps a string in double-quotes after stripping any internal quotes. Used when writing user-typed text to files that store values in quoted form. Symmetric with strip_quotes — strip_quotes(quote_value(x)) returns x with any internal quotes removed.
+string quote_value(string s)
+{
+	string cleaned = string_replace(s, "\"", "", true);
+	return "\"" + cleaned + "\"";
+}
 string oxford_join(string[]@ parts)
 {
 uint n = parts.length();
