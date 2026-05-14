@@ -4,6 +4,7 @@ string disallowed_name = "";
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 string saved_name = "";
 string saved_owner = defowner;
+string saved_description = "none";
 string saved_minx = "";
 string saved_maxx = "";
 string saved_miny = "";
@@ -13,7 +14,7 @@ string saved_maxz = "";
 int saved_mode_pos = 0;
 int last_mode_pos = -2;
 bool do_build = true;
-int nm_name, nm_owner, nm_mode, nm_minx, nm_maxx, nm_miny, nm_maxy, nm_minz, nm_maxz, nm_ok, nm_cn;
+int nm_name, nm_owner, nm_description, nm_mode, nm_minx, nm_maxx, nm_miny, nm_maxy, nm_minz, nm_maxz, nm_ok, nm_cn;
 while(true)
 {
 if(do_build)
@@ -23,6 +24,7 @@ if(last_mode_pos != -2)
 {
 saved_name = form.get_text(nm_name);
 saved_owner = form.get_text(nm_owner);
+saved_description = form.get_text(nm_description);
 saved_minx = form.get_text(nm_minx);
 saved_maxx = form.get_text(nm_maxx);
 saved_miny = form.get_text(nm_miny);
@@ -41,7 +43,6 @@ form.add_list_item(nm_mode, "topdown - bird's-eye view with free movement on a f
 form.add_list_item(nm_mode, "3d - full volumetric world with height, body rotation, and gravity", "3d");
 form.set_list_position(nm_mode, saved_mode_pos, false);
 nm_name = form.create_input_box("name", saved_name);
-nm_owner = form.create_input_box("owner", saved_owner);
 form.set_disallowed_chars(nm_name, disallowed_name, false, "This character is not allowed.");
 nm_minx = form.create_input_box("minimum length (use a leading dash for negative)", saved_minx);
 nm_maxx = form.create_input_box("maximum length (use a leading dash for negative)", saved_maxx);
@@ -71,6 +72,8 @@ if(saved_mode_pos != -1)
 form.set_disallowed_chars(nm_miny, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(nm_maxy, disallowed_nums, false, "This character is not allowed.");
 }
+nm_owner = form.create_input_box("owner", saved_owner);
+nm_description = form.create_input_box("description", saved_description);
 nm_ok = form.create_button("&okay", true);
 nm_cn = form.create_button("&cancel");
 if(last_mode_pos == -2)
@@ -159,6 +162,8 @@ continue;
 }
 string new_name = form.get_text(nm_name);
 string new_owner = form.get_text(nm_owner);
+string new_description = string_trim_sides(form.get_text(nm_description));
+if(new_description == "none") new_description = "";
 string new_mode = (saved_mode_pos == 0) ? "2d" : (saved_mode_pos == 1 ? "topdown" : "3d");
 double new_minx = string_to_number(form.get_text(nm_minx));
 double new_maxx = string_to_number(form.get_text(nm_maxx));
@@ -177,7 +182,7 @@ dlg("Error. A map with this name already exists. Press enter to continue.");
 form.focus(nm_name);
 continue;
 }
-create_map(new_name, new_owner, new_mode, new_minx, new_maxx, new_miny, new_maxy, new_minz, new_maxz);
+create_map(new_name, new_owner, new_mode, new_minx, new_maxx, new_miny, new_maxy, new_minz, new_maxz, new_description);
 load_map(new_name, new_owner);
 return true;
 }
