@@ -103,6 +103,19 @@ string quote_value(string s)
 	string cleaned = string_replace(s, "\"", "", true);
 	return "\"" + cleaned + "\"";
 }
+// Parses a comma-separated owners string (the raw form stored in meta.sif's `owner=` line) into a trimmed list of owner names. Empty input or whitespace-only entries are dropped, so an empty `owner=` field yields an empty array.
+string[] parse_owner_list(string raw)
+{
+	string[] result;
+	if (raw.length() == 0) return result;
+	string[] parts = string_split(raw, ",", true);
+	for (uint i = 0; i < parts.length(); i++)
+	{
+		string p = string_trim_sides(parts[i]);
+		if (p.length() > 0) result.insert_last(p);
+	}
+	return result;
+}
 string oxford_join(string[]@ parts)
 {
 uint n = parts.length();
@@ -118,10 +131,19 @@ result += "and " + parts[n - 1];
 return result;
 }
 // Takes an ISO 8601 timestamp string (e.g. "2026-05-13T14:30:00Z") and returns a human-readable relative-time phrase describing how long ago that moment was: "just now", "5 minutes ago", "3 hours ago", "yesterday", "12 days ago", "2 months ago", "1 year ago". Designed for at-a-glance display in the map menu line and similar surfaces. An unparseable input or a future timestamp returns "just now" defensively.
+// The stamp is parsed manually (substr + parse_double) instead of via parse_datetime because POCO's DateTimeParser throws on unexpected input formats and NVGT does not wrap the exception, which crashes the script. Manual parsing on a known fixed format avoids the parser entirely.
 string time_ago(string iso8601_stamp)
 {
-	int tzd = 0;
-	datetime@ then = parse_datetime(DATE_TIME_FORMAT_ISO8601, iso8601_stamp, tzd);
+	if (iso8601_stamp.length() < 19) return "just now";
+	int year = int(parse_double(iso8601_stamp.substr(0, 4)));
+	int month = int(parse_double(iso8601_stamp.substr(5, 2)));
+	int day = int(parse_double(iso8601_stamp.substr(8, 2)));
+	int hour = int(parse_double(iso8601_stamp.substr(11, 2)));
+	int minute = int(parse_double(iso8601_stamp.substr(14, 2)));
+	int second = int(parse_double(iso8601_stamp.substr(17, 2)));
+	if (year < 1970 || month < 1 || month > 12 || day < 1 || day > 31) return "just now";
+	if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return "just now";
+	datetime@ then = datetime(year, month, day, hour, minute, second);
 	if (@then == null) return "just now";
 	timestamp now;
 	now.update();
