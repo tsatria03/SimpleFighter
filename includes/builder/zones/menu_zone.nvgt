@@ -284,19 +284,18 @@ string temp_map_name = string_replace(maps[i], ".sif", "", true);
 mapper.open("data/builder/maps/decompiled/"+temp_map_name+"/"+"data/main.sif", "rb");
 string temp_map_data = mapper.read(2048);
 mapper.close();
-string temp_owner;
 string temp_mode;
 string[] lines = delinear(temp_map_data);
 for (uint j = 0; j < lines.length(); j++)
 {
 string[] sd = string_split(lines[j], " ", true);
-if (sd[0] == "mode" && sd.length() == 2) temp_mode = sd[1];
-else if (sd[0] == "owner" && sd.length() == 2) temp_owner = sd[1];
-if (temp_mode != "" && temp_owner != "") break;
+if (sd[0] == "mode" && sd.length() == 2) { temp_mode = sd[1]; break; }
 }
-uint64 size = get_directory_size("data/builder/maps/decompiled/" + maps[i]);
-string readable_size = measure_file_size(size);
-m.add_item(temp_map_name + ", " + temp_mode + " map (by " + temp_owner + ": total size: " + readable_size+")", maps[i]);
+map_meta@ meta = read_map_meta_decompiled(temp_map_name);
+string[] owners = parse_owner_list(meta.owner);
+string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
+string updated = time_ago(meta.modified_date);
+m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
 }
 m.intro_text="Decompiled maps menu";
 int mres=m.run();
