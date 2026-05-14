@@ -927,6 +927,71 @@ speak("Invalid command syntax. Usage: /gozone, or /gz.");
 return;
 }
 }
+else if (base_command == "mi" || base_command == "mapinfo")
+{
+if (parsed.length() != 1)
+{
+speak("Invalid command syntax. Usage: /mapinfo, or /mi.");
+return;
+}
+if (mapname == "")
+{
+speak("No map is currently loaded.");
+return;
+}
+map_meta@ info_meta;
+uint64 info_bytes = 0;
+if (map_is_compiled)
+{
+string info_compiled_path = "data/builder/maps/compiled/" + mapname + ".map";
+info_bytes = file_get_size(info_compiled_path);
+string info_meta_text = "";
+pack info_pack;
+if (info_pack.open(info_compiled_path, PACK_OPEN_MODE_READ))
+{
+if (info_pack.file_exists("data/meta.sif"))
+{
+uint sz = info_pack.get_file_size("data/meta.sif");
+info_meta_text = info_pack.read_file("data/meta.sif", 0, sz);
+}
+info_pack.close();
+}
+@info_meta = parse_map_meta(info_meta_text);
+}
+else
+{
+info_bytes = get_directory_size("data/builder/maps/decompiled/" + mapname);
+@info_meta = read_map_meta_decompiled(mapname);
+}
+string[] info_owners = parse_owner_list(info_meta.owner);
+string info_owners_joined = (info_owners.length() == 0) ? "noone" : oxford_join(info_owners);
+string info_description = info_meta.description == "" ? "none" : info_meta.description;
+string info_created = info_meta.created_date == "" ? "unknown" : info_meta.created_date + " (" + time_ago(info_meta.created_date) + ")";
+string info_modified = info_meta.modified_date == "" ? "unknown" : info_meta.modified_date + " (" + time_ago(info_meta.modified_date) + ")";
+string info_size = measure_file_size(info_bytes);
+string info_body = "Name: " + mapname + "\r\n" +
+"Owners: " + info_owners_joined + "\r\n" +
+"Description: " + info_description + "\r\n" +
+"Created: " + info_created + "\r\n" +
+"Modified: " + info_modified + "\r\n" +
+"Total size: " + info_size;
+pause_pools();
+form.reset();
+form.create_window("Map info for " + mapname, false, false, false);
+int infobox = form.create_input_box("Map info", info_body, read_only:true, multiline:true);
+int infoclose = form.create_button("&close", false, true);
+form.focus(infobox);
+while(true)
+{
+wait(5);
+form.monitor();
+if (form.is_pressed(infoclose))
+{
+resume_pools();
+break;
+}
+}
+}
 else if (base_command == "mp"  && !map_is_compiled || base_command == "maps" && !map_is_compiled)
 {
 if (parsed.length() == 1)

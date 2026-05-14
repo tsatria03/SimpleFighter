@@ -278,6 +278,24 @@ void bump_map_modified(string map_name = "")
 		"modified date=" + meta.modified_date + "\r\n");
 	f.close();
 }
+// Writes all four meta fields to data/meta.sif for the given decompiled map. Stamps modified date to now; backfills created date with now if it's empty. Returns true on success.
+bool write_map_meta(string map_name, map_meta@ meta)
+{
+	if (map_name == "") return false;
+	string now = utc_iso8601_now();
+	if (meta.created_date == "") meta.created_date = now;
+	meta.modified_date = now;
+	string path = "data/builder/maps/decompiled/" + map_name + "/data/meta.sif";
+	file f;
+	if (!f.open(path, "wb")) return false;
+	f.write("owner=" + meta.owner + "\r\n" +
+		"description=" + quote_value(meta.description) + "\r\n" +
+		"created date=" + meta.created_date + "\r\n" +
+		"modified date=" + meta.modified_date + "\r\n");
+	f.close();
+	return true;
+}
+
 // Reads data/meta.sif from a decompiled map folder. Returns the parsed map_meta. If the file is missing the map_meta defaults are used.
 map_meta@ read_map_meta_decompiled(string map_name)
 {
