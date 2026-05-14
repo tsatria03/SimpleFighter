@@ -7,43 +7,57 @@ bool load_map_pack(const string&in name, const string&in key)
 		map_pack_loaded = false;
 		return false;
 	}
-	if (map_pack_loaded) map_pack.close();
-	if (!map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+	if (map_pack_loaded) { map_pack.close(); map_pack_files.resize(0); map_pack_folders.delete_all(); }
+	if (!map_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
 	{
 		map_pack_loaded = false;
+		map_pack_files.resize(0);
+		map_pack_folders.delete_all();
 		@sound_default_pack = null;
 		return false;
 	}
 	@sound_default_pack = @map_pack;
 	map_pack_loaded = true;
+	map_pack_files = map_pack.list_files();
+	build_pack_folder_index(@map_pack_files, @map_pack_folders);
 	return true;
 }
 
-// Opens sounds/compiled/<name>.spack into the matching global pack handle (sound_main_pack for name="main", sound_builder_pack for name="builder"), sets its _loaded flag, and returns true. Silently returns false if the file is missing or the name is unrecognized — the resolver and disk-fallback lookups handle the missing-pack case transparently. Mirrors load_map_pack's shape so map and sound pack lifetimes look the same.
+// Opens sounds/compiled/<name>.spack into the matching global pack handle (sound_main_pack for name="main", sound_builder_pack for name="builder"), sets its _loaded flag, registers the handle in the engine's sound-default-pack chain so audio playback transparently falls back to it when the file isn't on disk, and returns true. Silently returns false if the file is missing or the name is unrecognized — the chain stays unchanged in that case and disk lookups continue to win. Mirrors load_map_pack's shape so map and sound pack lifetimes look the same.
 bool load_sound_pack(const string&in name, const string&in key)
 {
 	string compiled_path = "sounds/compiled/" + name + ".spack";
 	if (!file_exists(compiled_path)) return false;
 	if (name == "main")
 	{
-		if (sound_main_pack_loaded) sound_main_pack.close();
-		if (!sound_main_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+		if (sound_main_pack_loaded) { remove_sound_default_pack(@sound_main_pack); sound_main_pack.close(); sound_main_pack_files.resize(0); sound_main_pack_folders.delete_all(); }
+		if (!sound_main_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
 		{
 			sound_main_pack_loaded = false;
+			sound_main_pack_files.resize(0);
+			sound_main_pack_folders.delete_all();
 			return false;
 		}
 		sound_main_pack_loaded = true;
+		sound_main_pack_files = sound_main_pack.list_files();
+		build_pack_folder_index(@sound_main_pack_files, @sound_main_pack_folders);
+		add_sound_default_pack(@sound_main_pack);
 		return true;
 	}
 	if (name == "builder")
 	{
-		if (sound_builder_pack_loaded) sound_builder_pack.close();
-		if (!sound_builder_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+		if (sound_builder_pack_loaded) { remove_sound_default_pack(@sound_builder_pack); sound_builder_pack.close(); sound_builder_pack_files.resize(0); sound_builder_pack_folders.delete_all(); }
+		if (!sound_builder_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
 		{
 			sound_builder_pack_loaded = false;
+			sound_builder_pack_files.resize(0);
+			sound_builder_pack_folders.delete_all();
 			return false;
 		}
 		sound_builder_pack_loaded = true;
+		sound_builder_pack_files = sound_builder_pack.list_files();
+		build_pack_folder_index(@sound_builder_pack_files, @sound_builder_pack_folders);
+		add_sound_default_pack(@sound_builder_pack);
 		return true;
 	}
 	return false;
@@ -74,24 +88,133 @@ else
 return "";
 }
 
+// Returns a reference to the cached file list for the given pack handle so callers don't pay the cost of pack.list_files() on every lookup. pack.list_files() apparently rebuilds the array each call, which for an 800MB spack with thousands of files turns map load into a slideshow. The caches are populated once at load_sound_pack / load_map_pack time and reset on close.
+string[]@ pack_file_cache(pack@ p)
+{
+	if (p is null) return null;
+	if (sound_main_pack_loaded && @p is @sound_main_pack) return @sound_main_pack_files;
+	if (sound_builder_pack_loaded && @p is @sound_builder_pack) return @sound_builder_pack_files;
+	if (map_pack_loaded && @p is @map_pack) return @map_pack_files;
+	return null;
+}
+
+// Returns a handle to the per-folder index for the given pack — a dictionary keyed by folder path (always ending with a "/") whose values are string[] lists of files in that folder. Built once at pack load time so audio lookups can do O(1) folder lookup + O(few-files-in-folder) regex match instead of O(every-file-in-pack) prefix scan. Without this index, a single get_map_sound call against a 10k-file pack iterates all 10k file paths just to find the handful that actually live in the requested folder.
+dictionary@ pack_folder_index(pack@ p)
+{
+	if (p is null) return null;
+	if (sound_main_pack_loaded && @p is @sound_main_pack) return @sound_main_pack_folders;
+	if (sound_builder_pack_loaded && @p is @sound_builder_pack) return @sound_builder_pack_folders;
+	if (map_pack_loaded && @p is @map_pack) return @map_pack_folders;
+	return null;
+}
+
+// Walks the cached file list of a pack and groups paths by their containing folder. Called by load_map_pack / load_sound_pack right after the file list is cached. The index lives for the pack's lifetime and is wiped on close.
+void build_pack_folder_index(string[]@ files, dictionary@ index)
+{
+	index.delete_all();
+	if (files is null) return;
+	for (uint i = 0; i < files.length(); i++)
+	{
+		string path = files[i];
+		int last_slash = -1;
+		for (int j = int(path.length()) - 1; j >= 0; j--)
+		{
+			if (path.substr(j, 1) == "/") { last_slash = j; break; }
+		}
+		if (last_slash < 0) continue;
+		string folder = path.substr(0, last_slash + 1);
+		string[]@ folder_files = null;
+		if (index.exists(folder)) index.get(folder, @folder_files);
+		if (folder_files is null)
+		{
+			string[] new_list;
+			new_list.insert_last(path);
+			index.set(folder, @new_list);
+		}
+		else
+		{
+			folder_files.insert_last(path);
+		}
+	}
+}
+
+// Lists the unique sub-folder names directly under `prefix` inside the given pack. Spacks store flat file paths, not folders, so we derive folder names by scanning every file whose path begins with `prefix` and grabbing the first segment after it. Returns an unsorted array of folder names (e.g. for prefix "equipments/weapons/" inside a main spack, returns "archery", "melee", etc.).
+string[] list_pack_folders(pack@ p, const string&in prefix)
+{
+	string[] result;
+	if (p is null) return result;
+	dictionary seen;
+	string[]@ files = pack_file_cache(p);
+	string[] uncached;
+	if (files is null) { uncached = p.list_files(); @files = @uncached; }
+	for (uint i = 0; i < files.length(); i++)
+	{
+		if (!string_starts_with(files[i], prefix)) continue;
+		string rest = files[i].substr(prefix.length());
+		int slash = string_find(rest, "/");
+		if (slash < 0) continue;
+		string folder = rest.substr(0, slash);
+		if (!seen.exists(folder))
+		{
+			seen[folder] = true;
+			result.insert_last(folder);
+		}
+	}
+	return result;
+}
+
 string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
 {
 	if (p is null)
 		return "";
-	string[] files = p.list_files();
-	string[] matches;
+	// Extract the containing folder from the pattern: everything up to and including the last "/" before the first wildcard. With a per-folder index built at pack load time, this turns the lookup from O(all_files_in_pack) into O(files_in_just_this_folder), which is the difference between a map with 50 signs feeling instant vs. dragging through hundreds of thousands of comparisons per footstep.
+	int wild_pos = string_find(soundname, "*");
+	int scan_end = (wild_pos < 0) ? int(soundname.length()) : wild_pos;
+	int last_slash = -1;
+	for (int j = scan_end - 1; j >= 0; j--)
+	{
+		if (soundname.substr(j, 1) == "/") { last_slash = j; break; }
+	}
+	dictionary@ index = pack_folder_index(p);
+	string[]@ folder_files = null;
+	if (last_slash >= 0 && index !is null)
+	{
+		string folder = soundname.substr(0, last_slash + 1);
+		if (index.exists(folder)) index.get(folder, @folder_files);
+	}
+	// Fallback path — no folder prefix in the pattern, or no index built for this pack. Walk the cached file list with the old prefix-filter to stay correct.
+	string[] uncached;
+	if (folder_files is null)
+	{
+		string[]@ all_files = pack_file_cache(p);
+		if (all_files is null) { uncached = p.list_files(); @all_files = @uncached; }
+		string prefix = (wild_pos < 0) ? soundname : soundname.substr(0, wild_pos);
+		string pattern_fb = soundname;
+		pattern_fb = string_replace(pattern_fb, ".", "\\.", true);
+		pattern_fb = string_replace(pattern_fb, "*", ".*", true);
+		pattern_fb = "^" + pattern_fb + "$";
+		regexp re_fb(pattern_fb, RE_CASELESS);
+		string[] fb_matches;
+		for (uint i = 0; i < all_files.length(); i++)
+		{
+			if (!string_starts_with(all_files[i], prefix)) continue;
+			if (re_fb.match(all_files[i])) fb_matches.insert_last(all_files[i]);
+		}
+		if (fb_matches.length() > 0) return fb_matches[random(0, fb_matches.length() - 1)];
+		return "";
+	}
+	// Fast path — we have the folder's file list, just regex-match the few entries it contains.
 	string pattern = soundname;
 	pattern = string_replace(pattern, ".", "\\.", true);
 	pattern = string_replace(pattern, "*", ".*", true);
 	pattern = "^" + pattern + "$";
 	regexp re(pattern, RE_CASELESS);
-	for (uint i = 0; i < files.length(); i++)
+	string[] matches;
+	for (uint i = 0; i < folder_files.length(); i++)
 	{
-		if (re.match(files[i]))
-			matches.insert_last(files[i]);
+		if (re.match(folder_files[i])) matches.insert_last(folder_files[i]);
 	}
-	if (matches.length() > 0)
-		return matches[random(0, matches.length() - 1)];
+	if (matches.length() > 0) return matches[random(0, matches.length() - 1)];
 	return "";
 }
 
@@ -100,20 +223,44 @@ string[] get_map_sound_folders(const string&in path)
 	dictionary seen;
 	string[] result;
 	string map_path = "data/builder/maps/decompiled/" + mapname + "/assets/" + path;
-	string[] map_dirs = find_directories(map_path);
-	for (uint i = 0; i < map_dirs.length(); i++)
+	if (directory_exists("data/builder/maps/decompiled/" + mapname + "/assets"))
 	{
-		seen[map_dirs[i]] = true;
-		result.insert_last(map_dirs[i]);
+		string[] map_dirs = find_directories(map_path);
+		for (uint i = 0; i < map_dirs.length(); i++)
+		{
+			seen[map_dirs[i]] = true;
+			result.insert_last(map_dirs[i]);
+		}
 	}
 	string global_path = "sounds/decompiled/" + path;
-	string[] global_dirs = find_directories(global_path);
-	for (uint i = 0; i < global_dirs.length(); i++)
+	if (directory_exists("sounds/decompiled"))
 	{
-		if (!seen.exists(global_dirs[i]))
-			result.insert_last(global_dirs[i]);
+		string[] global_dirs = find_directories(global_path);
+		for (uint i = 0; i < global_dirs.length(); i++)
+		{
+			if (!seen.exists(global_dirs[i]))
+				result.insert_last(global_dirs[i]);
+		}
 	}
-	sort_naturally(result);
+	// Disk missed (or partially missed) — also pull folder names from the matching global spack with the bare bucket-relative prefix.
+	{
+		string prefix = path;
+		pack@ p = null;
+		if (string_starts_with(prefix, "main/")) { @p = @sound_main_pack; prefix = prefix.substr(5); }
+		else if (string_starts_with(prefix, "builder/")) { @p = @sound_builder_pack; prefix = prefix.substr(8); }
+		if (string_ends_with(prefix, "/*")) prefix = prefix.substr(0, prefix.length() - 2);
+		if (prefix != "" && !string_ends_with(prefix, "/")) prefix += "/";
+		if (@p != null)
+		{
+			string[] pack_dirs = list_pack_folders(p, prefix);
+			for (uint i = 0; i < pack_dirs.length(); i++)
+			{
+				if (!seen.exists(pack_dirs[i]))
+					result.insert_last(pack_dirs[i]);
+			}
+		}
+	}
+	if (result.length() > 0) sort_naturally(result);
 	return result;
 }
 string get_map_sound(const string&in path)
@@ -121,7 +268,7 @@ string get_map_sound(const string&in path)
 	if (map_pack_loaded)
 	{
 		string basepath = "assets/" + path;
-		string result = find_sound_in_pack(basepath);
+		string result = find_sound_in_pack(basepath, @map_pack);
 		if (result != "")
 			return result;
 	}
@@ -130,21 +277,49 @@ string get_map_sound(const string&in path)
 	if (result != "")
 		return result;
 	string global_path = "sounds/decompiled/" + path;
-	return find_sound_in_disk(global_path);
+	result = find_sound_in_disk(global_path);
+	if (result != "")
+		return result;
+	// Last resort: query the matching global spack with the bare bucket-relative pattern. The engine's sound-pack chain will load the matched file at play time.
+	if (string_starts_with(path, "main/") && sound_main_pack_loaded)
+		return find_sound_in_pack(path.substr(5), @sound_main_pack);
+	if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
+		return find_sound_in_pack(path.substr(8), @sound_builder_pack);
+	return "";
 }
 
 string[] get_pack_sound_folders(const string&in path)
 {
 	string[] result;
 	string global_path = "sounds/decompiled/" + path;
-	result = find_directories(global_path);
-	sort_naturally(result);
+	if (directory_exists(global_path) || directory_exists("sounds/decompiled"))
+		result = find_directories(global_path);
+	if (result.length() == 0)
+	{
+		// Disk missed — fall back to the matching global spack with the bare bucket-relative prefix.
+		string prefix = path;
+		pack@ p = null;
+		if (string_starts_with(prefix, "main/")) { @p = @sound_main_pack; prefix = prefix.substr(5); }
+		else if (string_starts_with(prefix, "builder/")) { @p = @sound_builder_pack; prefix = prefix.substr(8); }
+		if (string_ends_with(prefix, "/*")) prefix = prefix.substr(0, prefix.length() - 2);
+		if (prefix != "" && !string_ends_with(prefix, "/")) prefix += "/";
+		if (@p != null) result = list_pack_folders(p, prefix);
+	}
+	if (result.length() > 0) sort_naturally(result);
 	return result;
 }
 string get_pack_sound(const string&in path)
 {
-string fullpath = "sounds/decompiled/" + path;
-return find_sound_in_disk(fullpath);
+	string fullpath = "sounds/decompiled/" + path;
+	string result = find_sound_in_disk(fullpath);
+	if (result != "")
+		return result;
+	// Disk missed — fall back to the matching global spack with the bare bucket-relative pattern. The engine's sound-pack chain will load the matched file at play time.
+	if (string_starts_with(path, "main/") && sound_main_pack_loaded)
+		return find_sound_in_pack(path.substr(5), @sound_main_pack);
+	if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
+		return find_sound_in_pack(path.substr(8), @sound_builder_pack);
+	return "";
 }
 
 //compile/decompile map functions, seprat soundpack equivalents will also go here.
@@ -394,9 +569,9 @@ void compile_sound_pack()
 		}
 	}
 	string source_folder = "sounds/decompiled/" + chosen;
-	// If a previous spack of this name is still open, close it so the file can be overwritten.
-	if (chosen == "main" && sound_main_pack_loaded) { sound_main_pack.close(); sound_main_pack_loaded = false; }
-	if (chosen == "builder" && sound_builder_pack_loaded) { sound_builder_pack.close(); sound_builder_pack_loaded = false; }
+	// If a previous spack of this name is still open, remove it from the chain and close it so the file can be overwritten.
+	if (chosen == "main" && sound_main_pack_loaded) { remove_sound_default_pack(@sound_main_pack); sound_main_pack.close(); sound_main_pack_loaded = false; }
+	if (chosen == "builder" && sound_builder_pack_loaded) { remove_sound_default_pack(@sound_builder_pack); sound_builder_pack.close(); sound_builder_pack_loaded = false; }
 	if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
 	{
 		alert("Error", "Failed to create sound pack file at: " + full_output_path);
