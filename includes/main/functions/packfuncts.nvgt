@@ -19,10 +19,46 @@ bool load_map_pack(const string&in name, const string&in key)
 	return true;
 }
 
-// Returns the pack handle that owns the given path, or null if the path lives on disk. Today this only checks the active map pack; future global sound packs will plug into the same dispatch so every play site can route audio through one helper instead of poking pack handles directly.
+// Opens sounds/compiled/<name>.spack into the matching global pack handle (sound_main_pack for name="main", sound_builder_pack for name="builder"), sets its _loaded flag, and returns true. Silently returns false if the file is missing or the name is unrecognized — the resolver and disk-fallback lookups handle the missing-pack case transparently. Mirrors load_map_pack's shape so map and sound pack lifetimes look the same.
+bool load_sound_pack(const string&in name, const string&in key)
+{
+	string compiled_path = "sounds/compiled/" + name + ".spack";
+	if (!file_exists(compiled_path)) return false;
+	if (name == "main")
+	{
+		if (sound_main_pack_loaded) sound_main_pack.close();
+		if (!sound_main_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+		{
+			sound_main_pack_loaded = false;
+			return false;
+		}
+		sound_main_pack_loaded = true;
+		return true;
+	}
+	if (name == "builder")
+	{
+		if (sound_builder_pack_loaded) sound_builder_pack.close();
+		if (!sound_builder_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+		{
+			sound_builder_pack_loaded = false;
+			return false;
+		}
+		sound_builder_pack_loaded = true;
+		return true;
+	}
+	return false;
+}
+
+// Returns the pack handle that owns the given logical path, or null if no loaded pack matches and the path should be served from disk. Dispatches by the path's first segment:
+//   - "assets/..." or "data/..." → the active map pack (if a compiled map is loaded)
+//   - "main/..."                  → sound_main_pack (if sounds/compiled/main.spack is loaded)
+//   - "builder/..."               → sound_builder_pack (if sounds/compiled/builder.spack is loaded)
+// Callers are responsible for translating the logical path into the path-inside-pack when they call read_file / file_exists on the returned handle — map_pack stores paths as "assets/..." and "data/..." verbatim, while sound packs drop the "main/" or "builder/" prefix since the pack name itself names that bucket.
 pack@ resolve_pack(const string&in path)
 {
-	if (map_pack_loaded) return @map_pack;
+	if (map_pack_loaded && (string_starts_with(path, "assets/") || string_starts_with(path, "data/"))) return @map_pack;
+	if (sound_main_pack_loaded && string_starts_with(path, "main/")) return @sound_main_pack;
+	if (sound_builder_pack_loaded && string_starts_with(path, "builder/")) return @sound_builder_pack;
 	return null;
 }
 string find_sound_in_disk(string soundname)
@@ -309,4 +345,181 @@ void decompile_map()
 	alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
 	show_window("Simple fighter, version "+version);
 	decompile_map();
+}
+
+void compile_sound_pack()
+{
+	string[] candidates = {"builder", "main"};
+	string[] available;
+	for (uint i = 0; i < candidates.length(); i++)
+	{
+		if (directory_exists("sounds/decompiled/" + candidates[i])) available.insert_last(candidates[i]);
+	}
+	if (available.length() == 0)
+	{
+		alert("Error", "There are no decompiled sound packs available to compile.");
+		packtoolsmenu();
+		return;
+	}
+	if (!directory_exists("sounds/compiled"))
+		directory_create("sounds/compiled");
+	setupmenu();
+	for (uint i = 0; i < available.length(); i++)
+	{
+		string pack_name = available[i];
+		uint64 bytes = get_directory_size("sounds/decompiled/" + pack_name);
+		m.add_item(pack_name + ", total size, " + measure_file_size(bytes), pack_name);
+	}
+	m.intro_text = "Choose a sound pack to compile";
+	int mres = m.run();
+	if (mres < 0)
+	{
+		speak("canceled");
+		packtoolsmenu();
+		return;
+	}
+	string chosen = m.selected_item_id;
+	string full_output_path = "sounds/compiled/" + chosen + ".spack";
+	if (file_exists(full_output_path))
+	{
+		setupmenu();
+		m.add_item("yes");
+		m.add_item("no");
+		m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
+		int conf = m.run();
+		if (conf != 0)
+		{
+			compile_sound_pack();
+			return;
+		}
+	}
+	string source_folder = "sounds/decompiled/" + chosen;
+	// If a previous spack of this name is still open, close it so the file can be overwritten.
+	if (chosen == "main" && sound_main_pack_loaded) { sound_main_pack.close(); sound_main_pack_loaded = false; }
+	if (chosen == "builder" && sound_builder_pack_loaded) { sound_builder_pack.close(); sound_builder_pack_loaded = false; }
+	if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
+	{
+		alert("Error", "Failed to create sound pack file at: " + full_output_path);
+		packtoolsmenu();
+		return;
+	}
+	file_list.resize(0);
+	find_stuff(source_folder, source_folder);
+	alert("Sound Pack Compiler", "There are " + file_list.length() + " files in the sound pack. Press OK to start compiling!");
+	show_window("Compiling sound pack.");
+	wait(5);
+	int percent = -1;
+	for (uint i = 0; i < file_list.length(); i++)
+	{
+		double progress = (double(i) / double(file_list.length())) * 100.0;
+		int rounded = int(progress);
+		if (rounded != percent)
+		{
+			percent = rounded;
+			beep_percentage(percent);
+		}
+		string relative = string_replace(file_list[i], source_folder + "/", "", true);
+		pfile.add_file(file_list[i], relative);
+	}
+	pfile.close();
+	load_sound_pack(chosen, "");
+	alert("Success!", "Sound pack compiled to " + full_output_path);
+	show_window("Simple fighter, version "+version);
+	compile_sound_pack();
+}
+
+void decompile_sound_pack()
+{
+	string[] found = find_files("sounds/compiled/*.spack");
+	if (found.length() == 0)
+	{
+		alert("Error", "There are no compiled sound packs available to decompile.");
+		packtoolsmenu();
+		return;
+	}
+	if (!directory_exists("sounds/decompiled"))
+		directory_create("sounds/decompiled");
+	// Reorder so builder.spack lists first, then main.spack, then anything else in original order.
+	string[] spacks;
+	string[] preferred = {"builder.spack", "main.spack"};
+	for (uint p = 0; p < preferred.length(); p++)
+		for (uint i = 0; i < found.length(); i++)
+			if (found[i] == preferred[p]) spacks.insert_last(found[i]);
+	for (uint i = 0; i < found.length(); i++)
+	{
+		bool already = false;
+		for (uint j = 0; j < spacks.length(); j++) if (spacks[j] == found[i]) { already = true; break; }
+		if (!already) spacks.insert_last(found[i]);
+	}
+	setupmenu();
+	for (uint i = 0; i < spacks.length(); i++)
+	{
+		string spack_filename = spacks[i];
+		string spack_path = "sounds/compiled/" + spack_filename;
+		string base_name = string_replace(spack_filename, ".spack", "", true);
+		uint64 bytes = file_get_size(spack_path);
+		m.add_item(base_name + ", total size, " + measure_file_size(bytes), base_name);
+	}
+	m.intro_text = "Choose a sound pack to decompile";
+	int mres = m.run();
+	if (mres < 0)
+	{
+		speak("canceled");
+		packtoolsmenu();
+		return;
+	}
+	string chosen = m.selected_item_id;
+	string base_dir = "sounds/decompiled/" + chosen;
+	if (directory_exists(base_dir))
+	{
+		setupmenu();
+		m.add_item("yes");
+		m.add_item("no");
+		m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
+		int conf = m.run();
+		if (conf != 0)
+		{
+			decompile_sound_pack();
+			return;
+		}
+	}
+	string filename = "sounds/compiled/" + chosen + ".spack";
+	if (!pfile.open(filename, PACK_OPEN_MODE_READ))
+	{
+		alert("Error", "Could not open the specified sound pack file: " + filename);
+		packtoolsmenu();
+		return;
+	}
+	contents = pfile.list_files();
+	if (contents.length() == 0)
+	{
+		alert("Error", "No files found in this sound pack.");
+		pfile.close();
+		packtoolsmenu();
+		return;
+	}
+	alert("Get Ready", contents.length() + " files are about to be extracted!");
+	if (!directory_exists(base_dir))
+		directory_create(base_dir);
+	show_window("Decompiling sound pack.");
+	wait(5);
+	double prev_percent = -1;
+	for (uint i = 0; i < contents.length(); i++)
+	{
+		double percent = ((i + 1.0) / contents.length()) * 100.0;
+		percent = round(percent, 0);
+		if (percent != prev_percent)
+		{
+			beep_percentage(int(percent));
+			prev_percent = percent;
+		}
+		string relative_path = contents[i];
+		string output_path = base_dir + "/" + relative_path;
+		create_subfolders(output_path);
+		extract_file(pfile, relative_path, output_path);
+	}
+	pfile.close();
+	alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
+	show_window("Simple fighter, version "+version);
+	decompile_sound_pack();
 }

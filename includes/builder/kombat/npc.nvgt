@@ -307,17 +307,25 @@ string resolve_npc_fall_sound(npc@ self)
 	return snd == "" ? "skip" : snd;
 }
 
-string get_npc_info_path(string category, string subtype, string path = "any")
+// Reads the NPC info.sif contents for a (category, subtype) pair, honoring the spawn line's `path` field. "map" pins to the map-local override only (disk-only since map_pack reads aren't wired here yet). "global" pins to the shared builder bucket (disk under sounds/decompiled/builder/, with spack fallback via read_datafile). "any" tries map-local first and falls back to global. Returns the file contents on success or empty string on miss. Mirrors the resolution rules the player picks on the spawn form.
+string read_npc_info(string category, string subtype, string path = "any")
 {
 	string maplocal = "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif";
-	string global_path = "sounds/decompiled/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif";
-	if(path == "map")
-		return file_exists(maplocal) ? maplocal : "";
-	if(path == "global")
-		return file_exists(global_path) ? global_path : "";
-	if(file_exists(maplocal)) return maplocal;
-	if(file_exists(global_path)) return global_path;
-	return "";
+	if(path == "map" || path == "any")
+	{
+		if(file_exists(maplocal))
+		{
+			file f;
+			if(f.open(maplocal, "rb"))
+			{
+				string content = f.read();
+				f.close();
+				return content;
+			}
+		}
+		if(path == "map") return "";
+	}
+	return read_datafile("builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif");
 }
 
 void parse_range_int(string v, int &out a, int &out b)
@@ -385,13 +393,9 @@ void parse_triple_double(string v, double &out a, double &out b, double &out c)
 	c = (parts.length() >= 3 && parts[2] != "") ? roll_slot_double(parts[2]) : a;
 }
 
-void npc_parse_file(npc@ self, string path)
+void npc_parse_file(npc@ self, string content)
 {
-	if(path == "") return;
-	file info;
-	if(!info.open(path, "rb")) return;
-	string content = info.read();
-	info.close();
+	if(content == "") return;
 	string[] lines = split_lines(content);
 	for(uint i=0; i<lines.length(); i++)
 	{
@@ -535,7 +539,7 @@ void npc_parse_file(npc@ self, string path)
 
 void npc_parse(npc@ self)
 {
-	npc_parse_file(self, get_npc_info_path(self.category, self.subtype, self.path));
+	npc_parse_file(self, read_npc_info(self.category, self.subtype, self.path));
 }
 
 bool npc_below_threshold(npc@ self)

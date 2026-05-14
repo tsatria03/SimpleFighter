@@ -13,3 +13,27 @@ string find_datafile_in_pack(const string&in path, pack@ p=@sound_default_pack)
 	if (!p.file_exists(path)) return "";
 	return path;
 }
+
+// Reads a sound-pack-bucket data file's contents by first trying the disk path under sounds/decompiled/, then falling back to the matching compiled .spack via resolve_pack. Returns the contents on success or empty string on miss. Logical path is the same shape the audio resolvers use ("main/characters/<name>/data/main.sif", "builder/kombat/npc/<group>/<sub>/data/info.sif", etc.). The "main/" or "builder/" prefix is stripped automatically when reading from the pack since spacks bucket by name.
+string read_datafile(const string&in logical_path)
+{
+	string disk_path = "sounds/decompiled/" + logical_path;
+	if (find_datafile_in_disk(disk_path) != "")
+	{
+		file f;
+		if (f.open(disk_path, "rb"))
+		{
+			string content = f.read();
+			f.close();
+			return content;
+		}
+	}
+	pack@ p = resolve_pack(logical_path);
+	if (p is null) return "";
+	string pack_path = logical_path;
+	if (string_starts_with(pack_path, "main/")) pack_path = pack_path.substr(5);
+	else if (string_starts_with(pack_path, "builder/")) pack_path = pack_path.substr(8);
+	if (find_datafile_in_pack(pack_path, @p) == "") return "";
+	uint sz = p.get_file_size(pack_path);
+	return p.read_file(pack_path, 0, sz);
+}
