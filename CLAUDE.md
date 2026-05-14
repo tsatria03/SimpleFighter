@@ -48,7 +48,7 @@ owner tsatria03
 staircase 0 100 0 100 0 0 1 marble2 0 100 false false
 bike 50 50 0 1 1500 bike
 
-Maps may also be compiled into encrypted .map packs at data/maps/compiled/<name>.map; load_map() falls back to the pack when the decompiled folder is absent (set_sound_storage, set_sound_decryption_key, map_pack.read_file("info.sif", ...)).
+Maps may also be compiled into encrypted .map packs at data/builder/maps/compiled/<name>.map; load_map() falls back to the pack when the decompiled folder is absent. The pack handle (map_pack) is opened by load_map_pack and assigned to sound_default_pack so audio reads transparently from inside the .map, while .sif reads go through map_pack.read_file("data/main.sif", ...) directly.
 
 ## Include tree
 

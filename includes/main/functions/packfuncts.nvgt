@@ -2,18 +2,28 @@ bool load_map_pack(const string&in name, const string&in key)
 {
 	mapname = name;
 	string compiled_path = "data/builder/maps/compiled/" + name + ".map";
-	if (file_exists(compiled_path))
-	{
-		set_sound_storage(compiled_path);
-		set_sound_decryption_key(key, true);
-		map_pack_loaded = true;
-		return true;
-	}
-	else
+	if (!file_exists(compiled_path))
 	{
 		map_pack_loaded = false;
 		return false;
 	}
+	if (map_pack_loaded) map_pack.close();
+	if (!map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+	{
+		map_pack_loaded = false;
+		@sound_default_pack = null;
+		return false;
+	}
+	@sound_default_pack = @map_pack;
+	map_pack_loaded = true;
+	return true;
+}
+
+// Returns the pack handle that owns the given path, or null if the path lives on disk. Today this only checks the active map pack; future global sound packs will plug into the same dispatch so every play site can route audio through one helper instead of poking pack handles directly.
+pack@ resolve_pack(const string&in path)
+{
+	if (map_pack_loaded) return @map_pack;
+	return null;
 }
 string find_sound_in_disk(string soundname)
 {

@@ -21,9 +21,9 @@ void load_map(string name, string owner, bool instent_update=true, bool speak_pe
 	map_is_compiled = false;
 	if (!force_compiled && file_exists(decompiled_info_path))
 	{
-		set_sound_storage("");
-		set_sound_decryption_key("", true);
+		if (map_pack_loaded) map_pack.close();
 		map_pack_loaded = false;
+		@sound_default_pack = null;
 		mapper.open(decompiled_info_path, "rb");
 		mapdata = mapper.read();
 		mapper.close();
@@ -47,21 +47,17 @@ void load_map(string name, string owner, bool instent_update=true, bool speak_pe
 			dlg("Error: Map failed to load.");
 			mapmenu();
 		}
-		if (map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
+		if (map_pack.file_exists("data/main.sif"))
 		{
-			if (map_pack.file_exists("data/main.sif"))
-			{
-				uint size = map_pack.get_file_size("data/main.sif");
-				mapdata = map_pack.read_file("data/main.sif", 0, size);
-				loaded = true;
-				map_is_compiled = true;
-			}
-			if (map_pack.file_exists("data/meta.sif"))
-			{
-				uint size = map_pack.get_file_size("data/meta.sif");
-				meta_text = map_pack.read_file("data/meta.sif", 0, size);
-			}
-			map_pack.close();
+			uint size = map_pack.get_file_size("data/main.sif");
+			mapdata = map_pack.read_file("data/main.sif", 0, size);
+			loaded = true;
+			map_is_compiled = true;
+		}
+		if (map_pack.file_exists("data/meta.sif"))
+		{
+			uint size = map_pack.get_file_size("data/meta.sif");
+			meta_text = map_pack.read_file("data/meta.sif", 0, size);
 		}
 	}
 	if (!loaded)
