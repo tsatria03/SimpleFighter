@@ -35,8 +35,11 @@ bool load_map_pack(const string&in name, const string&in key)
 		return false;
 	}
 }
-bool validate_map_data(string[] lines)
+bool validate_map_data(string[] raw_lines)
 {
+string[] lines;
+uint[] _filter_origin;
+filter_empty_lines(raw_lines, lines, _filter_origin);
 bool has_minx = false, has_maxx = false, has_miny = false, has_maxy = false, has_owner = false;
 bool has_minz = false, has_maxz = false;
 int mode_count = 0;
@@ -216,17 +219,44 @@ final+=(a[i]+"\r\n");
 }
 return final;
 }
+// Returns true if the line contains any block-comment closing token (*/, *#, or *;).
+bool line_has_block_close(string line)
+{
+return string_find(line, "*/") >= 0 || string_find(line, "*#") >= 0 || string_find(line, "*;") >= 0;
+}
+// Returns true if the line (after trimming leading whitespace) opens a block comment with /*, #*, or ;*.
+bool line_opens_block_comment(string trimmed)
+{
+return string_starts_with(trimmed, "/*") || string_starts_with(trimmed, "#*") || string_starts_with(trimmed, ";*");
+}
+// Walks lines and returns the visible ones — empty lines, line comments (#, //, ;), and block comments (/* */, #* *#, ;* *;) are all skipped, with original_lines tracking the index of each kept line in the source array so callers can write edits back to the right position.
 void filter_empty_lines(string[] lines, string[]& filtered_lines, uint[]& original_lines)
 {
 filtered_lines.resize(0);
 original_lines.resize(0);
+bool in_block = false;
 for (uint i=0; i<lines.length(); i++)
 {
-if (lines[i].length()>0)
+if (lines[i].length()==0) continue;
+if (in_block)
 {
+if (line_has_block_close(lines[i])) in_block = false;
+continue;
+}
+string trimmed = string_trim_left(lines[i]);
+if (trimmed.length()==0) continue;
+// // beats /* so a "//* foo" line is treated as a whole-line // comment, not a block open.
+if (string_starts_with(trimmed, "//")) continue;
+// Block opens. Check the # and ; variants before bare # and ; so #* and ;* aren't eaten by the line-comment rule below.
+if (line_opens_block_comment(trimmed))
+{
+// Same-line open+close: line is a self-contained block, do not enter block state.
+if (!line_has_block_close(lines[i])) in_block = true;
+continue;
+}
+if (string_starts_with(trimmed, "#") || string_starts_with(trimmed, ";")) continue;
 filtered_lines.insert_last(lines[i]);
 original_lines.insert_last(i);
-}
 }
 }
 
