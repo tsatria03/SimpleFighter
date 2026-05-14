@@ -278,6 +278,59 @@ void bump_map_modified(string map_name = "")
 		"modified date=" + meta.modified_date + "\r\n");
 	f.close();
 }
+// Rewrites every travelpoint line in every decompiled map's data/main.sif so that any destination matching old_name (with or without a `.map` suffix) is replaced by new_name (preserving the suffix the line originally used). Bumps the modified date of any map that actually changed. Returns the number of maps rewritten.
+int fixup_travelpoint_destmaps(string old_name, string new_name)
+{
+	int touched = 0;
+	string[] maps = find_directories("data/builder/maps/decompiled/*");
+	for (uint i = 0; i < maps.length(); i++)
+	{
+		string path = "data/builder/maps/decompiled/" + maps[i] + "/data/main.sif";
+		if (!file_exists(path)) continue;
+		file f;
+		if (!f.open(path, "rb")) continue;
+		string text = f.read();
+		f.close();
+		string[] lines = delinear(text);
+		bool changed = false;
+		for (uint j = 0; j < lines.length(); j++)
+		{
+			string[] sd = string_split(lines[j], " ", true);
+			if (sd.length() < 1 || sd[0] != "travelpoint") continue;
+			int destmap_idx = (sd.length() == 12) ? 7 : 5;
+			if (destmap_idx >= int(sd.length())) continue;
+			string dm = sd[destmap_idx];
+			string dm_bare = dm;
+			bool had_map_suffix = false;
+			if (string_ends_with(dm, ".map"))
+			{
+				dm_bare = string_replace(dm, ".map", "", true);
+				had_map_suffix = true;
+			}
+			if (dm_bare == old_name)
+			{
+				sd[destmap_idx] = had_map_suffix ? (new_name + ".map") : new_name;
+				lines[j] = string_join(sd, " ");
+				changed = true;
+			}
+		}
+		if (!changed) continue;
+		string rewritten;
+		for (uint j = 0; j < lines.length(); j++)
+		{
+			if (j > 0) rewritten += "\r\n";
+			rewritten += lines[j];
+		}
+		file fw;
+		if (!fw.open(path, "wb")) continue;
+		fw.write(rewritten);
+		fw.close();
+		bump_map_modified(maps[i]);
+		touched++;
+	}
+	return touched;
+}
+
 // Writes all four meta fields to data/meta.sif for the given decompiled map. Stamps modified date to now; backfills created date with now if it's empty. Returns true on success.
 bool write_map_meta(string map_name, map_meta@ meta)
 {
