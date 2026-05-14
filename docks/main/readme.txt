@@ -31,7 +31,7 @@ Docks folder.
 Holds player facing documentation, including this readme, the changelog, the version file, and the todo list. Everything in here is also readable from the documentation menu.
 
 Sounds folder.
-Holds the swappable sound packs. Each top level folder is a pack that the engine selects through the soundpack setting. Inside a pack the layout splits into two siblings: main/ (characters, equipments for shields and weapons, keyboards, menus, and a small shared misc folder) and builder/ (per-entity sounds for everything you can drop on a map — kombat NPCs and projectiles, transitions like doors and elevators, transportation like bikes and vehicles, traps, construction tiles, zones, audio entities, and interaction items). Authored info.sif files for each weapon, shield, and npc live in that entity's data/ subfolder, and the corresponding audio clips live in that entity's general/ subfolder.
+Holds the game's audio, split into two siblings: main/ (characters, equipments for shields and weapons, keyboards, menus, and a small shared misc folder) and builder/ (per-entity sounds for everything you can drop on a map — kombat NPCs and projectiles, transitions like doors and elevators, transportation like bikes and vehicles, traps, construction tiles, zones, audio entities, and interaction items). Authored info.sif files for each weapon, shield, and npc live in that entity's data/ subfolder, and the corresponding audio clips live in that entity's general/ subfolder.
 
 Keyboard commands.
 Some keys behave differently depending on the map mode. Where a key has a mode dependent meaning, the mode is called out. On topdown and 3d maps, movement, sonar, spire, and camera arrow keys are body relative, meaning the same key always moves in the same direction relative to your character regardless of which way you've rotated.
@@ -168,10 +168,10 @@ Shift plus any of the above. Bank 2 (14 slots).
 Shift plus alt plus any of the above. Bank 3 (14 slots).
 Macros are configured per pack and selected with the slash macset and slash mc commands.
 
-Creating sound packs.
-Each top level folder in the sounds directory is a swappable pack. The active pack is chosen through the soundpack setting. The sections below list the clip names the engine looks for in each category. The lookup is glob based, so numbered variants (taunt1.ogg, taunt2.ogg, taunt3.ogg) are all picked up under the same base name (taunt.ogg). Add as many variants as you like and the engine will pick one at random.
+Customizing audio.
+Audio lives directly under sounds/main/ and sounds/builder/. The sections below list the clip names the engine looks for in each category. The lookup is glob based, so numbered variants (taunt1.ogg, taunt2.ogg, taunt3.ogg) are all picked up under the same base name (taunt.ogg). Add as many variants as you like and the engine will pick one at random.
 
-Character general (sounds/<pack>/main/characters/<name>/general/).
+Character general (sounds/main/characters/<name>/general/).
 bleed.ogg: Played when your character bleeds.
 break.ogg: Played when your character breaks a bone.
 buy.ogg: Played when your character purchases an upgrade.
@@ -198,7 +198,7 @@ rotate.ogg: Played when your character rotates with Q or E.
 take.ogg: Played when your character returns an item to their inventory.
 turn.ogg: Played when your character turns to face a different direction.
 
-Character map (sounds/<pack>/main/characters/<name>/map/).
+Character map (sounds/main/characters/<name>/map/).
 camair.ogg: Played when the camera passes over an air tile.
 camclear.ogg: Played when camera selection markers are cleared.
 camhazard.ogg: Played when the camera detects a hazard.
@@ -226,14 +226,14 @@ start.ogg: Played when a map starts.
 stop.ogg: Played when a map stops.
 update.ogg: Played when the map is edited live in the builder.
 
-Keyboards (sounds/<pack>/main/keyboards/<theme>/).
+Keyboards (sounds/main/keyboards/<theme>/).
 cap.ogg: Played when a capital letter is typed.
 delete.ogg: Played when a character is deleted.
 return.ogg: Played when enter is pressed in a text field.
 space.ogg: Played when the space bar is pressed.
 type.ogg: Played when any other character is typed.
 
-Menus (sounds/<pack>/main/menus/<theme>/).
+Menus (sounds/main/menus/<theme>/).
 click.ogg: Played when scrolling through menu items.
 close.ogg: Played when a menu closes.
 edge.ogg: Played when a menu hits a boundary.
@@ -243,7 +243,7 @@ open.ogg: Played when a menu opens.
 speaker.ogg: Played by the speaker test option in the main menu.
 wrap.ogg: Played when a menu wraps from end to start.
 
-Misc (sounds/<pack>/main/misc/).
+Misc (sounds/main/misc/).
 gamestart.ogg: Played when the game is unfrozen.
 gamestop.ogg: Played when the game is frozen.
 menu.ogg: Played as a generic menu cue.
@@ -257,7 +257,7 @@ trackoff.ogg: Played when tracking stops.
 tracked.ogg: Played when a tracked object is announced.
 tracking.ogg: Played in a loop while an object is being tracked.
 
-Shields (sounds/<pack>/main/equipments/shields/<name>/general/, with stats at sounds/<pack>/main/equipments/shields/<name>/data/info.sif).
+Shields (sounds/main/equipments/shields/<name>/general/, with stats at sounds/main/equipments/shields/<name>/data/info.sif).
 break.ogg: Played when the shield breaks.
 draw.ogg: Played when the shield is drawn.
 hit.ogg: Played when the shield is hit.
@@ -265,7 +265,7 @@ loop.ogg: Played in a loop while the shield is worn.
 remove.ogg: Played when the shield is put away.
 wear.ogg: Played when the shield is worn.
 
-Weapons (sounds/<pack>/main/equipments/weapons/<category>/<name>/general/, with stats at sounds/<pack>/main/equipments/weapons/<category>/<name>/data/info.sif).
+Weapons (sounds/main/equipments/weapons/<category>/<name>/general/, with stats at sounds/main/equipments/weapons/<category>/<name>/data/info.sif).
 block.ogg: Played when a melee weapon reflects an attack.
 draw.ogg: Played when the weapon is drawn.
 empty.ogg: Played when a non melee weapon runs out of ammo.
@@ -280,7 +280,7 @@ reload.ogg: Played while a non melee weapon is reloading.
 rico.ogg: Played when a bullet ricochets.
 shell.ogg: Played when a non melee weapon drops ammo shells.
 
-NPCs (sounds/<pack>/builder/kombat/npc/<group>/<name>/general/, with stats at sounds/<pack>/builder/kombat/npc/<group>/<name>/data/info.sif).
+NPCs (sounds/builder/kombat/npc/<group>/<name>/general/, with stats at sounds/builder/kombat/npc/<group>/<name>/data/info.sif).
 death.ogg: Played when the NPC dies.
 heal.ogg: Played when the NPC heals.
 hit.ogg: Played when the NPC strikes the player.
@@ -293,20 +293,20 @@ step.ogg: Played when the NPC moves a step.
 taunt.ogg: Played when the NPC taunts the player.
 tel.ogg: Played when the NPC teleports.
 
-Projectiles (sounds/<pack>/builder/kombat/projectiles/<name>/).
+Projectiles (sounds/builder/kombat/projectiles/<name>/).
 death.ogg: Played when the projectile is destroyed.
 hit.ogg: Played when the projectile hits a target.
 hurt.ogg: Played when the projectile takes damage from a hit.
 loop.ogg: Played in a loop while the projectile is in flight.
 
-Items (sounds/<pack>/builder/interaction/items/<group>/<name>/).
+Items (sounds/builder/interaction/items/<group>/<name>/).
 break.ogg: Played when the item breaks.
 fire.ogg: Played when the item is used.
 get.ogg: Played when the item is picked up.
 hit.ogg: Played when the item makes contact.
 loop.ogg: Played in a loop while the item is active.
 
-Map objects (sounds/<pack>/builder/<group>/<entity>/<name>/).
+Map objects (sounds/builder/<group>/<entity>/<name>/).
 The builder folder holds clips for every entity type that can be placed on a map. Each entity type lives in a group folder by purpose (construction, interaction, transitions, transportation, traps, zones, audio, misc), and inside it the per-instance clips are organized by name. Below is the typical clip set for each entity type, prefixed with the path you'll find it at. As with the rest of the pack the lookup is glob based, so adding extra clips with the same base name is fine.
 
 aircrafts (builder/transportation/aircrafts/): alarm, appear, beacon, change, crash, death, enter, flight, gear, hurt, land, loop, pass, start, turn.

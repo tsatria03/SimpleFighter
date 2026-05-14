@@ -264,6 +264,27 @@ double buy_item(double item, double base_cost, double cost_multiplier)
 return 1+(item*0.1)*base_cost*cost_multiplier;
 }
 
+double buy_stat(string title, string prompt, string noun)
+{
+vd.set_disallowed_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,.<>?/+=`~-_", false, "This character is not allowed.");
+string s=vd.input_box(title, prompt);
+if(s=="")
+{
+speak("canceled");
+return 0;
+}
+double v=string_to_number(s);
+if(v>points)
+{
+dlg("Error, you don't have enough points to purchase "+v+" "+noun+".", dlgsound:true);
+return 0;
+}
+p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*buy*"),false);
+speak("Perchis completed.");
+points-=v;
+return v;
+}
+
 double convert_to_pan(double length, double index, double range1, double range2)
 {
 try
@@ -526,55 +547,6 @@ string int_to_string(int value)
 int bool_to_int(bool b)
 {
 return b? 1:0;
-}
-
-string find_sound_in_disk(string soundname)
-{
-string[] snd=find_files(soundname);
-if (snd.length()>0)
-{
-string[] a_path=string_split(soundname,"/",true);
-string path=string_replace(soundname,a_path[a_path.length()-1],"",true);
-return path+snd[random(0,snd.length()-1)];
-}
-else
-return "";
-}
-
-string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
-{
-	if (p is null)
-		return "";
-	string[] files = p.list_files();
-	string[] matches;
-	string pattern = soundname;
-	pattern = string_replace(pattern, ".", "\\.", true);
-	pattern = string_replace(pattern, "*", ".*", true);
-	pattern = "^" + pattern + "$";
-	regexp re(pattern, RE_CASELESS);
-	for (uint i = 0; i < files.length(); i++)
-	{
-		if (re.match(files[i]))
-			matches.insert_last(files[i]);
-	}
-	if (matches.length() > 0)
-		return matches[random(0, matches.length() - 1)];
-	return "";
-}
-
-string[] get_pack_sound_folders(const string&in path)
-{
-	string[] result;
-	string global_path = "sounds/" + soundpack + "/" + path;
-	result = find_directories(global_path);
-	sort_naturally(result);
-	return result;
-}
-
-string get_pack_sound(const string&in path)
-{
-string fullpath = "sounds/" + soundpack + "/" + path;
-return find_sound_in_disk(fullpath);
 }
 
 	string[] clean_lines(string filepath)
