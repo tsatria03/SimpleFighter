@@ -13,9 +13,10 @@ void load_map(string name, string owner, bool instent_update=true, bool speak_pe
 		mapname = string_replace(mapname, ".sif", "", true);
 	if (string_ends_with(mapname, ".map"))
 		mapname = string_replace(mapname, ".map", "", true);
-	string decompiled_info_path = "data/builder/maps/decompiled/" + mapname + "/info.sif";
+	string decompiled_info_path = "data/builder/maps/decompiled/" + mapname + "/data/main.sif";
 	string compiled_path = "data/builder/maps/compiled/" + mapname + ".map";
 	string mapdata = "";
+	string meta_text = "";
 	bool loaded = false;
 	map_is_compiled = false;
 	if (!force_compiled && file_exists(decompiled_info_path))
@@ -26,6 +27,16 @@ void load_map(string name, string owner, bool instent_update=true, bool speak_pe
 		mapper.open(decompiled_info_path, "rb");
 		mapdata = mapper.read();
 		mapper.close();
+		string meta_path = "data/builder/maps/decompiled/" + mapname + "/data/meta.sif";
+		if (file_exists(meta_path))
+		{
+			file mf;
+			if (mf.open(meta_path, "rb"))
+			{
+				meta_text = mf.read();
+				mf.close();
+			}
+		}
 		loaded = true;
 		map_is_compiled = false;
 	}
@@ -38,21 +49,28 @@ void load_map(string name, string owner, bool instent_update=true, bool speak_pe
 		}
 		if (map_pack.open(compiled_path, PACK_OPEN_MODE_READ))
 		{
-			if (map_pack.file_exists("info.sif"))
+			if (map_pack.file_exists("data/main.sif"))
 			{
-				uint size = map_pack.get_file_size("info.sif");
-				mapdata = map_pack.read_file("info.sif", 0, size);
+				uint size = map_pack.get_file_size("data/main.sif");
+				mapdata = map_pack.read_file("data/main.sif", 0, size);
 				loaded = true;
 				map_is_compiled = true;
+			}
+			if (map_pack.file_exists("data/meta.sif"))
+			{
+				uint size = map_pack.get_file_size("data/meta.sif");
+				meta_text = map_pack.read_file("data/meta.sif", 0, size);
 			}
 			map_pack.close();
 		}
 	}
 	if (!loaded)
 	{
-		dlg("Error: Map not found or missing info.sif.");
+		dlg("Error: Map not found or missing data/main.sif.");
 		mapmenu();
 	}
+	map_meta meta = parse_map_meta(meta_text);
+	mapowner = meta.owner;
 uint64 map_total_bytes = map_is_compiled ? file_get_size(compiled_path) : get_directory_size("data/builder/maps/decompiled/" + mapname);
 string map_total_readable = measure_file_size(map_total_bytes);
 string load_help = "Loading map. Press Space for percentage, 1 2 and 3 keys for detailed progress, or escape to cancel. Press h to read this help message again.";
@@ -130,10 +148,6 @@ minz=stn(sd[1]);
 else if(sd[0]=="maxz" && sd.length()==2)
 {
 maxz=stn(sd[1]);
-}
-else if(sd[0]=="owner" && sd.length()==2)
-{
-mapowner=sd[1];
 }
 else if(sd[0]=="mode" && sd.length()==2)
 {
@@ -268,7 +282,7 @@ turnable = true;
 if(mapmode == "")
 {
 if(loadsounds==1) mapload.stop();
-dlg("Error: Map is missing the 'mode' field in info.sif. Add a line like 'mode 2d' (or topdown, or 3d) and try again.");
+dlg("Error: Map is missing the 'mode' field in data/main.sif. Add a line like 'mode 2d' (or topdown, or 3d) and try again.");
 clearmap();
 destroymap();
 mapmenu();

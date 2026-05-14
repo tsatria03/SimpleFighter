@@ -219,6 +219,60 @@ final+=(a[i]+"\r\n");
 }
 return final;
 }
+// Current time as an ISO 8601 UTC string suitable for meta.sif stamps (e.g. 2026-05-13T14:30:00Z). Used by create_map and every save path that updates the modified date.
+string utc_iso8601_now()
+{
+	timestamp t;
+	t.update();
+	return t.format(DATE_TIME_FORMAT_ISO8601, 0);
+}
+
+// Per-map metadata loaded from data/meta.sif. The four fields are written by create_map and the map menu's metadata-editing options, and read by load_map (for owner) and /mapinfo (for the full display).
+class map_meta
+{
+	string owner;
+	string description;
+	string created_date;
+	string modified_date;
+	map_meta()
+	{
+		owner = "noone";
+		description = "";
+		created_date = "";
+		modified_date = "";
+	}
+}
+// Parses raw meta.sif text into a populated map_meta. Empty text returns the default map_meta with safe defaults. Missing keys are left at their default; unknown keys are ignored.
+map_meta parse_map_meta(string meta_text)
+{
+	map_meta result;
+	string[] lines = split_lines(meta_text);
+	for (uint i = 0; i < lines.length(); i++)
+	{
+		string line = lines[i];
+		int eq = string_find(line, "=");
+		if (eq < 0) continue;
+		string key = string_trim_sides(line.substr(0, eq));
+		string value = string_trim_sides(line.substr(eq + 1));
+		if (key == "owner") result.owner = value;
+		else if (key == "description") result.description = value;
+		else if (key == "created date") result.created_date = value;
+		else if (key == "modified date") result.modified_date = value;
+	}
+	return result;
+}
+// Reads data/meta.sif from a decompiled map folder. Returns the parsed map_meta. If the file is missing the map_meta defaults are used.
+map_meta read_map_meta_decompiled(string map_name)
+{
+	string path = "data/builder/maps/decompiled/" + map_name + "/data/meta.sif";
+	if (!file_exists(path)) return map_meta();
+	file f;
+	if (!f.open(path, "rb")) return map_meta();
+	string text = f.read();
+	f.close();
+	return parse_map_meta(text);
+}
+
 // Returns true if the line contains any block-comment closing token (*/, *#, or *;).
 bool line_has_block_close(string line)
 {
