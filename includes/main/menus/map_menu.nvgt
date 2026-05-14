@@ -479,6 +479,7 @@ setupmenu();
 m.add_item("add owners", "addown");
 m.add_item("edit owners", "editown");
 m.add_item("remove owners", "remown");
+m.add_item("edit description", "editdesc");
 m.add_item("add a line", "addline");
 m.add_item("edit a line", "editline");
 m.add_item("remove a line", "remline");
@@ -788,6 +789,33 @@ if(mapem=="remown")
 	resume_pools();
 	mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 	speak("Owner removed.");
+}
+if(mapem=="editdesc")
+{
+	map_meta@ meta = read_map_meta_decompiled(mapname);
+	resume_pools();
+	vd.set_disallowed_chars("", false, "This character is not allowed.");
+	string current_desc = (meta.description == "") ? "none" : meta.description;
+	string new_desc = vd.input_box("Edit description", "Edit the map description.", current_desc);
+	if(new_desc == "" && current_desc != "")
+	{
+		speak("canceled");
+		return;
+	}
+	new_desc = string_trim_sides(new_desc);
+	if(new_desc == meta.description)
+	{
+		speak("canceled");
+		return;
+	}
+	meta.description = new_desc;
+	if(!write_map_meta(mapname, meta))
+	{
+		speak("Failed to write map metadata.");
+		return;
+	}
+	mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+	speak("Description updated.");
 }
 if(mapem=="dcm")
 {
