@@ -104,6 +104,40 @@ result += parts[i] + ", ";
 result += "and " + parts[n - 1];
 return result;
 }
+// Takes an ISO 8601 timestamp string (e.g. "2026-05-13T14:30:00Z") and returns a human-readable relative-time phrase describing how long ago that moment was: "just now", "5 minutes ago", "3 hours ago", "yesterday", "12 days ago", "2 months ago", "1 year ago". Designed for at-a-glance display in the map menu line and similar surfaces. An unparseable input or a future timestamp returns "just now" defensively.
+string time_ago(string iso8601_stamp)
+{
+	int tzd = 0;
+	datetime@ then = parse_datetime(DATE_TIME_FORMAT_ISO8601, iso8601_stamp, tzd);
+	if (@then == null) return "just now";
+	timestamp now;
+	now.update();
+	// POCO utcTime() returns 100-nanosecond intervals (Windows FILETIME units), not microseconds. Divide by 10,000,000 to get seconds.
+	int64 diff_ticks = now.UTC_time - then.UTC_time;
+	if (diff_ticks < 0) return "just now";
+	int64 seconds = diff_ticks / 10000000;
+	if (seconds < 60) return "just now";
+	if (seconds < 3600)
+	{
+		int64 mins = seconds / 60;
+		return "" + mins + " minute" + (mins == 1 ? "" : "s") + " ago";
+	}
+	if (seconds < 86400)
+	{
+		int64 hours = seconds / 3600;
+		return "" + hours + " hour" + (hours == 1 ? "" : "s") + " ago";
+	}
+	int64 days = seconds / 86400;
+	if (days == 1) return "yesterday";
+	if (days < 30) return "" + days + " days ago";
+	if (days < 365)
+	{
+		int64 months = days / 30;
+		return "" + months + " month" + (months == 1 ? "" : "s") + " ago";
+	}
+	int64 years = days / 365;
+	return "" + years + " year" + (years == 1 ? "" : "s") + " ago";
+}
 bool string_file_encrypt(string input_file, string output_file, string key)
 {
 bool success;
