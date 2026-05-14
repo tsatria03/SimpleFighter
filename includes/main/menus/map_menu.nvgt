@@ -361,33 +361,10 @@ m.fade_music();
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
-string temp_map_name = string_replace(maps[i], ".map", "", true);
+	string temp_map_name = string_replace(maps[i], ".map", "", true);
 	string map_path = "data/builder/maps/compiled/" + temp_map_name + ".map";
-string temp_mode="";
-string meta_text="";
-	pack preview_pack;
-	if (preview_pack.open(map_path, PACK_OPEN_MODE_READ))
-	{
-		if (preview_pack.file_exists("data/main.sif"))
-		{
-uint size = preview_pack.get_file_size("data/main.sif");
-			uint read_size = size < 2048 ? size : 2048;
-			string info_data = preview_pack.read_file("data/main.sif", 0, read_size);
-			string[] lines = delinear(info_data);
-for (uint j = 0; j < lines.length(); j++)
-{
-string[] sd = string_split(lines[j], " ", true);
-if (sd[0] == "mode" && sd.length() == 2) { temp_mode = sd[1]; break; }
-}
-}
-		if (preview_pack.file_exists("data/meta.sif"))
-		{
-			uint msize = preview_pack.get_file_size("data/meta.sif");
-			meta_text = preview_pack.read_file("data/meta.sif", 0, msize);
-		}
-		preview_pack.close();
-}
-	map_meta@ meta = parse_map_meta(meta_text);
+	string temp_mode = read_map_mode_compiled(map_path);
+	map_meta@ meta = read_map_meta_compiled(map_path);
 	string[] owners = parse_owner_list(meta.owner);
 	string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
 	string updated = time_ago(meta.modified_date);
@@ -423,22 +400,13 @@ m.fade_music();
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
-string temp_map_name = string_replace(maps[i], ".sif", "", true);
-mapper.open("data/builder/maps/decompiled/"+temp_map_name+"/"+"data/main.sif", "rb");
-string temp_map_data = mapper.read(2048);
-mapper.close();
-string temp_mode;
-string[] lines = delinear(temp_map_data);
-for (uint j = 0; j < lines.length(); j++)
-{
-string[] sd = string_split(lines[j], " ", true);
-if (sd[0] == "mode" && sd.length() == 2) { temp_mode = sd[1]; break; }
-}
-map_meta@ meta = read_map_meta_decompiled(temp_map_name);
-string[] owners = parse_owner_list(meta.owner);
-string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
-string updated = time_ago(meta.modified_date);
-m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
+	string temp_map_name = string_replace(maps[i], ".sif", "", true);
+	string temp_mode = read_map_mode_decompiled(temp_map_name);
+	map_meta@ meta = read_map_meta_decompiled(temp_map_name);
+	string[] owners = parse_owner_list(meta.owner);
+	string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
+	string updated = time_ago(meta.modified_date);
+	m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
 }
 m.intro_text="Decompiled maps menu";
 int mres=m.run();
@@ -969,22 +937,13 @@ else
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
 {
-string temp_map_name = string_replace(maps[i], ".sif", "", true);
-mapper.open("data/builder/maps/decompiled/"+temp_map_name+"/"+"data/main.sif", "rb");
-string temp_map_data = mapper.read(2048);
-mapper.close();
-string temp_mode;
-string[] lines = delinear(temp_map_data);
-for (uint j = 0; j < lines.length(); j++)
-{
-string[] sd = string_split(lines[j], " ", true);
-if (sd[0] == "mode" && sd.length() == 2) { temp_mode = sd[1]; break; }
-}
-map_meta@ meta = read_map_meta_decompiled(temp_map_name);
-string[] owners = parse_owner_list(meta.owner);
-string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
-string updated = time_ago(meta.modified_date);
-m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
+	string temp_map_name = string_replace(maps[i], ".sif", "", true);
+	string temp_mode = read_map_mode_decompiled(temp_map_name);
+	map_meta@ meta = read_map_meta_decompiled(temp_map_name);
+	string[] owners = parse_owner_list(meta.owner);
+	string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
+	string updated = time_ago(meta.modified_date);
+	m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
 }
 m.intro_text="Decompiled maps menu";
 int mres=m.run();

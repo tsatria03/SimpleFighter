@@ -70,7 +70,7 @@ string[] get_map_sound_folders(const string&in path)
 		seen[map_dirs[i]] = true;
 		result.insert_last(map_dirs[i]);
 	}
-	string global_path = "sounds/" + path;
+	string global_path = "sounds/decompiled/" + path;
 	string[] global_dirs = find_directories(global_path);
 	for (uint i = 0; i < global_dirs.length(); i++)
 	{
@@ -93,63 +93,121 @@ string get_map_sound(const string&in path)
 	string result = find_sound_in_disk(soundpath);
 	if (result != "")
 		return result;
-	string global_path = "sounds/" + path;
+	string global_path = "sounds/decompiled/" + path;
 	return find_sound_in_disk(global_path);
 }
 
 string[] get_pack_sound_folders(const string&in path)
 {
 	string[] result;
-	string global_path = "sounds/" + path;
+	string global_path = "sounds/decompiled/" + path;
 	result = find_directories(global_path);
 	sort_naturally(result);
 	return result;
 }
 string get_pack_sound(const string&in path)
 {
-string fullpath = "sounds/" + path;
+string fullpath = "sounds/decompiled/" + path;
 return find_sound_in_disk(fullpath);
+}
+
+//compile/decompile map functions, seprat soundpack equivalents will also go here.
+
+// Reads the `mode` line from a chunk of data/main.sif text (decompiled file or compiled-pack read_file output) and returns the mode value, or empty string on miss.
+string read_map_mode_from_text(const string&in text)
+{
+	string[] lines = delinear(text);
+	for (uint j = 0; j < lines.length(); j++)
+	{
+		string[] sd = string_split(lines[j], " ", true);
+		if (sd[0] == "mode" && sd.length() == 2) return sd[1];
+	}
+	return "";
+}
+
+// Opens data/main.sif on disk for the named decompiled map and returns the parsed mode (`2d`, `topdown`, `3d`) or empty string if the file is missing or the mode line isn't present. Used by every menu that lists decompiled maps.
+string read_map_mode_decompiled(const string&in map_name)
+{
+	string path = "data/builder/maps/decompiled/" + map_name + "/data/main.sif";
+	if (!file_exists(path)) return "";
+	file f;
+	if (!f.open(path, "rb")) return "";
+	string text = f.read(2048);
+	f.close();
+	return read_map_mode_from_text(text);
+}
+
+// Opens the compiled .map pack at the given full path, reads data/main.sif from inside, and returns the parsed mode or empty string on miss. Used by every menu that lists compiled maps.
+string read_map_mode_compiled(const string&in map_path)
+{
+	pack preview_pack;
+	if (!preview_pack.open(map_path, PACK_OPEN_MODE_READ)) return "";
+	string mode = "";
+	if (preview_pack.file_exists("data/main.sif"))
+	{
+		uint size = preview_pack.get_file_size("data/main.sif");
+		uint read_size = size < 2048 ? size : 2048;
+		string text = preview_pack.read_file("data/main.sif", 0, read_size);
+		mode = read_map_mode_from_text(text);
+	}
+	preview_pack.close();
+	return mode;
 }
 
 void compile_map()
 {
-	filename = input_box("Map Compiler", "Enter the name of the map file to create. Example, main.map.");
-	if (filename == "")
+	string[] folders = find_directories("data/builder/maps/decompiled/*");
+	if (folders.length() == 0)
 	{
-		alert("Error", "You may not compile an empty map!");
+		alert("Error", "There are no decompiled maps available to compile.");
 		mapmenu();
 		return;
 	}
-	if (!string_ends_with(filename, ".map"))
-		filename += ".map";
-	string full_output_path = "data/builder/maps/compiled/" + filename;
 	if (!directory_exists("data/builder/maps/compiled"))
 		directory_create("data/builder/maps/compiled");
-	foldername = input_box("Map Compiler", "Enter the path containing files to compile. Example, main.");
-	if (foldername == "")
+	setupmenu();
+	for (uint i = 0; i < folders.length(); i++)
 	{
+		string folder_name = folders[i];
+		string temp_mode = read_map_mode_decompiled(folder_name);
+		uint64 bytes = get_directory_size("data/builder/maps/decompiled/" + folder_name);
+		m.add_item(folder_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), folder_name);
+	}
+	m.intro_text = "Choose a map to compile";
+	int mres = m.run();
+	if (mres < 0)
+	{
+		speak("canceled");
 		mapmenu();
 		return;
 	}
-if (!string_starts_with(foldername, "data/builder/maps/decompiled/"))
-	foldername = "data/builder/maps/decompiled/" + foldername;
-	if (!directory_exists(foldername))
+	string chosen = m.selected_item_id;
+	string full_output_path = "data/builder/maps/compiled/" + chosen + ".map";
+	if (file_exists(full_output_path))
 	{
-		alert("Error", "Folder does not exist!");
-		mapmenu();
-		return;
+		setupmenu();
+		m.add_item("yes");
+		m.add_item("no");
+		m.intro_text = "This map already exists. Do you want to overwrite it?";
+		int conf = m.run();
+		if (conf != 0)
+		{
+			compile_map();
+			return;
+		}
 	}
+	string source_folder = "data/builder/maps/decompiled/" + chosen;
 	if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
 	{
 		alert("Error", "Failed to create map file at: " + full_output_path);
 		mapmenu();
 		return;
 	}
-file_list.resize(0);
-	find_stuff(foldername, foldername);
+	file_list.resize(0);
+	find_stuff(source_folder, source_folder);
 	alert("Map Compiler", "There are " + file_list.length() + " files in the map. Press OK to start compiling!");
-show_window("Compiling map.");
-wait(5);
+	show_window("Compiling map.");
+	wait(5);
 	int percent = -1;
 	for (uint i = 0; i < file_list.length(); i++)
 	{
@@ -160,25 +218,59 @@ wait(5);
 			percent = rounded;
 			beep_percentage(percent);
 		}
-		string relative = string_replace(file_list[i], foldername + "/", "", true);
+		string relative = string_replace(file_list[i], source_folder + "/", "", true);
 		pfile.add_file(file_list[i], relative);
 	}
 	pfile.close();
 	alert("Success!", "Map compiled to " + full_output_path);
-show_window("Simple fighter, version "+version);
-	mapmenu();
+	show_window("Simple fighter, version "+version);
+	compile_map();
 }
 void decompile_map()
 {
-	filename = input_box("Map Decompiler", "Enter the name of the map file to decompile. Example, main.map.");
-	if (filename == "")
+	string[] maps = find_files("data/builder/maps/compiled/*.map");
+	if (maps.length() == 0)
 	{
-		alert("Error", "You may not decompile an empty map!");
+		alert("Error", "There are no compiled maps available to decompile.");
 		mapmenu();
 		return;
 	}
-	if (!string_starts_with(filename, "data/builder/maps/compiled/"))
-		filename = "data/builder/maps/compiled/" + filename;
+	if (!directory_exists("data/builder/maps/decompiled"))
+		directory_create("data/builder/maps/decompiled");
+	setupmenu();
+	for (uint i = 0; i < maps.length(); i++)
+	{
+		string map_filename = maps[i];
+		string map_path = "data/builder/maps/compiled/" + map_filename;
+		string base_name = string_replace(map_filename, ".map", "", true);
+		string temp_mode = read_map_mode_compiled(map_path);
+		uint64 bytes = file_get_size(map_path);
+		m.add_item(base_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), base_name);
+	}
+	m.intro_text = "Choose a map to decompile";
+	int mres = m.run();
+	if (mres < 0)
+	{
+		speak("canceled");
+		mapmenu();
+		return;
+	}
+	string chosen = m.selected_item_id;
+	string base_dir = "data/builder/maps/decompiled/" + chosen;
+	if (directory_exists(base_dir))
+	{
+		setupmenu();
+		m.add_item("yes");
+		m.add_item("no");
+		m.intro_text = "This map already exists. Do you want to overwrite it?";
+		int conf = m.run();
+		if (conf != 0)
+		{
+			decompile_map();
+			return;
+		}
+	}
+	string filename = "data/builder/maps/compiled/" + chosen + ".map";
 	if (!pfile.open(filename, PACK_OPEN_MODE_READ))
 	{
 		alert("Error", "Could not open the specified map file: " + filename);
@@ -189,18 +281,15 @@ void decompile_map()
 	if (contents.length() == 0)
 	{
 		alert("Error", "No files found in this map.");
+		pfile.close();
 		mapmenu();
 		return;
 	}
 	alert("Get Ready", contents.length() + " files are about to be extracted!");
-	if (!directory_exists("data/builder/maps/decompiled"))
-		directory_create("data/builder/maps/decompiled");
-string base_name = strip_extension(strip_directory(filename));
-	string base_dir = "data/builder/maps/decompiled/" + base_name;
 	if (!directory_exists(base_dir))
 		directory_create(base_dir);
-show_window("Decompiling map.");
-wait(5);
+	show_window("Decompiling map.");
+	wait(5);
 	double prev_percent = -1;
 	for (uint i = 0; i < contents.length(); i++)
 	{
@@ -218,6 +307,6 @@ wait(5);
 	}
 	pfile.close();
 	alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
-show_window("Simple fighter, version "+version);
-	mapmenu();
+	show_window("Simple fighter, version "+version);
+	decompile_map();
 }

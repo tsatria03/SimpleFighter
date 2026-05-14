@@ -306,6 +306,21 @@ map_meta@ read_map_meta_decompiled(string map_name)
 	return parse_map_meta(text);
 }
 
+// Opens the compiled .map pack at the given full path and reads data/meta.sif from inside, returning the parsed map_meta. Defaults are used if the file or the pack is missing. Used by every menu that lists compiled maps.
+map_meta@ read_map_meta_compiled(string map_path)
+{
+	pack preview_pack;
+	if (!preview_pack.open(map_path, PACK_OPEN_MODE_READ)) return map_meta();
+	string text = "";
+	if (preview_pack.file_exists("data/meta.sif"))
+	{
+		uint size = preview_pack.get_file_size("data/meta.sif");
+		text = preview_pack.read_file("data/meta.sif", 0, size);
+	}
+	preview_pack.close();
+	return parse_map_meta(text);
+}
+
 // Returns true if the line contains any block-comment closing token (*/, *#, or *;).
 bool line_has_block_close(string line)
 {

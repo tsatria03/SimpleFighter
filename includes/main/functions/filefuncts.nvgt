@@ -1,0 +1,15 @@
+// Data-file resolvers — the .sif (and other non-audio) parallel of find_sound_in_disk and find_sound_in_pack in packfuncts.nvgt. These intentionally take an EXACT path rather than a glob, since data files are addressed by name, not picked at random from a match set. Each helper returns the path on success or an empty string on miss, so a caller can chain "try disk, fall back to pack" like the map-pack loader already does for data/main.sif.
+
+// Returns path if a file exists on disk at that exact location, else empty string. Caller proceeds to open it with a `file` object on success.
+string find_datafile_in_disk(const string&in path)
+{
+	return file_exists(path) ? path : "";
+}
+
+// Returns path if a file exists inside the given pack, else empty string. Caller proceeds to open it with pack.read_file on success. Defaults to sound_default_pack so single-pack contexts can call without specifying.
+string find_datafile_in_pack(const string&in path, pack@ p=@sound_default_pack)
+{
+	if (p is null) return "";
+	if (!p.file_exists(path)) return "";
+	return path;
+}
