@@ -36,29 +36,37 @@ void plainloop()
 {
 for(uint i=0; i<aircrafts.length(); i++)
 {
-if(aircrafts[i].plaindir==1 and aircrafts[i].plaintimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true)
+if(aircrafts[i].plaintimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true)
 {
-me.x++;
-aircrafts[i].plainx++;
+int dx = 0, dy = 0;
+if(aircrafts[i].plaindir == 1) dx = 1;
+else if(aircrafts[i].plaindir == 0) dx = -1;
+else if(mapmode != "2d" && aircrafts[i].plaindir == 3) dy = 1;
+else if(mapmode != "2d" && aircrafts[i].plaindir == 2) dy = -1;
+if(dx != 0 || dy != 0)
+{
+double next_x = me.x + dx;
+double next_y = me.y + dy;
+bool past_edge = (next_x < minx || next_x > maxx || next_y < miny || next_y > maxy);
+bool wall_ahead = !past_edge && (string_contains(gmt(next_x, next_y), "wall", 1) > -1);
+if(past_edge || wall_ahead)
+{
+aircrafts[i].turnsound=plainpool.play_stationary(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*turn*"),false);
+if(aircrafts[i].plaindir == 1) { aircrafts[i].plaindir = 0; facing = "left"; }
+else if(aircrafts[i].plaindir == 0) { aircrafts[i].plaindir = 1; facing = "right"; }
+else if(aircrafts[i].plaindir == 3) { aircrafts[i].plaindir = 2; facing = "back"; }
+else if(aircrafts[i].plaindir == 2) { aircrafts[i].plaindir = 3; facing = "front"; }
 aircrafts[i].plaintimer.restart();
 }
-else if(aircrafts[i].plaindir==0 and aircrafts[i].plaintimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true)
+else
 {
-me.x--;
-aircrafts[i].plainx--;
+me.x += dx;
+me.y += dy;
+aircrafts[i].plainx += dx;
+aircrafts[i].plainy += dy;
 aircrafts[i].plaintimer.restart();
 }
-else if(mapmode != "2d" and aircrafts[i].plaindir==3 and aircrafts[i].plaintimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true)
-{
-me.y++;
-aircrafts[i].plainy++;
-aircrafts[i].plaintimer.restart();
 }
-else if(mapmode != "2d" and aircrafts[i].plaindir==2 and aircrafts[i].plaintimer.elapsed>=aircrafts[i].plaintime and aircrafts[i].moveable==true)
-{
-me.y--;
-aircrafts[i].plainy--;
-aircrafts[i].plaintimer.restart();
 }
 bool on_plane_tile = (me.x==aircrafts[i].plainx and me.y==aircrafts[i].plainy and (mapmode != "3d" or me.z==aircrafts[i].plainz));
 if(on_plane_tile and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_pressed(KEY_RETURN))
@@ -80,16 +88,16 @@ dlgplay(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype
 dlgplay(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*start*"));
 dlgplay(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*flight*"));
 aircrafts[i].plainsound=plainpool.play_stationary_extended(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*engin*"),true,0,0,0,aircrafts[i].current_pitch,false);
-int randply=random(10, 50);
+// Takeoff lifts the aircraft one altitude tick above wherever it was parked, so a plane placed on the ground at altitude 0 lifts to 1, and a plane placed at altitude 11 lifts to 12. Replaces the older "random 10-50" jump which made test setups unpredictable.
 if(mapmode == "3d")
 {
-me.z=randply;
-aircrafts[i].plainz=randply;
+aircrafts[i].plainz += 1;
+me.z = aircrafts[i].plainz;
 }
 else if(mapmode == "2d")
 {
-me.y=randply;
-aircrafts[i].plainy=randply;
+aircrafts[i].plainy += 1;
+me.y = aircrafts[i].plainy;
 }
 facing="right";
 aircrafts[i].plaindir=1;
@@ -312,54 +320,6 @@ if(aircrafts[i].plainspeed>=1)
 aircrafts[i].current_pitch = 100 + aircrafts[i].plainspeed - 10;
 plainpool.update_sound_start_values(aircrafts[i].plainsound, 0, 0, aircrafts[i].current_pitch);
 aircrafts[i].plaintime=1000/aircrafts[i].plainspeed;
-}
-if(me.x<=0 and aircrafts[i].plainx<=0)
-{
-if(aircrafts[i].plainspeed>=1 and aircrafts[i].plainspeed<=20)
-{
-aircrafts[i].turnsound=plainpool.play_stationary(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*turn*"),false);
-facing="right";
-aircrafts[i].plaindir=1;
-me.x++;
-aircrafts[i].plainx++;
-aircrafts[i].plaintimer.restart();
-}
-}
-if(me.x>=maxx and aircrafts[i].plainx>=maxx)
-{
-if(aircrafts[i].plainspeed>=1 and aircrafts[i].plainspeed<=20)
-{
-aircrafts[i].turnsound=plainpool.play_stationary(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*turn*"),false);
-facing="left";
-aircrafts[i].plaindir=0;
-me.x--;
-aircrafts[i].plainx--;
-aircrafts[i].plaintimer.restart();
-}
-}
-if(mapmode != "2d" and me.y<=miny and aircrafts[i].plainy<=miny)
-{
-if(aircrafts[i].plainspeed>=1 and aircrafts[i].plainspeed<=20)
-{
-aircrafts[i].turnsound=plainpool.play_stationary(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*turn*"),false);
-facing="front";
-aircrafts[i].plaindir=3;
-me.y++;
-aircrafts[i].plainy++;
-aircrafts[i].plaintimer.restart();
-}
-}
-if(mapmode != "2d" and me.y>=maxy and aircrafts[i].plainy>=maxy)
-{
-if(aircrafts[i].plainspeed>=1 and aircrafts[i].plainspeed<=20)
-{
-aircrafts[i].turnsound=plainpool.play_stationary(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*turn*"),false);
-facing="back";
-aircrafts[i].plaindir=2;
-me.y--;
-aircrafts[i].plainy--;
-aircrafts[i].plaintimer.restart();
-}
 }
 if(aircrafts[i].plainhealth<=0)
 {
