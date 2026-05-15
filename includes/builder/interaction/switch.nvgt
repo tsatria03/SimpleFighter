@@ -6,17 +6,20 @@ bool destroying_sound;
 bool looping;
 bool singleuse;
 int switchsound, pressound;
-int switchx;
-int switchy;
-int switchz;
+int minx, maxx;
+int miny, maxy;
+int minz, maxz;
 string switchtype;
 string on_command;
 string off_command;
-switcher(int stx,int sty,string stp,string on_cmd,string off_cmd,bool tg,bool dst_snd,bool lp,bool sgl,int stz=0)
+switcher(int mnx, int mxx, int mny, int mxy, string stp, string on_cmd, string off_cmd, bool tg, bool dst_snd, bool lp, bool sgl, int mnz=0, int mxz=0)
 {
-switchx=stx;
-switchy=sty;
-switchz=stz;
+minx=mnx;
+maxx=mxx;
+miny=mny;
+maxy=mxy;
+minz=mnz;
+maxz=mxz;
 switchtype=stp;
 on_command=on_cmd;
 off_command=off_cmd;
@@ -26,15 +29,20 @@ looping=lp;
 singleuse=sgl;
 // Loop plays at spawn whenever looping=true, EXCEPT in the "loop tracks toggled state" mode (destroying_sound=true), where it only plays at spawn if the switch is also currently on.
 bool should_play_at_spawn = looping && (!destroying_sound || toggled);
-if(should_play_at_spawn) switchsound=switchpool.play_3d(get_map_sound("builder/interaction/switches/"+switchtype+"/*loop*"),me.x,me.y,me.z,switchx,switchy,switchz,calculate_theta(me_rotation),true);
+if(should_play_at_spawn)
+{
+double zr = (mapmode == "3d") ? (maxz-minz) : 0;
+switchsound=switchpool.play_extended_3d(get_map_sound("builder/interaction/switches/"+switchtype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+switchpool.update_sound_range_3d(switchsound, 0, maxx-minx, 0, maxy-miny, 0, zr);
+}
 }
 }
 void switchloop()
 {
 for(uint i=0; i<switchers.length(); i++)
 {
-bool sw_match = me.x==switchers[i].switchx and me.y==switchers[i].switchy;
-if(mapmode == "3d") sw_match = sw_match and me.z==switchers[i].switchz;
+bool sw_match = me.x>=switchers[i].minx && me.x<=switchers[i].maxx && me.y>=switchers[i].miny && me.y<=switchers[i].maxy;
+if(mapmode == "3d") sw_match = sw_match && me.z>=switchers[i].minz && me.z<=switchers[i].maxz;
 if(sw_match and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 if(switchers[i].singleuse==true)
@@ -63,7 +71,9 @@ switchers[i].toggled=true;
 if(switchers[i].looping==true && switchers[i].destroying_sound==true)
 {
 switchpool.destroy_sound(switchers[i].switchsound);
-switchers[i].switchsound=switchpool.play_3d(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*loop*"),me.x,me.y,me.z,switchers[i].switchx,switchers[i].switchy,switchers[i].switchz,calculate_theta(me_rotation),true);
+double zr = (mapmode == "3d") ? (switchers[i].maxz-switchers[i].minz) : 0;
+switchers[i].switchsound=switchpool.play_extended_3d(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*loop*"),me.x,me.y,me.z,switchers[i].minx,switchers[i].miny,switchers[i].minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+switchpool.update_sound_range_3d(switchers[i].switchsound, 0, switchers[i].maxx-switchers[i].minx, 0, switchers[i].maxy-switchers[i].miny, 0, zr);
 }
 switchers[i].pressound=switchpool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
 if(switchers[i].on_command != "") comstack(switchers[i].on_command);
@@ -72,9 +82,9 @@ return;
 }
 }
 }
-void spawn_switcher(int x,int y,string switchtype,string on_command,string off_command,bool toggled,bool destroying_sound,bool looping,bool singleuse,int z=0)
+void spawn_switcher(int mnx, int mxx, int mny, int mxy, string switchtype, string on_command, string off_command, bool toggled, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0)
 {
-switcher sc1(x,y,switchtype,on_command,off_command,toggled,destroying_sound,looping,singleuse,z);
+switcher sc1(mnx, mxx, mny, mxy, switchtype, on_command, off_command, toggled, destroying_sound, looping, singleuse, mnz, mxz);
 switchers.insert_last(sc1);
 }
 void destroy_all_switchers()
@@ -86,7 +96,7 @@ switchpool.destroy_sound(switchers[i].switchsound);
 switchers.resize(0);
 }
 
-void build_switch()
+void build_switch(bool ranged = false)
 {
 string[] switches_list = get_map_sound_folders("builder/interaction/switches/*");
 if(switches_list.length() == 0)
@@ -97,17 +107,45 @@ return;
 }
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
-form.create_window("switch", false);
+form.create_window(ranged ? "ranged switch" : "switch", false);
 bool y_uses_back_front = mapmode != "2d";
-int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-int my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-int mz = -1;
+int mx = -1, my = -1, mz = -1;
+int mnx = -1, mxx = -1, mny = -1, mxy = -1, mnz = -1, mxz = -1;
+if(ranged)
+{
+mnx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+mxx = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+mny = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+mxy = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+}
+else
+{
+mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
 if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
-int on_cmd_box = form.create_input_box("on command", "");
-int off_cmd_box = form.create_input_box("off command", "");
+}
+int on_cmd_box = form.create_input_box("on command: leave blank to skip", "");
+int off_cmd_box = form.create_input_box("off command: leave blank to skip", "");
+if(ranged)
+{
+form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+}
 int switch_list = form.create_list("switch sound");
 form.add_list_item(switch_list, "none", "none");
 for(uint i = 0; i < switches_list.length(); i++)
@@ -119,7 +157,7 @@ int loop_cb = form.create_checkbox("looping sound", false);
 int single_cb = form.create_checkbox("single use", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
-form.focus(mx);
+form.focus(ranged ? mnx : mx);
 while(true)
 {
 wait(5);
@@ -160,27 +198,38 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx) == "")
+if(ranged)
 {
-speak("X is required.");
-form.focus(mx);
-continue;
+if(form.get_text(mnx) == "") { speak("Minimum X is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx) == "") { speak("Maximum X is required."); form.focus(mxx); continue; }
+if(form.get_text(mny) == "") { speak("Minimum Y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy) == "") { speak("Maximum Y is required."); form.focus(mxy); continue; }
+if(mnz != -1 && form.get_text(mnz) == "") { speak("Minimum Z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz) == "") { speak("Maximum Z is required."); form.focus(mxz); continue; }
 }
-if(form.get_text(my) == "")
+else
 {
-speak("Y is required.");
-form.focus(my);
-continue;
+if(form.get_text(mx) == "") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
 }
-if(mz != -1 && form.get_text(mz) == "")
+int bx = 0, by = 0, bz = 0;
+int bmnx = 0, bmxx = 0, bmny = 0, bmxy = 0, bmnz = 0, bmxz = 0;
+if(ranged)
 {
-speak("Z is required.");
-form.focus(mz);
-continue;
+bmnx = string_to_number(form.get_text(mnx));
+bmxx = string_to_number(form.get_text(mxx));
+bmny = string_to_number(form.get_text(mny));
+bmxy = string_to_number(form.get_text(mxy));
+bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 }
-int bx = string_to_number(form.get_text(mx));
-int by = string_to_number(form.get_text(my));
-int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+else
+{
+bx = string_to_number(form.get_text(mx));
+by = string_to_number(form.get_text(my));
+bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+}
 int p = form.get_list_position(switch_list);
 string btype = (p > 0) ? switches_list[p-1] : "none";
 bool btrg = form.is_checked(auto_cb);
@@ -191,14 +240,27 @@ string b_on_cmd = form.get_text(on_cmd_box);
 string b_off_cmd = form.get_text(off_cmd_box);
 t.destroy_sound(prevslot);
 resume_pools();
+if(ranged)
+{
+write_ranged_switch(bmnx, bmxx, bmny, bmxy, btype, b_on_cmd, b_off_cmd, btrg, bdst, blp, bsse, bmnz, bmxz);
+spawn_switcher(bmnx, bmxx, bmny, bmxy, btype, b_on_cmd, b_off_cmd, btrg, bdst, blp, bsse, bmnz, bmxz);
+}
+else
+{
 write_switch(bx, by, btype, b_on_cmd, b_off_cmd, btrg, bdst, blp, bsse, bz);
-spawn_switcher(bx, by, btype, b_on_cmd, b_off_cmd, btrg, bdst, blp, bsse, bz);
+spawn_switcher(bx, bx, by, by, btype, b_on_cmd, b_off_cmd, btrg, bdst, blp, bsse, bz, bz);
+}
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
 return;
 }
 }
+}
+
+void build_ranged_switch()
+{
+build_switch(true);
 }
 
 void read_switch(string[] sd)
@@ -250,7 +312,7 @@ else
 tg = string_to_bool(sd[o+1]);
 scl = string_to_bool(sd[o+2]);
 }
-spawn_switcher(scx, scy, sct, on_cmd, off_cmd, tg, dst, lp, scl, scz);
+spawn_switcher(scx, scx, scy, scy, sct, on_cmd, off_cmd, tg, dst, lp, scl, scz, scz);
 }
 
 void write_switch(int x, int y, string switchtype, string on_command, string off_command, bool toggled, bool destroying_sound, bool looping, bool singleuse, int z=0)
@@ -263,6 +325,53 @@ if(mapmode == "3d")
 mapper.write("\r\n"+"switch "+x+" "+y+" "+z+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
 else
 mapper.write("\r\n"+"switch "+x+" "+y+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
+mapper.close();
+bump_map_modified();
+}
+
+void read_ranged_switch(string[] sd)
+{
+int mnx=stn(sd[1]);
+int mxx=stn(sd[2]);
+int mny=stn(sd[3]);
+int mxy=stn(sd[4]);
+int mnz=0;
+int mxz=0;
+int o=5;
+if(mapmode == "3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); o=7; }
+string sct=sd[o];
+string on_cmd = "";
+string off_cmd = "";
+bool tg = false;
+bool dst = false;
+bool lp = false;
+bool scl = false;
+string combined = join_string_array(sd, o+1, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() >= 1) on_cmd = quoted[0];
+if(quoted.length() >= 2) off_cmd = quoted[1];
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+if(tail.length() >= 4)
+{
+tg = string_to_bool(tail[0]);
+dst = string_to_bool(tail[1]);
+lp = string_to_bool(tail[2]);
+scl = string_to_bool(tail[3]);
+}
+spawn_switcher(mnx, mxx, mny, mxy, sct, on_cmd, off_cmd, tg, dst, lp, scl, mnz, mxz);
+}
+
+void write_ranged_switch(int mnx, int mxx, int mny, int mxy, string switchtype, string on_command, string off_command, bool toggled, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0)
+{
+string clean_on = string_replace(on_command, "\"", "", true);
+string clean_off = string_replace(off_command, "\"", "", true);
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"ranged_switch "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
+else
+mapper.write("\r\n"+"ranged_switch "+mnx+" "+mxx+" "+mny+" "+mxy+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
 mapper.close();
 bump_map_modified();
 }

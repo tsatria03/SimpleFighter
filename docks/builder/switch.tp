@@ -1,13 +1,13 @@
 Switches.
 
-A switch is a tile-based interactive entity that the player activates by walking onto it and pressing enter. Before this revision a switch was a decorative audio toggle that announced its state and did nothing else; now it can run any slash command on flip, can hold an ambient looping clip independent of its toggled state, and is a small scripting primitive for triggering map events. Switches are placed through the switch entry in the builder menu and live as a single line per switch in the map's main.sif.
+A switch is an interactive entity that the player activates by stepping into its press area and pressing enter. Before this revision a switch was a decorative audio toggle that announced its state and did nothing else; now it can run any slash command on flip, can hold an ambient looping clip independent of its toggled state, and is a small scripting primitive for triggering map events. Switches come in two builder variants: the standard switch (a single tile the player must stand on) and the ranged switch (a rectangular area the player can press from anywhere inside). Both variants share the same fields, command behavior, and audio model — only the coordinate footprint differs. Each switch lives as a single line per entry in the map's main.sif.
 The author defines what a switch does by writing slash commands into two text fields on the switch — one fires when the switch flips on, one fires when it flips back off. The commands are the same strings you would type after the slash key in the command console during play, so any command the console understands can be bound to a switch — though some commands suit switch use better than others, and a few come with practical limits described in Command compatibility caveats further down. There is no separate switch scripting language and no new vocabulary to learn.
 
 Switch components.
 
 A switch holds the following fields, set through the builder form when the switch is placed:
 
-Coordinates (x, y, and on 3d maps z). Where the switch sits in the map. The player must stand on this tile to press the switch.
+Coordinates. A standard switch takes a single x and y (and on 3d maps z) — the player must stand on that tile to press the switch. A ranged switch takes min and max x and y instead (and min and max z on 3d maps), and the player can press it from anywhere inside the rectangular bounding box those coordinates describe; the ranged form is selected by picking ranged switch instead of switch from the builder menu.
 
 On command (text, optional). A slash command (or a stack of slash commands, see Command stacking below) that runs every time the switch flips from off to on, and every time a single-use switch is pressed. Leave this field empty to skip the on side. A switch with both on and off commands empty is just an audio toggle that does nothing else, which is fine if you only want the audio effect.
 Off command (text, optional). A slash command (or a stack) that runs every time the switch flips from on to off. A reusable switch that should only do something on the on side leaves this empty. A single-use switch never flips back to off, so its off command is unreachable; you can still write one if you like, but it will never run.
@@ -93,13 +93,21 @@ The closest blunt-instrument cleanup for non-NPC spawns is /relmap on the off co
 
 Note that /build also accepts the same inline argument shape, but /build writes the line to main.sif and reloads the map, making the placement permanent. Use /build from the command console or a macro when you actually want to author a map change that survives reloads; use /spawn from a switch when you want a temporary effect. Both verbs accept the same friendly-name and on-disk-form translations.
 
+Ranged switches.
+
+A ranged switch is the rectangular-area variant of the standard switch, selected by picking ranged switch instead of switch in the builder menu. The author defines a press area by min and max x and y (and min and max z on 3d maps); the player can press the switch from any tile inside that bounding box rather than from a single fixed tile, and once pressed the switch fires its on and off commands and behaves identically to the standard switch in every other respect.
+
+The motivating use case is triggers that spawn something dangerous on the switch's own tile or in its immediate area — a bomb, a fire, a hazard — where standing on the spawn point at press time would damage or kill the player. With a ranged switch the press area can sit several tiles away from the spawn target, letting the player flip the switch from a safe distance and then hear the effect unfold across the room.
+
+The loop clip, when looping is enabled, is anchored across the full rectangle so the player hears it at full volume anywhere inside the press area and only feels distance falloff once they step outside the bounds — a generator-style ambient loop covers the whole hall instead of being heard from a single point. The press clip plays at the player's own position on every press, the same way it does for the standard switch, since the press is fundamentally a player-side feedback effect. The spier reveals a ranged switch's size as part of its label, so a switch spanning five by one tiles reads as "5 x 1 tile active switch" or "5 x 1 tile inactive switch" depending on its current state, while a standard switch keeps the unsized "active switch" or "inactive switch" label.
+
 Things switches deliberately do not do.
 
 Switches don't see each other. There's no "this switch only fires if switch X is on" mechanism; each switch is independent. If you need that pattern, you can simulate it by having switch X's on command bind a state-changing command that gates switch Y — but the binding is one-way, and there's no group or dependency abstraction baked into the entity.
 Switches don't return values. A command bound to a switch runs for its side effects only. If the command fails, the switch doesn't know and doesn't change its behavior. Test your commands in the console first.
 
 Switches don't intentionally pause the game, but some bound commands do. The press clip, the on/off command, and the loop start/stop all run as the player presses enter without freezing input or other entities at the switch's own request, so a simple bound command like /give or /play returns control to the player immediately. However, several commands open a modal dialog or menu (notably /menu, /preffs, /stats, /charset, /maps, /mapinfo, /gozone, /macset with no arguments, and the yes/no confirmations in /relmap, /rawdata, /delmap, and /suicide's death dialog) and those will freeze gameplay until the dialog closes — useful for authored UX when intentional, disorienting when unintentional. Test bindings in the console once before placing them so you know whether they're transient or modal.
-Switches don't see the player's facing or position beyond the tile they sit on. The press requires the player to stand on the switch tile and press enter; that's the only trigger. There's no "press from a distance" or "press while facing" mode.
+Switches don't see the player's facing. The press requires the player to be on the switch's tile (for the standard switch) or anywhere inside the switch's press rectangle (for the ranged switch) and press enter; there's no "press while facing direction X" mode. Ranged switches widen the press area compared to a standard switch, but the activation condition is still "inside the area + enter" — there's no concept of pressing from outside the area or aiming at the switch from across the map.
 
 Command compatibility caveats.
 
@@ -115,7 +123,9 @@ When you want a switch to make audio emanate from somewhere else on the map (an 
 
 Authoring switches by hand.
 
-If you prefer to edit info.sif directly instead of using the builder form, the on-disk format for a switch line is: switch x y <switchtype> "<on_command>" "<off_command>" <toggled> <destroying_sound> <looping> <singleuse>
+If you prefer to edit info.sif directly instead of using the builder form, the on-disk format for a standard switch line is: switch x y <switchtype> "<on_command>" "<off_command>" <toggled> <destroying_sound> <looping> <singleuse>
 For 3d maps insert z right after y: switch x y z <switchtype> "<on_command>" "<off_command>" <toggled> <destroying_sound> <looping> <singleuse>
+The ranged switch follows the same line shape but replaces the single coordinates with min/max pairs: ranged_switch <minx> <maxx> <miny> <maxy> <switchtype> "<on_command>" "<off_command>" <toggled> <destroying_sound> <looping> <singleuse>
+For 3d maps insert min and max z right after max y: ranged_switch <minx> <maxx> <miny> <maxy> <minz> <maxz> <switchtype> "<on_command>" "<off_command>" <toggled> <destroying_sound> <looping> <singleuse>
 
 The four bool fields are written as the literal words true or false. Both command fields must be present, even if empty (write "" for an empty side). Switch sound types must match a folder name under the switch sounds folder, or the literal word none for a silent switch. Hand-authored lines load the same as builder-authored lines, and the builder will round-trip any line that follows this format. Maps written before this revision used a shorter line with no quoted commands and fewer bool fields; those still load with empty commands and looping/destroying sound both off, matching the original switch behavior.

@@ -314,10 +314,23 @@ labels.insert_last(aircrafts[j].plaintype);
 }
 for (uint j = 0; j < switchers.length(); j++)
 {
-bool switch_match = sx == switchers[j].switchx && sy == switchers[j].switchy;
-if(mapmode == "3d") switch_match = switch_match && int(sz) == switchers[j].switchz;
+bool switch_match = sx >= switchers[j].minx && sx <= switchers[j].maxx && sy >= switchers[j].miny && sy <= switchers[j].maxy;
+if(mapmode == "3d") switch_match = switch_match && int(sz) >= switchers[j].minz && int(sz) <= switchers[j].maxz;
 if (switch_match && !is_obscured("switch", "spier"))
-labels.insert_last(switchers[j].toggled ? "active switch" : "inactive switch");
+{
+string base = switchers[j].toggled ? "active switch" : "inactive switch";
+bool is_ranged = switchers[j].minx != switchers[j].maxx || switchers[j].miny != switchers[j].maxy || (mapmode == "3d" && switchers[j].minz != switchers[j].maxz);
+if(is_ranged)
+{
+int w = switchers[j].maxx - switchers[j].minx + 1;
+int h = switchers[j].maxy - switchers[j].miny + 1;
+string dims = w + " x " + h;
+if(mapmode == "3d") dims += " x " + (switchers[j].maxz - switchers[j].minz + 1);
+labels.insert_last(dims + " tile " + base);
+}
+else
+labels.insert_last(base);
+}
 }
 for (uint j = 0; j < fires.length(); j++)
 {
