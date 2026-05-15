@@ -1,3 +1,19 @@
+array<string> extract_quoted(const string&in source, string&out remainder)
+{
+array<string> fields;
+int pos = 0;
+while(true)
+{
+int q1 = source.find_first_of("\"", pos);
+if(q1 == -1) break;
+int q2 = source.find_first_of("\"", q1 + 1);
+if(q2 == -1) break;
+fields.insert_last(source.substr(q1 + 1, q2 - q1 - 1));
+pos = q2 + 1;
+}
+remainder = source.substr(pos);
+return fields;
+}
 bool string_starts_with(const string& in str, const string& in start)
 {
 if (str.length()>=start.length())
@@ -64,6 +80,31 @@ return c;
 }
 else
 return string_to_number(str);
+}
+
+// Free-form string-level version of stn's random expansion. Scans the input for every random(low,high) token, rolls a value for each, and replaces the token with the rolled number. Used by text-bearing commands like /speak where the argument is not a single number-shaped string. Malformed tokens (no comma, unmatched parens) are left in place so authors can see what they typed.
+string expand_random_tokens(string str)
+{
+int start = 0;
+while(true)
+{
+int idx = str.find("random(", start);
+if(idx < 0) break;
+int close = str.find(")", idx + 7);
+if(close < 0) break;
+string inner = str.substr(idx + 7, close - (idx + 7));
+int comma = inner.find(",");
+if(comma < 0) { start = close + 1; continue; }
+string lo_str = string_trim_sides(inner.substr(0, comma));
+string hi_str = string_trim_sides(inner.substr(comma + 1, int(inner.length()) - comma - 1));
+int lo = string_to_number(lo_str);
+int hi = string_to_number(hi_str);
+int rolled = random(lo, hi);
+string replacement = "" + rolled;
+str = str.substr(0, idx) + replacement + str.substr(close + 1, int(str.length()) - close - 1);
+start = idx + int(replacement.length());
+}
+return str;
 }
 
 string join_string_array(string[] arr, uint start, uint end)
@@ -163,6 +204,24 @@ final+=(a[i]+"\r\n");
 }
 return final;
 }
+
+string normalize_buildtype(string buildtype)
+{
+if(buildtype == "aircraft_beacon") return "airbeacon";
+else if(buildtype == "conveyor_belt") return "belt";
+else if(buildtype == "elevator_floor") return "el_floor";
+else if(buildtype == "moving_platform") return "mplatform";
+else if(buildtype == "character_blocker") return "chblocker";
+else if(buildtype == "command_blocker") return "cblocker";
+else if(buildtype == "tts_enemie") return "ttsenemie";
+else if(buildtype == "moving_hazard") return "mhazard";
+else if(buildtype == "security_camera") return "camera";
+else if(buildtype == "item_door") return "door";
+else if(buildtype == "ranged_item_door") return "ranged_door";
+else if(buildtype == "item_passage") return "passage";
+return buildtype;
+}
+
 // Current time as an ISO 8601 UTC string suitable for meta.sif stamps (e.g. 2026-05-13T14:30:00Z). Used by create_map and every save path that updates the modified date.
 string utc_iso8601_now()
 {

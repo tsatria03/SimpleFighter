@@ -1,7 +1,29 @@
 int tts_id_counter = 0;
 int tts_preview_counter = 0;
-ttsenemie@[] ttsenemies(0);
 
+bool generate_tts(string path, string text, string voice_name = "", int rate = 0, int volume = 100, int pitch = 0)
+{
+	tts_voice tv;
+	if (voice_name == "Nvda Sapi" || voice_name == "builtin fallback voice") voice_name = "";
+	if (voice_name != "")
+	{
+		array<string>@ voices = tv.list_voices();
+		for (uint i = 0; i < voices.length(); i++)
+		{
+			if (voices[i] == voice_name)
+			{
+				tv.set_voice(i);
+				break;
+			}
+		}
+	}
+	tv.rate = rate;
+	tv.volume = volume;
+	tv.pitch = pitch;
+	return tv.speak_to_file(path, text);
+}
+
+ttsenemie@[] ttsenemies(0);
 class ttsenemie
 {
 	int ttsemsound;
