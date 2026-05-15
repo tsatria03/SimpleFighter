@@ -1,0 +1,60 @@
+Packs and folders.
+
+Every audio clip and data file the game uses is stored in one of two equivalent forms: a plain folder on disk that you can browse with your file manager, or a single compressed pack file that bundles a whole folder tree into one shareable artifact. The game treats both forms interchangeably at lookup time, so a recipient who has only the pack form of something will hear and play exactly what someone with the loose folder form hears and plays. This topic explains where each form lives, the order the game checks them in, and what that means when you want to share a map or a sound pack with another player.
+
+The three storage roots.
+
+Sounds and data are split across three independent storage roots. Each root has both a decompiled (folder) form and a compiled (pack) form, and both forms can coexist on disk at the same time.
+
+Player and equipment sounds (the global "main" root). Decompiled form is the sounds/decompiled/main folder. Compiled form is sounds/compiled/main.spack. Holds the engine wide audio: every character's voice and clips, every weapon's draw, fire, hit, reload, every shield's draw, hit, break, the keyboard themes, the menu themes, and the miscellaneous UI clips. Anything that is "the player's body" or "the player's gear" lives here.
+
+Map entity sounds (the global "builder" root). Decompiled form is the sounds/decompiled/builder folder. Compiled form is sounds/compiled/builder.spack. Holds the audio for the things that go into maps: every NPC's spawn, taunt, hurt, death, every wall's hit and break, every door's open and close, every trap's trigger, every transition's beep, every zone's ambient loop. Anything an author drops into a map references its audio out of this root.
+
+Per map data and assets (the map's own pack). Decompiled form is the data/builder/maps/decompiled/<map name> folder. Compiled form is data/builder/maps/compiled/<map name>.map. Holds the map's entity list (the layout written by the builder) plus a private assets folder where the author can bundle per map theme audio that overrides the global sound. Each map is its own self contained pack, so two maps never collide.
+
+The lookup order.
+
+Whenever the game wants to play a sound, it walks a fixed list of locations in order and uses the first one that contains a match. The list differs slightly between map entity sounds and global player sounds, because map entities also get a per map override slot.
+
+For a map entity sound (a wall's hit, an NPC's bark, a door's open), the four checked locations in order are the following:
+
+First, the loaded map's compiled pack, inside its assets folder. This is where per map overrides live when the map has been compiled. If the author bundled a custom version of that clip into the map, that's what plays.
+Second, the loaded map's decompiled folder, inside its assets folder. Same role as the first but for maps that are still in their loose folder form.
+
+Third, the global builder root's decompiled folder under sounds/decompiled/builder. The shared library of entity audio every map can rely on.
+Fourth, the global builder root's compiled pack at sounds/compiled/builder.spack. The pack form of the same shared library, used when the decompiled folder isn't present.
+
+For a global player or equipment sound (a footstep, a weapon fire, a shield hit, a menu beep), only the last two locations are checked, since there is no per map override slot for global audio:
+
+First, the global main root's decompiled folder under sounds/decompiled/main.
+Second, the global main root's compiled pack at sounds/compiled/main.spack.
+
+In every case, if none of the checked locations contain the clip, the sound simply doesn't play. There is no error, no warning, no message. This is deliberate, so a missing optional clip never spams your speech output during gameplay, but it does mean that if a sound you expected to hear is silent, the audio for it is missing from every place the game looks.
+
+What this means for sharing.
+
+The lookup order is what makes maps and sound packs portable. A recipient with a different mix of folders and packs on their disk than yours can still hear exactly what you hear, as long as the right files exist somewhere in the order above.
+
+Sharing a map. You give the recipient your map's .map file from data/builder/maps/compiled. They drop it into the same folder on their machine. When they load that map, every entity in it tries to find its audio in the four locations described above. The first location is the .map itself, so any per map theme audio you bundled into the map's assets folder when you compiled it travels with the file and plays for the recipient regardless of what they have anywhere else. For everything you didn't bundle, the game falls through to the global builder root, so the recipient also needs to have either the sounds/decompiled/builder folder or a sounds/compiled/builder.spack file. If they have neither, the entities that weren't bundled into the map will be silent.
+
+Sharing a sound pack. You give the recipient your builder.spack file from sounds/compiled (or your main.spack, or both). They drop them into the same folder on their machine. From that point onward, every lookup the game makes for entity or player audio falls through to your pack as the last resort, so any clip the recipient is missing from disk gets served out of your pack instead. Distributing a sound pack is how a content creator ships a fresh audio set without having to give the recipient every file unpacked.
+
+The hybrid case. The recipient is allowed to have any combination of forms on disk. Decompiled folders and compiled packs can coexist. The game always prefers disk folders first and packs as a fallback, so if a recipient has the decompiled main folder and your main.spack side by side, anything that exists on disk wins, and anything that doesn't exist on disk falls back to your pack. This lets a recipient drop a new sound pack on top of an existing setup without losing their own customizations: their custom clips still win, your pack only fills the gaps.
+
+Self contained maps.
+
+If you want to give someone a map that plays correctly with nothing else installed, you have to bundle every clip the map references into the map's assets folder before you compile it. The .map is then a complete experience. Anything you forget to bundle will silently fall through to the recipient's global builder root, and if they don't have one, that audio is gone.
+
+The opposite is also fine. If you trust that everyone who plays your map already has the global builder root, you can ship a smaller .map that only bundles the clips you actually overrode for theme reasons, and let the global fall through handle the rest. Most authored maps work this way because the global builder root is the standard library every player ships with.
+
+Compiling and decompiling.
+
+The map tools menu has options to compile a decompiled map (turning its loose folder into a .map file) and to decompile a compiled map (turning a .map back into its loose folder so you can edit the entity list or swap clips around). The same options exist for sound packs through the pack tools menu, which can compile or decompile main and builder.
+
+Compiling does not delete the decompiled folder, and decompiling does not delete the compiled pack. If both forms of the same content exist on disk after a compile, the loose folder still wins the lookup order. To actually serve content from a freshly compiled pack, either delete the matching decompiled folder or trust that the game's disk first ordering means the pack only kicks in for clips the folder is missing.
+
+Recompile after edits. If you edit a sound file or change the entity list in a decompiled folder, the matching compiled pack is now out of date. The disk first ordering means your edits still take effect locally because the loose form wins, but the pack you'd ship to someone else still has the old version. Recompile the pack before sharing to make sure the shipped file matches what you've been hearing.
+
+Silent miss recap.
+
+A sound that doesn't play for the recipient and does play for you almost always means one thing: that clip exists somewhere on your disk that doesn't exist on theirs, and isn't included in the pack you shared with them. The fix is either to bundle the missing clip into the relevant pack and reship, or to send the recipient the decompiled folder it lives in. The game itself will not tell you which clip is missing; you have to trace the silence back to the source by knowing where the sound was supposed to come from.
