@@ -37,6 +37,19 @@ The codebase spans two repos: SimpleFighter (this one, .nvgt scripts) and Legacy
 
 When you do change the engine, document the C++ change in this file (under "Engine-side fixes" if a section exists, or inline near the related script behavior) so the next person knows the engine isn't stock NVGT.
 
+## Confirm before implementing — design discussion is not a green light
+
+The dev's default mode of working in this repo is to describe an idea or ask a question first, then explicitly say "go ahead" or "yes please" before any code, doc, or changelog edit happens. Treat a design proposal — even a detailed and apparently-settled one — as a question to be answered with a plan, not a task to start executing. Stop at the "want me to proceed?" point and wait for confirmation.
+
+- **A description of a feature is a question, not an instruction.** When the dev writes "I really wish X" or "what if we did Y" or "could we extend Z" — they are exploring, not commissioning. Lay out the design, call out tradeoffs, ask for go-ahead. Don't start editing.
+- **Don't bundle implementation into the same turn as the proposal.** Even when a design feels obvious or small, splitting the proposal turn from the implementation turn gives the dev a chance to redirect, refine scope, or say "not now." Bundling them in one turn skips that decision.
+- **Definitely don't fan out into adjacent files unprompted.** Implementing a feature plus updating two help topics plus adding a changelog entry plus saving a memory file — all in one unconfirmed batch — is exactly the over-reach pattern to avoid. Each of those is a separate side-effect that deserves its own go-ahead.
+- **Exceptions where continuing without re-asking is fine:**
+  - The dev has already approved the broader task and a follow-up is clearly within scope (e.g. "section 2 of the bike refactor" right after they approved section 1).
+  - The dev explicitly reported a bug and asked for the fix in the same message — that's an implicit go-ahead to implement the fix (still confirm scope if uncertain).
+  - The dev directly asked for a specific edit ("rename X to Y", "delete this block", "add a changelog entry for…") — those are imperative and can proceed.
+- **When in doubt, ask.** The cost of a one-line "want me to proceed?" is tiny compared to the cost of unwanted edits that have to be rolled back or argued over. Lean toward asking.
+
 ## Map mode (2d / topdown / 3d)
 
 Every map carries a mode 2d|topdown|3d line at the top of info.sif. load_map() resets mapmode = "" and reads it from the file. The parser branches on mapmode == "3d" to accept extra z-coordinate fields, and the builder/runtime branches on the same flag for spatial behavior.
