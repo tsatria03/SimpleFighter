@@ -1,3 +1,21 @@
+// Translates a buildobj-style friendly name (the same name the builder menu uses) into the abbreviated on-disk token that the map parser dispatches on. Names that don't need translation — names that are already the on-disk form, or names that are identical in both — fall through unchanged. The item-mode form keys translate to their non-item siblings; activating item-mode is the author's responsibility via the lockmode field they write into the inline args. Shared between /build's inline branch and /spawn so both verbs accept either name form.
+string normalize_buildtype(string buildtype)
+{
+if(buildtype == "aircraft_beacon") return "airbeacon";
+else if(buildtype == "conveyor_belt") return "belt";
+else if(buildtype == "elevator_floor") return "el_floor";
+else if(buildtype == "moving_platform") return "mplatform";
+else if(buildtype == "character_blocker") return "chblocker";
+else if(buildtype == "command_blocker") return "cblocker";
+else if(buildtype == "tts_enemie") return "ttsenemie";
+else if(buildtype == "moving_hazard") return "mhazard";
+else if(buildtype == "security_camera") return "camera";
+else if(buildtype == "item_door") return "door";
+else if(buildtype == "ranged_item_door") return "ranged_door";
+else if(buildtype == "item_passage") return "passage";
+return buildtype;
+}
+
 void comparse(string comd="")
 {
 string cmd;
@@ -540,21 +558,8 @@ buildobj(buildtype);
 }
 else if (parsed.length() > 2)
 {
-// Inline build: the rest of the typed args after the object name are the entity's on-disk line, minus the entity-name prefix. Append the full constructed line to the map's main.sif and reload so the map parser picks it up. This bypasses the builder form entirely, which is the whole point — useful when a macro or a switch's on/off command wants to place content without an interactive dialog. No per-entity argument schema is needed because the map parser already knows how to read every entity line; a typo or missing field just means the line silently fails to parse on reload (the map otherwise stays consistent).
-string buildtype = parsed[1];
-// A handful of friendly buildobj-style names don't match the abbreviated on-disk tokens the map parser dispatches on. Translate the known mismatches here so /build moving_platform <args> writes mplatform <args> on disk, /build security_camera <args> writes camera <args>, and so on. Names that are already the on-disk form (or don't need translation) fall through to the unchanged buildtype. The item-mode form keys (item_door, ranged_item_door, item_passage) translate to their non-item siblings since they share the same on-disk entity; activating item-mode is the author's responsibility via the lockmode field they write into the inline args.
-if(buildtype == "aircraft_beacon") buildtype = "airbeacon";
-else if(buildtype == "conveyor_belt") buildtype = "belt";
-else if(buildtype == "elevator_floor") buildtype = "el_floor";
-else if(buildtype == "moving_platform") buildtype = "mplatform";
-else if(buildtype == "character_blocker") buildtype = "chblocker";
-else if(buildtype == "command_blocker") buildtype = "cblocker";
-else if(buildtype == "tts_enemie") buildtype = "ttsenemie";
-else if(buildtype == "moving_hazard") buildtype = "mhazard";
-else if(buildtype == "security_camera") buildtype = "camera";
-else if(buildtype == "item_door") buildtype = "door";
-else if(buildtype == "ranged_item_door") buildtype = "ranged_door";
-else if(buildtype == "item_passage") buildtype = "passage";
+// Inline build: the rest of the typed args after the object name are the entity's on-disk line, minus the entity-name prefix. Append the full constructed line to the map's main.sif and reload so the map parser picks it up. This bypasses the builder form entirely, which is the whole point — useful when a macro wants to place persistent content without an interactive dialog. No per-entity argument schema is needed because the map parser already knows how to read every entity line; a typo or missing field just means the line silently fails to parse on reload (the map otherwise stays consistent).
+string buildtype = normalize_buildtype(parsed[1]);
 string line_args = join_string_array(parsed, 2, parsed.length());
 string full_line = buildtype + " " + line_args;
 mapper.open("data/builder/maps/decompiled/"+mapname+"/data/main.sif", "ab");
@@ -569,6 +574,23 @@ else
 speak("Invalid command syntax. Usage: /build object, or /bl object. Append the object's on-disk fields to skip the form, e.g. /build platform 0 10 0 10 0 100 marble 0 100 false false.");
 return;
 }
+}
+else if ((base_command == "spawn" || base_command == "sp") && !map_is_compiled)
+{
+// Ephemeral spawn: like /build's inline form, but the entity exists in memory only — no write to main.sif, no map reload. The spawn dies when the map reloads or the player leaves; it's never persisted. Designed for switch on/off commands and macros that want to fire effects without altering the map file. Author-side cleanup (a switch's off command running /killall, or a future /wipe verb) is the player's responsibility.
+if (parsed.length() < 3)
+{
+speak("Invalid command syntax. Usage: /spawn object fields, or /sp object fields. The object name on its own does nothing — fields after the name are required.");
+return;
+}
+string buildtype = normalize_buildtype(parsed[1]);
+string line_args = join_string_array(parsed, 2, parsed.length());
+string full_line = buildtype + " " + line_args;
+string[] sd = string_split(full_line, " ", true);
+if(dispatch_entity_line(sd))
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+else
+speak("Unknown object type: " + parsed[1] + ".");
 }
 else if (base_command == "hb" || base_command == "healbones")
 {

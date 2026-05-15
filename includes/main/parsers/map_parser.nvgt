@@ -1,3 +1,128 @@
+// Routes a single map-entity line (already tokenized into sd, with sd[0] holding the entity name) to the appropriate read_<entity> function. Returns true if the entity name matched a known case, false if no case matched. The map loader's main loop calls this once per non-header line so the dispatch logic stays in one place; the /spawn command in the command parser also calls it to build an entity in memory from typed args without touching main.sif. Header lines (minx, maxx, mode, etc.) are NOT handled here — those only make sense during a map load and live in the loader's main loop directly.
+bool dispatch_entity_line(string[] sd)
+{
+if(sd[0]=="platform" && (sd.length()==10 || sd.length()==11 || sd.length()==12))
+read_platform(sd);
+else if(sd[0]=="staircase" && (sd.length()==11 || sd.length()==13))
+read_staircase(sd);
+else if(sd[0]=="vanishing_hazard" && (sd.length()==7 || sd.length()==9))
+read_vanishing_hazard(sd);
+else if(sd[0]=="vanishing_platform" && (sd.length()==11 || sd.length()==12 || sd.length()==13))
+read_vanishing_platform(sd);
+else if(sd[0]=="wall" && (sd.length()==11 || sd.length()==13))
+read_wall(sd);
+else if(sd[0]=="blockage" && ((mapmode=="3d" && sd.length()>=8) || (mapmode!="3d" && sd.length()>=6)))
+read_blockage(sd);
+else if(sd[0]=="door" && (sd.length()==18 || sd.length()==20))
+read_door(sd);
+else if(sd[0]=="ranged_door" && (sd.length()==20 || sd.length()==23))
+read_ranged_door(sd);
+else if(sd[0]=="elevator" && sd.length()>=11)
+read_elevator(sd);
+else if(sd[0]=="el_floor" && sd.length()>=5)
+read_el_floor(sd);
+else if(sd[0]=="passage" && (sd.length()==16 || sd.length()==18))
+read_passage(sd);
+else if(sd[0]=="menu_zone" && (sd.length()==5 || sd.length()==6 || sd.length()==7 || sd.length()==8))
+read_menu_zone(sd);
+else if(sd[0]=="safe_zone" && (sd.length()==6 || sd.length()==8))
+read_safe_zone(sd);
+else if((sd[0]=="text_zone" || sd[0]=="zone") && ((mapmode=="3d" && sd.length()>=8) || (mapmode!="3d" && sd.length()>=6)))
+read_text_zone(sd);
+else if(sd[0]=="obscurity_zone" && ((mapmode=="3d" && sd.length()>=11) || (mapmode!="3d" && sd.length()>=9)))
+read_obscurity_zone(sd);
+else if(sd[0]=="effect_space" && sd.length()>=10)
+read_effect_space(sd);
+else if(sd[0]=="text_square" && sd.length()>=4)
+read_text_square(sd);
+else if(sd[0]=="clock" && sd.length()>=6)
+read_clock(sd);
+else if(sd[0]=="calendar" && sd.length()>=6)
+read_calendar(sd);
+else if(sd[0]=="chblocker" && ((mapmode=="3d" && sd.length()>=9) || (mapmode!="3d" && sd.length()>=7)))
+read_chblocker(sd);
+else if(sd[0]=="cblocker" && ((mapmode=="3d" && sd.length()>=9) || (mapmode!="3d" && sd.length()>=7)))
+read_cblocker(sd);
+else if(sd[0]=="sound_ambience" && (sd.length()==9 || sd.length()==11))
+read_sound_ambience(sd);
+else if(sd[0]=="sound_source" && (sd.length()==9 || sd.length()==11))
+read_sound_source(sd);
+else if(sd[0]=="time_bomb" && (sd.length()==6 || sd.length()==7))
+read_timebomb(sd);
+else if(sd[0]=="timed_ambience" && (sd.length()==10 || sd.length()==12))
+read_timed_ambience(sd);
+else if(sd[0]=="timed_source" && (sd.length()==10 || sd.length()==12))
+read_timed_source(sd);
+else if(sd[0]=="timed_text" && ((mapmode=="3d" && sd.length()>=9) || (mapmode!="3d" && sd.length()>=7)))
+read_timed_text(sd);
+else if(sd[0]=="heal_zone" && (sd.length()==9 || sd.length()==11))
+read_heal_zone(sd);
+else if(sd[0]=="hazard" && (sd.length()==7 || sd.length()==9))
+read_hazard(sd);
+else if(sd[0]=="lift" && (sd.length()==13 || sd.length()==15))
+read_lift(sd);
+else if(sd[0]=="mine" && (sd.length()==6 || sd.length()==7))
+read_mine(sd);
+else if(sd[0]=="mhazard" && (sd.length()==11 || sd.length()==14))
+read_mhazard(sd);
+else if(sd[0]=="mplatform" && (sd.length()==16 || sd.length()==19))
+read_mplatform(sd);
+else if(sd[0]=="sign" && sd.length()>=7)
+read_sign(sd);
+else if(sd[0]=="checkpoint" && (sd.length()==5 || sd.length()==6))
+read_checkpoint(sd);
+else if(sd[0]=="dialog" && ((mapmode=="3d" && sd.length()>=10) || (mapmode!="3d" && sd.length()>=8)))
+read_dialog(sd);
+else if(sd[0]=="item" && (sd.length()==7 || sd.length()==8))
+read_item(sd);
+else if(sd[0]=="item_zone" && (sd.length()==8 || sd.length()==10))
+read_item_zone(sd);
+else if(sd[0]=="spike" && (sd.length()==10 || sd.length()==12))
+read_spike(sd);
+else if(sd[0]=="spawnpoint" && (sd.length()==3 || sd.length()==4))
+read_spawnpoint(sd);
+else if(sd[0]=="travelpoint" && (sd.length()==9 || sd.length()==12))
+read_travelpoint(sd);
+else if(sd[0]=="aircraft" && (sd.length()==5 || sd.length()==6))
+read_aircraft(sd);
+else if(sd[0]=="airbeacon" && (sd.length()==3 || sd.length()==4 || sd.length()==5 || sd.length()==6))
+read_airbeacon(sd);
+else if(sd[0]=="npc" && (sd.length()==7 || sd.length()==8))
+read_npc(sd);
+else if(sd[0]=="ttsenemie")
+read_ttsenemie(sd);
+else if(sd[0]=="camera" && (sd.length()==11 || sd.length()==13))
+read_camera(sd);
+else if(sd[0]=="floor_breaker" && (sd.length()==4 || sd.length()==5))
+read_floor_breaker(sd);
+else if(sd[0]=="fire" && (sd.length()==9 || sd.length()==12))
+read_fire(sd);
+else if(sd[0]=="force_field" && (sd.length()==8 || sd.length()==10))
+read_forcefield(sd);
+else if(sd[0]=="projectile" && (sd.length()==16 || sd.length()==19))
+read_projectile(sd);
+else if(sd[0]=="npc_zone" && (sd.length()==9 || sd.length()==10 || sd.length()==11))
+read_npc_zone(sd);
+else if(sd[0]=="bike" && (sd.length()==6 || sd.length()==7))
+read_bike(sd);
+else if(sd[0]=="bomb" && (sd.length()==6 || sd.length()==7))
+read_bomb(sd);
+else if(sd[0]=="bomb_zone" && (sd.length()==6 || sd.length()==7 || sd.length()==8))
+read_bomb_zone(sd);
+else if(sd[0]=="belt" && (sd.length()==9 || sd.length()==11))
+read_belt(sd);
+else if(sd[0]=="projectile_zone" && (sd.length()==6 || sd.length()==7 || sd.length()==8))
+read_projectile_zone(sd);
+else if(sd[0]=="switch")
+read_switch(sd);
+else if(sd[0]=="teleporter" && (sd.length()==12 || sd.length()==16))
+read_teleporter(sd);
+else if(sd[0]=="vehicle" && (sd.length()==10 || sd.length()==11))
+read_vehicle(sd);
+else return false;
+return true;
+}
+
 void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false, bool force_spawned=false)
 {
 	mapname = name;
@@ -157,124 +282,7 @@ else if(sd[0]=="mode" && sd.length()==2)
 {
 mapmode=sd[1];
 }
-else if(sd[0]=="platform" && (sd.length()==10 || sd.length()==11 || sd.length()==12))
-read_platform(sd);
-else if(sd[0]=="staircase" && (sd.length()==11 || sd.length()==13))
-read_staircase(sd);
-else if(sd[0]=="vanishing_hazard" && (sd.length()==7 || sd.length()==9))
-read_vanishing_hazard(sd);
-else if(sd[0]=="vanishing_platform" && (sd.length()==11 || sd.length()==12 || sd.length()==13))
-read_vanishing_platform(sd);
-else if(sd[0]=="wall" && (sd.length()==11 || sd.length()==13))
-read_wall(sd);
-else if(sd[0]=="blockage" && ((mapmode=="3d" && sd.length()>=8) || (mapmode!="3d" && sd.length()>=6)))
-read_blockage(sd);
-else if(sd[0]=="door" && (sd.length()==18 || sd.length()==20))
-read_door(sd);
-else if(sd[0]=="ranged_door" && (sd.length()==20 || sd.length()==23))
-read_ranged_door(sd);
-else if(sd[0]=="elevator" && sd.length()>=11)
-read_elevator(sd);
-else if(sd[0]=="el_floor" && sd.length()>=5)
-read_el_floor(sd);
-else if(sd[0]=="passage" && (sd.length()==16 || sd.length()==18))
-read_passage(sd);
-else if(sd[0]=="menu_zone" && (sd.length()==5 || sd.length()==6 || sd.length()==7 || sd.length()==8))
-read_menu_zone(sd);
-else if(sd[0]=="safe_zone" && (sd.length()==6 || sd.length()==8))
-read_safe_zone(sd);
-else if((sd[0]=="text_zone" || sd[0]=="zone") && ((mapmode=="3d" && sd.length()>=8) || (mapmode!="3d" && sd.length()>=6)))
-read_text_zone(sd);
-else if(sd[0]=="obscurity_zone" && ((mapmode=="3d" && sd.length()>=11) || (mapmode!="3d" && sd.length()>=9)))
-read_obscurity_zone(sd);
-else if(sd[0]=="effect_space" && sd.length()>=10)
-read_effect_space(sd);
-else if(sd[0]=="text_square" && sd.length()>=4)
-read_text_square(sd);
-else if(sd[0]=="clock" && sd.length()>=6)
-read_clock(sd);
-else if(sd[0]=="calendar" && sd.length()>=6)
-read_calendar(sd);
-else if(sd[0]=="chblocker" && ((mapmode=="3d" && sd.length()>=9) || (mapmode!="3d" && sd.length()>=7)))
-read_chblocker(sd);
-else if(sd[0]=="cblocker" && ((mapmode=="3d" && sd.length()>=9) || (mapmode!="3d" && sd.length()>=7)))
-read_cblocker(sd);
-else if(sd[0]=="sound_ambience" && (sd.length()==9 || sd.length()==11))
-read_sound_ambience(sd);
-else if(sd[0]=="sound_source" && (sd.length()==9 || sd.length()==11))
-read_sound_source(sd);
-else if(sd[0]=="time_bomb" && (sd.length()==6 || sd.length()==7))
-read_timebomb(sd);
-else if(sd[0]=="timed_ambience" && (sd.length()==10 || sd.length()==12))
-read_timed_ambience(sd);
-else if(sd[0]=="timed_source" && (sd.length()==10 || sd.length()==12))
-read_timed_source(sd);
-else if(sd[0]=="timed_text" && ((mapmode=="3d" && sd.length()>=9) || (mapmode!="3d" && sd.length()>=7)))
-read_timed_text(sd);
-else if(sd[0]=="heal_zone" && (sd.length()==9 || sd.length()==11))
-read_heal_zone(sd);
-else if(sd[0]=="hazard" && (sd.length()==7 || sd.length()==9))
-read_hazard(sd);
-else if(sd[0]=="lift" && (sd.length()==13 || sd.length()==15))
-read_lift(sd);
-else if(sd[0]=="mine" && (sd.length()==6 || sd.length()==7))
-read_mine(sd);
-else if(sd[0]=="mhazard" && (sd.length()==11 || sd.length()==14))
-read_mhazard(sd);
-else if(sd[0]=="mplatform" && (sd.length()==16 || sd.length()==19))
-read_mplatform(sd);
-else if(sd[0]=="sign" && sd.length()>=7)
-read_sign(sd);
-else if(sd[0]=="checkpoint" && (sd.length()==5 || sd.length()==6))
-read_checkpoint(sd);
-else if(sd[0]=="dialog" && ((mapmode=="3d" && sd.length()>=10) || (mapmode!="3d" && sd.length()>=8)))
-read_dialog(sd);
-else if(sd[0]=="item" && (sd.length()==7 || sd.length()==8))
-read_item(sd);
-else if(sd[0]=="item_zone" && (sd.length()==8 || sd.length()==10))
-read_item_zone(sd);
-else if(sd[0]=="spike" && (sd.length()==10 || sd.length()==12))
-read_spike(sd);
-else if(sd[0]=="spawnpoint" && (sd.length()==3 || sd.length()==4))
-read_spawnpoint(sd);
-else if(sd[0]=="travelpoint" && (sd.length()==9 || sd.length()==12))
-read_travelpoint(sd);
-else if(sd[0]=="aircraft" && (sd.length()==5 || sd.length()==6))
-read_aircraft(sd);
-else if(sd[0]=="airbeacon" && (sd.length()==3 || sd.length()==4 || sd.length()==5 || sd.length()==6))
-read_airbeacon(sd);
-else if(sd[0]=="npc" && (sd.length()==7 || sd.length()==8))
-read_npc(sd);
-else if(sd[0]=="ttsenemie")
-read_ttsenemie(sd);
-else if(sd[0]=="camera" && (sd.length()==11 || sd.length()==13))
-read_camera(sd);
-else if(sd[0]=="floor_breaker" && (sd.length()==4 || sd.length()==5))
-read_floor_breaker(sd);
-else if(sd[0]=="fire" && (sd.length()==9 || sd.length()==12))
-read_fire(sd);
-else if(sd[0]=="force_field" && (sd.length()==8 || sd.length()==10))
-read_forcefield(sd);
-else if(sd[0]=="projectile" && (sd.length()==16 || sd.length()==19))
-read_projectile(sd);
-else if(sd[0]=="npc_zone" && (sd.length()==9 || sd.length()==10 || sd.length()==11))
-read_npc_zone(sd);
-else if(sd[0]=="bike" && (sd.length()==6 || sd.length()==7))
-read_bike(sd);
-else if(sd[0]=="bomb" && (sd.length()==6 || sd.length()==7))
-read_bomb(sd);
-else if(sd[0]=="bomb_zone" && (sd.length()==6 || sd.length()==7 || sd.length()==8))
-read_bomb_zone(sd);
-else if(sd[0]=="belt" && (sd.length()==9 || sd.length()==11))
-read_belt(sd);
-else if(sd[0]=="projectile_zone" && (sd.length()==6 || sd.length()==7 || sd.length()==8))
-read_projectile_zone(sd);
-else if(sd[0]=="switch")
-read_switch(sd);
-else if(sd[0]=="teleporter" && (sd.length()==12 || sd.length()==16))
-read_teleporter(sd);
-else if(sd[0]=="vehicle" && (sd.length()==10 || sd.length()==11))
-read_vehicle(sd);
+else dispatch_entity_line(sd);
 cammable = true;
 jumpable = true;
 moveable = true;
