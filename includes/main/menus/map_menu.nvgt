@@ -722,6 +722,8 @@ if(mapem=="addown")
 	}
 	map_meta@ meta = read_map_meta_decompiled(mapname);
 	string[] existing = parse_owner_list(meta.owner);
+	// If the only "owner" currently stored is the noone placeholder, drop it so the new real owners replace it instead of being listed alongside it.
+	if(existing.length() == 1 && existing[0].lower() == "noone") existing.resize(0);
 	int added = 0;
 	int skipped = 0;
 	for(uint i = 0; i < new_owners.length(); i++)
@@ -838,6 +840,13 @@ if(mapem=="remown")
 	{
 		resume_pools();
 		speak("There are no owners to remove.");
+		return;
+	}
+	// If the only stored "owner" is the noone placeholder, there's nothing real to remove — refusing here also prevents the pointless cycle of removing noone, the list going empty, and the writer immediately re-inserting noone.
+	if(owners.length() == 1 && owners[0].lower() == "noone")
+	{
+		resume_pools();
+		speak("There are no real owners to remove. Add an owner first.");
 		return;
 	}
 	setupmenu();
