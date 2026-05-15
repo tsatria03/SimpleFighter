@@ -120,7 +120,15 @@ else if(i % 100 == 0)
 {
 wait(0);
 }
-string[] sd=string_split(lines[i], " ", true);
+// Normalize the line so tabs and runs of whitespace count as a single field separator. Authors who lay out entity lines with tabs (for column alignment in a text editor) get the same tokenization as the canonical space-delimited form, and a mix of the two on the same line is fine. Tabs and spaces become equivalent; consecutive whitespace collapses; leading/trailing whitespace is dropped.
+string normalized_line = string_replace(lines[i], "\t", " ", true);
+int prev_length;
+do {
+prev_length = normalized_line.length();
+normalized_line = string_replace(normalized_line, "  ", " ", true);
+} while (int(normalized_line.length()) < prev_length);
+normalized_line = string_trim_sides(normalized_line);
+string[] sd=string_split(normalized_line, " ", true);
 if(sd[0]=="minx" && sd.length()==2)
 {
 minx=stn(sd[1]);
