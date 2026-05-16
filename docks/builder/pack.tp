@@ -4,19 +4,19 @@ Every audio clip and data file the game uses is stored in one of two equivalent 
 
 The three storage roots.
 
-Sounds and data are split across three independent storage roots. Each root has both a decompiled folder form and a compiled pack form, and both forms can coexist on disk at the same time.
+Sounds and data are split across three independent storage roots. Each root has both a decompiled (folder) form and a compiled (pack) form, and both forms can coexist on disk at the same time.
 
-Player and equipment sounds the global main root. Decompiled form is the sounds/decompiled/main folder. Compiled form is sounds/compiled/main.spack. Holds the engine wide audio: every character's voice and clips, every weapon's draw, fire, hit, reload, every shield's draw, hit, break, the keyboard themes, the menu themes, and the miscellaneous UI clips. Anything that is the player's body or the player's gear lives here.
+Player and equipment sounds (the global "main" root). Decompiled form is the sounds/decompiled/main folder. Compiled form is sounds/compiled/main.spack. Holds the engine wide audio: every character's voice and clips, every weapon's draw, fire, hit, reload, every shield's draw, hit, break, the keyboard themes, the menu themes, and the miscellaneous UI clips. Anything that is "the player's body" or "the player's gear" lives here.
 
-Map entity sounds the global builder root. Decompiled form is the sounds/decompiled/builder folder. Compiled form is sounds/compiled/builder.spack. Holds the audio for the things that go into maps: every NPC's spawn, taunt, hurt, death, every wall's hit and break, every door's open and close, every trap's trigger, every transition's beep, every zone's ambient loop. Anything an author drops into a map references its audio out of this root.
+Map entity sounds (the global "builder" root). Decompiled form is the sounds/decompiled/builder folder. Compiled form is sounds/compiled/builder.spack. Holds the audio for the things that go into maps: every NPC's spawn, taunt, hurt, death, every wall's hit and break, every door's open and close, every trap's trigger, every transition's beep, every zone's ambient loop. Anything an author drops into a map references its audio out of this root.
 
-Per map data and assets the map's own pack. Decompiled form is the data/builder/maps/decompiled/<map name> folder. Compiled form is data/builder/maps/compiled/<map name>.map. Holds the map's entity list the layout written by the builder plus a private assets folder where the author can bundle per map theme audio that overrides the global sound. Each map is its own self contained pack, so two maps never collide.
+Per map data and assets (the map's own pack). Decompiled form is the data/builder/maps/decompiled/<map name> folder. Compiled form is data/builder/maps/compiled/<map name>.map. Holds the map's entity list (the layout written by the builder) plus a private assets folder where the author can bundle per map theme audio that overrides the global sound. Each map is its own self contained pack, so two maps never collide.
 
 The lookup order.
 
 Whenever the game wants to play a sound, it walks a fixed list of locations in order and uses the first one that contains a match. The list differs slightly between map entity sounds and global player sounds, because map entities also get a per map override slot.
 
-For a map entity sound a wall's hit, an NPC's bark, a door's open, the four checked locations in order are the following:
+For a map entity sound (a wall's hit, an NPC's bark, a door's open), the four checked locations in order are the following:
 
 First, the loaded map's compiled pack, inside its assets folder. This is where per map overrides live when the map has been compiled. If the author bundled a custom version of that clip into the map, that's what plays.
 Second, the loaded map's decompiled folder, inside its assets folder. Same role as the first but for maps that are still in their loose folder form.
@@ -24,7 +24,7 @@ Second, the loaded map's decompiled folder, inside its assets folder. Same role 
 Third, the global builder root's decompiled folder under sounds/decompiled/builder. The shared library of entity audio every map can rely on.
 Fourth, the global builder root's compiled pack at sounds/compiled/builder.spack. The pack form of the same shared library, used when the decompiled folder isn't present.
 
-For a global player or equipment sound a footstep, a weapon fire, a shield hit, a menu beep, only the last two locations are checked, since there is no per map override slot for global audio:
+For a global player or equipment sound (a footstep, a weapon fire, a shield hit, a menu beep), only the last two locations are checked, since there is no per map override slot for global audio:
 
 First, the global main root's decompiled folder under sounds/decompiled/main.
 Second, the global main root's compiled pack at sounds/compiled/main.spack.
@@ -37,7 +37,7 @@ The lookup order is what makes maps and sound packs portable. A recipient with a
 
 Sharing a map. You give the recipient your map's .map file from data/builder/maps/compiled. They drop it into the same folder on their machine. When they load that map, every entity in it tries to find its audio in the four locations described above. The first location is the .map itself, so any per map theme audio you bundled into the map's assets folder when you compiled it travels with the file and plays for the recipient regardless of what they have anywhere else. For everything you didn't bundle, the game falls through to the global builder root, so the recipient also needs to have either the sounds/decompiled/builder folder or a sounds/compiled/builder.spack file. If they have neither, the entities that weren't bundled into the map will be silent.
 
-Sharing a sound pack. You give the recipient your builder.spack file from sounds/compiled or your main.spack, or both. They drop them into the same folder on their machine. From that point onward, every lookup the game makes for entity or player audio falls through to your pack as the last resort, so any clip the recipient is missing from disk gets served out of your pack instead. Distributing a sound pack is how a content creator ships a fresh audio set without having to give the recipient every file unpacked.
+Sharing a sound pack. You give the recipient your builder.spack file from sounds/compiled (or your main.spack, or both). They drop them into the same folder on their machine. From that point onward, every lookup the game makes for entity or player audio falls through to your pack as the last resort, so any clip the recipient is missing from disk gets served out of your pack instead. Distributing a sound pack is how a content creator ships a fresh audio set without having to give the recipient every file unpacked.
 
 The hybrid case. The recipient is allowed to have any combination of forms on disk. Decompiled folders and compiled packs can coexist. The game always prefers disk folders first and packs as a fallback, so if a recipient has the decompiled main folder and your main.spack side by side, anything that exists on disk wins, and anything that doesn't exist on disk falls back to your pack. This lets a recipient drop a new sound pack on top of an existing setup without losing their own customizations: their custom clips still win, your pack only fills the gaps.
 
@@ -49,7 +49,7 @@ The opposite is also fine. If you trust that everyone who plays your map already
 
 Compiling and decompiling.
 
-The map tools menu has options to compile a decompiled map turning its loose folder into a .map file and to decompile a compiled map turning a .map back into its loose folder so you can edit the entity list or swap clips around. The same options exist for sound packs through the pack tools menu, which can compile or decompile main and builder.
+The map tools menu has options to compile a decompiled map (turning its loose folder into a .map file) and to decompile a compiled map (turning a .map back into its loose folder so you can edit the entity list or swap clips around). The same options exist for sound packs through the pack tools menu, which can compile or decompile main and builder.
 
 Compiling does not delete the decompiled folder, and decompiling does not delete the compiled pack. If both forms of the same content exist on disk after a compile, the loose folder still wins the lookup order. To actually serve content from a freshly compiled pack, either delete the matching decompiled folder or trust that the game's disk first ordering means the pack only kicks in for clips the folder is missing.
 
