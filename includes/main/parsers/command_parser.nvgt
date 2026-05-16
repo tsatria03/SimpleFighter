@@ -987,7 +987,16 @@ resume_pools();
 }
 else
 {
-speak("Invalid command syntax. Usage: /gozone, or /gz.");
+string zone_name = join_string_array(parsed, 1, parsed.length()).lower();
+for(uint i = 0; i < text_zones.length(); i++)
+{
+if(text_zones[i].text.lower() == zone_name)
+{
+gop("me", "", text_zones[i].minx, text_zones[i].miny, text_zones[i].minz);
+return;
+}
+}
+speak("Zone " + zone_name + " does not exist on this map.");
 return;
 }
 }
@@ -1098,6 +1107,17 @@ mapname=string_replace(mapname, ".sif", "", true);
 load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
 }
 }
+}
+else if (parsed.length() == 2)
+{
+string new_map = parsed[1].lower();
+if (!directory_exists("data/builder/maps/decompiled/" + new_map))
+{
+speak("This map does not exist.");
+return;
+}
+mapname = new_map;
+load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
 }
 else
 {
