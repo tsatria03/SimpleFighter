@@ -85,16 +85,18 @@ sf.nvgt includes only includes/includes.nvgt, which pulls in three NVGT stdlib f
 - globals/game.nvgt — main game loop. Iterates wait(5) and dispatches per-frame *check() and *loop() calls for every entity family (doors, elevators, hazards, walls, npcs, bullets, bombs, fires, …) plus update_sound_pools(), checkdeath(), checkloc().
 - globals/game_input.nvgt — keyboard dispatch (slash for command parser, scriptkey banks via Shift / Shift+Alt, run-mode via Alt, etc.).
 - globals/map.nvgt — clearmap() / destroymap(), camera-marker selection, movement and physics helpers.
+- globals/game_handlers.nvgt — input-handler callbacks split out of game_input.nvgt; the per-key behavior bodies live here.
 - globals/weapon.nvgt, bullet.nvgt, bodyfall.nvgt, hook.nvgt, sonar.nvgt, spier.nvgt, stunner.nvgt, tracker.nvgt, inventory.nvgt, decpool.nvgt, fadepool.nvgt, builder.nvgt, updater.nvgt — runtime subsystems.
 - parsers/map_parser.nvgt — load_map() reads data/maps/decompiled/<name>/info.sif (plain text) or the compiled .map pack, then dispatches each line to the appropriate read_<entity>().
 - parsers/command_parser.nvgt, character_parser.nvgt, shield_parser.nvgt — /-prefixed in-game commands and config-file parsers.
-- menus/menu.nvgt, menus/menu_callbacks.nvgt, menus/map_menu.nvgt, menus/settings_menu.nvgt, menus/stats_menu.nvgt — top-level UI.
-- functions/extrafuncts.nvgt, mapfuncts.nvgt, charfuncts.nvgt, comfuncts.nvgt, savefuncts.nvgt, downloaderfuncts.nvgt — small utilities (is_admin, array_contains, modifier-key helpers, etc.).
-- deps/ — vendored libraries: form.nvgt (audio form, modified from BGT), m_pro.nvgt, virtual_dialogs.nvgt, sound_pool.nvgt, keyhook.nvgt, key_hold.nvgt, savedata.nvgt, speech.nvgt, dlg.nvgt, dlgplayer.nvgt, downloader.nvgt, datetime.nvgt, time_elapsed.nvgt, rotation.nvgt.
+- menus/menu.nvgt — single home for every top-level menu. The previously separate settings_menu.nvgt and stats_menu.nvgt have been folded into this file alongside the main menu and other UI screens. menus/menu_callbacks.nvgt and menus/map_menu.nvgt remain separate.
+- functions/extrafuncts.nvgt, mapfuncts.nvgt, charfuncts.nvgt, comfuncts.nvgt, savefuncts.nvgt, downloaderfuncts.nvgt, filefuncts.nvgt, packfuncts.nvgt — small utilities (is_admin, array_contains, modifier-key helpers, file/path helpers, pack-resolution helpers, etc.).
+- deps/ — vendored libraries: form.nvgt (audio form, modified from BGT), form_menu.nvgt, setupmenu.nvgt, virtual_dialogs.nvgt, sound_pool.nvgt, keyhook.nvgt, key_hold.nvgt, savedata.nvgt, speech.nvgt, dlg.nvgt, dlgplayer.nvgt, downloader.nvgt, datetime.nvgt, time_elapsed.nvgt, rotation.nvgt. (The previously vendored m_pro.nvgt has been removed.)
+- version.nvgt sits at the includes/ root (not under a subfolder) and is the single source-of-truth `string version = "X.Y"` constant described under the changelog rules below.
 
 ### includes/builder/ — entity definitions
 
-One file per gameplay entity, grouped: audio/, construction/, interaction/, kombat/, misc/, transitions/, transportation/, traps/, zones/. Typical contents:
+One file per gameplay entity, grouped: audio/, construction/, interaction/, kombat/, misc/, transitions/, transportation/, traps/, zones/. The one exception to the one-file-per-entity rule is the NPC system in kombat/, which is split across npc.nvgt (entity state + read/write/build), npc_manager.nvgt (lifecycle / spawn-pool coordination), and npc_runner.nvgt (per-frame AI + movement loop) because the NPC behavior surface outgrew a single file. Typical contents of an entity file:
 
 - a class holding the entity's runtime state,
 - a global array<class>@[] <thing>s(0) of live instances,
@@ -234,7 +236,7 @@ These are known shape-of-the-code issues. None are urgent — none are breaking 
 
 - **`includes/main/globals/dec.nvgt` is global-soup.** ~126 lines declaring globals for almost every subsystem (map bounds, player stats, all 17 capability flags, sound slots, theme strings, active-map identity, miscellaneous state bools). Works fine for one-player one-session one-map, but means "what is the game's state?" can't be enumerated without reading the whole file, and any operation that needs to coordinate across the state set (pause/resume, hypothetical save-snapshots, hypothetical reset-to-title) has to know which 50 globals to touch and in what order. Future fix shape: group related globals into struct-like classes (`struct player_stats`, `struct capability_flags`, `struct map_bounds`) so subsystems read/write a small set of structured objects instead of dozens of loose variables.
 
-- **Glob-include aggregation at ~109 files is getting noisier.** sf.nvgt → includes/includes.nvgt → glob over every file under includes/builder/** and includes/main/**. Every symbol is visible everywhere, and parse order depends on whatever the OS returns from the directory walk. No order-sensitive code today, but the risk grows with file count. Future fix shape: keep `includes/builder/**` glob-included (entities really are additive and uniform), but list `includes/main/**` files explicitly in includes/includes.nvgt in a known order, so engine-core load sequence is predictable and only data-shaped directories stay glob-aggregated.
+- **Glob-include aggregation at ~113 files is getting noisier.** sf.nvgt → includes/includes.nvgt → glob over every file under includes/builder/** and includes/main/**. Every symbol is visible everywhere, and parse order depends on whatever the OS returns from the directory walk. No order-sensitive code today, but the risk grows with file count. Future fix shape: keep `includes/builder/**` glob-included (entities really are additive and uniform), but list `includes/main/**` files explicitly in includes/includes.nvgt in a known order, so engine-core load sequence is predictable and only data-shaped directories stay glob-aggregated.
 
 - **Silent parser fallthrough in `includes/main/parsers/map_parser.nvgt`.** Each entity dispatch checks `sd.length()` against one or more expected values; lines that don't match any variant are dropped with no warning. A malformed map (typo, stale tool, missing field) loads "successfully" with entities silently absent. Future fix shape: add a trailing `else` arm that logs unparsed lines, gated behind `!SCRIPT_COMPILED` or a `strict_parse` dev flag so production stays quiet.
 
