@@ -709,20 +709,24 @@ return;
 else if (base_command == "rm" || base_command == "relmap")
 {
 bool confirm = true;
-if (parsed.length() == 2)
+if (parsed.length() == 1)
+{
+// default: show confirmation dialog
+}
+else if (parsed.length() == 2)
 {
 string arg = parsed[1].lower();
 if (arg == "true") confirm = true;
 else if (arg == "false") confirm = false;
 else
 {
-speak("Invalid command syntax. Usage: /relmap true-false, or /rm true-false.");
+speak("Invalid command syntax. Usage: /relmap, or /rm. Append false to skip the yes/no prompt and reload immediately; true is accepted as the explicit form of the default.");
 return;
 }
 }
 else
 {
-speak("Invalid command syntax. Usage: /relmap true-false, or /rm true-false.");
+speak("Invalid command syntax. Usage: /relmap, or /rm.");
 return;
 }
 if (confirm)
@@ -1172,7 +1176,28 @@ return;
 }
 else if (base_command == "dm"  && !map_is_compiled || base_command == "delmap" && !map_is_compiled)
 {
+bool confirm = true;
 if (parsed.length() == 1)
+{
+// default: show confirmation dialog
+}
+else if (parsed.length() == 2)
+{
+string arg = parsed[1].lower();
+if (arg == "true") confirm = true;
+else if (arg == "false") confirm = false;
+else
+{
+speak("Invalid command syntax. Usage: /delmap, or /dm. Append false to skip the yes/no prompt and delete immediately; true is accepted as the explicit form of the default.");
+return;
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /delmap, or /dm.");
+return;
+}
+if (confirm)
 {
 setupmenu();
 m.add_item("yes");
@@ -1207,7 +1232,17 @@ return;
 }
 else
 {
-speak("Invalid command syntax. Usage: /delmap, or /dm.");
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+if(directory_exists("data/builder/maps/decompiled/"+mapname)) directory_delete("data/builder/maps/decompiled/"+mapname);
+speak("map deleted");
+dlgplay(get_pack_sound("main/characters/"+chartype+"/map/*delete*"),false);
+me.x=0;
+me.y=0;
+me.z=0;
+clearmap();
+destroymap();
+exit_game = true;
 return;
 }
 }
