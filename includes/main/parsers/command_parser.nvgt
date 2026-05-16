@@ -1123,7 +1123,28 @@ return;
 }
 else if (base_command == "rd"  && !map_is_compiled || base_command == "rawdata" && !map_is_compiled)
 {
+bool confirm = true;
 if (parsed.length() == 1)
+{
+// default: show confirmation dialog
+}
+else if (parsed.length() == 2)
+{
+string arg = parsed[1].lower();
+if (arg == "true") confirm = true;
+else if (arg == "false") confirm = false;
+else
+{
+speak("Invalid command syntax. Usage: /rawdata, or /rd. Append false to skip the yes/no prompt and overwrite immediately; true is accepted as the explicit form of the default.");
+return;
+}
+}
+else
+{
+speak("Invalid command syntax. Usage: /rawdata, or /rd.");
+return;
+}
+if (confirm)
 {
 setupmenu();
 m.add_item("yes");
@@ -1170,8 +1191,26 @@ return;
 }
 else
 {
-speak("Invalid command syntax. Usage: /rawdata, or /rd.");
+string clipboard_data = clipboard_read_text();
+if (clipboard_data == "")
+{
+speak("The clipboard is empty.");
 return;
+}
+string[] lines = split_lines(clipboard_data);
+bool is_valid = validate_map_data(lines);
+if (!is_valid)
+{
+speak("The clipboard data is invalid.");
+return;
+}
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
+mapper.write(clipboard_data);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner, force_spawned:true);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
 }
 }
 else if (base_command == "dm"  && !map_is_compiled || base_command == "delmap" && !map_is_compiled)
