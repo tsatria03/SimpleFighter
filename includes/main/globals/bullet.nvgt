@@ -21,11 +21,12 @@ int push_x;
 int push_y;
 int push_z;
 bool first_tick;
+bool is_cloner;
 string direction;
 string bulltype;
 string bulltype2;
 timer speedtimer;
-bullet(int bx,int by,int br,int br2,int dmg,int sp,string dr,string bt,string bt2,int sn,int fn,int bz=0,int br3=0,int scr=0,int scc=0,int px=0,int py=0,int pz=0)
+bullet(int bx,int by,int br,int br2,int dmg,int sp,string dr,string bt,string bt2,int sn,int fn,int bz=0,int br3=0,int scr=0,int scc=0,int px=0,int py=0,int pz=0,bool cloner=false)
 {
 bullx=bx;
 bully=by;
@@ -46,6 +47,7 @@ push_x=px;
 push_y=py;
 push_z=pz;
 first_tick=true;
+is_cloner=cloner;
 direction=dr;
 bulltype=bt;
 bulltype2=bt2;
@@ -288,6 +290,12 @@ npcs[j].hurttimer.restart();
 npcs[j].hurting=true;
 }
 if(bullets[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=bullets[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(npcs[j].x, npcs[j].y, npcs[j].z, cx, cy, cz);
+spawn_npc(cx, cy, npcs[j].orig_scale_level, npcs[j].path, npcs[j].category, npcs[j].subtype, cz);
+}
 try_bullet_splash(i, "npc", int(j), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -310,6 +318,12 @@ npcs[j].hurttimer.restart();
 npcs[j].hurting=true;
 }
 if(bullets[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=bullets[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(npcs[j].x, npcs[j].y, npcs[j].z, cx, cy, cz);
+spawn_npc(cx, cy, npcs[j].orig_scale_level, npcs[j].path, npcs[j].category, npcs[j].subtype, cz);
+}
 try_bullet_splash(i, "npc", int(j), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -334,6 +348,12 @@ ttsenemies[jt].hurtdelay=round(ttsempool.get_sound_length(ttsenemies[jt].hurtsou
 ttsenemies[jt].hurttimer.restart();
 ttsenemies[jt].hurting=true;
 }
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, cx, cy, cz);
+spawn_ttsenemie(cx, cy, ttsenemies[jt].ttsenemaxhealth, ttsenemies[jt].attack, ttsenemies[jt].defense, ttsenemies[jt].firetime, ttsenemies[jt].ttsenemietime, ttsenemies[jt].ttsemtext, ttsenemies[jt].ttsemhurt, ttsenemies[jt].ttsemdeath, ttsenemies[jt].voice, ttsenemies[jt].rate, ttsenemies[jt].volume, ttsenemies[jt].pitch, cz, ttsenemies[jt].weapontype, ttsenemies[jt].weapontype2);
+}
 try_bullet_splash(i, "tts", int(jt), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -344,11 +364,20 @@ for(uint i2=0; i2<calendars.length(); i2++)
 if(calendars[i2].calendarx==bullets[i].bullx and calendars[i2].calendary==bullets[i].bully and (mapmode != "3d" or calendars[i2].calendarz==bullets[i].bullz) and calendars[i2].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
-calpool.destroy_sound(calendars[i2].calendarsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(calendars[i2].calendarx, calendars[i2].calendary, calendars[i2].calendarz, cx, cy, cz);
+spawn_calendar(cx, cy, calendars[i2].cdtext, calendars[i2].calendartype, calendars[i2].destroyable, cz);
+}
+if(!bullets[i].is_cloner || bullets[i].damage >= 1)
+{
+calpool.destroy_sound(calendars[i2].calendarsound);
 calendars[i2].hurtsound=calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[i2].calendartype+"/*break*"),me.x,me.y,me.z,calendars[i2].calendarx,calendars[i2].calendary,calendars[i2].calendarz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 calendars.remove_at(i2);
+}
 try_bullet_splash(i, "", -1, mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -359,11 +388,20 @@ for(uint i3=0; i3<clocks.length(); i3++)
 if(clocks[i3].clockx==bullets[i].bullx and clocks[i3].clocky==bullets[i].bully and (mapmode != "3d" or clocks[i3].clockz==bullets[i].bullz) and clocks[i3].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
-clockpool.destroy_sound(clocks[i].clocksound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(clocks[i3].clockx, clocks[i3].clocky, clocks[i3].clockz, cx, cy, cz);
+spawn_clock(cx, cy, clocks[i3].cktext, clocks[i3].clocktype, clocks[i3].destroyable, cz);
+}
+if(!bullets[i].is_cloner || bullets[i].damage >= 1)
+{
+clockpool.destroy_sound(clocks[i3].clocksound);
 clocks[i3].hurtsound=clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[i3].clocktype+"/*break*"),me.x,me.y,me.z,clocks[i3].clockx,clocks[i3].clocky,clocks[i3].clockz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 clocks.remove_at(i3);
+}
 try_bullet_splash(i, "", -1, mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -380,6 +418,15 @@ int dmg = max(0, bullets[i].damage);
 doors[i4].doorhealth-=dmg;
 kombatlog.insert_last(dmg+" damage to door by "+bullets[i].bulltype2+"'s weapon attack.");
 if(dmg>0) doors[i4].hurtsound=doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/dest/"+doors[i4].desttype+"/*hurt*"),me.x,me.y,me.z,doors[i4].minx,doors[i4].miny,doors[i4].minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(doors[i4].minx, doors[i4].miny, doors[i4].minz, cx, cy, cz);
+int ddx = cx - doors[i4].minx;
+int ddy = cy - doors[i4].miny;
+int ddz = cz - doors[i4].minz;
+spawn_door(doors[i4].minx+ddx, doors[i4].maxx+ddx, doors[i4].miny+ddy, doors[i4].maxy+ddy, doors[i4].endx+ddx, doors[i4].endy+ddy, doors[i4].doorhealth, doors[i4].doormaxhealth, doors[i4].speed, doors[i4].looptype, doors[i4].movetype, doors[i4].opentype, doors[i4].closetype, doors[i4].desttype, doors[i4].lockmode, doors[i4].doorid, doors[i4].drpass, doors[i4].locktype, doors[i4].automatic, doors[i4].destroyable, doors[i4].is_ranged, doors[i4].minz+ddz, doors[i4].maxz+ddz, doors[i4].endz+ddz);
+}
 try_bullet_splash(i, "door", int(i4), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -390,11 +437,20 @@ for(uint i6=0; i6<objs.length(); i6++)
 if(objs[i6].itx==bullets[i].bullx and objs[i6].ity==bullets[i].bully and (mapmode != "3d" or objs[i6].itz==bullets[i].bullz))
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
-itempool.destroy_sound(objs[i6].objsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(objs[i6].itx, objs[i6].ity, objs[i6].itz, cx, cy, cz);
+spawn_obj(cx, cy, objs[i6].objtime, objs[i6].objtype, objs[i6].objtype2, objs[i6].automatic, cz);
+}
+if(!bullets[i].is_cloner || bullets[i].damage >= 1)
+{
+itempool.destroy_sound(objs[i6].objsound);
 objs[i6].hurtsound=itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[i6].objtype+"/"+objs[i6].objtype2+"/*break*"),me.x,me.y,me.z,objs[i6].itx,objs[i6].ity,objs[i6].itz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 objs.remove_at(i6);
+}
 try_bullet_splash(i, "", -1, mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -405,11 +461,20 @@ for(uint i9=0; i9<signs.length(); i9++)
 if(signs[i9].signx==bullets[i].bullx and signs[i9].signy==bullets[i].bully and (mapmode != "3d" or signs[i9].signz==bullets[i].bullz) and signs[i9].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
-signpool.destroy_sound(signs[i9].signsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(signs[i9].signx, signs[i9].signy, signs[i9].signz, cx, cy, cz);
+spawn_sign(cx, cy, signs[i9].text, signs[i9].signtype, signs[i9].destroyable, signs[i9].looping, cz);
+}
+if(!bullets[i].is_cloner || bullets[i].damage >= 1)
+{
+signpool.destroy_sound(signs[i9].signsound);
 signs[i9].hurtsound=signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i9].signtype+"/*break*"),me.x,me.y,me.z,signs[i9].signx,signs[i9].signy,signs[i9].signz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 signs.remove_at(i9);
+}
 try_bullet_splash(i, "", -1, mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -428,6 +493,15 @@ kombatlog.insert_last(dmg+" damage to "+spikes[i10].spiketype+" by "+bullets[i].
 if(dmg>0) spikes[i10].hurtsound=spikepool.play_extended_3d(get_map_sound("builder/traps/spikes/"+spikes[i10].spiketype+"/*hurt*"),me.x,me.y,me.z,spikes[i10].minx,spikes[i10].miny,spikes[i10].minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 spikepool.update_sound_3d(spikes[i10].hurtsound,spikes[i10].minx,spikes[i10].miny, 0);
 spikepool.update_sound_range_3d(spikes[i10].hurtsound, 0, spikes[i10].maxx-spikes[i10].minx, 0, spikes[i10].maxy-spikes[i10].miny, 0, 0);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(int(spikes[i10].minx), int(spikes[i10].miny), int(spikes[i10].minz), cx, cy, cz);
+int spdx = cx - int(spikes[i10].minx);
+int spdy = cy - int(spikes[i10].miny);
+int spdz = cz - int(spikes[i10].minz);
+spawn_spike(spikes[i10].minx+spdx, spikes[i10].maxx+spdx, spikes[i10].miny+spdy, spikes[i10].maxy+spdy, spikes[i10].spikehealth, spikes[i10].spikemaxhealth, spikes[i10].damage, spikes[i10].spiketime, spikes[i10].spiketype, spikes[i10].destroyable, spikes[i10].minz+spdz, spikes[i10].maxz+spdz);
+}
 try_bullet_splash(i, "spike", int(i10), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -444,6 +518,12 @@ int dmg = max(0, bullets[i].damage);
 vehicles[i12].vehhealth-=dmg;
 kombatlog.insert_last(dmg+" damage to "+vehicles[i12].vehtype+" by "+bullets[i].bulltype2+"'s weapon attack.");
 if(dmg>0) vehicles[i12].hurtsound=vehpool.play_extended_3d(get_map_sound("builder/transportation/vehicles/"+vehicles[i12].vehtype+"/*hurt*"),me.x,me.y,me.z,vehicles[i12].vehx,vehicles[i12].vehy,vehicles[i12].vehz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(vehicles[i12].vehx, vehicles[i12].vehy, vehicles[i12].vehz, cx, cy, cz);
+spawn_vehicle(cx, cy, vehicles[i12].vehhealth, vehicles[i12].vehmaxhealth, vehicles[i12].damage, vehicles[i12].vehspeed, vehicles[i12].accel_delay, vehicles[i12].brake_delay, vehicles[i12].vehtype, vehicles[i12].fireable, cz);
+}
 try_bullet_splash(i, "vehicle", int(i12), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -462,6 +542,15 @@ kombatlog.insert_last(dmg+" damage to "+string_replace(walls[i13].wall, "wall", 
 if(dmg>0) walls[i13].hurtsound=p.play_extended_3d(get_map_sound("builder/construction/walls/"+walls[i13].wall+"/*hurt*"),me.x,me.y,me.z,walls[i13].minx,walls[i13].miny,walls[i13].minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch,false);
 p.update_sound_3d(walls[i13].hurtsound,walls[i13].minx,walls[i13].miny, 0);
 p.update_sound_range_3d(walls[i13].hurtsound, 0, walls[i13].maxx-walls[i13].minx, 0, walls[i13].maxy-walls[i13].miny, 0, 0);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(int(walls[i13].minx), int(walls[i13].miny), int(walls[i13].minz), cx, cy, cz);
+int wdx = cx - int(walls[i13].minx);
+int wdy = cy - int(walls[i13].miny);
+int wdz = cz - int(walls[i13].minz);
+spawn_wall(walls[i13].minx+wdx, walls[i13].maxx+wdx, walls[i13].miny+wdy, walls[i13].maxy+wdy, walls[i13].wallhealth, walls[i13].wallmaxhealth, walls[i13].wall, walls[i13].volume, walls[i13].pitch, walls[i13].destroyable, walls[i13].transparent, walls[i13].minz+wdz, walls[i13].maxz+wdz);
+}
 try_bullet_splash(i, "wall", int(i13), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -478,6 +567,15 @@ int dmg = max(0, bullets[i].damage);
 doors[i15].doorhealth-=dmg;
 kombatlog.insert_last(dmg+" damage to door by "+bullets[i].bulltype2+"'s weapon attack.");
 if(dmg>0) doors[i15].hurtsound=doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/dest/"+doors[i15].desttype+"/*hurt*"),me.x,me.y,me.z,doors[i15].minx,doors[i15].miny,doors[i15].minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(doors[i15].minx, doors[i15].miny, doors[i15].minz, cx, cy, cz);
+int ddx = cx - doors[i15].minx;
+int ddy = cy - doors[i15].miny;
+int ddz = cz - doors[i15].minz;
+spawn_door(doors[i15].minx+ddx, doors[i15].maxx+ddx, doors[i15].miny+ddy, doors[i15].maxy+ddy, doors[i15].endx+ddx, doors[i15].endy+ddy, doors[i15].doorhealth, doors[i15].doormaxhealth, doors[i15].speed, doors[i15].looptype, doors[i15].movetype, doors[i15].opentype, doors[i15].closetype, doors[i15].desttype, doors[i15].lockmode, doors[i15].doorid, doors[i15].drpass, doors[i15].locktype, doors[i15].automatic, doors[i15].destroyable, doors[i15].is_ranged, doors[i15].minz+ddz, doors[i15].maxz+ddz, doors[i15].endz+ddz);
+}
 try_bullet_splash(i, "door", int(i15), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -494,6 +592,12 @@ int dmg = max(0, bullets[i].damage);
 sucams[i18].camhealth-=dmg;
 kombatlog.insert_last(dmg+" damage to "+sucams[i18].cameratype+" by "+bullets[i].bulltype2+"'s weapon attack.");
 if(dmg>0) sucams[i18].hurtsound=campool.play_extended_3d(get_map_sound("builder/traps/security cameras/"+sucams[i18].cameratype+"/*hurt*"),me.x,me.y,me.z,sucams[i18].sucamx,sucams[i18].sucamy,sucams[i18].sucamz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(sucams[i18].sucamx, sucams[i18].sucamy, sucams[i18].sucamz, cx, cy, cz);
+spawn_camera(cx, cy, sucams[i18].vision_x, sucams[i18].vision_y, sucams[i18].camdir, sucams[i18].turntime, sucams[i18].camhealth, sucams[i18].cammaxhealth, sucams[i18].camlevel, sucams[i18].camxp, sucams[i18].cameratype, cz, sucams[i18].vision_z);
+}
 try_bullet_splash(i, "sucam", int(i18), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -510,6 +614,12 @@ int dmg = max(0, bullets[i].damage);
 bikes[i19].bikehealth-=dmg;
 kombatlog.insert_last(dmg+" damage to "+bikes[i19].biketype+" by "+bullets[i].bulltype2+"'s weapon attack.");
 if(dmg>0) bikes[i19].hurtsound=bikepool.play_extended_3d(get_map_sound("builder/transportation/bikes/"+bikes[i19].biketype+"/misc/*hurt*"),me.x,me.y,me.z,bikes[i19].bikex,bikes[i19].bikey,bikes[i19].bikez,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(bikes[i19].bikex, bikes[i19].bikey, bikes[i19].bikez, cx, cy, cz);
+spawn_bike(cx, cy, bikes[i19].bikehealth, bikes[i19].bikemaxhealth, bikes[i19].bikespeed, bikes[i19].biketype, cz);
+}
 try_bullet_splash(i, "bike", int(i19), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -528,6 +638,15 @@ kombatlog.insert_last(dmg+" damage to "+staircases[i20].tile+" staircase by "+bu
 if(dmg>0) staircases[i20].hurtsound=p.play_extended_3d(get_map_sound("builder/construction/platforms/"+staircases[i20].tile+"/*hurt*"),me.x,me.y,me.z,staircases[i20].minx,staircases[i20].miny,staircases[i20].minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
 p.update_sound_3d(staircases[i20].hurtsound,staircases[i20].minx,staircases[i20].miny, 0);
 p.update_sound_range_3d(staircases[i20].hurtsound, 0, staircases[i20].maxx-staircases[i20].minx, 0, staircases[i20].maxy-staircases[i20].miny, 0, 0);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(int(staircases[i20].minx), int(staircases[i20].miny), int(staircases[i20].minz), cx, cy, cz);
+int sdx = cx - int(staircases[i20].minx);
+int sdy = cy - int(staircases[i20].miny);
+int sdz = cz - int(staircases[i20].minz);
+spawn_staircase(staircases[i20].minx+sdx, staircases[i20].maxx+sdx, staircases[i20].miny+sdy, staircases[i20].maxy+sdy, staircases[i20].stairshealth, staircases[i20].stairsmaxhealth, staircases[i20].tile, staircases[i20].stairsvolume, staircases[i20].stairspitch, staircases[i20].destroyable, staircases[i20].overlap, staircases[i20].minz+sdz, staircases[i20].maxz+sdz);
+}
 try_bullet_splash(i, "staircase", int(i20), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -546,6 +665,15 @@ kombatlog.insert_last(dmg+" damage to "+platforms[i21].tile+" platform by "+bull
 if(dmg>0) platforms[i21].hurtsound=p.play_extended_3d(get_map_sound("builder/construction/platforms/"+platforms[i21].tile+"/*hurt*"),me.x,me.y,me.z,platforms[i21].minx,platforms[i21].miny,platforms[i21].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
 p.update_sound_3d(platforms[i21].hurtsound,platforms[i21].minx,platforms[i21].miny, 0);
 p.update_sound_range_3d(platforms[i21].hurtsound, 0, platforms[i21].maxx-platforms[i21].minx, 0, platforms[i21].maxy-platforms[i21].miny, 0, 0);
+if(bullets[i].is_cloner && !platforms[i21].is_backing)
+{
+int cx, cy, cz;
+cloner_clone_position(int(platforms[i21].minx), int(platforms[i21].miny), int(platforms[i21].z), cx, cy, cz);
+int pdx = cx - int(platforms[i21].minx);
+int pdy = cy - int(platforms[i21].miny);
+int pdz = cz - int(platforms[i21].z);
+spawn_platform(platforms[i21].minx+pdx, platforms[i21].maxx+pdx, platforms[i21].miny+pdy, platforms[i21].maxy+pdy, platforms[i21].plathealth, platforms[i21].platmaxhealth, platforms[i21].tile, platforms[i21].volume, platforms[i21].pitch, platforms[i21].destroyable, platforms[i21].overlap, false, platforms[i21].z+pdz);
+}
 try_bullet_splash(i, "platform", int(i21), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -562,6 +690,12 @@ int dmg = max(0, bullets[i].damage);
 aircrafts[i22].plainhealth-=dmg;
 kombatlog.insert_last(dmg+" damage to "+aircrafts[i22].plaintype+" by "+bullets[i].bulltype2+"'s weapon attack.");
 if(dmg>0) aircrafts[i22].hurtsound=plainpool.play_extended_3d(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i22].plaintype+"/*hurt*"),me.x,me.y,me.z,aircrafts[i22].plainx,aircrafts[i22].plainy,aircrafts[i22].plainz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(aircrafts[i22].plainx, aircrafts[i22].plainy, aircrafts[i22].plainz, cx, cy, cz);
+spawn_aircraft(cx, cy, aircrafts[i22].plainhealth, aircrafts[i22].plainmaxhealth, aircrafts[i22].plaintype, cz);
+}
 try_bullet_splash(i, "aircraft", int(i22), mapmode == "3d");
 bullets.remove_at(i);
 return;
@@ -578,6 +712,15 @@ int dmg = max(0, bullets[i].damage);
 projectiles[i23].projhealth-=dmg;
 kombatlog.insert_last(dmg+" damage to "+projectiles[i23].projtype+" by "+bullets[i].bulltype2+"'s weapon attack.");
 if(dmg>0) projectiles[i23].wepsound=projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i23].projtype+"/*hurt*"),me.x,me.y,me.z,projectiles[i23].prox,projectiles[i23].proy,projectiles[i23].proz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(projectiles[i23].prox, projectiles[i23].proy, projectiles[i23].proz, cx, cy, cz);
+int prdx = cx - projectiles[i23].prox;
+int prdy = cy - projectiles[i23].proy;
+int prdz = cz - projectiles[i23].proz;
+spawn_projectile(cx, cy, projectiles[i23].minx+prdx, projectiles[i23].maxx+prdx, projectiles[i23].miny+prdy, projectiles[i23].maxy+prdy, projectiles[i23].direction, projectiles[i23].projhealth, projectiles[i23].damage, projectiles[i23].speed, projectiles[i23].projtype, projectiles[i23].bounce_at_edge, projectiles[i23].destroyable, projectiles[i23].fireable, projectiles[i23].single_use, projectiles[i23].stun, cz, projectiles[i23].minz+prdz, projectiles[i23].maxz+prdz, projectiles[i23].check_spawn_contact);
+}
 if(projectiles[i23].projhealth<=0)
 {
 projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i23].projtype+"/*death*"),me.x,me.y,me.z,projectiles[i23].prox,projectiles[i23].proy,projectiles[i23].proz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
@@ -594,10 +737,38 @@ return;
 }
 }
 }
-void spawn_bullet(int x,int y,int range,int range2,int damage,int speed,string direction,string bulltype,string bulltype2,int stun=0,int firer_npc=-1,int z=0,int range3=0,int scadder_radius=0,int scadder_count=0,int push_x=0,int push_y=0,int push_z=0)
+void spawn_bullet(int x,int y,int range,int range2,int damage,int speed,string direction,string bulltype,string bulltype2,int stun=0,int firer_npc=-1,int z=0,int range3=0,int scadder_radius=0,int scadder_count=0,int push_x=0,int push_y=0,int push_z=0,bool is_cloner=false)
 {
-bullet bl1(x,y,range,range2,damage,speed,direction,bulltype,bulltype2,stun,firer_npc,z,range3,scadder_radius,scadder_count,push_x,push_y,push_z);
+bullet bl1(x,y,range,range2,damage,speed,direction,bulltype,bulltype2,stun,firer_npc,z,range3,scadder_radius,scadder_count,push_x,push_y,push_z,is_cloner);
 bullets.insert_last(bl1);
+}
+// Compute the next clone position for a cloner hit: the first shot since the last reset spawns at the hit tile, subsequent shots spawn one tile closer to the player than the previous clone (not the bullet's hit tile, which would compound as new clones get hit first), and once the position reaches the player's tile it sticks there for every further shot. Also updates the saved last-clone state in the same call.
+void cloner_clone_position(int hx, int hy, int hz, int &out cx, int &out cy, int &out cz)
+{
+	int px = int(me.x);
+	int py = int(me.y);
+	int pz = int(me.z);
+	if(!cloner_has_last)
+	{
+		cx = hx; cy = hy; cz = hz;
+	}
+	else
+	{
+		int bx = cloner_last_x, by = cloner_last_y, bz = cloner_last_z;
+		int dx = (bx > px) ? -1 : (bx < px ? 1 : 0);
+		int dy = (by > py) ? -1 : (by < py ? 1 : 0);
+		int dz = (bz > pz) ? -1 : (bz < pz ? 1 : 0);
+		cx = bx + dx;
+		cy = by + dy;
+		cz = bz + dz;
+		if((dx > 0 && cx > px) || (dx < 0 && cx < px)) cx = px;
+		if((dy > 0 && cy > py) || (dy < 0 && cy < py)) cy = py;
+		if((dz > 0 && cz > pz) || (dz < 0 && cz < pz)) cz = pz;
+	}
+	cloner_last_x = cx;
+	cloner_last_y = cy;
+	cloner_last_z = cz;
+	cloner_has_last = true;
 }
 void destroy_all_bullets()
 {

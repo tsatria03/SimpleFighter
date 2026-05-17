@@ -58,7 +58,7 @@ class ttsenemie
 	timer firetimer;
 	int hurtdelay;
 	bool hurting;
-	ttsenemie(int x, int y, double hp, int atk, int def, int ft, int sp, string txt, string ht, string dt, string vc, int rt, int vl, int pt, int z = 0)
+	ttsenemie(int x, int y, double hp, int atk, int def, int ft, int sp, string txt, string ht, string dt, string vc, int rt, int vl, int pt, int z = 0, string wt = "", string wt2 = "")
 	{
 		ttsemx = x;
 		ttsemy = y;
@@ -76,12 +76,20 @@ class ttsenemie
 		rate = rt;
 		volume = vl;
 		pitch = pt;
-		string[] wepcad = get_pack_sound_folders("main/equipments/weapons/*");
-		weapontype = random_string(wepcad);
-		string[] weapon = get_pack_sound_folders("main/equipments/weapons/" + weapontype + "/*");
-		if(weapon.length() > 0)
+		if (wt != "" && wt2 != "")
 		{
-			weapontype2 = random_string(weapon);
+			weapontype = wt;
+			weapontype2 = wt2;
+		}
+		else
+		{
+			string[] wepcad = get_pack_sound_folders("main/equipments/weapons/*");
+			weapontype = random_string(wepcad);
+			string[] weapon = get_pack_sound_folders("main/equipments/weapons/" + weapontype + "/*");
+			if(weapon.length() > 0) weapontype2 = random_string(weapon);
+		}
+		if(weapontype2 != "")
+		{
 			drawsound = ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/" + weapontype + "/" + weapontype2 + "/general/*draw*"), me.x, me.y, me.z, ttsemx, ttsemy, ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 		}
 		if (file_exists(taunt_file)) file_delete(taunt_file);
@@ -191,9 +199,9 @@ return;
 }
 }
 }
-void spawn_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string ttsemtext, string ttsemhurt, string ttsemdeath, string voice, int rate, int volume, int pitch, int z = 0)
+void spawn_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string ttsemtext, string ttsemhurt, string ttsemdeath, string voice, int rate, int volume, int pitch, int z = 0, string weapontype = "", string weapontype2 = "")
 {
-	ttsenemie ttsen1(x, y, hp, attack, defense, firetime, sp, ttsemtext, ttsemhurt, ttsemdeath, voice, rate, volume, pitch, z);
+	ttsenemie ttsen1(x, y, hp, attack, defense, firetime, sp, ttsemtext, ttsemhurt, ttsemdeath, voice, rate, volume, pitch, z, weapontype, weapontype2);
 	ttsenemies.insert_last(ttsen1);
 }
 void destroy_all_ttsenemies()
