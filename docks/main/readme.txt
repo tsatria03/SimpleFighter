@@ -78,9 +78,9 @@ Shift plus letter F. Reset movement speed to default.
 
 Jump height.
 
-Shift plus F1. Decrease maximum jump height. Disabled on topdown.
-Shift plus F2. Increase maximum jump height. Disabled on topdown.
-Shift plus F3. Reset jump height to default. Disabled on topdown.
+F1. Decrease maximum jump height. Disabled on topdown.
+F2. Increase maximum jump height. Disabled on topdown.
+F3. Reset jump height to default. Disabled on topdown.
 
 Hooking.
 
@@ -91,9 +91,9 @@ Letter, V. Toggle hooking downward.
 
 Sonar.
 
-F1. Cycle the sonar following mode.
-F2. Cycle the sonar tracking mode.
-F3. Cycle the sonar looping speed.
+Shift plus F1. Cycle the sonar following mode.
+Shift plus F2. Cycle the sonar tracking mode.
+Shift plus F3. Cycle the sonar looping speed.
 
 When the sonar is not following you, you can point it manually:
 
