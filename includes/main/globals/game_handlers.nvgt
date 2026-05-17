@@ -715,7 +715,7 @@ jumptimer.restart();
 if(mapmode == "3d")
 {
 me.z += 1;
-if(wall_blocks(me.x, me.y, me.z))
+if(wall_blocks(me.x, me.y, me.z) && !user_platform_overhead(ty2))
 {
 for(uint i = 0; i < walls.length(); i++)
 {
@@ -729,6 +729,16 @@ me.z -= 1;
 ascending = false;
 jumptimer.restart();
 atapex = true;
+}
+else if (user_platform_at(me.x, me.y, me.z))
+{
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+return;
 }
 else if (is_staircase_top(me.x, me.y, me.z))
 {
@@ -751,6 +761,31 @@ ascending = false;
 atapex = false;
 ty1 = me.z;
 return;
+}
+int body_dir = -1;
+if(key_down(KEY_UP)) body_dir = 0;
+else if(key_down(KEY_DOWN)) body_dir = 1;
+else if(key_down(KEY_LEFT)) body_dir = 2;
+else if(key_down(KEY_RIGHT)) body_dir = 3;
+if(body_dir != -1)
+{
+int dx, dy;
+body_world_delta(body_dir, dx, dy);
+double nx = me.x + dx;
+double ny = me.y + dy;
+if(nx >= minx && nx <= maxx && ny >= miny && ny <= maxy && user_platform_at(nx, ny, me.z))
+{
+me.x = nx;
+me.y = ny;
+facing = body_world_facing(body_dir);
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+return;
+}
 }
 ascending = false; jumptimer.restart(); atapex = true;
 }
@@ -778,7 +813,7 @@ return;
 }
 if (me.y>=ty2)
 {
-if(in_staircase(me.x, me.y))
+if(in_staircase(me.x, me.y) || user_platform_at(me.x, me.y, 0))
 {
 if(onhook) hk.release_hook();
 playland();
@@ -787,6 +822,23 @@ ascending = false;
 atapex = false;
 ty1 = me.y;
 return;
+}
+int dx = key_down(KEY_RIGHT) ? 1 : (key_down(KEY_LEFT) ? -1 : 0);
+if(dx != 0)
+{
+double nx = me.x + dx;
+if(nx >= minx && nx <= maxx && user_platform_at(nx, me.y, 0))
+{
+me.x = nx;
+facing = dx > 0 ? "right" : "left";
+if(onhook) hk.release_hook();
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.y;
+return;
+}
 }
 ascending=false;
 jumptimer.restart();

@@ -63,6 +63,45 @@ string platform_tile_at(double x, double y, double z)
 	if(visible.length() == 0) return "";
 	return platforms[visible[visible.length()-1]].tile;
 }
+
+bool platform_supports(double x, double y, double z)
+{
+for(uint i=0; i<platforms.length(); i++)
+{
+if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y && platforms[i].z == z)
+return true;
+}
+return false;
+}
+bool user_platform_overhead(double apex)
+{
+	for(uint i = 0; i < platforms.length(); i++)
+	{
+		if(platforms[i].is_backing) continue;
+		if(platforms[i].minx > me.x || platforms[i].maxx < me.x) continue;
+		if(mapmode == "3d")
+		{
+			if(platforms[i].miny > me.y || platforms[i].maxy < me.y) continue;
+			if(platforms[i].z > me.z && platforms[i].z <= apex) return true;
+		}
+		else
+		{
+			if(platforms[i].maxy > me.y && platforms[i].miny <= apex) return true;
+		}
+	}
+	return false;
+}
+
+void checkforplatforms()
+{
+	string tile = gmt(me.x, me.y);
+	if (tile != "")
+	{
+		playland();
+		jumping = 0;
+		falling = false;
+	}
+}
 void get_all_platform_tiles(double x, double y, array<string>@ tiles, array<double>@ volumes, array<double>@ pitches, double z=0)
 {
 	array<int> stack;
