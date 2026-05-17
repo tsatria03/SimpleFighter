@@ -143,7 +143,9 @@ void scan_direction(const string&in dir, double pitch_offset, string &inout last
 			stairtype = "down";
 		else
 		{
-			if (me.y < staircases[i].maxy)
+			double cmp_player = (mapmode == "3d") ? me.z : me.y;
+			double cmp_top = (mapmode == "3d") ? staircases[i].maxz : staircases[i].maxy;
+			if (cmp_player < cmp_top)
 				stairtype = "up";
 			else
 				stairtype = "down";
@@ -174,11 +176,15 @@ void scan_direction(const string&in dir, double pitch_offset, string &inout last
 							play_sonar("tile", tx, ty, pitch_offset, tz);
 						return;
 					}
-					if (tile=="" || tile == "air")
-					{
-							play_sonar("air", tx, ty, pitch_offset, tz);
-						return;
-					}
+				}
+			}
+			if (jumping == 0)
+			{
+				string here = (mapmode == "3d") ? gmt(tx, ty, tz) : gmt(tx, ty);
+				if (here == "" || here == "air")
+				{
+					play_sonar("air", tx, ty, pitch_offset, tz);
+					return;
 				}
 			}
 		}
