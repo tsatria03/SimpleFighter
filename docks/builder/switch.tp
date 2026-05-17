@@ -1,6 +1,8 @@
 Switches.
 
-A switch is an interactive entity that the player activates by stepping into its press area and pressing enter. Before this revision a switch was a decorative audio toggle that announced its state and did nothing else; now it can run any slash command on flip, can hold an ambient looping clip independent of its toggled state, and is a small scripting primitive for triggering map events. Switches come in two builder variants: the standard switch (a single tile the player must stand on) and the ranged switch (a rectangular area the player can press from anywhere inside). Both variants share the same fields, command behavior, and audio model — only the coordinate footprint differs. Each switch lives as a single line per entry in the map's main.sif.
+A switch is an interactive entity that the player activates by stepping into its press area and pressing enter. Before this revision a switch was a decorative audio toggle that announced its state and did nothing else; now it can run any slash command on flip, can hold an ambient looping clip independent of its toggled state, and is a small scripting primitive for triggering map events.
+
+Switches come in two builder variants: the standard switch (a single tile the player must stand on) and the ranged switch (a rectangular area the player can press from anywhere inside). Both variants share the same fields, command behavior, and audio model — only the coordinate footprint differs. Each switch lives as a single line per entry in the map's main.sif.
 The author defines what a switch does by writing slash commands into two text fields on the switch — one fires when the switch flips on, one fires when it flips back off. The commands are the same strings you would type after the slash key in the command console during play, so any command the console understands can be bound to a switch — though some commands suit switch use better than others, and a few come with practical limits described in Command compatibility caveats further down. There is no separate switch scripting language and no new vocabulary to learn.
 
 Switch components.
@@ -14,7 +16,7 @@ Off command (text, optional). A slash command (or a stack) that runs every time 
 
 Switch sound (folder name from the switch sounds list, or none). The audio theme the switch uses. Each switch sound theme provides a press clip (played every time the switch is pressed) and a loop clip (the ambient sound used when looping is enabled). Pick none for a silent switch.
 
-Auto activate (checkbox). When checked, the switch starts in the on state when the map loads, as if the player had already pressed it once — and the on command fires at spawn the same way it would on a real press, so the switch can perform real work the moment the map opens (announce ambient narration, spawn helpers or hazards, teleport the player, swap a macro pack, and so on). Useful for switches that represent something that's already running when the player arrives, and for triggering opening-of-map effects without needing the player to walk over a tile first.
+-auto activate (checkbox). When checked, the switch starts in the on state when the map loads, as if the player had already pressed it once — and the on command fires at spawn the same way it would on a real press, so the switch can perform real work the moment the map opens (announce ambient narration, spawn helpers or hazards, teleport the player, swap a macro pack, and so on). Useful for switches that represent something that's already running when the player arrives, and for triggering opening-of-map effects without needing the player to walk over a tile first.
 
 Destroying sound (checkbox). Controls whether the ambient loop clip tracks the switch's toggled state. With destroying sound off, the loop plays continuously from the moment the map loads and ignores every flip — this represents a switch attached to always-on hardware like a generator or fan. With destroying sound on, the loop only plays while the switch is currently on; flipping the switch off stops the loop, flipping it on again starts it back up.
 Looping sound (checkbox). Controls whether the switch has an ambient loop at all. If this is off, the destroying sound checkbox has nothing to act on — the switch will only ever play its press clip. Pair looping sound with destroying sound according to which ambient model you want; the four combinations are described below in Audio behavior matrix.
@@ -23,7 +25,7 @@ Single use (checkbox). When checked, the first press consumes the switch entirel
 
 Audio behavior matrix.
 
-The interaction between auto activate, looping sound, and destroying sound decides what the player hears at each moment of the switch's life. The four interesting combinations:
+The interaction between auto activate, looping sound, and destroying sound decides what the player hears at each moment of the switch's life. The four interesting combinations are:
 
 Looping sound off, destroying sound either. No ambient loop at any time. The press clip is the only audio feedback per toggle. The destroying sound checkbox is ignored because there is no loop to track or stop.
 Looping sound on, destroying sound off. The loop plays continuously from the moment the map loads and persists through every flip without restarting. The toggled state still changes (so the on and off commands still fire correctly), but the loop doesn't care — it represents hardware that's always running. A generator switch where the generator hums whether or not you've flipped its state is the typical case.
@@ -46,11 +48,7 @@ The command runs through the same parser the command console uses, so anything y
 
 Command stacking.
 
-Either command field can hold more than one command, separated by semicolons. The engine runs them in order, top to bottom, with no delay between commands by default. A line like:
-
-/give bullets 50; /play alarm; /cm reload 10 10
-
-runs three commands as the switch flips on: give the player 50 bullets, play the alarm clip, and teleport them to the reload map at coordinates 10, 10.
+Either command field can hold more than one command, separated by semicolons. The engine runs them in order, top to bottom, with no delay between commands by default. A line like: (/give bullets 50; /play alarm; /cm reload 10 10) runs three commands as the switch flips on: give the player 50 bullets, play the alarm clip, and teleport them to the reload map at coordinates 10, 10.
 
 Stacking also supports an optional millisecond delay before each individual command. Write a number followed by the command, and the engine waits that many milliseconds before running that step. For example:
 
@@ -65,6 +63,7 @@ A delay with no command (just a number followed by a semicolon) is a no-op. A co
 Quoting and special characters in commands.
 
 Each command field is written on disk as a double-quoted string, so spaces inside the command are preserved. Any literal double quotes you type inside the field are stripped when the switch is saved (to keep the format unambiguous), so if your command needs to include text with quotes, find another way to express it.
+
 The semicolon character is reserved as the stack separator. If a command you need to bind contains a literal semicolon as part of its arguments, the stack splitter will treat it as a separator and break the command. In practice this rarely matters because the command parser doesn't use semicolons in its argument vocabulary, but it's a constraint worth knowing.
 
 The slash at the start of each command is optional in switch bindings. The engine prepends one if you forget. So both /cm cave 10 10 and cm cave 10 10 work identically.
@@ -86,8 +85,8 @@ Narrative gate. Bind a stack of /speak commands with millisecond delays to a sin
 Ephemeral construction.
 
 The /spawn command (and its /sp alias) takes an object name followed by the entity's on-disk fields and places the entity in the map immediately without writing anything to main.sif or reloading the map. So /spawn platform 0 10 0 10 0 100 marble 0 100 false false on a switch's on command makes a platform appear the moment the switch is pressed, lasts as long as the player stays on the map, and is gone the next time the map loads. This is the verb for switches: the rest of the map stays interactive while the spawn happens, and the map's file on disk is never touched, so a switch pressed fifty times doesn't pollute main.sif with fifty platform lines.
-The fields after the object name match the entity's on-disk line format exactly — see the same format used in main.sif when you decompile a map and look at its data file.
 
+The fields after the object name match the entity's on-disk line format exactly — see the same format used in main.sif when you decompile a map and look at its data file.
 The object name accepts either the friendly form (moving_platform, security_camera, tts_enemie, force_field, time_bomb, conveyor_belt, character_blocker, command_blocker, aircraft_beacon, elevator_floor, moving_hazard, item_door, ranged_item_door, item_passage, and so on) or the abbreviated on-disk form (mplatform, camera, ttsenemie, mhazard, etc.) — both resolve to the right entity, so use whichever name you remember from the builder menu.
 
 Cleanup of a /spawned entity is the author's responsibility — the switch has no knowledge of what its commands spawned, and there's no automatic teardown when a switch flips off. Today the only kill verbs the command parser exposes are /killall and /kill, and both currently affect only NPCs, so a switch that spawns an NPC ambush on flip-on can clean it up cleanly with /killall on flip-off, but a switch that spawns a platform, door, hazard, item, force field, or any other non-NPC entity has no command available to remove that spawn on flip-off, and the spawn persists in memory until the next map reload.
