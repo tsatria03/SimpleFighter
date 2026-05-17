@@ -1,0 +1,47 @@
+Gliding.
+
+A glider is a weapon class that turns into a portable flight rig the moment you draw it. There is no separate glider entity type and no info-file field to set — the glider behavior is keyed off the weapon's folder name. Any weapon whose folder name in equipments/weapons/<category>/<name>/ starts with the literal word glider is a glider; glider, glider2, glider_fast, glider_silent all count, while a melee weapon that happens to be named paraglider does not. The check is on the leading characters only, not anywhere in the name.
+
+Engine control.
+
+The glider has an engine that you turn on and off with the Ctrl key. Holding Ctrl turns the engine on — the on clip plays once, the engine loop starts looping, gravity stops pulling you down, and the player's normal movement keys begin moving you freely without needing a platform underneath. Releasing Ctrl turns the engine off — the loop stops, the off clip plays once, and gravity resumes immediately. If the engine was on while you were airborne, releasing it drops you under standard fall physics; if you re-press Ctrl before you hit the floor, the engine catches you at your current altitude the same way the grappling hook catches you when you re-grab. This is the safety valve: a glider with no fuel cost or flight timer that punishes only careless mid-flight releases. Drawing a different weapon mid-flight also disengages the engine, plays the off clip from the glider's pack, and drops you under standard physics; if you re-equip the glider mid-fall and press Ctrl, the catch logic engages again.
+
+Movement.
+
+While the engine is on, the player's existing movement keys move at the player's existing cadence — arrow keys for x and y, height step keys (page up / page down or W / S on 3d maps) for altitude, the run modifier (Alt) for the faster cadence, body rotation keys for facing, all unchanged. There are no new keybindings to learn; the glider just changes the semantics of those keys so movement no longer requires a platform underneath. All other collision still applies — walls block, map edges clamp, doors block when closed, blockages block, hazards on the ground don't hurt you because you're aloft above them but the wall standing in your path still bumps you the way it bumps a vehicle. "Walking person attached to anti-gravity" is the right mental model.
+
+Jumping is blocked while the engine is on, since flight makes it redundant. Tile step sounds are suppressed during flight too — the engine loop is the only audio cue for movement. Both behaviors resume the moment you release Ctrl and the engine cuts out.
+
+Combat.
+
+The glider is a melee weapon underneath, but its strike trigger is collision instead of a fire button. The moment your tile coincides with the tile of a hittable entity, the strike fires. The strike repeats at your current movement cadence (one per walktime if walking, one per runtime if running) for as long as you stay on the entity's tile, so resting on a target keeps hurting it. Step away from the tile and the strikes stop. The strike applies the weapon's damage field to the entity, plays the weapon's hit clip on the contact, plays the entity's own hurt audio (and pauses the entity's main taunt or loop while the hurt clip rolls so the cue lands clean), and writes a kombatlog entry of the form "N damage to <entity> by <weapon>'s weapon attack." If the strike kills the entity, the weapon's death clip plays on the killing blow instead.
+
+Fourteen entity types can be hit this way — the same list the cloner copies: calendars, clocks, signs, items, walls, staircases, platforms, doors (regular and ranged), parked vehicles, parked bikes, parked aircraft, security cameras, spikes, projectiles, TTS enemies, and NPCs. Calendars, clocks, signs, and items are removed in a single strike (matching how bullets and melee already break them); the others lose health over multiple strikes until they hit zero. Entities with a destroyable flag set to false are skipped, the same way a normal weapon skips them; vehicles, bikes, and aircraft are skipped while they are being driven or piloted, since you can only damage parked ones. Things weapons cannot normally hurt — zones, audio entities, switches, hazards, mines, force fields, fires, time bombs, moving hazards, vanishing hazards, character or command blockers, checkpoints, spawnpoints, travelpoints — are not affected by the glider either.
+
+Bumping a wall while the engine is on plays a glider-specific rico clip from the weapon's pack instead of the wall's own bump sound. The wall's bump audio is suppressed during flight the same way tile step audio is, so the only collision sound you hear is the glider's ricochet. The wall still blocks the move, the same way it would block a vehicle, so you just don't pass through it; you also don't damage the wall by ramming it (use the glider's contact strike on a destructible wall column from on top of it instead).
+
+Sounds the glider's pack must provide.
+
+The glider expects six audio clips in its general folder, each playing in a specific situation:
+
+draw.ogg — the standard weapon-draw clip, plays once when you equip the glider, the same as any other weapon's draw.
+on.ogg — plays once when you press Ctrl and the engine starts. Should sound like an engine turning over or wings opening.
+loop.ogg — loops continuously while the engine is on, stops the moment you release Ctrl. The "running engine" sound.
+off.ogg — plays once when the engine stops (whether from releasing Ctrl, drawing a different weapon, or any other engine-stop path). Should sound like an engine spooling down or wings folding.
+hit.ogg — plays on every successful contact strike. Same role the hit clip plays on a normal melee weapon.
+death.ogg — plays on the killing blow when a contact strike drops an entity's health to zero or destroys a single-use entity.
+rico.ogg — plays when the glider bumps into a wall while the engine is on. This replaces the wall's own bump clip during flight.
+
+Authoring a glider.
+
+Create a new folder under sounds/decompiled/main/equipments/weapons/<category>/ whose name starts with glider. Drop the seven clips above into the folder's general subfolder. Add a data/info.sif with the same set of fields any other weapon uses, but most of those fields are forced or ignored for gliders so they have no effect: fire mode (forced to 1), bullet speed (ignored), repeat time (ignored), spam time (ignored), ammo and loaded ammo and max ammo (ignored), launch type (ignored), ammo type (ignored), x range and y range and z range (ignored — contact is tile-exact, not range-based), melee (forced to true), scadder (ignored), swing speed (forced to 0), weight (forced to 1), reflection (forced to false), refchance and refcushion (ignored), life drain (forced to 0). The fields that do matter are damage (how much each contact strike deals to a hit entity), unlock level (when the weapon becomes available in the shop), stun mode (whether the strike stuns), push x and push y and push z (whether contact also knocks the target tile-wise in some direction), health drain (whether each strike costs the player's own health), and stamina drain (whether each strike costs stamina from the player's pool).
+
+Practical use cases.
+
+A low-damage glider is a movement aid first and a weapon second: useful for scaling buildings without the grappling hook, exploring tall maps without staircases, or skipping over hazard fields you cannot otherwise cross. A high-damage glider becomes a flying brawler — fly into an NPC and the per-cadence strike chips away at it while you stay aloft, repositioning between flurries by gliding back out of contact and circling around. Pairing a glider with a low-cost or zero-cost damage value gives you a non-violent scout rig; pairing it with high health drain turns it into a risk-reward weapon where every hit costs the wielder.
+
+Gliders also pair well with the existing weapons menu and shop systems exactly the way any other weapon does — you can buy them, equip them, swap between them, and they obey unlock level gates against the player's current level. The character can carry the glider in either of the character-file weapon type fields if you want a starting kit that comes pre-equipped with one.
+
+Things the glider deliberately does not do.
+
+The glider has no fuel and no flight timer — engagement is purely Ctrl-up versus Ctrl-down. It does not refill anything when drawn (since it has no ammo to refill). It does not interact with the reload key or the ammo readout (since it has no ammo). It does not use the reflection toggle (the T key does nothing for it, since reflection is forced off). It does not chain hits — each contact tick produces exactly one strike against the first matched entity at the player's tile, even if multiple hittable entities happen to share that tile. It does not pass through walls, doors, blockages, or any other movement-blocking entity; it just removes the gravity requirement, not the rest of the collision system. The engine does not auto-engage on draw — you have to press Ctrl every time you want to fly, even if you were already flying when you switched weapons away from the glider.

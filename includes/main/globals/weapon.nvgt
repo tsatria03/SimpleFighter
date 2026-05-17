@@ -116,8 +116,15 @@ class weapon
 		return melee;
 	}
 
+	bool is_glider()
+	{
+		return sub.length() >= 6 && sub.substr(0, 6) == "glider";
+	}
+
 	void parse(string c, string s)
 	{
+		// If we're parsing while a glider was previously equipped, kill the engine state so re-drawing or switching weapons doesn't leave the player floating with a dead handle. glider_engine_stop() also plays the off.ogg cue from the old glider's pack since cad/sub still point at the old weapon at this point.
+		if(is_glider()) glider_engine_stop();
 		cad = c;
 		sub = s;
 		melee = (cad == "melee");
@@ -248,6 +255,23 @@ class weapon
 				refchance = v;
 				if(rc_parts.length() >= 2) refcushion = (rc_parts[1] == "true");
 			}
+		}
+		// Glider-class weapons override several fields regardless of what info.sif says, since the glider's combat and firing model is hardcoded (contact-only melee, no bullets, no swing wind-up, Ctrl drives the engine rather than the fire action).
+		if(is_glider())
+		{
+			fire_mode = 1;
+			melee = true;
+			swing_speed = 0;
+			scadder_radius = 0;
+			scadder_count = 0;
+			launch_type = "bullet";
+			launch_subtype = "";
+			ammo_type = "none";
+			weight = 1;
+			reflection = false;
+			refchance = 80;
+			refcushion = false;
+			life_drain = 0;
 		}
 	}
 
