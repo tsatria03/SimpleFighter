@@ -14,7 +14,7 @@ Off command (text, optional). A slash command (or a stack) that runs every time 
 
 Switch sound (folder name from the switch sounds list, or none). The audio theme the switch uses. Each switch sound theme provides a press clip (played every time the switch is pressed) and a loop clip (the ambient sound used when looping is enabled). Pick none for a silent switch.
 
-Auto activate (checkbox). When checked, the switch starts in the on state when the map loads, as if the player had already pressed it once. Useful for switches that represent something that's already running when the player arrives. The on command does not fire at spawn — auto activate just sets the initial state.
+Auto activate (checkbox). When checked, the switch starts in the on state when the map loads, as if the player had already pressed it once — and the on command fires at spawn the same way it would on a real press, so the switch can perform real work the moment the map opens (announce ambient narration, spawn helpers or hazards, teleport the player, swap a macro pack, and so on). Useful for switches that represent something that's already running when the player arrives, and for triggering opening-of-map effects without needing the player to walk over a tile first.
 
 Destroying sound (checkbox). Controls whether the ambient loop clip tracks the switch's toggled state. With destroying sound off, the loop plays continuously from the moment the map loads and ignores every flip — this represents a switch attached to always-on hardware like a generator or fan. With destroying sound on, the loop only plays while the switch is currently on; flipping the switch off stops the loop, flipping it on again starts it back up.
 Looping sound (checkbox). Controls whether the switch has an ambient loop at all. If this is off, the destroying sound checkbox has nothing to act on — the switch will only ever play its press clip. Pair looping sound with destroying sound according to which ambient model you want; the four combinations are described below in Audio behavior matrix.
@@ -28,7 +28,7 @@ The interaction between auto activate, looping sound, and destroying sound decid
 Looping sound off, destroying sound either. No ambient loop at any time. The press clip is the only audio feedback per toggle. The destroying sound checkbox is ignored because there is no loop to track or stop.
 Looping sound on, destroying sound off. The loop plays continuously from the moment the map loads and persists through every flip without restarting. The toggled state still changes (so the on and off commands still fire correctly), but the loop doesn't care — it represents hardware that's always running. A generator switch where the generator hums whether or not you've flipped its state is the typical case.
 
-Looping sound on, destroying sound on, auto activate on. The switch starts in the on state with the loop already playing. Flipping off stops the loop. Flipping on starts it again. The classic this noise represents the switch being active model.
+Looping sound on, destroying sound on, auto activate on. The switch starts in the on state with the loop already playing, and the on command fires at spawn the same way it would on a player press. Flipping off stops the loop and runs the off command. Flipping on starts the loop again and runs the on command. The classic this noise represents the switch being active model, now self-priming on map load.
 Looping sound on, destroying sound on, auto activate off. The switch starts off with no loop yet. First press starts both the on command and the loop. Subsequent presses follow the same on-starts / off-stops pattern. Same end-state model as the previous case but with a quiet starting condition.
 
 The press clip is independent of all three checkboxes and fires every time the player toggles a switch (and once when a single-use switch is consumed). If you don't want a press sound, set the switch sound to none.
@@ -57,6 +57,8 @@ Stacking also supports an optional millisecond delay before each individual comm
 /speak alert; 2000 /speak intruder detected; 3000 /play alarm
 
 This speaks alert immediately, then waits 2 seconds and speaks intruder detected, then waits another 3 seconds and plays the alarm clip. The delay applies to each command independently — it's not a cumulative timer.
+
+Stacked commands and their delays run asynchronously: the switch press returns control to you immediately, and the delayed steps fire in the background while you keep moving, fighting, and hearing the rest of the map. A multi-second narrative gate or a long chained ambush won't freeze input, sound, or screen-reader output — the engine queues each step and fires it when its scheduled time arrives. This means an auto-activated switch with chained delays on its on command also doesn't stall the map load: the queue starts ticking from the moment the map opens and the player is in control the whole time.
 
 A delay with no command (just a number followed by a semicolon) is a no-op. A command with no delay runs immediately.
 
