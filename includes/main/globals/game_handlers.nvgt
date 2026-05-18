@@ -224,7 +224,27 @@ speak("Top marker set to " + cam.y);
 }
 if (key_pressed(KEY_SEMICOLON) and cammable==true)
 {
-speak_camera_markers();
+	if (!sel_left_set && !sel_right_set && !sel_back_set && !sel_front_set && !sel_bottom_set && !sel_top_set)
+	{
+		speak("No selection points to view.");
+		return;
+	}
+	string msg = "Selection points:";
+	if (sel_left_set)
+		msg += " left: " + sel_left + ",";
+	if (sel_right_set)
+		msg += " right: " + sel_right + ",";
+	if (sel_back_set)
+		msg += " back: " + sel_back + ",";
+	if (sel_front_set)
+		msg += " front: " + sel_front + ",";
+	if (sel_bottom_set)
+		msg += " bottom: " + sel_bottom + ",";
+	if (sel_top_set)
+		msg += " top: " + sel_top + ",";
+	if (msg.ends_with(","))
+		msg = msg.substr(0, msg.length() - 1);
+	speak(msg);
 }
 if (key_pressed(KEY_APOSTROPHE) and cammable==true)
 {
@@ -1149,11 +1169,7 @@ void handle_healing_keys()
 {
 if(key_repeating(KEY_BACKSLASH) and healable==true)
 {
-if(shieldon==1)
-{
-speak("Your shield must be removed to restore the player's health.");
-}
-else if(shieldon==0 and hprestoration==0 and health>=maxhealth)
+if(hprestoration==0 and health>=maxhealth)
 {
 speak("You're already at maximum health.");
 }
@@ -1721,7 +1737,30 @@ speak(mapmode == "3d" ? (me.x+", "+me.y+", "+me.z) : (me.x+", "+me.y));
 }
 else
 {
-speakcoordinates();
+bool is_3d = mapmode == "3d";
+bool is_topdown = mapmode == "topdown";
+string coords = is_3d ? (me.x+", "+me.y+", "+me.z) : (me.x+", "+me.y);
+string tile = is_3d ? platform_tile_at(me.x, me.y, me.z) : gmt(me.x, me.y);
+bool no_tile = tile == "";
+if(locspeech==1)
+{
+	if(no_tile && is_topdown) speak("Facing "+facing+".");
+	else if(no_tile) speak("In the air. Facing "+facing+".");
+	else speak("On "+tile+". Facing "+facing+".");
+}
+else if(locspeech==2) speak(coords+". Facing "+facing+".");
+else if(locspeech==3)
+{
+	if(no_tile && is_topdown) speak(coords+". Facing "+facing+".");
+	else if(no_tile) speak(coords+" in the air. Facing "+facing+".");
+	else speak(coords+" on "+tile+". Facing "+facing+".");
+}
+else if(locspeech==4)
+{
+	if(no_tile && is_topdown) speak("current location, "+coords+". Facing "+facing+".");
+	else if(no_tile) speak("current location, "+coords+". You're currently in the air. Facing "+facing+".");
+	else speak("current location, "+coords+". You're walking on "+tile+". Facing "+facing+".");
+}
 }
 }
 if(key_repeating(KEY_Z))
