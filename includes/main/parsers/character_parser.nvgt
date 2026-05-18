@@ -4,6 +4,14 @@ wepchar.cad = "melee";
 wepchar.sub = "fist";
 shieldtype = "none";
 shieldweight = 1;
+// Tear down every piece of shield state that the equip / wear / raze paths build up, so /relchar (and every other charparse caller) lands the player on a clean slate with no shield held, no shield sounds playing, and the capability flags a heavy shield may have disabled (fire / jump / move) restored. Matches what /relshields does explicitly before calling shieldparse.
+p.destroy_sound(shieldloop);
+p.destroy_sound(shieldslot);
+drawnshield = false;
+shieldon = 0;
+fireable = true;
+jumpable = true;
+moveable = true;
 string content = read_datafile("main/characters/"+chartype+"/data/main.sif");
 if(content != "")
 {
@@ -128,9 +136,10 @@ resolve_weapon_pins(wepchar.cad, wepchar.sub);
 }
 void resolve_character_shield()
 {
-if(shieldtype == "none" or shieldtype == "") { shieldtype = "none"; return; }
+// Always run shieldparse at the end, including for the "none" case — shieldparse resets every shield stat to its default before reading info.sif, so calling it for "none" produces a clean no-shield baseline and prevents the previously-equipped shield's defence/strength/blockchance from leaking into a /relchar reset.
+if(shieldtype == "none" or shieldtype == "") { shieldtype = "none"; shieldparse(); return; }
 string[] shields = get_pack_sound_folders("main/equipments/shields/*");
-if(shields.length() == 0) { shieldtype = "none"; return; }
+if(shields.length() == 0) { shieldtype = "none"; shieldparse(); return; }
 if(shieldtype == "random" or shields.find(shieldtype) < 0) shieldtype = random_string(shields);
 shieldparse();
 }
