@@ -190,6 +190,8 @@ return true;
 return false;
 }
 
+// Last category tab the build menu was on, so re-opening the menu starts you back on the same category instead of always snapping to "all". Persists for the lifetime of the game session.
+int buildmenu_last_tab = 0;
 void buildmenu()
 {
 string[] cat_names = {"all", "audio", "construction", "interaction", "kombat", "misc", "transitions", "traps", "transportation", "zones"};
@@ -283,7 +285,12 @@ int t_idx = m.add_tab(cat_names[i]);
 for(uint j = 0; j < entry_names[i].length(); j++)
 m.add_item_to_tab(t_idx, entry_names[i][j], entry_ids[i][j]);
 }
+// Restore the last category the player was on before they closed the menu. If the saved index is out of range (e.g. the cat_names list changed between sessions), fall back to "all" at index 0.
+if(buildmenu_last_tab >= 0 && buildmenu_last_tab < int(cat_names.length()))
+m.set_active_tab_silent(buildmenu_last_tab);
 int mres = m.run(-1, true, false);
+int active_tab_after = m.active_tab;
+if(active_tab_after >= 0) buildmenu_last_tab = active_tab_after;
 if(mres < 0)
 {
 resume_pools();

@@ -3,6 +3,8 @@ dictionary shield_unlock_levels;
 dictionary weapon_unlock_levels;
 // weaponsmenu also tracks each item's source category per-tab so the "all" tab can equip from the right folder. Indexed [tab][item].
 string[][] weapon_source_cat;
+// Last category tab the weapons menu was on, so re-opening the menu starts you back on the same category instead of always snapping to "all". Persists for the lifetime of the game session.
+int weapons_last_tab = 0;
 void shield_locked_callback(form_menu@ m, string id)
 {
 double req = 0;
@@ -440,7 +442,12 @@ void weaponsmenu()
 		for(uint j = 0; j < weapon_labels[i].length(); j++)
 			m.add_item_to_tab(t_idx, weapon_labels[i][j], weapon_ids[i][j], -1, weapon_unlocked[i][j]);
 	}
+	// Restore the last category the player was on before they closed the menu. If the saved index is out of range (e.g. a category folder was removed between sessions), fall back to "all" at index 0.
+	if(weapons_last_tab >= 0 && weapons_last_tab < int(tab_cats.length()))
+		m.set_active_tab_silent(weapons_last_tab);
 	int mres = m.run(-1, true, false);
+	int active_tab_after = m.active_tab;
+	if(active_tab_after >= 0) weapons_last_tab = active_tab_after;
 	if(mres < 0)
 	{
 		t.destroy_sound(prevslot);
