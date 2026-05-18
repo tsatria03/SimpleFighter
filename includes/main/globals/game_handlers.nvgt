@@ -1256,6 +1256,9 @@ shieldon = 0;
 void glider_engine_start()
 {
 	if(glider_engine_on) return;
+	// If the glider drains stamina and the player's stamina pool is empty, refuse to engage silently. The fuel-out latch (set when stamina cut the engine) keeps us silent for as long as the player keeps Ctrl held — only a deliberate release-and-re-press after stamina has recovered will play the on clip again, avoiding on/off whiplash.
+	if(glider_fuel_out) return;
+	if(wepchar.stamina_drain > 0 && stamina <= 0) return;
 	glider_engine_on = true;
 	// Stop any in-progress fall and reset the fall counter, so re-engaging the engine mid-fall catches the player at their current altitude the same way pressing F on the hook re-grabs.
 	if(falling)
@@ -1528,17 +1531,35 @@ void glider_contact_strike()
 	}
 }
 
+void glider_apply_drains()
+{
+	if(wepchar.stamina_drain > 0)
+	{
+		stamina -= wepchar.stamina_drain;
+		if(stamina < 0) stamina = 0;
+	}
+	if(wepchar.health_drain > 0)
+	{
+		health -= wepchar.health_drain;
+		if(health < 0) health = 0;
+	}
+}
+
 void glider_loop()
 {
 	if(!glider_engine_on || !wepchar.is_glider()) return;
 	if(glider_strike_timer.elapsed < movetime) return;
 	glider_strike_timer.restart();
 	glider_contact_strike();
+	glider_apply_drains();
+	// Stamina acts as fuel: when it bottoms out, the engine cuts out and the player begins to fall under standard physics. The fuel-out latch keeps the engine from immediately re-engaging while Ctrl is still held (which would cause on/off whiplash as passive regen ticks stamina up by 1 only for the next loop tick to drain it back to 0); the latch clears the moment the player releases Ctrl, so a deliberate re-press once stamina has recovered will fire the on clip again.
+	if(stamina <= 0 && wepchar.stamina_drain > 0) { glider_fuel_out = true; glider_engine_stop(); }
 }
 
 void handle_glider_keys()
 {
 	bool ctrl = control_is_down();
+	if(!ctrl) glider_fuel_out = false;
 	if(ctrl && !glider_engine_on && fireable && !doormove && !elvmove) glider_engine_start();
 	else if(!ctrl && glider_engine_on) glider_engine_stop();
 }
