@@ -339,47 +339,38 @@ gop("me", "", selected_zone.minx, selected_zone.miny, selected_zone.minz);
 
 void mapmenu()
 {
+while(true)
+{
 setupmenu(true);
 m.add_item("load map", "loadmap");
 m.add_item("new map", "nm");
 m.add_item("back", "back");
 m.intro_text="Map menu";
 int mres=m.run();
-string buildem=mres<0?"":m.selected_item_id;
-if(mres<0)
-{
-mainmenu();
-}
+if(mres<0) return;
+string buildem=m.selected_item_id;
+if(buildem=="back") return;
 if(buildem=="loadmap")
 {
 m.fade_music();
 setupmenu();
-	m.add_item("compiled maps", "mg");
-	m.add_item("decompiled maps", "mg2");
-	m.add_item("back", "back");
-	m.intro_text="Load map menu";
-	int lmres = m.run();
-	if(lmres < 0)
-	{
-		mapmenu();
-	}
-	buildem = m.selected_item_id;
-	if(buildem == "back")
-	{
-		mapmenu();
-	}
-}
-if(buildem=="mg")
+m.add_item("compiled maps", "mg");
+m.add_item("decompiled maps", "mg2");
+m.add_item("back", "back");
+m.intro_text="Load map menu";
+int lmres = m.run();
+if(lmres < 0) continue;
+string sub = m.selected_item_id;
+if(sub == "back") continue;
+if(sub == "mg")
 {
 m.fade_music();
 string[] maps=find_files("data/builder/maps/compiled/*.map");
 if(maps.length()==0)
 {
 dlg("Error. There are no compiled maps available to view. Press enter to continue.");
-mapmenu();
+continue;
 }
-else
-{
 m.fade_music();
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
@@ -394,31 +385,26 @@ for(uint i=0; i<maps.length(); i++)
 	m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")");
 }
 m.intro_text="Compiled maps menu";
-int mres=m.run();
-if(mres<0)
+int pickres=m.run();
+if(pickres<0) continue;
+if (pickres>=0 and pickres<int(maps.length()))
 {
-mapmenu();
-}
-if (mres>=0 and mres<int(maps.length()))
-{
-mapname=maps[mres];
+mapname=maps[pickres];
 mapname=string_replace(mapname, ".map", "", true);
 load_map(mapname, mapowner, force_compiled:true, force_spawned:true);
 game();
 }
+continue;
 }
-}
-if(buildem=="mg2")
+if(sub == "mg2")
 {
 m.fade_music();
 string[] maps=find_directories("data/builder/maps/decompiled/*");
 if(maps.length()==0)
 {
 dlg("Error. There are no decompiled maps available to view. Press enter to continue.");
-mapmenu();
+continue;
 }
-else
-{
 m.fade_music();
 setupmenu();
 for(uint i=0; i<maps.length(); i++)
@@ -432,42 +418,25 @@ for(uint i=0; i<maps.length(); i++)
 	m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
 }
 m.intro_text="Decompiled maps menu";
-int mres=m.run();
-if(mres<0)
+int pickres=m.run();
+if(pickres<0) continue;
+if (pickres>=0 and pickres<int(maps.length()))
 {
-mapmenu();
-}
-if (mres>=0 and mres<int(maps.length()))
-{
-mapname=maps[mres];
+mapname=maps[pickres];
 mapname=string_replace(mapname, ".sif", "", true);
 load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
 game();
 }
+continue;
 }
-}
-if (buildem == "cpm")
-{
-m.fade_music();
-compile_map();
-}
-if (buildem == "dpm")
-{
-m.fade_music();
-decompile_map();
+continue;
 }
 if(buildem=="nm")
 {
 m.fade_music();
-if(new_map_form())
-game();
-else
-mapmenu();
-return;
+if(new_map_form()) game();
+continue;
 }
-if(buildem=="back")
-{
-mainmenu();
 }
 }
 void mapmenu2()

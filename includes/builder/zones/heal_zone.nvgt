@@ -100,7 +100,7 @@ if(mapmode == "3d")
 mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
 mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
 }
-int hp = form.create_input_box("health");
+int hn = form.create_input_box("healing amount");
 int ht = form.create_input_box("healing time");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
@@ -108,7 +108,7 @@ form.set_disallowed_chars(my, disallowed_nums, false, "This character is not all
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
 if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
 if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hn, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(ht, disallowed_nums, false, "This character is not allowed.");
 int mode_list = form.create_list("healing mode");
 form.add_list_item(mode_list, "decreasing", "decreasing");
@@ -198,10 +198,10 @@ speak("Maximum z is required.");
 form.focus(mxz);
 continue;
 }
-if(form.get_text(hp) == "")
+if(form.get_text(hn) == "")
 {
-speak("Health is required.");
-form.focus(hp);
+speak("Healing amount is required.");
+form.focus(hn);
 continue;
 }
 if(form.get_text(ht) == "")
@@ -216,15 +216,15 @@ double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
 double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
 double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
-int bhp = string_to_number(form.get_text(hp));
+int bhn = string_to_number(form.get_text(hn));
 int bht = string_to_number(form.get_text(ht));
 int bhm = form.get_list_position(mode_list);
 int p = form.get_list_position(heal_list);
 string btype = (p > 0) ? heals[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_heal_zone(bx, bx2, by, by2, bhm, bhp, bht, btype, bmnz, bmxz);
-spawn_healzone(bx, bx2, by, by2, bhm, bhp, bht, btype, bmnz, bmxz);
+write_heal_zone(bx, bx2, by, by2, bhm, bhn, bht, btype, bmnz, bmxz);
+spawn_healzone(bx, bx2, by, by2, bhm, bhn, bht, btype, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -248,19 +248,19 @@ mxz=stn(sd[6]);
 o=7;
 }
 int hm=stn(sd[o]);
-int hp=stn(sd[o+1]);
+int hn=stn(sd[o+1]);
 int ht=stn(sd[o+2]);
 string hlt=sd[o+3];
-spawn_healzone(mx, mx2, my, my2, hm, hp, ht, hlt, mnz, mxz);
+spawn_healzone(mx, mx2, my, my2, hm, hn, ht, hlt, mnz, mxz);
 }
 
-void write_heal_zone(double x1, double x2, double y1, double y2, int healmode, int healhp, int healtime, string healtype, double minz=0, double maxz=0)
+void write_heal_zone(double x1, double x2, double y1, double y2, int healmode, int healhn, int healtime, string healtype, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode=="3d") coords+=" "+minz+" "+maxz;
-mapper.write("\r\n"+"heal_zone "+coords+" "+healmode+" "+healhp+" "+healtime+" "+healtype);
+mapper.write("\r\n"+"heal_zone "+coords+" "+healmode+" "+healhn+" "+healtime+" "+healtype);
 mapper.close();
 bump_map_modified();
 }
