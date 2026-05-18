@@ -1528,7 +1528,12 @@ void glider_contact_strike()
 		if(actual > 0 && projectiles[j].projhealth > 0)
 			projectiles[j].wepsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*hurt*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 		if(projectiles[j].projhealth <= 0)
+		{
+			// Projectiles have no per-frame death sweep (unlike walls/platforms/doors/vehicles/etc., which clean up dead instances in their own *check loop). Bullet hits explicitly call destroy_projectile when health hits zero; the glider's contact strike has to do the same, otherwise the projectile sits in the array at negative health and the strike keeps re-hitting it for as long as the player stays on its tile.
 			p.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+			projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*death*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+			destroy_projectile(j);
+		}
 		return;
 	}
 }
