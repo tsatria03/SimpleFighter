@@ -187,9 +187,6 @@ int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
 int active_group = 0;
-int last_tile_pos = 0;
-bool preview_playing = false;
-string tile_glob = "step";
 while(true)
 {
 wait(5);
@@ -202,65 +199,31 @@ if(cur_group != active_group)
 {
 t.destroy_sound(prevslot);
 prevslot = -1;
-preview_playing = false;
 active_group = cur_group;
-last_tile_pos = cur_tile_pos;
 }
-if(preview_playing && cur_group == 1 && cur_tile_pos != last_tile_pos)
-{
-last_tile_pos = cur_tile_pos;
-t.destroy_sound(prevslot);
-prevslot = -1;
-if(cur_tile_pos > 0)
-{
-float v = form.get_slider(tile_vol);
-float pt = form.get_slider(tile_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*"+tile_glob+"*"), true, 0, 0, v, pt, false);
-}
-else preview_playing = false;
-}
-if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group != 0)
-{
-if(preview_playing)
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group == 1 && cur_tile_pos > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = -1;
-preview_playing = false;
-}
-else if(cur_group == 1 && cur_tile_pos > 0)
-{
-tile_glob = "step";
 float v = form.get_slider(tile_vol);
 float pt = form.get_slider(tile_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*step*"), true, 0, 0, v, pt, false);
-preview_playing = true;
-last_tile_pos = cur_tile_pos;
-}
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*step*"), false, 0, 0, v, pt, false);
 keytimer.restart();
 }
 if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_L) && cur_tile_pos > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = -1;
-tile_glob = "land";
 float v = form.get_slider(tile_vol);
 float pt = form.get_slider(tile_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*land*"), true, 0, 0, v, pt, false);
-preview_playing = true;
-last_tile_pos = cur_tile_pos;
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*land*"), false, 0, 0, v, pt, false);
 }
 if(cur_focus == tile_list && control_is_down() && key_repeating(KEY_H) && cur_tile_pos > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = -1;
-tile_glob = "fall";
 float v = form.get_slider(tile_vol);
 float pt = form.get_slider(tile_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*fall*"), true, 0, 0, v, pt, false);
-preview_playing = true;
-last_tile_pos = cur_tile_pos;
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*fall*"), false, 0, 0, v, pt, false);
 }
-if(preview_playing && prevslot != -1 && cur_group == 1)
+if(prevslot != -1 && cur_group == 1)
 {
 float v = form.get_slider(tile_vol);
 float pt = form.get_slider(tile_pit);

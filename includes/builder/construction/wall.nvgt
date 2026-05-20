@@ -231,9 +231,6 @@ int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
 int active_group = 0;
-int last_wall_pos = 0;
-bool preview_playing = false;
-string wall_glob = "bump";
 while(true)
 {
 wait(5);
@@ -246,65 +243,31 @@ if(cur_group != active_group)
 {
 t.destroy_sound(prevslot);
 prevslot = -1;
-preview_playing = false;
 active_group = cur_group;
-last_wall_pos = cur_wall_pos;
 }
-if(preview_playing && cur_group == 1 && cur_wall_pos != last_wall_pos)
-{
-last_wall_pos = cur_wall_pos;
-t.destroy_sound(prevslot);
-prevslot = -1;
-if(cur_wall_pos > 0)
-{
-float v = form.get_slider(wall_vol);
-float pt = form.get_slider(wall_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*"+wall_glob+"*"), true, 0, 0, v, pt, false);
-}
-else preview_playing = false;
-}
-if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group != 0)
-{
-if(preview_playing)
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group == 1 && cur_wall_pos > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = -1;
-preview_playing = false;
-}
-else if(cur_group == 1 && cur_wall_pos > 0)
-{
-wall_glob = "bump";
 float v = form.get_slider(wall_vol);
 float pt = form.get_slider(wall_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*bump*"), true, 0, 0, v, pt, false);
-preview_playing = true;
-last_wall_pos = cur_wall_pos;
-}
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*bump*"), false, 0, 0, v, pt, false);
 keytimer.restart();
 }
 if(cur_focus == wall_list && control_is_down() && key_repeating(KEY_L) && cur_wall_pos > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = -1;
-wall_glob = "hurt";
 float v = form.get_slider(wall_vol);
 float pt = form.get_slider(wall_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*hurt*"), true, 0, 0, v, pt, false);
-preview_playing = true;
-last_wall_pos = cur_wall_pos;
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*hurt*"), false, 0, 0, v, pt, false);
 }
 if(cur_focus == wall_list && control_is_down() && key_repeating(KEY_H) && cur_wall_pos > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = -1;
-wall_glob = "death";
 float v = form.get_slider(wall_vol);
 float pt = form.get_slider(wall_pit);
-prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*death*"), true, 0, 0, v, pt, false);
-preview_playing = true;
-last_wall_pos = cur_wall_pos;
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*death*"), false, 0, 0, v, pt, false);
 }
-if(preview_playing && prevslot != -1 && cur_group == 1)
+if(prevslot != -1 && cur_group == 1)
 {
 float v = form.get_slider(wall_vol);
 float pt = form.get_slider(wall_pit);
