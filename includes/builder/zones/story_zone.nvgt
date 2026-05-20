@@ -1,15 +1,15 @@
-dialog@[] dialogs(0);
-class dialog
+story_zone@[] story_zones(0);
+class story_zone
 {
 double minx, maxx, miny, maxy;
 double minz, maxz;
 string text;
-string dlgtype;
+string stztype;
 string mode;
 bool retriggerable;
 bool fired;
 bool was_inside;
-dialog(double mx,double mx2,double my,double my2,string txt,string dlt,string md,bool retrig,double mnz=0,double mxz=0)
+story_zone(double mx,double mx2,double my,double my2,string txt,string stz,string md,bool retrig,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
@@ -18,61 +18,61 @@ maxy=my2;
 minz=mnz;
 maxz=mxz;
 text=txt;
-dlgtype=dlt;
+stztype=stz;
 mode=md;
 retriggerable=retrig;
 fired=false;
 was_inside=false;
 }
 }
-void dlgloop()
+void stzoneloop()
 {
-for(uint i=0; i<dialogs.length(); i++)
+for(uint i=0; i<story_zones.length(); i++)
 {
-bool inside = (dialogs[i].minx<=me.x and dialogs[i].maxx>=me.x and dialogs[i].miny<=me.y and dialogs[i].maxy>=me.y);
-if(mapmode == "3d") inside = inside and me.z >= dialogs[i].minz and me.z <= dialogs[i].maxz;
-bool can_fire = dialogs[i].retriggerable or !dialogs[i].fired;
-bool step_trigger = (dialogs[i].mode == "step" or dialogs[i].mode == "both");
-bool press_trigger = (dialogs[i].mode == "press" or dialogs[i].mode == "both");
-if(inside and step_trigger and !dialogs[i].was_inside and can_fire)
+bool inside = (story_zones[i].minx<=me.x and story_zones[i].maxx>=me.x and story_zones[i].miny<=me.y and story_zones[i].maxy>=me.y);
+if(mapmode == "3d") inside = inside and me.z >= story_zones[i].minz and me.z <= story_zones[i].maxz;
+bool can_fire = story_zones[i].retriggerable or !story_zones[i].fired;
+bool step_trigger = (story_zones[i].mode == "step" or story_zones[i].mode == "both");
+bool press_trigger = (story_zones[i].mode == "press" or story_zones[i].mode == "both");
+if(inside and step_trigger and !story_zones[i].was_inside and can_fire)
 {
 pause_pools();
-dlgmessage(dialogs[i].text, dialogs[i].dlgtype);
-dialogs[i].fired=true;
+dlgmessage(story_zones[i].text, story_zones[i].stztype);
+story_zones[i].fired=true;
 resume_pools();
 }
 else if(inside and press_trigger and can_fire and key_up(KEY_LSHIFT) and key_up(KEY_RSHIFT) and key_repeating(KEY_RETURN))
 {
 pause_pools();
-dlgmessage(dialogs[i].text, dialogs[i].dlgtype);
-dialogs[i].fired=true;
+dlgmessage(story_zones[i].text, story_zones[i].stztype);
+story_zones[i].fired=true;
 resume_pools();
 }
-dialogs[i].was_inside = inside;
+story_zones[i].was_inside = inside;
 }
 }
-void spawn_dialog(double x1,double x2,double y1,double y2,string text,string dlgtype,string mode,bool retriggerable,double minz=0,double maxz=0)
+void spawn_story_zone(double x1,double x2,double y1,double y2,string text,string stztype,string mode,bool retriggerable,double minz=0,double maxz=0)
 {
-dialog dlg1(x1,x2,y1,y2,text,dlgtype,mode,retriggerable,minz,maxz);
-dialogs.insert_last(dlg1);
+story_zone stz1(x1,x2,y1,y2,text,stztype,mode,retriggerable,minz,maxz);
+story_zones.insert_last(stz1);
 }
-void destroy_all_dialogs()
+void destroy_all_story_zones()
 {
-dialogs.resize(0);
+story_zones.resize(0);
 }
 
-void build_dialog()
+void build_story_zone()
 {
-string[] dlgs = get_map_sound_folders("builder/interaction/dialogs/*");
-if(dlgs.length() == 0)
+string[] stzs = get_map_sound_folders("builder/zones/story zones/*");
+if(stzs.length() == 0)
 {
-dlg("Error. There are no dialogs available to view. Press enter to continue.");
+dlg("Error. There are no story_zones available to view. Press enter to continue.");
 resume_pools();
 return;
 }
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
-form.create_window("dialog", false);
+form.create_window("story_zone", false);
 bool y_uses_back_front = mapmode != "2d";
 string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
 string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
@@ -93,11 +93,11 @@ form.set_disallowed_chars(my, disallowed_nums, false, "This character is not all
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
 if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
 if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
-int dlg_list = form.create_list("dialog sound");
-form.add_list_item(dlg_list, "none", "none");
-for(uint i = 0; i < dlgs.length(); i++)
-form.add_list_item(dlg_list, dlgs[i], dlgs[i]);
-form.set_list_position(dlg_list, 0, false);
+int stz_list = form.create_list("story sound");
+form.add_list_item(stz_list, "none", "none");
+for(uint i = 0; i < stzs.length(); i++)
+form.add_list_item(stz_list, stzs[i], stzs[i]);
+form.set_list_position(stz_list, 0, false);
 int mode_list = form.create_list("mode");
 form.add_list_item(mode_list, "step", "step");
 form.add_list_item(mode_list, "press", "press");
@@ -115,29 +115,29 @@ int cur_focus = form.get_current_focus();
 if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
 {
 t.destroy_sound(prevslot);
-if(cur_focus == dlg_list)
+if(cur_focus == stz_list)
 {
-int p = form.get_list_position(dlg_list);
-if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/interaction/dialogs/"+dlgs[p-1]+"/*scroll*"), false);
+int p = form.get_list_position(stz_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/zones/story zones/"+stzs[p-1]+"/*scroll*"), false);
 }
 keytimer.restart();
 }
-if(cur_focus == dlg_list && control_is_down() && key_repeating(KEY_L))
+if(cur_focus == stz_list && control_is_down() && key_repeating(KEY_L))
 {
-int p = form.get_list_position(dlg_list);
+int p = form.get_list_position(stz_list);
 if(p > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = t.play_stationary(get_map_sound("builder/interaction/dialogs/"+dlgs[p-1]+"/*open*"), false);
+prevslot = t.play_stationary(get_map_sound("builder/zones/story zones/"+stzs[p-1]+"/*open*"), false);
 }
 }
-if(cur_focus == dlg_list && control_is_down() && key_repeating(KEY_H))
+if(cur_focus == stz_list && control_is_down() && key_repeating(KEY_H))
 {
-int p = form.get_list_position(dlg_list);
+int p = form.get_list_position(stz_list);
 if(p > 0)
 {
 t.destroy_sound(prevslot);
-prevslot = t.play_stationary(get_map_sound("builder/interaction/dialogs/"+dlgs[p-1]+"/*close*"), false);
+prevslot = t.play_stationary(get_map_sound("builder/zones/story zones/"+stzs[p-1]+"/*close*"), false);
 }
 }
 if(key_pressed(KEY_ESCAPE))
@@ -206,16 +206,16 @@ double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
 double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 string btxt = form.get_text(text);
 bool bretrig = form.is_checked(retrigger_cb);
-int p = form.get_list_position(dlg_list);
-string btype = (p > 0) ? dlgs[p-1] : "none";
+int p = form.get_list_position(stz_list);
+string btype = (p > 0) ? stzs[p-1] : "none";
 int mp = form.get_list_position(mode_list);
 string bmode = "step";
 if(mp == 1) bmode = "press";
 else if(mp == 2) bmode = "both";
 t.destroy_sound(prevslot);
 resume_pools();
-write_dialog(bx, bx2, by, by2, btxt, btype, bmode, bretrig, bmnz, bmxz);
-spawn_dialog(bx, bx2, by, by2, btxt, btype, bmode, bretrig, bmnz, bmxz);
+write_story_zone(bx, bx2, by, by2, btxt, btype, bmode, bretrig, bmnz, bmxz);
+spawn_story_zone(bx, bx2, by, by2, btxt, btype, bmode, bretrig, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -224,7 +224,7 @@ return;
 }
 }
 
-void read_dialog(string[] sd)
+void read_story_zone(string[] sd)
 {
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
@@ -239,19 +239,19 @@ mxz=stn(sd[6]);
 o=7;
 }
 string txt=join_string_array(sd, o, sd.length()-3);
-string dlgtype=sd[sd.length()-3];
+string stztype=sd[sd.length()-3];
 string mode=sd[sd.length()-2];
 bool retrig=string_to_bool(sd[sd.length()-1]);
-spawn_dialog(mx, mx2, my, my2, txt, dlgtype, mode, retrig, mnz, mxz);
+spawn_story_zone(mx, mx2, my, my2, txt, stztype, mode, retrig, mnz, mxz);
 }
 
-void write_dialog(double x1, double x2, double y1, double y2, string txt, string dlgtype, string mode, bool retriggerable, double minz=0, double maxz=0)
+void write_story_zone(double x1, double x2, double y1, double y2, string txt, string stztype, string mode, bool retriggerable, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode == "3d") coords += " "+minz+" "+maxz;
-mapper.write("\r\n"+"dialog "+coords+" "+txt+" "+dlgtype+" "+mode+" "+retriggerable);
+mapper.write("\r\n"+"story_zone "+coords+" "+txt+" "+stztype+" "+mode+" "+retriggerable);
 mapper.close();
 bump_map_modified();
 }
