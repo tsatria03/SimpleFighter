@@ -1,7 +1,7 @@
 void npc_chooser()
 {
 	bool do_build = true;
-	int b_add, b_edit, b_remove, b_spawn, b_view, b_cancel;
+	int b_add, b_edit, b_remove, b_view, b_back;
 	while(true)
 	{
 		wait(5);
@@ -13,23 +13,19 @@ void npc_chooser()
 			b_add = form.create_button("&add npc");
 			b_edit = form.create_button("&edit npc");
 			b_remove = form.create_button("&remove npc");
-			b_spawn = form.create_button("&spawn npc", true);
 			b_view = form.create_button("&view npc");
-			b_cancel = form.create_button("&cancel", false, true);
+			b_back = form.create_button("&back", false, true);
 			form.focus(b_add);
 		}
 		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
 		{
-			resume_pools();
-			speak("canceled");
 			return;
 		}
 		if(form.is_pressed(b_add)) { add_npc(); do_build = true; continue; }
 		if(form.is_pressed(b_edit)) { edit_npc(); do_build = true; continue; }
 		if(form.is_pressed(b_remove)) { remove_npc(); do_build = true; continue; }
 		if(form.is_pressed(b_view)) { view_npc(); do_build = true; continue; }
-		if(form.is_pressed(b_spawn)) { build_npc(); return; }
 	}
 }
 
@@ -397,8 +393,8 @@ bool edit_npc_form(string target_path, string subtype)
 	int wt2_list = form.create_list("weapon type2");
 	for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
 	for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
-	string wt_pre = "random"; if(existing.exists("weapon type")) existing.get("weapon type", wt_pre);
-	string wt2_pre = "random"; if(existing.exists("weapon type2")) existing.get("weapon type2", wt2_pre);
+	string wt_pre = "none"; if(existing.exists("weapon type")) existing.get("weapon type", wt_pre);
+	string wt2_pre = "none"; if(existing.exists("weapon type2")) existing.get("weapon type2", wt2_pre);
 	int wt_idx = 0, wt2_idx = 0;
 	for(uint i=0; i<wt_opts.length(); i++) if(wt_opts[i] == wt_pre) wt_idx = i;
 	for(uint i=0; i<wt2_opts.length(); i++) if(wt2_opts[i] == wt2_pre) wt2_idx = i;
@@ -465,8 +461,8 @@ void build_npc_weapon_lists(string[]@ types, string[]@ subs)
 {
 	types.resize(0);
 	subs.resize(0);
-	types.insert_last("random");
-	subs.insert_last("random");
+	types.insert_last("none");
+	subs.insert_last("none");
 	string[] cats = get_pack_sound_folders("main/equipments/weapons/*");
 	cats.sort_ascending();
 	for(uint i=0; i<cats.length(); i++) types.insert_last(cats[i]);
@@ -479,6 +475,8 @@ void build_npc_weapon_lists(string[]@ types, string[]@ subs)
 	}
 	all_subs.sort_ascending();
 	for(uint i=0; i<all_subs.length(); i++) subs.insert_last(all_subs[i]);
+	types.insert_last("random");
+	subs.insert_last("random");
 }
 
 void edit_npc()

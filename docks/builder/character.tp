@@ -2,7 +2,7 @@ Characters.
 
 A character is the player's persona. It bundles a sound folder, a starting stat block, and a default loadout into a named identity that the game loads when the player picks that character.
 
-The character's stats live in four plain text files alongside the sound folder — attacks.sif and bodyparts.sif for the bone-break flavor text, main.sif for the core stat block, and kombat.sif for the per-type ammo reserves and damage upgrades — so authoring a new character is mostly a matter of dropping audio in the right folder and writing a few small text files beside it.
+The character's stats live in two plain text files alongside the sound folder — main.sif for the core stat block plus the bone-break flavor lists, and kombat.sif for the per-type ammo reserves and damage upgrades — so authoring a new character is mostly a matter of dropping audio in the right folder and writing a couple of small text files beside it.
 
 Sound assets and main.sif files.
 
@@ -14,18 +14,12 @@ Each character has its own main.sif. The file is self contained: every stat the 
 
 None of the data files list any sounds. The engine learns what audio a character has by scanning the character's general/ subfolder for in-game clips (hurt, swing, jump, land, fall, heal, kill, life, lev, tel, turn, buy, break, death, inv, and so on) and the map/ subfolder for map-event clips (camera nudges, build feedback, map-update beeps, and the like). Drop a clip in the matching subfolder and the character plays it; remove it and the character goes silent for that event. There is nothing to wire up by hand because the folder layout is the audio configuration.
 
-attacks.sif.
-
-attacks.sif sits at sounds/decompiled/main/characters/<character>/data/attacks.sif and holds a flat list of past-tense damage verbs, one per line. Whenever the character takes a bad enough fall to break a bone, the engine picks one verb from this file at random and reads back Ouch! You just <verb> your <body part>. (where the body part comes from bodyparts.sif). The default file ships with words like snapped, fractured, crushed, sprained, smashed, abliderated, destroied, and shaddered, so each break sounds different. Adding more verbs widens the pool; removing all of them and leaving the file empty silences the verb half of the speech and reads back Ouch! You just  your <body part>. instead, so keep at least one entry. Each entry must be a single token with no spaces (use past-tense words ending in -ed for grammatical flow). New characters can ship their own attacks.sif to give bone breaks a flavor that matches the character's voice.
-
-bodyparts.sif.
-
-bodyparts.sif sits at sounds/decompiled/main/characters/<character>/data/bodyparts.sif and holds a flat list of body part names the character can have broken, one per line. The engine picks from this file when narrating a fresh bone break (paired with attacks.sif as described above) and also when it's time to remind the character that an existing break still hurts (Ouch! Your <body part> hurts!). Underscores in entries are replaced with spaces when spoken, so left_ankle reads back as left ankle — write the file with underscores so the engine can also store the entry as a key without ambiguity.
-The default file ships with around forty entries covering scull, neck, jaw, chest, back, the major bones of each arm and leg, and so on. Each body part is also seeded into a per-character bone damage tracker the healing cast item draws down against, so a body part not listed here can never be broken and never be healed. New characters can ship their own bodyparts.sif to limit which bones the character has (e.g. a robot character with no biological parts).
-
 main.sif field reference.
 
 Every field in main.sif uses the form key=value, one per line. Missing fields fall back to the defaults shown below.
+
+break verbs (string): A comma-separated list of past-tense damage verbs the engine picks from when narrating a bone break. Whenever the character takes a bad enough fall to break a bone, the engine picks one verb at random and reads back Ouch! You just <verb> your <body part>. (where the body part comes from the body verbs field below). The default ships with words like snapped, fractured, crushed, sprained, smashed, abliderated, destroied, shaddered, so each break sounds different. Adding more verbs widens the pool; leaving the value empty silences the verb half of the speech and reads back Ouch! You just  your <body part>. instead, so keep at least one entry. Each entry must be a single token with no spaces (use past-tense words ending in -ed for grammatical flow). New characters can ship their own break verbs list to give bone breaks a flavor that matches the character's voice.
+body verbs (string): A comma-separated list of body part names the character can have broken. The engine picks from this list when narrating a fresh bone break (paired with break verbs above) and also when reminding the character that an existing break still hurts (Ouch! Your <body part> hurts!). Underscores in entries are replaced with spaces when spoken, so left_ankle reads back as left ankle — write each entry with underscores so it stays a single comma-delimited token without breaking the list separator. The default ships around forty entries covering scull, neck, jaw, chest, back, the major bones of each arm and leg, and so on. Each body part is also seeded into a per-character bone damage tracker the healing cast item draws down against, so a body part not listed here can never be broken and never be healed. New characters can ship their own body verbs list to limit which bones the character has (e.g. a robot character with no biological parts).
 
 weapon type (string): The category of the starting weapon, which must match an existing folder under main/equipments/weapons. The four folders that ship by default are archery, artillery, explosive, and melee, but any custom category folder dropped under sounds/decompiled/main/equipments/weapons/ is also a valid value here. Defaults to melee. Pair this with weapon type2 to pick a specific subtype, otherwise the default fist applies. The literal word random is also accepted and rolls a random category at character load.
 weapon type2 (string): The subtype of the starting weapon under the chosen category, e.g. fist, knife5, AK47, rocket_launcher. Defaults to fist. The combination of weapon type and weapon type2 must point at an existing weapon folder under main/equipments/weapons, otherwise the weapon's stats fail to load. The literal word random is also accepted and rolls a random subtype at character load.
@@ -65,3 +59,29 @@ damage_melee (double): The per-type damage bonus added when swinging a melee wea
 reserve_<type> (double): The character-wide ammo pool for each non-melee type. There are sixteen of these, one per type listed under damage_<type> above (no melee since melee doesn't reload). Bought through the shop's ammo tab. Reload pulls from the matching reserve into the equipped weapon's loaded ammo, so two weapons of the same type share the same pool. Defaults to 0.
 
 bought_<type> (int): A sticky flag (1 or 0) that the parser flips to 1 the first time the player buys ammo of that type. Once set, the matching damage_<type> entry stays visible in the shop's damage tab forever — even after the reserve is spent back to zero — so the player can keep upgrading damage for that type. Created automatically on the first ammo purchase, so a fresh kombat.sif doesn't need to declare these explicitly.
+
+Character manager.
+
+The character data tools live in the main menu's miscellaneous → data manager menu → character entry. Opening it brings up a four button chooser that covers every authoring action: add, edit, remove, and view.
+The same form reopens after each action so you can chain operations without bouncing back to the menu.
+
+Because characters have two data files (main.sif and kombat.sif), each action prompts for which file to operate on after picking a character.
+
+Add. Picks a character from a list of every folder under sounds/decompiled/main/characters/, then prompts for which file to write: main.sif, kombat.sif, or both.
+Choosing main.sif or kombat.sif opens that file's form alone. Choosing both walks the main.sif form first, then the kombat.sif form, so a fresh character can be authored end-to-end in one trip.
+
+Every field on each form is required on save, with no defaults, so the saved file always has a complete entry for every key.
+If a chosen file already exists for the character the form prompts to overwrite before writing.
+
+Edit. Same character list as Add, but filtered to only show characters that already have a main.sif or a kombat.sif.
+After picking the character, a second list chooses which file to edit: main.sif or kombat.sif. Selecting one opens that file's form prefilled with the existing values.
+
+Saving silently overwrites the file with no prompt because editing always intends to replace what's there.
+
+Remove. Same character list as Edit, plus a multi select list of the two data files (main.sif and kombat.sif).
+Toggling files with space adds them to the deletion set, and pressing remove brings up a confirmation prompt with the count of files about to be deleted for the chosen character.
+
+Only the info.sif files are removed; the audio folders themselves are left untouched.
+
+View. Same character list as Edit, plus a file selector list with main.sif and kombat.sif options and a read only multiline contents box that shows the raw text for the focused file.
+Changing either the character or the file selection refreshes the contents box in real time so you can scan across files without reopening the form.

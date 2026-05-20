@@ -25,7 +25,6 @@ wear mode (int): How the shield is worn. 0 is body armor mode: pressing O puts t
 weight (int): How much the shield slows the player down while drawn. Heavier shields cost movement and reaction speed. Defaults to 1.
 
 shield strength (double): The shield's starting and maximum strength pool. The shield starts at full strength when drawn, and when this hits zero, the shield breaks and the player returns to no shield. Defaults to 100.
-
 shield passthrough (bool): Whether the attacker's own audio plays alongside the shield's hit clip when the shield catches a hit, so the player can hear what is actually hitting them through the block. With shield passthrough=true, an armed npc or tts enemy still fires audibly even when their shot is about to land on a raised shield, and a projectile, bomb, time bomb, mine, spike, or force field plays its normal impact sound alongside the shield clang. With shield passthrough=false, only the shield clang plays — useful for a shield that is supposed to fully muffle incoming sound. Bullet impacts on the shield play the clang only either way, because the armed-npc fire sound already plays the moment the bullet leaves the npc, so layering the bullet's own impact clip on top of the clang would just be a redundant noise. Defaults to true.
 
 unlock level (double): The minimum character level required to draw this shield from the shields menu. Locked shields appear in the menu with an (Unlocked at level X) suffix and cannot be selected until the player levels up enough. Defaults to 1.
@@ -41,3 +40,26 @@ z launch range (int): How far in tiles the counter-attack travels along the z ax
 The three launch range fields also accept the literal bounds keywords minx, maxx, miny, maxy, minz, and maxz in place of a number. When the parser sees one of those keywords it substitutes the active map's full span on that axis at parse time — so x launch range=maxx on a 100-tile-wide map resolves to 100, on a 500-tile-wide map resolves to 500, and so on. This lets a counter-attack reach across the entire map regardless of size, instead of hardcoding a tile count that's wrong for half your maps. Any non-keyword value still parses as a plain integer the way it always has.
 
 launch speed (int): How fast the counter-attack's projectile moves through the air, written as milliseconds per tile of travel. Lower values mean a faster projectile. Defaults to 30, which the default shields all ship with explicitly. For a bomb launch, this doubles as the bomb's per-tick fall interval, so a slower launch speed also produces a slower-falling counter-bomb.
+
+Shield manager.
+
+The shield data tools live in the main menu's miscellaneous → data manager menu → shield entry. Opening it brings up a four button chooser that covers every authoring action: add, edit, remove, and view.
+The same form reopens after each action so you can chain operations without bouncing back to the menu.
+
+Add. Picks a shield from a list of every folder under sounds/decompiled/main/equipments/shields/, then opens a flat form with every info.sif field as its own input box.
+Every field is required on save, with no defaults, so the saved file always has a complete entry for every key.
+
+If an info.sif already exists for the chosen shield the form prompts to overwrite before writing.
+
+Edit. Same one-list selection as Add, but the list filters to only show shields that already have an info.sif.
+Selecting one opens the same flat form prefilled with the existing values.
+
+Saving silently overwrites the file with no prompt because editing always intends to replace what's there.
+
+Remove. Same shield list as Edit but rendered as a multi select.
+Toggling shields with space adds them to the deletion set, and pressing remove brings up a confirmation prompt with the count of files about to be deleted.
+
+Only the info.sif files are removed; the audio folders themselves are left untouched.
+
+View. Same shield list as Edit, plus a read only multiline contents box that shows the raw info.sif text for the focused shield.
+Arrowing through the list updates the contents box in real time so you can scan multiple files without reopening the form.
