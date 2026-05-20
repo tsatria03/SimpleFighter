@@ -1047,6 +1047,46 @@ useitem(inv.get_keys()[inv.pos]);
 else
 speak("No item in focus.");
 }
+if(shift_is_down() && key_repeating(KEY_LBRACKET))
+{
+if(inv.get_size() == 0)
+{
+speak("Your inventory is currently empty.");
+}
+else
+{
+string[] inv_keys = inv.get_keys();
+if(inv.pos < 0 || inv.pos >= int(inv_keys.length()))
+{
+speak("No item in focus.");
+}
+else
+{
+string item = inv_keys[inv.pos];
+string category = "";
+string[] healtype = get_map_sound_folders("builder/interaction/items/health/*");
+if(healtype.find(item) != -1) category = "health";
+else
+{
+string[] stamtype = get_map_sound_folders("builder/interaction/items/stamina/*");
+if(stamtype.find(item) != -1) category = "stamina";
+else
+{
+string[] othertype = get_map_sound_folders("builder/interaction/items/other/*");
+if(othertype.find(item) != -1) category = "other";
+}
+}
+if(category == "")
+{
+speak("You can't drop that item.");
+}
+else
+{
+inv.drop_item(category, item, facing);
+}
+}
+}
+}
 }
 
 void handle_menu_keys()
@@ -1576,7 +1616,7 @@ else if(key_pressed(KEY_N))
 {
 tracking_speak_position();
 }
-if(key_pressed(KEY_LBRACKET))
+if(key_pressed(KEY_LBRACKET) and !shift_is_down())
 {
 speak("You have killed a total of"+kills+"entidies.");
 }
