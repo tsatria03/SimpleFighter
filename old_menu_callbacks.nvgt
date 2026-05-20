@@ -1,0 +1,43 @@
+string wallsmenu()
+{
+string[] borders=get_map_sound_folders("objects/walls/*");
+setupmenu2();
+m.set_callback(@walls_callback,"");
+for (uint i=0; i<borders.length(); i++)
+{
+string letter=string_replace(borders[i],"wall","",true)[0];
+m.add_item(get_map_sound("objects/walls/"+borders[i]+"/*bump*"), borders[i], letter, true);
+}
+m.add_item_tts("wall","wall");
+int mres=m.run("Select a wall.", true);
+if(mres==0)
+{
+speak("canceled");
+}
+if(m.get_item_name(mres)=="wall")
+{
+walltype="wall";
+return walltype;
+}
+if(mres>0 and mres<=borders.length())
+{
+walltype=borders[mres-1];
+}
+return m.get_item_name(mres);
+}
+int walls_callback(dynamic_menu_pro@ m, string data)
+{
+string walltype;
+if(m.menu_position>0)
+walltype=m.item_list[m.menu_position-1].name;
+if(key_down(KEY_SPACE) and m.menu_position>0 and spacehold==1 and keytimer.elapsed>=keytime)
+{
+speak(walltype);
+keytimer.restart();
+}
+if(key_pressed(KEY_SPACE) and m.menu_position>0 and spacehold==0)
+{
+speak(walltype);
+}
+return 0;
+}

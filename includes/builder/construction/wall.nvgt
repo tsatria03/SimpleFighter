@@ -223,6 +223,7 @@ form.add_list_item(wall_list, "wall", "wall");
 for(uint i = 0; i < walls_list.length(); i++)
 form.add_list_item(wall_list, walls_list[i], walls_list[i]);
 form.set_list_position(wall_list, 0, false);
+form.set_first_letter_nav(wall_list, false);
 int wall_vol = form.create_slider("wall volume", 0, -100, 0, "", 5);
 int wall_pit = form.create_slider("wall pitch", 100, 5, 500, "", 5);
 int dest_cb = form.create_checkbox("destroyable", false);
@@ -266,6 +267,29 @@ t.destroy_sound(prevslot);
 float v = form.get_slider(wall_vol);
 float pt = form.get_slider(wall_pit);
 prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*death*"), false, 0, 0, v, pt, false);
+}
+if(cur_focus == wall_list && !control_is_down() && key_up(KEY_LALT) && key_up(KEY_RALT) && walls_list.length() > 0)
+{
+string alpha = "abcdefghijklmnopqrstuvwxyz";
+for(uint k = 0; k < 26; k++)
+{
+if(!key_repeating(KEY_A + k)) continue;
+string letter = alpha.substr(k, 1);
+int n = int(walls_list.length());
+int start = (cur_wall_pos > 0) ? cur_wall_pos - 1 : -1;
+for(int s = 1; s <= n; s++)
+{
+int idx = ((start + s) % n + n) % n;
+string stripped = walls_list[idx];
+if(stripped.find("wall") == 0) stripped = stripped.substr(4);
+if(stripped.length() > 0 && stripped.substr(0, 1).lower() == letter)
+{
+form.set_list_position(wall_list, idx + 1, true);
+break;
+}
+}
+break;
+}
 }
 if(prevslot != -1 && cur_group == 1)
 {
