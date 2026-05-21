@@ -1,0 +1,365 @@
+ex_ambsource@[] ex_ambsources(0);
+class ex_ambsource
+{
+	double minx, maxx, miny, maxy;
+	double minz, maxz;
+	int sorcesound;
+	double volume;
+	double pitch;
+	string sourcetype;
+	string sourcetype2;
+	double ex_minx;
+	double ex_maxx;
+	double ex_miny;
+	double ex_maxy;
+	double ex_minz;
+	double ex_maxz;
+	bool is_muted;
+	ex_ambsource(double mx, double mx2, double my, double my2, string srt, string srt2, double vol, double semitone, double zx1, double zx2, double zy1, double zy2, double mnz = 0, double mxz = 0, double ezn = 0, double ezx = 0)
+	{
+		minx = mx;
+		maxx = mx2;
+		miny = my;
+		maxy = my2;
+		minz = mnz;
+		maxz = mxz;
+		sourcetype = srt;
+		sourcetype2 = srt2;
+		volume = vol;
+		pitch = semitone;
+		ex_minx = zx1;
+		ex_maxx = zx2;
+		ex_miny = zy1;
+		ex_maxy = zy2;
+		ex_minz = ezn;
+		ex_maxz = ezx;
+		is_muted = false;
+		double sz = (mapmode == "3d") ? minz : 0;
+		double zr = (mapmode == "3d") ? (maxz - minz) : 0;
+		sorcesound = exsourceambpool.play_extended_3d(get_map_sound("builder/audio/" + sourcetype + "/" + sourcetype2 + "/*loop*"), me.x, me.y, me.z, minx, miny, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, volume, pitch, false);
+		exsourceambpool.update_sound_range_3d(sorcesound, 0, maxx - minx, 0, maxy - miny, 0, zr);
+		update_ex_ambsource();
+	}
+	bool should_exclude()
+	{
+		bool xy = (me.x >= ex_minx && me.x <= ex_maxx && me.y >= ex_miny && me.y <= ex_maxy);
+		if(mapmode == "3d") return xy && me.z >= ex_minz && me.z <= ex_maxz;
+		return xy;
+	}
+	void update_ex_ambsource()
+	{
+		bool in_main = (me.x >= minx && me.x <= maxx && me.y >= miny && me.y <= maxy);
+		if(mapmode == "3d") in_main = in_main && me.z >= minz && me.z <= maxz;
+		bool ex = should_exclude();
+		bool should_silence = (!in_main || ex);
+		if (should_silence && !is_muted)
+		{
+			exsourceambpool.pause_sound(sorcesound);
+			is_muted = true;
+		}
+		else if (!should_silence && is_muted)
+		{
+			exsourceambpool.resume_sound(sorcesound);
+			is_muted = false;
+		}
+	}
+}
+void update_ex_ambsources()
+{
+	for (uint i = 0; i < ex_ambsources.length(); i++)
+		ex_ambsources[i].update_ex_ambsource();
+}
+void spawn_ex_ambsource(double x1, double x2, double y1, double y2, string sourcetype, string sourcetype2, double soundvol, double soundpitch, double zx1, double zx2, double zy1, double zy2, double mnz = 0, double mxz = 0, double ezn = 0, double ezx = 0)
+{
+	ex_ambsource exsound1(x1, x2, y1, y2, sourcetype, sourcetype2, soundvol, soundpitch, zx1, zx2, zy1, zy2, mnz, mxz, ezn, ezx);
+	ex_ambsources.insert_last(exsound1);
+}
+void destroy_all_ex_ambsources()
+{
+	for (uint i = 0; i < ex_ambsources.length(); i++)
+	{
+		exsourceambpool.destroy_sound(ex_ambsources[i].sorcesound);
+	}
+	ex_ambsources.resize(0);
+}
+
+void build_excludable_ambience()
+{
+	string[] musics_list = get_map_sound_folders("builder/audio/musics/*");
+	string[] sources_list = get_map_sound_folders("builder/audio/sources/*");
+	if(musics_list.length() == 0 && sources_list.length() == 0)
+	{
+		dlg("Error. There are no soundtracks available to view. Press enter to continue.");
+		resume_pools();
+		return;
+	}
+	string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+	bool y_uses_back_front = mapmode != "2d";
+	string saved_x = sel_left_set ? sel_left : "";
+	string saved_x2 = sel_right_set ? sel_right : "";
+	string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+	string saved_y2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+	string saved_z = sel_bottom_set ? sel_bottom : "";
+	string saved_z2 = sel_top_set ? sel_top : "";
+	string saved_ex = "";
+	string saved_ex2 = "";
+	string saved_ey = "";
+	string saved_ey2 = "";
+	string saved_ez = "";
+	string saved_ez2 = "";
+	int saved_cat_pos = 0;
+	int saved_sub_pos = 0;
+	double saved_vol = 0;
+	double saved_pit = 100;
+	bool do_build = true;
+	int last_cat_pos = -1;
+	int mx, mx2, my, my2, mnz, mxz, emx, emx2, emy, emy2, emnz, emxz, cat_list, sub_list, vol_s, pit_s, ok, cn;
+	mnz = -1; mxz = -1; emnz = -1; emxz = -1;
+	bool preview_playing = false;
+	while(true)
+	{
+		wait(5);
+		if(do_build)
+		{
+			do_build = false;
+			if(last_cat_pos != -1)
+			{
+				saved_x = form.get_text(mx);
+				saved_x2 = form.get_text(mx2);
+				saved_y = form.get_text(my);
+				saved_y2 = form.get_text(my2);
+				if(mnz != -1) saved_z = form.get_text(mnz);
+				if(mxz != -1) saved_z2 = form.get_text(mxz);
+				saved_ex = form.get_text(emx);
+				saved_ex2 = form.get_text(emx2);
+				saved_ey = form.get_text(emy);
+				saved_ey2 = form.get_text(emy2);
+				if(emnz != -1) saved_ez = form.get_text(emnz);
+				if(emxz != -1) saved_ez2 = form.get_text(emxz);
+				saved_vol = form.get_slider(vol_s);
+				saved_pit = form.get_slider(pit_s);
+			}
+			form.reset();
+			form.create_window("excludable ambience", false, true, last_cat_pos != -1);
+			mx = form.create_input_box("minimum x", saved_x);
+			mx2 = form.create_input_box("maximum x", saved_x2);
+			my = form.create_input_box("minimum y", saved_y);
+			my2 = form.create_input_box("maximum y", saved_y2);
+			mnz = -1; mxz = -1;
+			if(mapmode == "3d")
+			{
+				mnz = form.create_input_box("minimum z", saved_z);
+				mxz = form.create_input_box("maximum z", saved_z2);
+			}
+			emx = form.create_input_box("minimum exclusion x", saved_ex);
+			emx2 = form.create_input_box("maximum exclusion x", saved_ex2);
+			emy = form.create_input_box("minimum exclusion y", saved_ey);
+			emy2 = form.create_input_box("maximum exclusion y", saved_ey2);
+			emnz = -1; emxz = -1;
+			if(mapmode == "3d")
+			{
+				emnz = form.create_input_box("minimum exclusion z", saved_ez);
+				emxz = form.create_input_box("maximum exclusion z", saved_ez2);
+			}
+			form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+			if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+			if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(emx, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(emx2, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(emy, disallowed_nums, false, "This character is not allowed.");
+			form.set_disallowed_chars(emy2, disallowed_nums, false, "This character is not allowed.");
+			if(emnz != -1) form.set_disallowed_chars(emnz, disallowed_nums, false, "This character is not allowed.");
+			if(emxz != -1) form.set_disallowed_chars(emxz, disallowed_nums, false, "This character is not allowed.");
+			cat_list = form.create_list("category");
+			form.add_list_item(cat_list, "musics", "musics");
+			form.add_list_item(cat_list, "sources", "sources");
+			form.set_list_position(cat_list, saved_cat_pos, false);
+			string sub_label = (saved_cat_pos == 0) ? "music sound" : "source sound";
+			sub_list = form.create_list(sub_label);
+			form.add_list_item(sub_list, "none", "none");
+			if(saved_cat_pos == 0)
+				for(uint i = 0; i < musics_list.length(); i++) form.add_list_item(sub_list, musics_list[i], musics_list[i]);
+			else
+				for(uint i = 0; i < sources_list.length(); i++) form.add_list_item(sub_list, sources_list[i], sources_list[i]);
+			form.set_list_position(sub_list, saved_sub_pos, false);
+			vol_s = form.create_slider("volume", saved_vol, -100, 0, "", 5);
+			pit_s = form.create_slider("pitch", saved_pit, 5, 500, "", 5);
+			ok = form.create_button("&okay", true);
+			cn = form.create_button("&cancel");
+			if(last_cat_pos == -1)
+				form.focus(mx);
+			else
+				form.focus_silently(cat_list);
+			last_cat_pos = saved_cat_pos;
+		}
+		form.monitor();
+		int cur_cat_pos = form.get_list_position(cat_list);
+		if(cur_cat_pos != -1 && cur_cat_pos != last_cat_pos)
+		{
+			saved_cat_pos = cur_cat_pos;
+			saved_sub_pos = 0;
+			t.destroy_sound(prevslot);
+			prevslot = -1;
+			preview_playing = false;
+			do_build = true;
+			continue;
+		}
+		int cur_focus = form.get_current_focus();
+		bool in_group = (cur_focus == sub_list || cur_focus == vol_s || cur_focus == pit_s);
+		int cur_sub_pos = form.get_list_position(sub_list);
+		if(!in_group && preview_playing)
+		{
+			t.destroy_sound(prevslot);
+			prevslot = -1;
+			preview_playing = false;
+		}
+		if(preview_playing && cur_sub_pos != saved_sub_pos)
+		{
+			saved_sub_pos = cur_sub_pos;
+			t.destroy_sound(prevslot);
+			prevslot = -1;
+			if(cur_sub_pos > 0)
+			{
+				string cat = (saved_cat_pos == 0) ? "musics" : "sources";
+				string sub = (saved_cat_pos == 0) ? musics_list[cur_sub_pos-1] : sources_list[cur_sub_pos-1];
+				float v = form.get_slider(vol_s);
+				float pt = form.get_slider(pit_s);
+				prevslot = t.play_stationary_extended(get_map_sound("builder/audio/"+cat+"/"+sub+"/*loop*"), true, 0, 0, v, pt, false);
+			}
+			else preview_playing = false;
+		}
+		if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && in_group)
+		{
+			if(preview_playing)
+			{
+				t.destroy_sound(prevslot);
+				prevslot = -1;
+				preview_playing = false;
+			}
+			else if(cur_sub_pos > 0)
+			{
+				string cat = (saved_cat_pos == 0) ? "musics" : "sources";
+				string sub = (saved_cat_pos == 0) ? musics_list[cur_sub_pos-1] : sources_list[cur_sub_pos-1];
+				float v = form.get_slider(vol_s);
+				float pt = form.get_slider(pit_s);
+				prevslot = t.play_stationary_extended(get_map_sound("builder/audio/"+cat+"/"+sub+"/*loop*"), true, 0, 0, v, pt, false);
+				preview_playing = true;
+				saved_sub_pos = cur_sub_pos;
+			}
+			keytimer.restart();
+		}
+		if(preview_playing && prevslot != -1 && in_group)
+		{
+			float v = form.get_slider(vol_s);
+			float pt = form.get_slider(pit_s);
+			t.update_sound_start_values(prevslot, 0, v, pt);
+		}
+		if(key_pressed(KEY_ESCAPE))
+		{
+			t.destroy_sound(prevslot);
+			resume_pools();
+			speak("canceled");
+			return;
+		}
+		if(form.is_pressed(cn))
+		{
+			t.destroy_sound(prevslot);
+			resume_pools();
+			speak("canceled");
+			return;
+		}
+		if(form.is_pressed(ok))
+		{
+			if(form.get_text(mx)=="") { speak("Minimum x is required."); form.focus(mx); continue; }
+			if(form.get_text(mx2)=="") { speak("Maximum x is required."); form.focus(mx2); continue; }
+			if(form.get_text(my)=="") { speak("Minimum y is required."); form.focus(my); continue; }
+			if(form.get_text(my2)=="") { speak("Maximum y is required."); form.focus(my2); continue; }
+			if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
+			if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
+			if(form.get_text(emx)=="") { speak("Minimum exclusion x is required."); form.focus(emx); continue; }
+			if(form.get_text(emx2)=="") { speak("Maximum exclusion x is required."); form.focus(emx2); continue; }
+			if(form.get_text(emy)=="") { speak("Minimum exclusion y is required."); form.focus(emy); continue; }
+			if(form.get_text(emy2)=="") { speak("Maximum exclusion y is required."); form.focus(emy2); continue; }
+			if(emnz != -1 && form.get_text(emnz)=="") { speak("Minimum exclusion z is required."); form.focus(emnz); continue; }
+			if(emxz != -1 && form.get_text(emxz)=="") { speak("Maximum exclusion z is required."); form.focus(emxz); continue; }
+			double bx = string_to_number(form.get_text(mx));
+			double bx2 = string_to_number(form.get_text(mx2));
+			double by = string_to_number(form.get_text(my));
+			double by2 = string_to_number(form.get_text(my2));
+			double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+			double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+			double bex = string_to_number(form.get_text(emx));
+			double bex2 = string_to_number(form.get_text(emx2));
+			double bey = string_to_number(form.get_text(emy));
+			double bey2 = string_to_number(form.get_text(emy2));
+			double bemnz = (emnz != -1) ? string_to_number(form.get_text(emnz)) : 0;
+			double bemxz = (emxz != -1) ? string_to_number(form.get_text(emxz)) : 0;
+			string bcat = (saved_cat_pos == 0) ? "musics" : "sources";
+			int p = form.get_list_position(sub_list);
+			string bsub;
+			if(p > 0)
+				bsub = (saved_cat_pos == 0) ? musics_list[p-1] : sources_list[p-1];
+			else
+				bsub = "none";
+			double bvol = form.get_slider(vol_s);
+			double bpit = form.get_slider(pit_s);
+			t.destroy_sound(prevslot);
+			resume_pools();
+			write_excludable_ambience(bx, bx2, by, by2, bcat, bsub, bvol, bpit, bex, bex2, bey, bey2, bmnz, bmxz, bemnz, bemxz);
+			spawn_ex_ambsource(bx, bx2, by, by2, bcat, bsub, bvol, bpit, bex, bex2, bey, bey2, bmnz, bmxz, bemnz, bemxz);
+			load_map(mapname, mapowner);
+			mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+			speak("Map updated.");
+			return;
+		}
+	}
+}
+
+void read_excludable_ambience(string[] sd)
+{
+	double mx = stn(sd[1]);
+	double mx2 = stn(sd[2]);
+	double my = stn(sd[3]);
+	double my2 = stn(sd[4]);
+	double mnz = 0, mxz = 0;
+	double ex_mnz = 0, ex_mxz = 0;
+	int o = 5;
+	if(mapmode == "3d")
+	{
+		mnz = stn(sd[5]);
+		mxz = stn(sd[6]);
+		o = 7;
+	}
+	string sorcetype = sd[o];
+	string sorcetype2 = sd[o + 1];
+	double soundvol = stn(sd[o + 2]);
+	double soundpitch = stn(sd[o + 3]);
+	o += 4;
+	double ex_mx = stn(sd[o]);
+	double ex_mx2 = stn(sd[o + 1]);
+	double ex_my = stn(sd[o + 2]);
+	double ex_my2 = stn(sd[o + 3]);
+	o += 4;
+	if(mapmode == "3d")
+	{
+		ex_mnz = stn(sd[o]);
+		ex_mxz = stn(sd[o + 1]);
+	}
+	spawn_ex_ambsource(mx, mx2, my, my2, sorcetype, sorcetype2, soundvol, soundpitch, ex_mx, ex_mx2, ex_my, ex_my2, mnz, mxz, ex_mnz, ex_mxz);
+}
+
+void write_excludable_ambience(double x1, double x2, double y1, double y2, string sourcetype, string sourcetype2, double vol, double pitch, double ex_x1, double ex_x2, double ex_y1, double ex_y2, double minz = 0, double maxz = 0, double ex_minz = 0, double ex_maxz = 0)
+{
+	mapper.open("data/builder/maps/decompiled/" + mapname + "/" + "data/main.sif", "ab");
+	mapdata = mapper.read();
+	string coords = x1 + " " + x2 + " " + y1 + " " + y2;
+	if(mapmode == "3d") coords += " " + minz + " " + maxz;
+	string ex_coords = ex_x1 + " " + ex_x2 + " " + ex_y1 + " " + ex_y2;
+	if(mapmode == "3d") ex_coords += " " + ex_minz + " " + ex_maxz;
+	mapper.write("\r\n" + "excludable_ambience " + coords + " " + sourcetype + " " + sourcetype2 + " " + vol + " " + pitch + " " + ex_coords);
+	mapper.close();
+	bump_map_modified();
+}
