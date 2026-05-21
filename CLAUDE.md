@@ -16,8 +16,8 @@ sf.nvgt is the entry. main() installs the keyhook, gates on SCREEN_READER_AVAILA
 
 These are the load-bearing invariants of the codebase. Violate one and either old maps stop loading, parsers silently fail, or the runtime drifts. Read these before any edit.
 
-- **read_* / write_* signatures and the on-disk line format are a contract.** Every entity in includes/builder/**/*.nvgt exposes a read_<entity>(string[] sd) that parses one info.sif line and a write_<entity>(...) that produces one. Old maps in data/maps/decompiled/<name>/info.sif must keep loading; the dispatched sd.length() checks in map_parser.nvgt must keep passing. Refactoring inside build_* (the interactive UI) is generally safe; changing what read_* / write_* accept or emit is not.
-- **mapmode is creation-locked.** A map's mode 2d|topdown|3d line is set when the map is created and read by load_map(). Do not mutate mapmode mid-map. Map-editing commands (editline, addline, remline in the command parser) explicitly reject mode changes. The parser's two-valued sd.length() checks (e.g. ==10 || ==11, ==18 || ==20) encode that the larger length is the 3d variant with z fields **inserted inside the coordinate block**, not appended at the end — preserve both length cases when adding or modifying entities.
+- **read_* / write_* signatures and the on-disk line format are a contract.** Every entity in includes/builder/**/*.nvgt exposes a read_<entity>(string[] sd) that parses one info.sif line and a write_<entity>(...) that produces one. Old maps in data/builder/maps/decompiled/<name>/data/main.sif must keep loading; the dispatched sd.length() checks in map_parser.nvgt must keep passing. Refactoring inside build_* (the interactive UI) is generally safe; changing what read_* / write_* accept or emit is not.
+- **mapmode is creation-locked.** A map's mode 2d|topdown|3d line is set when the map is created and read by load_map(). Do not mutate mapmode mid-map. Map-editing commands (editline, addline, remline in the command parser) explicitly reject mode changes. The parser's sd.length() checks are **multi-valued** (e.g. ==10 || ==11 || ==12 for platforms; ==18 || ==20 for doors; or `>=N` for entities with optional trailing tokens like blockage, elevator, passage, several zones). Extra lengths encode 3d (z fields **inserted inside the coordinate block**, not appended) and the topdown/3d min/max-y variant. Preserve every length case when adding or modifying entities.
 - **CRLF line endings are enforced.** *.sif, *.nvgt, *.py, *.txt, *.bat, *.ps1, *.iss, *.md, and *.ini are pinned to text eol=crlf in .gitattributes. The NVGT compiler, in-game .sif readers, and build scripts all expect Windows line endings. Tools that auto-strip CRLF will break the working tree silently. Generate new files with CRLF, or call the split_lines() helper in extrafuncts.nvgt on the read side.
 - **Coordinates are double.** Some legacy fields are still int; convert when you touch them. Don't introduce new int coords.
 - **Capability flags gate input handlers as a set.** moveable, fireable, cammable, healable, jumpable, quittable, speedable, spiable, turnable (and others in dec.nvgt) gate which keys do what. pause_game() and resume_game() flip them as a coordinated set — don't toggle them individually unless you know exactly which subsystem you're freezing.
@@ -30,12 +30,12 @@ These are the load-bearing invariants of the codebase. Violate one and either ol
 The codebase spans two repos: SimpleFighter (this one, .nvgt scripts) and Legacy-NVGT (the engine, C++). Engine changes are slower to iterate, harder to revert, and require a `scons` rebuild before they're testable, so the default rule when chasing a bug or a perf issue is **diagnose in the script layer first**, and only reach for engine changes once you've ruled out the script layer with concrete evidence.
 
 - **Symptom → script side first.** When a behavior is wrong or slow, start by tracing it through the `.nvgt` call sites that produce it. Most of what feels like an "engine issue" turns out to be a wrapper, a resolver, or a hot loop in script — and even when the engine *is* involved, the script side usually has a way to mitigate or sidestep it without touching C++.
-- **Isolate with a minimal repro before touching either side.** When a bug only shows up in complex maps or large packs, build the smallest version that still triggers it (an empty map, a single-entity-type map, a stripped-down character) and bisect. The "50 signs with `signtype=none` still lags" experiment that uncovered the O(N) pack scan was worth more than hours of engine speculation.
-- **Stub or comment out instead of optimizing.** When a script function might be the bottleneck, comment out its call site and rerun the test. If the symptom disappears, you've found your layer without changing any logic. Then optimize for real. Engine changes don't have this luxury — every C++ change is at least a rebuild round-trip.
-- **Engine changes for what only the engine can do.** New API surface (e.g. `directory_rename`, `add_sound_default_pack`), fundamental capability gaps (multi-pack chain, the in-memory `BASS_StreamCreateFile` path for packed sounds), or fixes that genuinely live below the script binding boundary (per-byte decrypt loops, BASS callback overhead) — those are real engine work. Script-layer wrappers, lookup costs, per-frame entity loops, and audio-resolution helpers are not.
-- **Don't conflate "the engine could be faster" with "the engine is the bottleneck."** Engine optimizations that aren't on the actual hot path produce no observable change for the player. The vectorized `pack_buffer_decrypt`, single-hashmap-lookup in `read_file`, and `memload`-as-default were all real improvements that did **not** fix the entity-heavy map sluggishness — because the hot path was a script-side O(N) string scan, not pack I/O.
+- **Isolate with a minimal repro before touching either side.** When a bug only shows up in complex maps or large packs, build the smallest version that still triggers it and bisect. The "50 signs with `signtype=none` still lags" experiment that uncovered the O(N) pack scan was worth hours of engine speculation.
+- **Stub or comment out instead of optimizing.** When a script function might be the bottleneck, comment out its call site and rerun. If the symptom disappears, you've found your layer without changing logic. Then optimize for real. Engine changes don't have this luxury — every C++ change is at least a rebuild round-trip.
+- **Engine changes for what only the engine can do.** New API surface (e.g. `directory_rename`, `add_sound_default_pack`), fundamental capability gaps (multi-pack chain, in-memory `BASS_StreamCreateFile` for packed sounds), or fixes below the script binding boundary (per-byte decrypt loops, BASS callback overhead) are real engine work. Script-layer wrappers, lookup costs, per-frame entity loops, and audio-resolution helpers are not.
+- **Don't conflate "the engine could be faster" with "the engine is the bottleneck."** Engine optimizations off the actual hot path produce no observable change for the player. `pack_buffer_decrypt` vectorization, single-hashmap-lookup in `read_file`, and `memload`-as-default were real wins that did **not** fix entity-heavy map sluggishness — because the hot path was a script-side O(N) string scan, not pack I/O.
 
-When you do change the engine, document the C++ change in this file (under "Engine-side fixes" if a section exists, or inline near the related script behavior) so the next person knows the engine isn't stock NVGT.
+When you do change the engine, note it in this file so the next person knows the engine isn't stock NVGT.
 
 ## Confirm before implementing — design discussion is not a green light
 
@@ -43,24 +43,24 @@ The dev's default mode of working in this repo is to describe an idea or ask a q
 
 - **A description of a feature is a question, not an instruction.** When the dev writes "I really wish X" or "what if we did Y" or "could we extend Z" — they are exploring, not commissioning. Lay out the design, call out tradeoffs, ask for go-ahead. Don't start editing.
 - **Don't bundle implementation into the same turn as the proposal.** Even when a design feels obvious or small, splitting the proposal turn from the implementation turn gives the dev a chance to redirect, refine scope, or say "not now." Bundling them in one turn skips that decision.
-- **Definitely don't fan out into adjacent files unprompted.** Implementing a feature plus updating two help topics plus adding a changelog entry plus saving a memory file — all in one unconfirmed batch — is exactly the over-reach pattern to avoid. Each of those is a separate side-effect that deserves its own go-ahead.
+- **Don't fan out into adjacent files unprompted.** Implementing a feature plus updating two help topics plus a changelog entry plus a memory file — all in one unconfirmed batch — is the over-reach pattern to avoid. Each is a separate side-effect that deserves its own go-ahead.
 - **Exceptions where continuing without re-asking is fine:**
   - The dev has already approved the broader task and a follow-up is clearly within scope (e.g. "section 2 of the bike refactor" right after they approved section 1).
   - The dev explicitly reported a bug and asked for the fix in the same message — that's an implicit go-ahead to implement the fix (still confirm scope if uncertain).
   - The dev directly asked for a specific edit ("rename X to Y", "delete this block", "add a changelog entry for…") — those are imperative and can proceed.
-- **When in doubt, ask.** The cost of a one-line "want me to proceed?" is tiny compared to the cost of unwanted edits that have to be rolled back or argued over. Lean toward asking.
+- **When in doubt, ask.** "Want me to proceed?" is cheap; rollbacks aren't.
 
 ## Map mode (2d / topdown / 3d)
 
 Every map carries a mode 2d|topdown|3d line at the top of info.sif. load_map() resets mapmode = "" and reads it from the file. The parser branches on mapmode == "3d" to accept extra z-coordinate fields, and the builder/runtime branches on the same flag for spatial behavior.
 
-The expected sd.length() for each entity in map_parser.nvgt is **two-valued** (e.g. sd.length()==10 || sd.length()==11, or sd.length()==18 || sd.length()==20) — the larger size is the 3d variant with z fields **inserted inside the coordinate block**, not appended at the end. When adding or modifying an entity, preserve both length cases.
+The expected sd.length() for each entity in map_parser.nvgt is **multi-valued** (e.g. ==10 || ==11 || ==12 for platforms, ==18 || ==20 for doors, or `>=N` for entities with optional trailing tokens like blockage, elevator, passage) — extra lengths encode 3d (z fields **inserted inside the coordinate block**, not appended) and the topdown/3d min/max-y variant. When adding or modifying an entity, preserve every length case.
 
 **Spanning entities require min/max y in topdown and 3d.** Any entity that already takes minimum/maximum x (i.e. it spans tiles along the x axis — platforms, vanishing platforms, walls, blockages, conveyor belts, hazards, force fields, spikes, doors, lifts, every zone, etc.) MUST also take minimum/maximum y when the map's mode is topdown or 3d, where y is a spatial axis (depth) rather than a single floor level. The builder UI must prompt for both, the spawn function must accept distinct y1/y2 values, write_<entity> must emit both, and read_<entity> must accept them. For 2d maps y stays a single value (it's the floor height, not a spatial range). For backward compatibility, read_<entity> must still accept the older single-y line shape from pre-existing topdown/3d maps (treat the missing maxy as equal to miny — same as today's behavior of a one-tile-deep strip), so map_parser.nvgt's sd.length() check for those entities becomes three-valued: the original 2d length, the original single-y topdown/3d length (still loads), and the new min/max-y topdown/3d length. New maps authored after this change write the two-y form.
 
 ## Map format
 
-data/maps/decompiled/<name>/info.sif, plain text, one entity per line, space-delimited. Header lines are mode, owner, minx/maxx/miny/maxy/minz/maxz. Example:
+data/builder/maps/decompiled/<name>/data/main.sif, plain text, one entity per line, space-delimited. Header lines are mode and minx/maxx/miny/maxy/minz/maxz; the sibling data/meta.sif holds owner, description, created date, modified date (key=value form). Example main.sif:
 
 mode 3d
 minx 0
@@ -69,11 +69,9 @@ miny 0
 maxy 100
 minz 0
 maxz 100
-owner tsatria03
-staircase 0 100 0 100 0 0 1 marble2 0 100 false false
 bike 50 50 0 1 1500 bike
 
-Maps may also be compiled into encrypted .map packs at data/builder/maps/compiled/<name>.map; load_map() falls back to the pack when the decompiled folder is absent. The pack handle (map_pack) is opened by load_map_pack and assigned to sound_default_pack so audio reads transparently from inside the .map, while .sif reads go through map_pack.read_file("data/main.sif", ...) directly.
+Maps may also be compiled into encrypted .map packs at data/builder/maps/compiled/<name>.map; load_map() falls back to the pack when the decompiled folder is absent. The pack handle (map_pack) is opened by load_map_pack and assigned to sound_default_pack so audio reads transparently from inside the .map, while .sif reads go through map_pack.read_file("data/main.sif", ...) and map_pack.read_file("data/meta.sif", ...) directly.
 
 ## Include tree
 
@@ -86,17 +84,17 @@ sf.nvgt includes only includes/includes.nvgt, which pulls in three NVGT stdlib f
 - globals/game_input.nvgt — keyboard dispatch (slash for command parser, scriptkey banks via Shift / Shift+Alt, run-mode via Alt, etc.).
 - globals/map.nvgt — clearmap() / destroymap(), camera-marker selection, movement and physics helpers.
 - globals/game_handlers.nvgt — input-handler callbacks split out of game_input.nvgt; the per-key behavior bodies live here.
-- globals/weapon.nvgt, bullet.nvgt, bodyfall.nvgt, hook.nvgt, sonar.nvgt, spier.nvgt, stunner.nvgt, tracker.nvgt, inventory.nvgt, decpool.nvgt, fadepool.nvgt, builder.nvgt, updater.nvgt — runtime subsystems.
-- parsers/map_parser.nvgt — load_map() reads data/maps/decompiled/<name>/info.sif (plain text) or the compiled .map pack, then dispatches each line to the appropriate read_<entity>().
+- globals/weapon.nvgt, weapon_manager.nvgt, bullet.nvgt, bodyfall.nvgt, hook.nvgt, sonar.nvgt, spier.nvgt, stunner.nvgt, tracker.nvgt, inventory.nvgt, fadepool.nvgt, updater.nvgt, character_manager.nvgt, shield_manager.nvgt, glider.nvgt — runtime subsystems.
+- parsers/map_parser.nvgt — load_map() reads data/builder/maps/decompiled/<name>/data/main.sif (plain text) or the compiled .map pack, then dispatches each line to the appropriate read_<entity>(). The dispatcher itself lives in dispatch_entity_line(string[] sd) and is also called by the /spawn command path so a typed-args spawn behaves the same as a map load.
 - parsers/command_parser.nvgt, character_parser.nvgt, shield_parser.nvgt — /-prefixed in-game commands and config-file parsers.
-- menus/menu.nvgt — single home for every top-level menu. The previously separate settings_menu.nvgt and stats_menu.nvgt have been folded into this file alongside the main menu and other UI screens. menus/menu_callbacks.nvgt and menus/map_menu.nvgt remain separate.
-- functions/extrafuncts.nvgt, mapfuncts.nvgt, charfuncts.nvgt, comfuncts.nvgt, savefuncts.nvgt, downloaderfuncts.nvgt, filefuncts.nvgt, packfuncts.nvgt — small utilities (is_admin, array_contains, modifier-key helpers, file/path helpers, pack-resolution helpers, etc.).
-- deps/ — vendored libraries: form.nvgt (audio form, modified from BGT), form_menu.nvgt, setupmenu.nvgt, virtual_dialogs.nvgt, sound_pool.nvgt, keyhook.nvgt, key_hold.nvgt, savedata.nvgt, speech.nvgt, dlg.nvgt, dlgplayer.nvgt, downloader.nvgt, datetime.nvgt, time_elapsed.nvgt, rotation.nvgt. (The previously vendored m_pro.nvgt has been removed.)
+- menus/menu.nvgt — single home for every top-level menu (main menu, settings, stats, other UI screens). menus/menu_callbacks.nvgt and menus/map_menu.nvgt remain separate.
+- functions/extrafuncts.nvgt, mapfuncts.nvgt, charfuncts.nvgt, comfuncts.nvgt, savefuncts.nvgt, downloaderfuncts.nvgt, filefuncts.nvgt, packfuncts.nvgt, macfuncts.nvgt — small utilities (is_admin, array_contains, modifier-key helpers, file/path helpers, pack-resolution helpers, macro-bank helpers, etc.).
+- deps/ — vendored libraries: form.nvgt (audio form, modified from BGT), form_menu.nvgt, setupmenu.nvgt, virtual_dialogs.nvgt, sound_pool.nvgt, keyhook.nvgt, key_hold.nvgt, savedata.nvgt, speech.nvgt, dlg.nvgt, dlgplayer.nvgt, downloader.nvgt, datetime.nvgt, time_elapsed.nvgt, rotation.nvgt.
 - version.nvgt sits at the includes/ root (not under a subfolder) and is the single source-of-truth `string version = "X.Y"` constant described under the changelog rules below.
 
 ### includes/builder/ — entity definitions
 
-One file per gameplay entity, grouped: audio/, construction/, interaction/, kombat/, misc/, transitions/, transportation/, traps/, zones/. The one exception to the one-file-per-entity rule is the NPC system in kombat/, which is split across npc.nvgt (entity state + read/write/build), npc_manager.nvgt (lifecycle / spawn-pool coordination), and npc_runner.nvgt (per-frame AI + movement loop) because the NPC behavior surface outgrew a single file. Typical contents of an entity file:
+One file per gameplay entity, grouped: audio/, construction/, interaction/, kombat/, misc/, transitions/, transportation/, traps/, zones/. The transportation/ group covers bike, vehicle, aircraft, airbeacon, and air_turbulence; the globals/glider.nvgt player-controlled glider is a peer subsystem in includes/main/globals/ rather than a builder entity. The one exception to the one-file-per-entity rule is the NPC system in kombat/, which is split across npc.nvgt (entity state + read/write/build), npc_manager.nvgt (lifecycle / spawn-pool coordination), and npc_runner.nvgt (per-frame AI + movement loop) because the NPC behavior surface outgrew a single file; the sibling projectile.nvgt in kombat/ handles launch_* projectile lifetimes. Typical contents of an entity file:
 
 - a class holding the entity's runtime state,
 - a global array<class>@[] <thing>s(0) of live instances,
@@ -112,11 +110,11 @@ The read_* / write_* / on-disk-format stability contract is covered in **Stabili
 
 Three sibling folders. All authored as plain text info.sif files alongside (optional) sound assets — the engine never hardcodes content, it scans these folders.
 
-### data/maps/
+### data/builder/maps/
 
-- **decompiled/<name>/** — authored maps. Always contains info.sif (the entity list described above) and an assets/ folder grouping per-map sounds (kombat/, objects/, soundtracks/, etc.) used by get_map_sound(...) lookups.
+- **decompiled/<name>/data/** — authored maps. Always contains main.sif (the entity list described above) and meta.sif (owner, description, created date, modified date). Per-map sound assets live under the parent decompiled/<name>/ in kombat/, objects/, soundtracks/, etc. folders resolved by get_map_sound(...) lookups.
 - **compiled/<name>.map** — encrypted pack form built from a decompiled folder. load_map() falls back here when the decompiled copy is absent. Currently empty in this checkout.
-- **Stock maps in source control**: 3d_test, topdown_example, elevator_example, house_example, main, test. main is the title-screen / hub map; the rest are demos / smoke tests. When adding a new entity type, smoke-test it by adding a line to 3d_test/info.sif (or the matching mode example) and reloading.
+- **Stock maps in source control**: 2d_test, 3d_test, topdown_test, elevator_example, house_example, main. main is the title-screen / hub map; the rest are demos / smoke tests. When adding a new entity type, smoke-test it by adding a line to the matching mode's test map's data/main.sif and reloading.
 
 ### data/macros/
 
@@ -124,17 +122,17 @@ Scriptkey-bank command macros loaded by load_macros() and triggered from game_in
 
 <cooldown_ms> <speak_bool> <command>
 
-so e.g. 4000 true /rt runs /rt through the command parser when the slot is fired, with a 4 s cooldown and a spoken confirmation. The only subfolder still shipped is **default/<theme>/info.sif** (currently just classic) — the seed bank a fresh player starts from. The previous bundled banks for weapon quick-draw (weapons/<category>/), item quick-give (items/<category>/), and the in-builder scriptkeys (map/builder/, map/builder2/) were removed because players define their own macro packs through /macset / /mc, so there's no need to ship per-weapon or per-item lines anymore. Adding a new entity, weapon, or item no longer requires a corresponding macro file edit.
+so e.g. 4000 true /rt runs /rt through the command parser when the slot is fired, with a 4 s cooldown and a spoken confirmation. The only subfolder still shipped is **default/<theme>/info.sif** (currently just classic) — the seed bank a fresh player starts from. Previous bundled banks (weapon quick-draw, item quick-give, in-builder scriptkeys) were removed because players define their own packs through /macset / /mc; adding a new entity, weapon, or item no longer requires a corresponding macro file edit.
 
 ### docks/builder/
 
-In-game help topics, one .tp file per topic, served by helpread() in sf.nvgt. Each is plain prose (character.tp, npc.tp, weapon.tp, shield.tp, effect_space.tp, obscurity_zone.tp, character_blocker.tp, command_console.tp, tts_enemie.tp). Filenames must stay flat — no nested folders — because helpread strips docks/builder/ and .tp from the path for the window title. Add new help topics by dropping a new .tp here and wiring it into the help menu in menu.nvgt.
+In-game help topics, one .tp file per topic, served by helpread() in sf.nvgt. Each is plain prose (character.tp, npc.tp, weapon.tp, shield.tp, effect_space.tp, obscurity_zone.tp, character_blocker.tp, command_console.tp, tts_enemie.tp, aircraft.tp, glider.tp, switch.tp, cloner.tp, pack.tp). Filenames must stay flat — no nested folders — because helpread strips docks/builder/ and .tp from the path for the window title. Add new help topics by dropping a new .tp here and wiring it into the help menu in menu.nvgt.
 
 **Help topic prose rules — never reference engine code from a .tp file.** Topic files are player-and-author facing documentation, not internal dev notes. Don't name function names (fallcheck, charparse, spawn_npc, melee_strike, update_char_*, etc.), don't name source files (map.nvgt, weapon.nvgt, character_parser.nvgt, etc.), and don't name internal variables (fallcounter, wepchar, me_rotation, etc.). Describe the *behavior* the player or author observes — "each tile beyond the threshold counts for fall modifier raw damage" instead of "fallcounter times fall modifier in fallcheck()". If a behavior is too tangled to explain without naming code, that's usually a sign the explanation should be shorter or the design is leaking.
 
 ## Sound assets (sounds/)
 
-sounds/ is split into two top-level siblings — **decompiled/** for the loose-folder form authors edit (`sounds/decompiled/main/` for shared engine assets: characters, equipments/shields, equipments/weapons, keyboards, menus, misc; and `sounds/decompiled/builder/` for per-entity map-object assets: kombat/npc, kombat/projectiles, construction, transitions, transportation, traps, zones, audio, interaction, misc) — and **compiled/** for the encrypted pack form the shipped game reads (`sounds/compiled/main.spack` and `sounds/compiled/builder.spack`). Decompiled folders win on lookup; the packs are the fallback. There is no per-pack indirection layer above this — the previous `sounds/<pack>/` selector (and the matching `soundpack` global) was removed when it became clear nobody was swapping packs and the extra path layer was just complicating every authored path. Players who want to customize audio still do so by dropping clips into the relevant per-entity subfolder under `sounds/decompiled/main/` or `sounds/decompiled/builder/` (a character theme, a keyboard theme, custom NPC clips), which works exactly as before, just one directory shallower.
+sounds/ is split into two top-level siblings — **decompiled/** for the loose-folder form authors edit (`sounds/decompiled/main/` for shared engine assets: characters, equipments/shields, equipments/weapons, keyboards, menus, misc; and `sounds/decompiled/builder/` for per-entity map-object assets: kombat/npc, kombat/projectiles, construction, transitions, transportation, traps, zones, audio, interaction, misc) — and **compiled/** for the encrypted pack form the shipped game reads (`sounds/compiled/main.spack` and `sounds/compiled/builder.spack`). Decompiled folders win on lookup; the packs are the fallback. There is no per-pack indirection layer above this — the old `sounds/<pack>/` selector and `soundpack` global were removed. Players customize audio by dropping clips into the relevant per-entity subfolder under `sounds/decompiled/main/` or `sounds/decompiled/builder/`.
 
 Inside sounds/decompiled/main/:
 
@@ -224,7 +222,7 @@ CRLF enforcement is covered in **Stability rules** above; the rest:
 - **.gitignore** keeps:
   - the `.claude` directory out of the tree. The previous `claude.md` lowercase entry was removed because on case-insensitive Windows filesystems it would also match the tracked **CLAUDE.md**, so any casing rename would silently take the file out of git. Don't add it back.
   - all audio (*.mp3, *.ogg, *.wav) — the sounds/ folder ships separately and is downloaded on first run by downloadsounds() in sf.nvgt if missing. Don't commit clips.
-  - *.map — compiled map packs are release artifacts, not source. Authored maps live as data/maps/decompiled/<name>/info.sif and are committed; the data/maps/compiled/ folder is intentionally empty in source.
+  - *.map — compiled map packs are release artifacts, not source. Authored maps live as data/builder/maps/decompiled/<name>/data/main.sif and are committed; the data/builder/maps/compiled/ folder is intentionally empty in source.
   - New File*.txt — the dev's personal scratch / notes file. Cleared and rewritten frequently. Don't read or rely on its contents as authoritative; it isn't project documentation, just a private notepad. **Don't write new content to it.**
   - lib/ and releases/ — build outputs (NVGT runtime libs and the packaged release artifacts produced by build/tools.py).
 
@@ -234,13 +232,13 @@ Known shape-of-the-code issues. None are urgent or breaking anything today. Don'
 
 - **No data-file versioning in info.sif files.** Every authored file (character, weapon, shield, npc, map) is a flat key=value list with no version stamp. Missing keys fall back to engine defaults, which is fine — but the day you change what an *existing* default means, every old file that omitted the key silently shifts behavior with no marker saying which engine version it was authored against.
 
-- **`includes/main/globals/dec.nvgt` is global-soup.** ~126 lines declaring globals for almost every subsystem (map bounds, player stats, all 17 capability flags, sound slots, theme strings, active-map identity). Any operation that needs to coordinate across the state set (pause/resume, save-snapshots, reset-to-title) has to know which 50 globals to touch and in what order.
+- **`includes/main/globals/dec.nvgt` is global-soup.** ~183 lines declaring globals for almost every subsystem (map bounds, player stats, all 17 capability flags, sound slots, theme strings, active-map identity). Any operation that needs to coordinate across the state set (pause/resume, save-snapshots, reset-to-title) has to know which 50 globals to touch and in what order.
 
-- **Glob-include aggregation at ~113 files is getting noisier.** sf.nvgt → includes/includes.nvgt globs over everything under includes/builder/** and includes/main/**. Every symbol is visible everywhere, and parse order depends on what the OS returns from the directory walk. No order-sensitive code today, but the risk grows with file count.
+- **Glob-include aggregation at ~116 files is getting noisier.** sf.nvgt → includes/includes.nvgt globs over everything under includes/builder/** and includes/main/**. Every symbol is visible everywhere, and parse order depends on what the OS returns from the directory walk. No order-sensitive code today, but the risk grows with file count.
 
 - **Silent parser fallthrough in `includes/main/parsers/map_parser.nvgt`.** Each entity dispatch checks `sd.length()` against expected values; lines that don't match any variant are dropped with no warning. A malformed map (typo, stale tool, missing field) loads "successfully" with entities silently absent.
 
-- **Dual-length encoding is non-obvious and bug-prone.** Every new spanning entity has to remember both the 2d length and the 3d length (and for entities with min/max y, also the legacy single-y topdown variant — so three lengths). A forgotten variant silently breaks one of: backward compatibility, 3d support, or topdown support.
+- **Multi-length / open-ended encoding is non-obvious and bug-prone.** A new spanning entity may need three discrete sd.length() variants (2d, legacy single-y topdown/3d, current min/max-y topdown/3d) or an open-ended `>=N` check when trailing tokens are optional. A forgotten variant silently breaks one of: backward compatibility, 3d support, or topdown support; an `>=N` that's too permissive lets garbage trailing tokens through to read_<entity>.
 
 - **Sound lookups fail silently.** `get_pack_sound("...")` / `get_map_sound("...")` returning no match plays nothing. *Deliberate* on the player side — a missing clip should never spam a screen reader during gameplay — but a typo in a clip path is indistinguishable from a feature with no sound, which makes authoring brutal.
 
