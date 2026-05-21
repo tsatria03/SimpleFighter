@@ -1,55 +1,55 @@
 pending_command@[] pending_commands(0);
 class pending_command
 {
-	uint fire_time;
-	string cmd;
+uint fire_time;
+string cmd;
 }
 void comstack(string input)
 {
-	string[] parts = string_split(input, ";", true);
-	uint accumulated = 0;
-	for (uint i = 0; i < parts.length(); i++)
-	{
-		string part = string_trim_sides(parts[i]);
-		if (part == "")
-			continue;
-		uint pos = 0;
-		while (pos < part.length() && part.substr(pos, 1) >= "0" && part.substr(pos, 1) <= "9")
-		{
-			pos++;
-		}
-		if (pos > 0)
-		{
-			int delay = stn(part.substr(0, pos));
-			if (delay > 0) accumulated += uint(delay);
-			part = string_trim_sides(part.substr(pos));
-		}
-		if (part == "")
-			continue;
-		if (part.substr(0, 1) != "/")
-			part = "/" + part;
-		pending_command pc;
-		pc.fire_time = stacktimer.elapsed + accumulated;
-		pc.cmd = part;
-		pending_commands.insert_last(pc);
-	}
+string[] parts = string_split(input, ";", true);
+uint accumulated = 0;
+for (uint i = 0; i < parts.length(); i++)
+{
+string part = string_trim_sides(parts[i]);
+if (part == "")
+continue;
+uint pos = 0;
+while (pos < part.length() && part.substr(pos, 1) >= "0" && part.substr(pos, 1) <= "9")
+{
+pos++;
+}
+if (pos > 0)
+{
+int delay = stn(part.substr(0, pos));
+if (delay > 0) accumulated += uint(delay);
+part = string_trim_sides(part.substr(pos));
+}
+if (part == "")
+continue;
+if (part.substr(0, 1) != "/")
+part = "/" + part;
+pending_command pc;
+pc.fire_time = stacktimer.elapsed + accumulated;
+pc.cmd = part;
+pending_commands.insert_last(pc);
+}
 }
 void process_pending_commands()
 {
-	uint i = 0;
-	while (i < pending_commands.length())
-	{
-		if (stacktimer.elapsed >= pending_commands[i].fire_time)
-		{
-			string cmd = pending_commands[i].cmd;
-			pending_commands.remove_at(i);
-			comparse(cmd);
-		}
-		else
-		{
-			i++;
-		}
-	}
+uint i = 0;
+while (i < pending_commands.length())
+{
+if (stacktimer.elapsed >= pending_commands[i].fire_time)
+{
+string cmd = pending_commands[i].cmd;
+pending_commands.remove_at(i);
+comparse(cmd);
+}
+else
+{
+i++;
+}
+}
 }
 
 void use_command(string cmd)

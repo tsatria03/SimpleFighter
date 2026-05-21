@@ -1,77 +1,77 @@
 void load_macros()
 {
-	string[] old_cmds = scriptkeys;
-	int[] old_lastused = scriptkey_lastused;
-	scriptkeys.resize(0);
-	scriptkey_cooldown.resize(0);
-	scriptkey_lastused.resize(0);
-	scriptkey_speak.resize(0);
-	if (!file_exists("data/main/macros/"+mactype+"/"+mactype2+"/info.sif"))
-		return;
-	string[] lines = clean_lines("data/main/macros/"+mactype+"/"+mactype2+"/info.sif");
-	for (uint i = 0; i < lines.length(); i++)
-	{
-		string line = string_trim_sides(lines[i]);
-		if (line == "")
-			continue;
-		string[] parts = string_split(line, " ", true);
-		int cd = 0;
-		bool speakflag = false;
-		string cmd;
-		uint idx = 0;
-		if (parts.length() > idx && string_is_digits(parts[idx]))
-		{
-			cd = stn(parts[idx]);
-			idx++;
-		}
-		if (parts.length() > idx && (parts[idx] == "true" || parts[idx] == "false"))
-		{
-			speakflag = (parts[idx] == "true");
-			idx++;
-		}
-		cmd = join_string_array(parts, idx, parts.length());
-		cmd = string_trim_sides(cmd);
-		if (cmd == "")
-			continue;
-		scriptkeys.insert_last(cmd);
-		scriptkey_cooldown.insert_last(cd);
-		scriptkey_speak.insert_last(speakflag);
-		if (i < old_lastused.length())
-			scriptkey_lastused.insert_last(old_lastused[i]);
-		else
-			scriptkey_lastused.insert_last(0);
-	}
-	scriptkeys_loaded = true;
+string[] old_cmds = scriptkeys;
+int[] old_lastused = scriptkey_lastused;
+scriptkeys.resize(0);
+scriptkey_cooldown.resize(0);
+scriptkey_lastused.resize(0);
+scriptkey_speak.resize(0);
+if (!file_exists("data/main/macros/"+mactype+"/"+mactype2+"/info.sif"))
+return;
+string[] lines = clean_lines("data/main/macros/"+mactype+"/"+mactype2+"/info.sif");
+for (uint i = 0; i < lines.length(); i++)
+{
+string line = string_trim_sides(lines[i]);
+if (line == "")
+continue;
+string[] parts = string_split(line, " ", true);
+int cd = 0;
+bool speakflag = false;
+string cmd;
+uint idx = 0;
+if (parts.length() > idx && string_is_digits(parts[idx]))
+{
+cd = stn(parts[idx]);
+idx++;
+}
+if (parts.length() > idx && (parts[idx] == "true" || parts[idx] == "false"))
+{
+speakflag = (parts[idx] == "true");
+idx++;
+}
+cmd = join_string_array(parts, idx, parts.length());
+cmd = string_trim_sides(cmd);
+if (cmd == "")
+continue;
+scriptkeys.insert_last(cmd);
+scriptkey_cooldown.insert_last(cd);
+scriptkey_speak.insert_last(speakflag);
+if (i < old_lastused.length())
+scriptkey_lastused.insert_last(old_lastused[i]);
+else
+scriptkey_lastused.insert_last(0);
+}
+scriptkeys_loaded = true;
 }
 void use_macro(uint index)
 {
-	if (!scriptkeys_loaded)
-		load_macros();
-	if (scriptkeys.length() == 0)
-	{
-		speak("No macros are defined.");
-		return;
-	}
-	if (index >= scriptkeys.length())
-	{
-		speak("Macro " + (index + 1) + " not found.");
-		return;
-	}
-	int sctime = comtimer.elapsed;
-	int last = scriptkey_lastused[index];
-	int cooldown = scriptkey_cooldown[index];
-	if (cooldown > 0 && sctime - last < cooldown)
-	{
-		if (scriptkey_speak[index])
-			speak("This command cannot be used yet.");
-		return;
-	}
-	string cmd = string_trim_sides(scriptkeys[index]);
-	if (cmd == "")
-	{
-		speak("Macro " + (index + 1) + " not found.");
-		return;
-	}
-	scriptkey_lastused[index] = sctime;
-	use_command(cmd);
+if (!scriptkeys_loaded)
+load_macros();
+if (scriptkeys.length() == 0)
+{
+speak("No macros are defined.");
+return;
+}
+if (index >= scriptkeys.length())
+{
+speak("Macro " + (index + 1) + " not found.");
+return;
+}
+int sctime = comtimer.elapsed;
+int last = scriptkey_lastused[index];
+int cooldown = scriptkey_cooldown[index];
+if (cooldown > 0 && sctime - last < cooldown)
+{
+if (scriptkey_speak[index])
+speak("This command cannot be used yet.");
+return;
+}
+string cmd = string_trim_sides(scriptkeys[index]);
+if (cmd == "")
+{
+speak("Macro " + (index + 1) + " not found.");
+return;
+}
+scriptkey_lastused[index] = sctime;
+use_command(cmd);
 }

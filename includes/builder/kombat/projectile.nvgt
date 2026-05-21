@@ -1,565 +1,565 @@
 projectile@[]projectiles(0);
 class projectile
 {
-	bool bounce_at_edge, destroyable, fireable, single_use;
-	bool first_tick, check_spawn_contact;
-	int projsound, wepsound;
-	int prox, proy, proz;
-	int minx, maxx, miny, maxy;
-	int minz, maxz;
-	int direction;
-	int cur_x_step, cur_y_step, cur_z_step;
-	double projhealth, maxprojhealth;
-	int damage;
-	int speed;
-	int stun;
-	string projtype;
-	timer projtimer;
-	projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, int mnz=0, int mxz=0, bool csc=false)
-	{
-		prox = px;
-		proy = py;
-		proz = pz;
-		minx = mnx;
-		maxx = mxx;
-		miny = mny;
-		maxy = mxy;
-		minz = mnz;
-		maxz = mxz;
-		direction = dir;
-		damage = dm;
-		speed = sp;
-		projtype = pt;
-		fireable = pf;
-		single_use = su;
-		bounce_at_edge = bae;
-		projhealth = hp;
-		maxprojhealth = hp;
-		destroyable = dest;
-		stun = sn;
-		first_tick = true;
-		check_spawn_contact = csc;
-		cur_x_step = 0;
-		cur_y_step = 0;
-		cur_z_step = 0;
-		if(direction == 0) { cur_x_step = 1; }
-		else if(direction == 1) { cur_y_step = 1; }
-		else if(direction == 2) { cur_x_step = 1; cur_y_step = 1; }
-		else if(direction == 3) { cur_x_step = -1; cur_y_step = 1; }
-		else if(direction == 4) { cur_x_step = -1; }
-		else if(direction == 5) { cur_y_step = -1; }
-		else if(direction == 6) { cur_x_step = -1; cur_y_step = -1; }
-		else if(direction == 7) { cur_x_step = 1; cur_y_step = -1; }
-		else if(direction == 8) { cur_z_step = 1; }
-		else if(direction == 9) { cur_z_step = -1; }
-		double sz = (mapmode == "3d") ? proz : 0;
-		projsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projtype+"/*loop*"), me.x, me.y, me.z, prox, proy, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
-	}
+bool bounce_at_edge, destroyable, fireable, single_use;
+bool first_tick, check_spawn_contact;
+int projsound, wepsound;
+int prox, proy, proz;
+int minx, maxx, miny, maxy;
+int minz, maxz;
+int direction;
+int cur_x_step, cur_y_step, cur_z_step;
+double projhealth, maxprojhealth;
+int damage;
+int speed;
+int stun;
+string projtype;
+timer projtimer;
+projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, int mnz=0, int mxz=0, bool csc=false)
+{
+prox = px;
+proy = py;
+proz = pz;
+minx = mnx;
+maxx = mxx;
+miny = mny;
+maxy = mxy;
+minz = mnz;
+maxz = mxz;
+direction = dir;
+damage = dm;
+speed = sp;
+projtype = pt;
+fireable = pf;
+single_use = su;
+bounce_at_edge = bae;
+projhealth = hp;
+maxprojhealth = hp;
+destroyable = dest;
+stun = sn;
+first_tick = true;
+check_spawn_contact = csc;
+cur_x_step = 0;
+cur_y_step = 0;
+cur_z_step = 0;
+if(direction == 0) { cur_x_step = 1; }
+else if(direction == 1) { cur_y_step = 1; }
+else if(direction == 2) { cur_x_step = 1; cur_y_step = 1; }
+else if(direction == 3) { cur_x_step = -1; cur_y_step = 1; }
+else if(direction == 4) { cur_x_step = -1; }
+else if(direction == 5) { cur_y_step = -1; }
+else if(direction == 6) { cur_x_step = -1; cur_y_step = -1; }
+else if(direction == 7) { cur_x_step = 1; cur_y_step = -1; }
+else if(direction == 8) { cur_z_step = 1; }
+else if(direction == 9) { cur_z_step = -1; }
+double sz = (mapmode == "3d") ? proz : 0;
+projsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projtype+"/*loop*"), me.x, me.y, me.z, prox, proy, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+}
 }
 
 void destroy_projectile(uint i)
 {
-	projpool.destroy_sound(projectiles[i].projsound);
-	projectiles.remove_at(i);
+projpool.destroy_sound(projectiles[i].projsound);
+projectiles.remove_at(i);
 }
 
 void play_projectile_hit_2d(uint i)
 {
-	double sz = (mapmode == "3d") ? projectiles[i].proz : 0;
-	projectiles[i].wepsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+double sz = (mapmode == "3d") ? projectiles[i].proz : 0;
+projectiles[i].wepsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 }
 
 bool projectile_blocked(int nx, int ny, int nz, int mn_x, int mx_x, int mn_y, int mx_y, int mn_z, int mx_z)
 {
-	if(nx < mn_x || nx > mx_x || ny < mn_y || ny > mx_y) return true;
-	if(mapmode == "3d" && (nz < mn_z || nz > mx_z)) return true;
-	if(mapmode == "3d") { if(wall_blocks(nx, ny, nz)) return true; }
-	else if(string_contains(gmt(nx, ny), "wall", 1) > -1) return true;
-	if(is_in_safe(nx, ny, nz)) return true;
-	return false;
+if(nx < mn_x || nx > mx_x || ny < mn_y || ny > mx_y) return true;
+if(mapmode == "3d" && (nz < mn_z || nz > mx_z)) return true;
+if(mapmode == "3d") { if(wall_blocks(nx, ny, nz)) return true; }
+else if(string_contains(gmt(nx, ny), "wall", 1) > -1) return true;
+if(is_in_safe(nx, ny, nz)) return true;
+return false;
 }
 
 bool projectile_at_edge(int nx, int ny, int nz, int mn_x, int mx_x, int mn_y, int mx_y, int mn_z, int mx_z)
 {
-	if(nx < mn_x || nx > mx_x || ny < mn_y || ny > mx_y) return true;
-	if(mapmode == "3d" && (nz < mn_z || nz > mx_z)) return true;
-	return false;
+if(nx < mn_x || nx > mx_x || ny < mn_y || ny > mx_y) return true;
+if(mapmode == "3d" && (nz < mn_z || nz > mx_z)) return true;
+return false;
 }
 
 void projloop()
 {
-	for(uint i = 0; i < projectiles.length(); i++)
-	{
-		if(projectiles[i].projtimer.elapsed < projectiles[i].speed) continue;
-		double soundz = (mapmode == "3d") ? projectiles[i].proz : 0;
-		projpool.update_sound_3d(projectiles[i].projsound, projectiles[i].prox, projectiles[i].proy, soundz);
-		projectiles[i].projtimer.restart();
-		if(paused != 0) continue;
-		bool was_first_tick = projectiles[i].first_tick;
-		projectiles[i].first_tick = false;
-		if(was_first_tick && projectiles[i].check_spawn_contact && projectiles[i].fireable)
-		{
-			for(uint j = 0; j < npcs.length(); j++)
-			{
-				if(npcs[j].x == projectiles[i].prox && npcs[j].y == projectiles[i].proy && (mapmode != "3d" || npcs[j].z == projectiles[i].proz))
-				{
-					if(npcs[j].targets.length() == 0) continue;
-					play_projectile_hit_2d(i);
-					sound_pool@ npool = npc_pool(npcs[j].category);
-					npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-					npcs[j].health -= projectiles[i].damage;
-					kombatlog.insert_last(projectiles[i].damage + " damage to " + npcs[j].subtype + " by " + projectiles[i].projtype + ".");
-					if(projectiles[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=projectiles[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
-					if(projectiles[i].single_use) { destroy_projectile(i); return; }
-					break;
-				}
-			}
-		}
-		if(projectiles[i].cur_x_step != 0)
-		{
-			int next_x = projectiles[i].prox + projectiles[i].cur_x_step;
-			if(projectile_blocked(next_x, projectiles[i].proy, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
-			{
-				if(!projectiles[i].bounce_at_edge && projectile_at_edge(next_x, projectiles[i].proy, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
-				{
-					projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, soundz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-					destroy_projectile(i);
-					return;
-				}
-				projectiles[i].cur_x_step = -projectiles[i].cur_x_step;
-			}
-			else
-				projectiles[i].prox = next_x;
-		}
-		if(projectiles[i].cur_y_step != 0)
-		{
-			int next_y = projectiles[i].proy + projectiles[i].cur_y_step;
-			if(projectile_blocked(projectiles[i].prox, next_y, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
-			{
-				if(!projectiles[i].bounce_at_edge && projectile_at_edge(projectiles[i].prox, next_y, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
-				{
-					projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, soundz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-					destroy_projectile(i);
-					return;
-				}
-				projectiles[i].cur_y_step = -projectiles[i].cur_y_step;
-			}
-			else
-				projectiles[i].proy = next_y;
-		}
-		if(mapmode == "3d" && projectiles[i].cur_z_step != 0)
-		{
-			int next_z = projectiles[i].proz + projectiles[i].cur_z_step;
-			if(projectile_blocked(projectiles[i].prox, projectiles[i].proy, next_z, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
-			{
-				if(!projectiles[i].bounce_at_edge && projectile_at_edge(projectiles[i].prox, projectiles[i].proy, next_z, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
-				{
-					projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, projectiles[i].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-					destroy_projectile(i);
-					return;
-				}
-				projectiles[i].cur_z_step = -projectiles[i].cur_z_step;
-			}
-			else
-				projectiles[i].proz = next_z;
-		}
+for(uint i = 0; i < projectiles.length(); i++)
+{
+if(projectiles[i].projtimer.elapsed < projectiles[i].speed) continue;
+double soundz = (mapmode == "3d") ? projectiles[i].proz : 0;
+projpool.update_sound_3d(projectiles[i].projsound, projectiles[i].prox, projectiles[i].proy, soundz);
+projectiles[i].projtimer.restart();
+if(paused != 0) continue;
+bool was_first_tick = projectiles[i].first_tick;
+projectiles[i].first_tick = false;
+if(was_first_tick && projectiles[i].check_spawn_contact && projectiles[i].fireable)
+{
+for(uint j = 0; j < npcs.length(); j++)
+{
+if(npcs[j].x == projectiles[i].prox && npcs[j].y == projectiles[i].proy && (mapmode != "3d" || npcs[j].z == projectiles[i].proz))
+{
+if(npcs[j].targets.length() == 0) continue;
+play_projectile_hit_2d(i);
+sound_pool@ npool = npc_pool(npcs[j].category);
+npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+npcs[j].health -= projectiles[i].damage;
+kombatlog.insert_last(projectiles[i].damage + " damage to " + npcs[j].subtype + " by " + projectiles[i].projtype + ".");
+if(projectiles[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=projectiles[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
+}
+if(projectiles[i].cur_x_step != 0)
+{
+int next_x = projectiles[i].prox + projectiles[i].cur_x_step;
+if(projectile_blocked(next_x, projectiles[i].proy, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
+{
+if(!projectiles[i].bounce_at_edge && projectile_at_edge(next_x, projectiles[i].proy, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
+{
+projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, soundz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+destroy_projectile(i);
+return;
+}
+projectiles[i].cur_x_step = -projectiles[i].cur_x_step;
+}
+else
+projectiles[i].prox = next_x;
+}
+if(projectiles[i].cur_y_step != 0)
+{
+int next_y = projectiles[i].proy + projectiles[i].cur_y_step;
+if(projectile_blocked(projectiles[i].prox, next_y, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
+{
+if(!projectiles[i].bounce_at_edge && projectile_at_edge(projectiles[i].prox, next_y, projectiles[i].proz, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
+{
+projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, soundz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+destroy_projectile(i);
+return;
+}
+projectiles[i].cur_y_step = -projectiles[i].cur_y_step;
+}
+else
+projectiles[i].proy = next_y;
+}
+if(mapmode == "3d" && projectiles[i].cur_z_step != 0)
+{
+int next_z = projectiles[i].proz + projectiles[i].cur_z_step;
+if(projectile_blocked(projectiles[i].prox, projectiles[i].proy, next_z, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
+{
+if(!projectiles[i].bounce_at_edge && projectile_at_edge(projectiles[i].prox, projectiles[i].proy, next_z, projectiles[i].minx, projectiles[i].maxx, projectiles[i].miny, projectiles[i].maxy, projectiles[i].minz, projectiles[i].maxz))
+{
+projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*death*"), me.x, me.y, me.z, projectiles[i].prox, projectiles[i].proy, projectiles[i].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+destroy_projectile(i);
+return;
+}
+projectiles[i].cur_z_step = -projectiles[i].cur_z_step;
+}
+else
+projectiles[i].proz = next_z;
+}
 
-		if(!projectiles[i].fireable) continue;
+if(!projectiles[i].fireable) continue;
 
-		bool hit_player = me.x == projectiles[i].prox && me.y == projectiles[i].proy;
-		if(mapmode == "3d") hit_player = hit_player && int(me.z) == projectiles[i].proz;
-		if(hit_player && inplain == false && invehicle == false && !glider_engine_on)
-		{
-			if(wepchar.reflection and wepdef == 1)
-			{
-				int roll = random(0, 100);
-				if(roll < wepchar.refchance)
-				{
-					wepchar.sound_slot = p.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*block*"), false, 0, 0, 0, 100, false);
-						if(projectiles[i].single_use) { destroy_projectile(i); return; }
-					continue;
-				}
-				else if(shieldon == 1 and shield_blocks())
-				{
-					if(shieldpassthrough) projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
-					shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100, false);
-					int sdm = max(1, (wepchar.refcushion ? int(projectiles[i].damage * 0.5) : projectiles[i].damage) - shielddefence * 3);
-					shieldstrength -= sdm;
-					kombatlog.insert_last(projectiles[i].projtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
-				}
-				else
-				{
-					projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
-					int dmg = max(1, (wepchar.refcushion ? int(projectiles[i].damage * 0.5) : projectiles[i].damage) - defence * 3);
-					health -= dmg;
-					kombatlog.insert_last(projectiles[i].projtype + "'s attack took you " + dmg + " damage.");
-					{
-						string painfile;
-						int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
-						if(damage_percent <= 1) painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
-						else if(damage_percent >= 10) painfile = get_pack_sound("main/characters/" + chartype + "/general/*crit*");
-						else painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
-						painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
-					}
-					if(projectiles[i].stun > 0) stun_target("me", "", projectiles[i].stun);
-				}
-			}
-			else if(shieldon == 1 and shield_blocks())
-			{
-				if(shieldpassthrough) projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
-				shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100, false);
-				int sdm = max(1, (shieldcushion ? int(projectiles[i].damage * 0.5) : projectiles[i].damage) - shielddefence * 3);
-				shieldstrength -= sdm;
-				kombatlog.insert_last(projectiles[i].projtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
-			}
-			else
-			{
-				projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
-				int dmg = max(1, projectiles[i].damage - defence * 3);
-				health -= dmg;
-				kombatlog.insert_last(projectiles[i].projtype + "'s attack took you " + dmg + " damage.");
-				{
-					string painfile;
-					int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
-					if(damage_percent <= 1) painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
-					else if(damage_percent >= 10) painfile = get_pack_sound("main/characters/" + chartype + "/general/*crit*");
-					else painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
-					painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
-				}
-				if(projectiles[i].stun > 0) stun_target("me", "", projectiles[i].stun);
-			}
-			if(projectiles[i].single_use) { destroy_projectile(i); return; }
-			continue;
-		}
+bool hit_player = me.x == projectiles[i].prox && me.y == projectiles[i].proy;
+if(mapmode == "3d") hit_player = hit_player && int(me.z) == projectiles[i].proz;
+if(hit_player && inplain == false && invehicle == false && !glider_engine_on)
+{
+if(wepchar.reflection and wepdef == 1)
+{
+int roll = random(0, 100);
+if(roll < wepchar.refchance)
+{
+wepchar.sound_slot = p.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*block*"), false, 0, 0, 0, 100, false);
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+continue;
+}
+else if(shieldon == 1 and shield_blocks())
+{
+if(shieldpassthrough) projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
+shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100, false);
+int sdm = max(1, (wepchar.refcushion ? int(projectiles[i].damage * 0.5) : projectiles[i].damage) - shielddefence * 3);
+shieldstrength -= sdm;
+kombatlog.insert_last(projectiles[i].projtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+}
+else
+{
+projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
+int dmg = max(1, (wepchar.refcushion ? int(projectiles[i].damage * 0.5) : projectiles[i].damage) - defence * 3);
+health -= dmg;
+kombatlog.insert_last(projectiles[i].projtype + "'s attack took you " + dmg + " damage.");
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if(damage_percent <= 1) painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+else if(damage_percent >= 10) painfile = get_pack_sound("main/characters/" + chartype + "/general/*crit*");
+else painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+}
+if(projectiles[i].stun > 0) stun_target("me", "", projectiles[i].stun);
+}
+}
+else if(shieldon == 1 and shield_blocks())
+{
+if(shieldpassthrough) projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
+shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100, false);
+int sdm = max(1, (shieldcushion ? int(projectiles[i].damage * 0.5) : projectiles[i].damage) - shielddefence * 3);
+shieldstrength -= sdm;
+kombatlog.insert_last(projectiles[i].projtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+}
+else
+{
+projectiles[i].wepsound = projpool.play_stationary_extended(get_map_sound("builder/kombat/projectiles/"+projectiles[i].projtype+"/*hit*"), false, 0, 0, 0, 100, false);
+int dmg = max(1, projectiles[i].damage - defence * 3);
+health -= dmg;
+kombatlog.insert_last(projectiles[i].projtype + "'s attack took you " + dmg + " damage.");
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if(damage_percent <= 1) painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+else if(damage_percent >= 10) painfile = get_pack_sound("main/characters/" + chartype + "/general/*crit*");
+else painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+}
+if(projectiles[i].stun > 0) stun_target("me", "", projectiles[i].stun);
+}
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+continue;
+}
 
-		for(uint j = 0; j < npcs.length(); j++)
-		{
-			if(npcs[j].x == projectiles[i].prox && npcs[j].y == projectiles[i].proy && (mapmode != "3d" || npcs[j].z == projectiles[i].proz))
-			{
-				play_projectile_hit_2d(i);
-				sound_pool@ npool = npc_pool(npcs[j].category);
-				npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				npcs[j].health -= projectiles[i].damage;
-				kombatlog.insert_last(projectiles[i].damage + " damage to " + npcs[j].subtype + " by " + projectiles[i].projtype + ".");
-				if(projectiles[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=projectiles[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < npcs.length(); j++)
+{
+if(npcs[j].x == projectiles[i].prox && npcs[j].y == projectiles[i].proy && (mapmode != "3d" || npcs[j].z == projectiles[i].proz))
+{
+play_projectile_hit_2d(i);
+sound_pool@ npool = npc_pool(npcs[j].category);
+npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+npcs[j].health -= projectiles[i].damage;
+kombatlog.insert_last(projectiles[i].damage + " damage to " + npcs[j].subtype + " by " + projectiles[i].projtype + ".");
+if(projectiles[i].stun > 0) { stuntimer.restart(); stunned=true; stundir=projectiles[i].stun; npcs[j].fireable=false; npcs[j].move_x=false; npcs[j].move_y=false; npcs[j].move_z=false; }
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < vehicles.length(); j++)
-		{
-			if(vehicles[j].vehx == projectiles[i].prox && vehicles[j].vehy == projectiles[i].proy)
-			{
-				play_projectile_hit_2d(i);
-				vehicles[j].hurtsound = vehpool.play_extended_3d(get_map_sound("builder/transportation/vehicles/"+vehicles[j].vehtype+"/*hurt*"), me.x, me.y, me.z, vehicles[j].vehx, vehicles[j].vehy, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				vehicles[j].vehhealth -= projectiles[i].damage;
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < vehicles.length(); j++)
+{
+if(vehicles[j].vehx == projectiles[i].prox && vehicles[j].vehy == projectiles[i].proy)
+{
+play_projectile_hit_2d(i);
+vehicles[j].hurtsound = vehpool.play_extended_3d(get_map_sound("builder/transportation/vehicles/"+vehicles[j].vehtype+"/*hurt*"), me.x, me.y, me.z, vehicles[j].vehx, vehicles[j].vehy, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+vehicles[j].vehhealth -= projectiles[i].damage;
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < objs.length(); j++)
-		{
-			if(objs[j].itx == projectiles[i].prox && objs[j].ity == projectiles[i].proy)
-			{
-				play_projectile_hit_2d(i);
-				itempool.destroy_sound(objs[j].objsound);
-				objs[j].hurtsound = itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[j].objtype+"/"+objs[j].objtype2+"/*break*"), me.x, me.y, me.z, objs[j].itx, objs[j].ity, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				objs.remove_at(j);
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < objs.length(); j++)
+{
+if(objs[j].itx == projectiles[i].prox && objs[j].ity == projectiles[i].proy)
+{
+play_projectile_hit_2d(i);
+itempool.destroy_sound(objs[j].objsound);
+objs[j].hurtsound = itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[j].objtype+"/"+objs[j].objtype2+"/*break*"), me.x, me.y, me.z, objs[j].itx, objs[j].ity, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+objs.remove_at(j);
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < doors.length(); j++)
-		{
-			bool door_z_ok = mapmode != "3d" || (projectiles[i].proz >= doors[j].minz && projectiles[i].proz <= doors[j].maxz);
-			if(door_z_ok && doors[j].minx <= projectiles[i].prox && doors[j].maxx >= projectiles[i].prox && doors[j].miny <= projectiles[i].proy && doors[j].maxy >= projectiles[i].proy && doors[j].destroyable == true)
-			{
-				play_projectile_hit_2d(i);
-				doors[j].hurtsound = doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/dest/"+doors[j].desttype+"/*hurt*"), me.x, me.y, me.z, doors[j].minx, doors[j].miny, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				doors[j].doorhealth -= projectiles[i].damage;
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < doors.length(); j++)
+{
+bool door_z_ok = mapmode != "3d" || (projectiles[i].proz >= doors[j].minz && projectiles[i].proz <= doors[j].maxz);
+if(door_z_ok && doors[j].minx <= projectiles[i].prox && doors[j].maxx >= projectiles[i].prox && doors[j].miny <= projectiles[i].proy && doors[j].maxy >= projectiles[i].proy && doors[j].destroyable == true)
+{
+play_projectile_hit_2d(i);
+doors[j].hurtsound = doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/dest/"+doors[j].desttype+"/*hurt*"), me.x, me.y, me.z, doors[j].minx, doors[j].miny, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+doors[j].doorhealth -= projectiles[i].damage;
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < signs.length(); j++)
-		{
-			if(signs[j].signx == projectiles[i].prox && signs[j].signy == projectiles[i].proy && signs[j].destroyable == true)
-			{
-				play_projectile_hit_2d(i);
-				signpool.destroy_sound(signs[j].signsound);
-				signs[j].hurtsound = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, me.z, signs[j].signx, signs[j].signy, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				signs.remove_at(j);
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < signs.length(); j++)
+{
+if(signs[j].signx == projectiles[i].prox && signs[j].signy == projectiles[i].proy && signs[j].destroyable == true)
+{
+play_projectile_hit_2d(i);
+signpool.destroy_sound(signs[j].signsound);
+signs[j].hurtsound = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, me.z, signs[j].signx, signs[j].signy, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+signs.remove_at(j);
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < calendars.length(); j++)
-		{
-			if(calendars[j].calendarx == projectiles[i].prox && calendars[j].calendary == projectiles[i].proy && calendars[j].destroyable == true)
-			{
-				play_projectile_hit_2d(i);
-				calpool.destroy_sound(calendars[j].calendarsound);
-				calendars[j].hurtsound = calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[j].calendartype+"/*break*"), me.x, me.y, me.z, calendars[j].calendarx, calendars[j].calendary, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				calendars.remove_at(j);
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < calendars.length(); j++)
+{
+if(calendars[j].calendarx == projectiles[i].prox && calendars[j].calendary == projectiles[i].proy && calendars[j].destroyable == true)
+{
+play_projectile_hit_2d(i);
+calpool.destroy_sound(calendars[j].calendarsound);
+calendars[j].hurtsound = calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[j].calendartype+"/*break*"), me.x, me.y, me.z, calendars[j].calendarx, calendars[j].calendary, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+calendars.remove_at(j);
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < clocks.length(); j++)
-		{
-			if(clocks[j].clockx == projectiles[i].prox && clocks[j].clocky == projectiles[i].proy && clocks[j].destroyable == true)
-			{
-				play_projectile_hit_2d(i);
-				clockpool.destroy_sound(clocks[j].clocksound);
-				clocks[j].hurtsound = clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, me.z, clocks[j].clockx, clocks[j].clocky, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				clocks.remove_at(j);
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < clocks.length(); j++)
+{
+if(clocks[j].clockx == projectiles[i].prox && clocks[j].clocky == projectiles[i].proy && clocks[j].destroyable == true)
+{
+play_projectile_hit_2d(i);
+clockpool.destroy_sound(clocks[j].clocksound);
+clocks[j].hurtsound = clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, me.z, clocks[j].clockx, clocks[j].clocky, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+clocks.remove_at(j);
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < walls.length(); j++)
-		{
-			bool wall_z_ok = mapmode != "3d" || (projectiles[i].proz >= walls[j].minz && projectiles[i].proz <= walls[j].maxz);
-			if(wall_z_ok && walls[j].minx <= projectiles[i].prox && walls[j].maxx >= projectiles[i].prox && walls[j].miny <= projectiles[i].proy && walls[j].maxy >= projectiles[i].proy && walls[j].destroyable == true)
-			{
-				play_projectile_hit_2d(i);
-				walls[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/walls/"+walls[j].wall+"/*hurt*"), me.x, me.y, me.z, walls[j].minx, walls[j].miny, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				walls[j].wallhealth -= projectiles[i].damage;
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
+for(uint j = 0; j < walls.length(); j++)
+{
+bool wall_z_ok = mapmode != "3d" || (projectiles[i].proz >= walls[j].minz && projectiles[i].proz <= walls[j].maxz);
+if(wall_z_ok && walls[j].minx <= projectiles[i].prox && walls[j].maxx >= projectiles[i].prox && walls[j].miny <= projectiles[i].proy && walls[j].maxy >= projectiles[i].proy && walls[j].destroyable == true)
+{
+play_projectile_hit_2d(i);
+walls[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/walls/"+walls[j].wall+"/*hurt*"), me.x, me.y, me.z, walls[j].minx, walls[j].miny, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+walls[j].wallhealth -= projectiles[i].damage;
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
 
-		for(uint j = 0; j < spikes.length(); j++)
-		{
-			bool spike_z_ok = mapmode != "3d" || (projectiles[i].proz >= spikes[j].minz && projectiles[i].proz <= spikes[j].maxz);
-			if(spike_z_ok && spikes[j].minx <= projectiles[i].prox && spikes[j].maxx >= projectiles[i].prox && spikes[j].miny <= projectiles[i].proy && spikes[j].maxy >= projectiles[i].proy && spikes[j].destroyable == true)
-			{
-				play_projectile_hit_2d(i);
-				spikes[j].hurtsound = spikepool.play_extended_3d(get_map_sound("builder/traps/spikes/"+spikes[j].spiketype+"/*hurt*"), me.x, me.y, me.z, spikes[j].minx, spikes[j].miny, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-				spikes[j].spikehealth -= projectiles[i].damage;
-				if(projectiles[i].single_use) { destroy_projectile(i); return; }
-				break;
-			}
-		}
-	}
+for(uint j = 0; j < spikes.length(); j++)
+{
+bool spike_z_ok = mapmode != "3d" || (projectiles[i].proz >= spikes[j].minz && projectiles[i].proz <= spikes[j].maxz);
+if(spike_z_ok && spikes[j].minx <= projectiles[i].prox && spikes[j].maxx >= projectiles[i].prox && spikes[j].miny <= projectiles[i].proy && spikes[j].maxy >= projectiles[i].proy && spikes[j].destroyable == true)
+{
+play_projectile_hit_2d(i);
+spikes[j].hurtsound = spikepool.play_extended_3d(get_map_sound("builder/traps/spikes/"+spikes[j].spiketype+"/*hurt*"), me.x, me.y, me.z, spikes[j].minx, spikes[j].miny, 0, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+spikes[j].spikehealth -= projectiles[i].damage;
+if(projectiles[i].single_use) { destroy_projectile(i); return; }
+break;
+}
+}
+}
 }
 
 void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, int mnz=0, int mxz=0, bool csc=false)
 {
-	projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz, csc);
-	projectiles.insert_last(p1);
+projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz, csc);
+projectiles.insert_last(p1);
 }
 
 void destroy_all_projectiles()
 {
-	for(uint i = 0; i < projectiles.length(); i++)
-	{
-		projpool.destroy_sound(projectiles[i].projsound);
-	}
-	projectiles.resize(0);
+for(uint i = 0; i < projectiles.length(); i++)
+{
+projpool.destroy_sound(projectiles[i].projsound);
+}
+projectiles.resize(0);
 }
 
 void build_projectile()
 {
-	string[] projs_list = get_map_sound_folders("builder/kombat/projectiles/*");
-	if(projs_list.length() == 0)
-	{
-		dlg("Error. There are no projectiles available to view. Press enter to continue.");
-		resume_pools();
-		return;
-	}
-	string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
-	form.reset();
-	form.create_window("projectile", false);
-	bool y_uses_back_front = mapmode != "2d";
-	int mx = form.create_input_box("starting x", sel_left_set ? sel_left : "");
-	int my = form.create_input_box("starting y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-	int mz = -1;
-	if(mapmode == "3d") mz = form.create_input_box("starting z", sel_bottom_set ? sel_bottom : "");
-	int mnx = form.create_input_box("left x", sel_left_set ? sel_left : "");
-	int mxx = form.create_input_box("right x", sel_right_set ? sel_right : "");
-	int mny = form.create_input_box(y_uses_back_front ? "back y" : "bottom y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-	int mxy = form.create_input_box(y_uses_back_front ? "front y" : "top y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
-	int mnz = -1, mxz = -1;
-	if(mapmode == "3d")
-	{
-		mnz = form.create_input_box("bottom z", sel_bottom_set ? sel_bottom : "");
-		mxz = form.create_input_box("top z", sel_top_set ? sel_top : "");
-	}
-	int hp = form.create_input_box("health", "1");
-	int dm = form.create_input_box("damage");
-	int sp = form.create_input_box("speed");
-	form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
-	if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
-	if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
-	if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
-	form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
-	int dir_list = form.create_list("direction");
-	form.add_list_item(dir_list, "right then left", "0");
-	form.add_list_item(dir_list, "up then down", "1");
-	form.add_list_item(dir_list, "diagonal up right then down left", "2");
-	form.add_list_item(dir_list, "diagonal up left then down right", "3");
-	form.add_list_item(dir_list, "left then right", "4");
-	form.add_list_item(dir_list, "down then up", "5");
-	form.add_list_item(dir_list, "diagonal down left then up right", "6");
-	form.add_list_item(dir_list, "diagonal down right then up left", "7");
-	if(mapmode == "3d")
-	{
-		form.add_list_item(dir_list, "bottom to top on z", "8");
-		form.add_list_item(dir_list, "top to bottom on z", "9");
-	}
-	form.set_list_position(dir_list, 0, false);
-	int proj_list = form.create_list("projectile sound");
-	form.add_list_item(proj_list, "none", "none");
-	for(uint i = 0; i < projs_list.length(); i++)
-		form.add_list_item(proj_list, projs_list[i], projs_list[i]);
-	form.set_list_position(proj_list, 0, false);
-	int bounce_cb = form.create_checkbox("bounce at edge", true);
-	int dest_cb = form.create_checkbox("destroyable", false);
-	int attack_cb = form.create_checkbox("fireable", false);
-	int single_cb = form.create_checkbox("single use", false);
-	int ok = form.create_button("&okay", true);
-	int cn = form.create_button("&cancel");
-	form.focus(mx);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		int cur_focus = form.get_current_focus();
-		if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
-		{
-			t.destroy_sound(prevslot);
-			if(cur_focus == proj_list)
-			{
-				int p = form.get_list_position(proj_list);
-				if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/kombat/projectiles/"+projs_list[p-1]+"/*hit*"), false);
-			}
-			keytimer.restart();
-		}
-		if(cur_focus == proj_list && control_is_down() && key_repeating(KEY_L))
-		{
-			int p = form.get_list_position(proj_list);
-			if(p > 0)
-			{
-				t.destroy_sound(prevslot);
-				prevslot = t.play_stationary(get_map_sound("builder/kombat/projectiles/"+projs_list[p-1]+"/*loop*"), false);
-			}
-		}
-		if(cur_focus == proj_list && control_is_down() && key_repeating(KEY_H))
-		{
-			int p = form.get_list_position(proj_list);
-			if(p > 0)
-			{
-				t.destroy_sound(prevslot);
-				prevslot = t.play_stationary(get_map_sound("builder/kombat/projectiles/"+projs_list[p-1]+"/*death*"), false);
-			}
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
-		{
-			t.destroy_sound(prevslot);
-			resume_pools();
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(ok))
-		{
-			int[] required = {mx, my, mnx, mxx, mny, mxy, hp, dm, sp};
-			string[] required_names = {"starting x", "starting y", "left x", "right x", "bottom y", "top y", "health", "damage", "speed"};
-			bool blank = false;
-			for(uint k = 0; k < required.length(); k++)
-			{
-				if(form.get_text(required[k]) == "")
-				{
-					speak(required_names[k] + " is required.");
-					form.focus(required[k]);
-					blank = true;
-					break;
-				}
-			}
-			if(blank) continue;
-			if(mz != -1 && form.get_text(mz) == "") { speak("Starting z is required."); form.focus(mz); continue; }
-			if(mnz != -1 && form.get_text(mnz) == "") { speak("Bottom z is required."); form.focus(mnz); continue; }
-			if(mxz != -1 && form.get_text(mxz) == "") { speak("Top z is required."); form.focus(mxz); continue; }
-			int bx = string_to_number(form.get_text(mx));
-			int by = string_to_number(form.get_text(my));
-			int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
-			int bmnx = string_to_number(form.get_text(mnx));
-			int bmxx = string_to_number(form.get_text(mxx));
-			int bmny = string_to_number(form.get_text(mny));
-			int bmxy = string_to_number(form.get_text(mxy));
-			int bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
-			int bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
-			double bhp = string_to_number(form.get_text(hp));
-			int bdmg = string_to_number(form.get_text(dm));
-			int bsp = string_to_number(form.get_text(sp));
-			int bdir = string_to_number(form.get_list_item_id(dir_list, form.get_list_position(dir_list)));
-			int p = form.get_list_position(proj_list);
-			string btype = (p > 0) ? projs_list[p-1] : "none";
-			bool bbounce = form.is_checked(bounce_cb);
-			bool bdest = form.is_checked(dest_cb);
-			bool battack = form.is_checked(attack_cb);
-			bool bsingle = form.is_checked(single_cb);
-			t.destroy_sound(prevslot);
-			resume_pools();
-			write_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, bz, bmnz, bmxz);
-			spawn_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, 0, bz, bmnz, bmxz);
-			load_map(mapname, mapowner);
-			mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
-			speak("Map updated.");
-			return;
-		}
-	}
+string[] projs_list = get_map_sound_folders("builder/kombat/projectiles/*");
+if(projs_list.length() == 0)
+{
+dlg("Error. There are no projectiles available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("projectile", false);
+bool y_uses_back_front = mapmode != "2d";
+int mx = form.create_input_box("starting x", sel_left_set ? sel_left : "");
+int my = form.create_input_box("starting y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int mz = -1;
+if(mapmode == "3d") mz = form.create_input_box("starting z", sel_bottom_set ? sel_bottom : "");
+int mnx = form.create_input_box("left x", sel_left_set ? sel_left : "");
+int mxx = form.create_input_box("right x", sel_right_set ? sel_right : "");
+int mny = form.create_input_box(y_uses_back_front ? "back y" : "bottom y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int mxy = form.create_input_box(y_uses_back_front ? "front y" : "top y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("bottom z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("top z", sel_top_set ? sel_top : "");
+}
+int hp = form.create_input_box("health", "1");
+int dm = form.create_input_box("damage");
+int sp = form.create_input_box("speed");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+int dir_list = form.create_list("direction");
+form.add_list_item(dir_list, "right then left", "0");
+form.add_list_item(dir_list, "up then down", "1");
+form.add_list_item(dir_list, "diagonal up right then down left", "2");
+form.add_list_item(dir_list, "diagonal up left then down right", "3");
+form.add_list_item(dir_list, "left then right", "4");
+form.add_list_item(dir_list, "down then up", "5");
+form.add_list_item(dir_list, "diagonal down left then up right", "6");
+form.add_list_item(dir_list, "diagonal down right then up left", "7");
+if(mapmode == "3d")
+{
+form.add_list_item(dir_list, "bottom to top on z", "8");
+form.add_list_item(dir_list, "top to bottom on z", "9");
+}
+form.set_list_position(dir_list, 0, false);
+int proj_list = form.create_list("projectile sound");
+form.add_list_item(proj_list, "none", "none");
+for(uint i = 0; i < projs_list.length(); i++)
+form.add_list_item(proj_list, projs_list[i], projs_list[i]);
+form.set_list_position(proj_list, 0, false);
+int bounce_cb = form.create_checkbox("bounce at edge", true);
+int dest_cb = form.create_checkbox("destroyable", false);
+int attack_cb = form.create_checkbox("fireable", false);
+int single_cb = form.create_checkbox("single use", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+{
+t.destroy_sound(prevslot);
+if(cur_focus == proj_list)
+{
+int p = form.get_list_position(proj_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/kombat/projectiles/"+projs_list[p-1]+"/*hit*"), false);
+}
+keytimer.restart();
+}
+if(cur_focus == proj_list && control_is_down() && key_repeating(KEY_L))
+{
+int p = form.get_list_position(proj_list);
+if(p > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/kombat/projectiles/"+projs_list[p-1]+"/*loop*"), false);
+}
+}
+if(cur_focus == proj_list && control_is_down() && key_repeating(KEY_H))
+{
+int p = form.get_list_position(proj_list);
+if(p > 0)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/kombat/projectiles/"+projs_list[p-1]+"/*death*"), false);
+}
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+int[] required = {mx, my, mnx, mxx, mny, mxy, hp, dm, sp};
+string[] required_names = {"starting x", "starting y", "left x", "right x", "bottom y", "top y", "health", "damage", "speed"};
+bool blank = false;
+for(uint k = 0; k < required.length(); k++)
+{
+if(form.get_text(required[k]) == "")
+{
+speak(required_names[k] + " is required.");
+form.focus(required[k]);
+blank = true;
+break;
+}
+}
+if(blank) continue;
+if(mz != -1 && form.get_text(mz) == "") { speak("Starting z is required."); form.focus(mz); continue; }
+if(mnz != -1 && form.get_text(mnz) == "") { speak("Bottom z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz) == "") { speak("Top z is required."); form.focus(mxz); continue; }
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+int bmnx = string_to_number(form.get_text(mnx));
+int bmxx = string_to_number(form.get_text(mxx));
+int bmny = string_to_number(form.get_text(mny));
+int bmxy = string_to_number(form.get_text(mxy));
+int bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+int bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+double bhp = string_to_number(form.get_text(hp));
+int bdmg = string_to_number(form.get_text(dm));
+int bsp = string_to_number(form.get_text(sp));
+int bdir = string_to_number(form.get_list_item_id(dir_list, form.get_list_position(dir_list)));
+int p = form.get_list_position(proj_list);
+string btype = (p > 0) ? projs_list[p-1] : "none";
+bool bbounce = form.is_checked(bounce_cb);
+bool bdest = form.is_checked(dest_cb);
+bool battack = form.is_checked(attack_cb);
+bool bsingle = form.is_checked(single_cb);
+t.destroy_sound(prevslot);
+resume_pools();
+write_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, bz, bmnz, bmxz);
+spawn_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, 0, bz, bmnz, bmxz);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
 }
 
 void read_projectile(string[] sd)
 {
-	int x = stn(sd[1]);
-	int y = stn(sd[2]);
-	int z = 0;
-	int o = 3;
-	if(mapmode == "3d") { z = stn(sd[3]); o = 4; }
-	int mnx = stn(sd[o]);
-	int mxx = stn(sd[o+1]);
-	int mny = stn(sd[o+2]);
-	int mxy = stn(sd[o+3]);
-	int mnz = 0, mxz = 0;
-	if(mapmode == "3d") { mnz = stn(sd[o+4]); mxz = stn(sd[o+5]); o += 6; } else o += 4;
-	int dir = stn(sd[o]);
-	double hp = stn(sd[o+1]);
-	int dm = stn(sd[o+2]);
-	int sp = stn(sd[o+3]);
-	string pt = sd[o+4];
-	bool bae = string_to_bool(sd[o+5]);
-	bool dest = string_to_bool(sd[o+6]);
-	bool pf = string_to_bool(sd[o+7]);
-	bool su = string_to_bool(sd[o+8]);
-	spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, 0, z, mnz, mxz);
+int x = stn(sd[1]);
+int y = stn(sd[2]);
+int z = 0;
+int o = 3;
+if(mapmode == "3d") { z = stn(sd[3]); o = 4; }
+int mnx = stn(sd[o]);
+int mxx = stn(sd[o+1]);
+int mny = stn(sd[o+2]);
+int mxy = stn(sd[o+3]);
+int mnz = 0, mxz = 0;
+if(mapmode == "3d") { mnz = stn(sd[o+4]); mxz = stn(sd[o+5]); o += 6; } else o += 4;
+int dir = stn(sd[o]);
+double hp = stn(sd[o+1]);
+int dm = stn(sd[o+2]);
+int sp = stn(sd[o+3]);
+string pt = sd[o+4];
+bool bae = string_to_bool(sd[o+5]);
+bool dest = string_to_bool(sd[o+6]);
+bool pf = string_to_bool(sd[o+7]);
+bool su = string_to_bool(sd[o+8]);
+spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, 0, z, mnz, mxz);
 }
 
 void write_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int z=0, int mnz=0, int mxz=0)
 {
-	mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "ab");
-	mapdata = mapper.read();
-	string start = ""+x+" "+y;
-	if(mapmode == "3d") start += " "+z;
-	string bounds = ""+mnx+" "+mxx+" "+mny+" "+mxy;
-	if(mapmode == "3d") bounds += " "+mnz+" "+mxz;
-	mapper.write("\r\n"+"projectile "+start+" "+bounds+" "+dir+" "+hp+" "+dm+" "+sp+" "+pt+" "+bae+" "+dest+" "+pf+" "+su);
-	mapper.close();
-	bump_map_modified();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "ab");
+mapdata = mapper.read();
+string start = ""+x+" "+y;
+if(mapmode == "3d") start += " "+z;
+string bounds = ""+mnx+" "+mxx+" "+mny+" "+mxy;
+if(mapmode == "3d") bounds += " "+mnz+" "+mxz;
+mapper.write("\r\n"+"projectile "+start+" "+bounds+" "+dir+" "+hp+" "+dm+" "+sp+" "+pt+" "+bae+" "+dest+" "+pf+" "+su);
+mapper.close();
+bump_map_modified();
 }

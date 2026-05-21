@@ -1,483 +1,483 @@
 void weapon_chooser()
 {
-	bool do_build = true;
-	int b_add, b_edit, b_remove, b_view, b_back;
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			form.reset();
-			form.create_window("weapon", false, true, false);
-			b_add = form.create_button("&add weapon");
-			b_edit = form.create_button("&edit weapon");
-			b_remove = form.create_button("&remove weapon");
-			b_view = form.create_button("&view weapon");
-			b_back = form.create_button("&back", false, true);
-			form.focus(b_add);
-		}
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
-		{
-			return;
-		}
-		if(form.is_pressed(b_add)) { add_weapon(); do_build = true; continue; }
-		if(form.is_pressed(b_edit)) { edit_weapon(); do_build = true; continue; }
-		if(form.is_pressed(b_remove)) { remove_weapon(); do_build = true; continue; }
-		if(form.is_pressed(b_view)) { view_weapon(); do_build = true; continue; }
-	}
+bool do_build = true;
+int b_add, b_edit, b_remove, b_view, b_back;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+form.reset();
+form.create_window("weapon", false, true, false);
+b_add = form.create_button("&add weapon");
+b_edit = form.create_button("&edit weapon");
+b_remove = form.create_button("&remove weapon");
+b_view = form.create_button("&view weapon");
+b_back = form.create_button("&back", false, true);
+form.focus(b_add);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
+{
+return;
+}
+if(form.is_pressed(b_add)) { add_weapon(); do_build = true; continue; }
+if(form.is_pressed(b_edit)) { edit_weapon(); do_build = true; continue; }
+if(form.is_pressed(b_remove)) { remove_weapon(); do_build = true; continue; }
+if(form.is_pressed(b_view)) { view_weapon(); do_build = true; continue; }
+}
 }
 
 bool add_weapon_form(string category, string subtype)
 {
-	string target_path = "sounds/decompiled/main/equipments/weapons/"+category+"/"+subtype+"/data/info.sif";
-	string[] keys = {"damage", "fire mode", "melee", "scadder", "swing speed", "reflection", "refchance", "x range", "y range", "z range", "bullet speed", "repeat time", "spam time", "weight", "loaded ammo", "max ammo", "unlock level", "stun mode", "ammo type", "push x", "push y", "push z", "health drain", "life drain", "stamina drain"};
-	form.reset();
-	form.create_window("add "+subtype, false, true, false);
-	int[] inputs;
-	for(uint i=0; i<keys.length(); i++)
-		inputs.insert_last(form.create_input_box(keys[i]));
-	int b_save = form.create_button("&save", true);
-	int b_cancel = form.create_button("&cancel", false, true);
-	form.focus(inputs[0]);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return false;
-		}
-		if(form.is_pressed(b_save))
-		{
-			bool blank = false;
-			for(uint i=0; i<inputs.length(); i++)
-			{
-				if(form.get_text(inputs[i]) == "")
-				{
-					speak(keys[i]+" is required.");
-					form.focus(inputs[i]);
-					blank = true;
-					break;
-				}
-			}
-			if(blank) continue;
-			if(file_exists(target_path))
-			{
-				setupmenu();
-				m.add_item("yes");
-				m.add_item("no");
-				m.intro_text = "An info.sif already exists for this weapon. Overwrite?";
-				int mres = m.run();
-				if(mres != 0) continue;
-			}
-			string content = "";
-			for(uint i=0; i<inputs.length(); i++)
-				content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-			create_subfolders(target_path);
-			file fout;
-			if(!fout.open(target_path, "w"))
-			{
-				speak("Failed to open file for writing.");
-				continue;
-			}
-			fout.write(content);
-			fout.close();
-			speak("Saved.");
-			return true;
-		}
-	}
-	return false;
+string target_path = "sounds/decompiled/main/equipments/weapons/"+category+"/"+subtype+"/data/info.sif";
+string[] keys = {"damage", "fire mode", "melee", "scadder", "swing speed", "reflection", "refchance", "x range", "y range", "z range", "bullet speed", "repeat time", "spam time", "weight", "loaded ammo", "max ammo", "unlock level", "stun mode", "ammo type", "push x", "push y", "push z", "health drain", "life drain", "stamina drain"};
+form.reset();
+form.create_window("add "+subtype, false, true, false);
+int[] inputs;
+for(uint i=0; i<keys.length(); i++)
+inputs.insert_last(form.create_input_box(keys[i]));
+int b_save = form.create_button("&save", true);
+int b_cancel = form.create_button("&cancel", false, true);
+form.focus(inputs[0]);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(b_save))
+{
+bool blank = false;
+for(uint i=0; i<inputs.length(); i++)
+{
+if(form.get_text(inputs[i]) == "")
+{
+speak(keys[i]+" is required.");
+form.focus(inputs[i]);
+blank = true;
+break;
+}
+}
+if(blank) continue;
+if(file_exists(target_path))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "An info.sif already exists for this weapon. Overwrite?";
+int mres = m.run();
+if(mres != 0) continue;
+}
+string content = "";
+for(uint i=0; i<inputs.length(); i++)
+content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+create_subfolders(target_path);
+file fout;
+if(!fout.open(target_path, "w"))
+{
+speak("Failed to open file for writing.");
+continue;
+}
+fout.write(content);
+fout.close();
+speak("Saved.");
+return true;
+}
+}
+return false;
 }
 
 string read_weapon_info_file(string base, string subtype)
 {
-	string path = base+"/"+subtype+"/data/info.sif";
-	file fin;
-	if(!fin.open(path, "rb")) return "";
-	string content = fin.read();
-	fin.close();
-	return content;
+string path = base+"/"+subtype+"/data/info.sif";
+file fin;
+if(!fin.open(path, "rb")) return "";
+string content = fin.read();
+fin.close();
+return content;
 }
 
 void view_weapon()
 {
-	string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
-	if(categories.length() > 0) sort_naturally(categories);
-	int saved_cat_pos = 0;
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int last_cat_pos = -1;
-	int last_sub_pos = -1;
-	int cat_list, sub_list, content_box, b_cancel;
-	string[] sub_data;
-	string base = "";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			string initial_content = (sub_data.length() > 0) ? read_weapon_info_file(base, sub_data[sp]) : "";
-			string initial_caption = (sub_data.length() > 0) ? "contents for "+sub_data[sp] : "contents";
-			form.reset();
-			form.create_window("view weapon", false, true, last_cat_pos != -1);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			form.set_list_position(sub_list, sp, false);
-			content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
-			b_cancel = form.create_button("&cancel", false, true);
-			last_sub_pos = sp;
-			if(last_cat_pos == -1)
-				form.focus(cat_list);
-			else
-				form.focus_silently(cat_list);
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			saved_sub_pos = 0;
-			do_build = true;
-			continue;
-		}
-		int cur_sub = form.get_list_position(sub_list);
-		if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
-		{
-			saved_sub_pos = cur_sub;
-			last_sub_pos = cur_sub;
-			form.set_text(content_box, read_weapon_info_file(base, sub_data[cur_sub]));
-			form.set_caption(content_box, "contents for "+sub_data[cur_sub]);
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-	}
+string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
+if(categories.length() > 0) sort_naturally(categories);
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+bool do_build = true;
+int last_cat_pos = -1;
+int last_sub_pos = -1;
+int cat_list, sub_list, content_box, b_cancel;
+string[] sub_data;
+string base = "";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+string initial_content = (sub_data.length() > 0) ? read_weapon_info_file(base, sub_data[sp]) : "";
+string initial_caption = (sub_data.length() > 0) ? "contents for "+sub_data[sp] : "contents";
+form.reset();
+form.create_window("view weapon", false, true, last_cat_pos != -1);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+form.set_list_position(sub_list, sp, false);
+content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
+b_cancel = form.create_button("&cancel", false, true);
+last_sub_pos = sp;
+if(last_cat_pos == -1)
+form.focus(cat_list);
+else
+form.focus_silently(cat_list);
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+saved_sub_pos = 0;
+do_build = true;
+continue;
+}
+int cur_sub = form.get_list_position(sub_list);
+if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
+{
+saved_sub_pos = cur_sub;
+last_sub_pos = cur_sub;
+form.set_text(content_box, read_weapon_info_file(base, sub_data[cur_sub]));
+form.set_caption(content_box, "contents for "+sub_data[cur_sub]);
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+}
 }
 
 void remove_weapon()
 {
-	string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
-	if(categories.length() > 0) sort_naturally(categories);
-	int saved_cat_pos = 0;
-	bool do_build = true;
-	int last_cat_pos = -1;
-	int cat_list, sub_list, b_remove, b_cancel;
-	string[] sub_data;
-	string base = "";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("remove weapon", false, true, last_cat_pos != -1);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype", 0, true);
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			b_remove = form.create_button("&remove", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			if(last_cat_pos == -1)
-				form.focus(cat_list);
-			else
-				form.focus_silently(cat_list);
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			do_build = true;
-			continue;
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_remove))
-		{
-			int[]@ checked = form.get_checked_list_items(sub_list);
-			if(checked is null || checked.length() == 0)
-			{
-				speak("No subtypes selected.");
-				form.focus(sub_list);
-				continue;
-			}
-			setupmenu();
-			m.add_item("yes");
-			m.add_item("no");
-			m.intro_text = "Are you sure you would like to remove "+checked.length()+" info.sif files?";
-			int mres = m.run();
-			if(mres != 0)
-			{
-				do_build = true;
-				continue;
-			}
-			for(uint i=0; i<checked.length(); i++)
-			{
-				string p = base+"/"+sub_data[checked[i]]+"/data/info.sif";
-				if(file_exists(p)) file_delete(p);
-			}
-			speak("Removed "+checked.length()+" info.sif files.");
-			return;
-		}
-	}
+string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
+if(categories.length() > 0) sort_naturally(categories);
+int saved_cat_pos = 0;
+bool do_build = true;
+int last_cat_pos = -1;
+int cat_list, sub_list, b_remove, b_cancel;
+string[] sub_data;
+string base = "";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("remove weapon", false, true, last_cat_pos != -1);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype", 0, true);
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+b_remove = form.create_button("&remove", true);
+b_cancel = form.create_button("&cancel", false, true);
+if(last_cat_pos == -1)
+form.focus(cat_list);
+else
+form.focus_silently(cat_list);
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_remove))
+{
+int[]@ checked = form.get_checked_list_items(sub_list);
+if(checked is null || checked.length() == 0)
+{
+speak("No subtypes selected.");
+form.focus(sub_list);
+continue;
+}
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "Are you sure you would like to remove "+checked.length()+" info.sif files?";
+int mres = m.run();
+if(mres != 0)
+{
+do_build = true;
+continue;
+}
+for(uint i=0; i<checked.length(); i++)
+{
+string p = base+"/"+sub_data[checked[i]]+"/data/info.sif";
+if(file_exists(p)) file_delete(p);
+}
+speak("Removed "+checked.length()+" info.sif files.");
+return;
+}
+}
 }
 
 bool edit_weapon_form(string target_path, string subtype)
 {
-	string[] keys = {"damage", "fire mode", "melee", "scadder", "swing speed", "reflection", "refchance", "x range", "y range", "z range", "bullet speed", "repeat time", "spam time", "weight", "loaded ammo", "max ammo", "unlock level", "stun mode", "ammo type", "push x", "push y", "push z", "health drain", "life drain", "stamina drain"};
-	dictionary existing;
-	file fin;
-	if(fin.open(target_path, "rb"))
-	{
-		string content = fin.read();
-		fin.close();
-		string[] lines = split_lines(content);
-		for(uint i=0; i<lines.length(); i++)
-		{
-			int eq = string_contains(lines[i], "=", 1);
-			if(eq < 0) continue;
-			string k = string_left(lines[i], eq);
-			string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
-			existing[k] = v;
-		}
-	}
-	form.reset();
-	form.create_window("edit "+subtype, false, true, false);
-	int[] inputs;
-	for(uint i=0; i<keys.length(); i++)
-	{
-		string preset = "";
-		if(existing.exists(keys[i])) existing.get(keys[i], preset);
-		inputs.insert_last(form.create_input_box(keys[i], preset));
-	}
-	int b_save = form.create_button("&save", true);
-	int b_cancel = form.create_button("&cancel", false, true);
-	form.focus(inputs[0]);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return false;
-		}
-		if(form.is_pressed(b_save))
-		{
-			bool blank = false;
-			for(uint i=0; i<inputs.length(); i++)
-			{
-				if(form.get_text(inputs[i]) == "")
-				{
-					speak(keys[i]+" is required.");
-					form.focus(inputs[i]);
-					blank = true;
-					break;
-				}
-			}
-			if(blank) continue;
-			string content = "";
-			for(uint i=0; i<inputs.length(); i++)
-				content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-			file fout;
-			if(!fout.open(target_path, "w"))
-			{
-				speak("Failed to open file for writing.");
-				continue;
-			}
-			fout.write(content);
-			fout.close();
-			speak("Saved.");
-			return true;
-		}
-	}
-	return false;
+string[] keys = {"damage", "fire mode", "melee", "scadder", "swing speed", "reflection", "refchance", "x range", "y range", "z range", "bullet speed", "repeat time", "spam time", "weight", "loaded ammo", "max ammo", "unlock level", "stun mode", "ammo type", "push x", "push y", "push z", "health drain", "life drain", "stamina drain"};
+dictionary existing;
+file fin;
+if(fin.open(target_path, "rb"))
+{
+string content = fin.read();
+fin.close();
+string[] lines = split_lines(content);
+for(uint i=0; i<lines.length(); i++)
+{
+int eq = string_contains(lines[i], "=", 1);
+if(eq < 0) continue;
+string k = string_left(lines[i], eq);
+string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
+existing[k] = v;
+}
+}
+form.reset();
+form.create_window("edit "+subtype, false, true, false);
+int[] inputs;
+for(uint i=0; i<keys.length(); i++)
+{
+string preset = "";
+if(existing.exists(keys[i])) existing.get(keys[i], preset);
+inputs.insert_last(form.create_input_box(keys[i], preset));
+}
+int b_save = form.create_button("&save", true);
+int b_cancel = form.create_button("&cancel", false, true);
+form.focus(inputs[0]);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(b_save))
+{
+bool blank = false;
+for(uint i=0; i<inputs.length(); i++)
+{
+if(form.get_text(inputs[i]) == "")
+{
+speak(keys[i]+" is required.");
+form.focus(inputs[i]);
+blank = true;
+break;
+}
+}
+if(blank) continue;
+string content = "";
+for(uint i=0; i<inputs.length(); i++)
+content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+file fout;
+if(!fout.open(target_path, "w"))
+{
+speak("Failed to open file for writing.");
+continue;
+}
+fout.write(content);
+fout.close();
+speak("Saved.");
+return true;
+}
+}
+return false;
 }
 
 void edit_weapon()
 {
-	string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
-	if(categories.length() > 0) sort_naturally(categories);
-	int saved_cat_pos = 0;
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int last_cat_pos = -1;
-	int cat_list, sub_list, b_edit, b_cancel;
-	string[] sub_data;
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			string base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("edit weapon", false, true, last_cat_pos != -1);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			form.set_list_position(sub_list, sp, false);
-			b_edit = form.create_button("&edit", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			if(last_cat_pos == -1)
-				form.focus(cat_list);
-			else
-				form.focus_silently(cat_list);
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			saved_sub_pos = 0;
-			do_build = true;
-			continue;
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_edit))
-		{
-			int p = form.get_list_position(sub_list);
-			if(p < 0 || p >= int(sub_data.length()))
-			{
-				speak("Subtype is required.");
-				form.focus(sub_list);
-				continue;
-			}
-			string chosen_sub = sub_data[p];
-			string chosen_cat = categories[saved_cat_pos];
-			string target_path = "sounds/decompiled/main/equipments/weapons/"+chosen_cat+"/"+chosen_sub+"/data/info.sif";
-			saved_sub_pos = p;
-			if(edit_weapon_form(target_path, chosen_sub)) return;
-			do_build = true;
-			continue;
-		}
-	}
+string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
+if(categories.length() > 0) sort_naturally(categories);
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+bool do_build = true;
+int last_cat_pos = -1;
+int cat_list, sub_list, b_edit, b_cancel;
+string[] sub_data;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+string base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("edit weapon", false, true, last_cat_pos != -1);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+form.set_list_position(sub_list, sp, false);
+b_edit = form.create_button("&edit", true);
+b_cancel = form.create_button("&cancel", false, true);
+if(last_cat_pos == -1)
+form.focus(cat_list);
+else
+form.focus_silently(cat_list);
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+saved_sub_pos = 0;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_edit))
+{
+int p = form.get_list_position(sub_list);
+if(p < 0 || p >= int(sub_data.length()))
+{
+speak("Subtype is required.");
+form.focus(sub_list);
+continue;
+}
+string chosen_sub = sub_data[p];
+string chosen_cat = categories[saved_cat_pos];
+string target_path = "sounds/decompiled/main/equipments/weapons/"+chosen_cat+"/"+chosen_sub+"/data/info.sif";
+saved_sub_pos = p;
+if(edit_weapon_form(target_path, chosen_sub)) return;
+do_build = true;
+continue;
+}
+}
 }
 
 void add_weapon()
 {
-	string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
-	if(categories.length() > 0) sort_naturally(categories);
-	int saved_cat_pos = 0;
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int last_cat_pos = -1;
-	int cat_list, sub_list, b_add, b_cancel;
-	string[] sub_data;
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			string base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
-			sub_data = find_directories(base+"/*");
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("add weapon", false, true, last_cat_pos != -1);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			form.set_list_position(sub_list, sp, false);
-			b_add = form.create_button("&add", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			if(last_cat_pos == -1)
-				form.focus(cat_list);
-			else
-				form.focus_silently(cat_list);
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			saved_sub_pos = 0;
-			do_build = true;
-			continue;
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_add))
-		{
-			int p = form.get_list_position(sub_list);
-			if(p < 0 || p >= int(sub_data.length()))
-			{
-				speak("Subtype is required.");
-				form.focus(sub_list);
-				continue;
-			}
-			string chosen_sub = sub_data[p];
-			string chosen_cat = categories[saved_cat_pos];
-			saved_sub_pos = p;
-			if(add_weapon_form(chosen_cat, chosen_sub)) return;
-			do_build = true;
-			continue;
-		}
-	}
+string[] categories = find_directories("sounds/decompiled/main/equipments/weapons/*");
+if(categories.length() > 0) sort_naturally(categories);
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+bool do_build = true;
+int last_cat_pos = -1;
+int cat_list, sub_list, b_add, b_cancel;
+string[] sub_data;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+string base = "sounds/decompiled/main/equipments/weapons/"+categories[saved_cat_pos];
+sub_data = find_directories(base+"/*");
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("add weapon", false, true, last_cat_pos != -1);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+form.set_list_position(sub_list, sp, false);
+b_add = form.create_button("&add", true);
+b_cancel = form.create_button("&cancel", false, true);
+if(last_cat_pos == -1)
+form.focus(cat_list);
+else
+form.focus_silently(cat_list);
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+saved_sub_pos = 0;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_add))
+{
+int p = form.get_list_position(sub_list);
+if(p < 0 || p >= int(sub_data.length()))
+{
+speak("Subtype is required.");
+form.focus(sub_list);
+continue;
+}
+string chosen_sub = sub_data[p];
+string chosen_cat = categories[saved_cat_pos];
+saved_sub_pos = p;
+if(add_weapon_form(chosen_cat, chosen_sub)) return;
+do_build = true;
+continue;
+}
+}
 }

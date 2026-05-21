@@ -1,73 +1,73 @@
 bool load_map_pack(const string&in name, const string&in key)
 {
-	mapname = name;
-	string compiled_path = "data/builder/maps/compiled/" + name + ".map";
-	if (!file_exists(compiled_path))
-	{
-		map_pack_loaded = false;
-		return false;
-	}
-	if (map_pack_loaded) { map_pack.close(); map_pack_files.resize(0); map_pack_folders.delete_all(); }
-	if (!map_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
-	{
-		map_pack_loaded = false;
-		map_pack_files.resize(0);
-		map_pack_folders.delete_all();
-		@sound_default_pack = null;
-		return false;
-	}
-	@sound_default_pack = @map_pack;
-	map_pack_loaded = true;
-	map_pack_files = map_pack.list_files();
-	build_pack_folder_index(@map_pack_files, @map_pack_folders);
-	return true;
+mapname = name;
+string compiled_path = "data/builder/maps/compiled/" + name + ".map";
+if (!file_exists(compiled_path))
+{
+map_pack_loaded = false;
+return false;
+}
+if (map_pack_loaded) { map_pack.close(); map_pack_files.resize(0); map_pack_folders.delete_all(); }
+if (!map_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
+{
+map_pack_loaded = false;
+map_pack_files.resize(0);
+map_pack_folders.delete_all();
+@sound_default_pack = null;
+return false;
+}
+@sound_default_pack = @map_pack;
+map_pack_loaded = true;
+map_pack_files = map_pack.list_files();
+build_pack_folder_index(@map_pack_files, @map_pack_folders);
+return true;
 }
 
 bool load_sound_pack(const string&in name, const string&in key)
 {
-	string compiled_path = "sounds/compiled/" + name + ".spack";
-	if (!file_exists(compiled_path)) return false;
-	if (name == "main")
-	{
-		if (sound_main_pack_loaded) { remove_sound_default_pack(@sound_main_pack); sound_main_pack.close(); sound_main_pack_files.resize(0); sound_main_pack_folders.delete_all(); }
-		if (!sound_main_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
-		{
-			sound_main_pack_loaded = false;
-			sound_main_pack_files.resize(0);
-			sound_main_pack_folders.delete_all();
-			return false;
-		}
-		sound_main_pack_loaded = true;
-		sound_main_pack_files = sound_main_pack.list_files();
-		build_pack_folder_index(@sound_main_pack_files, @sound_main_pack_folders);
-		add_sound_default_pack(@sound_main_pack);
-		return true;
-	}
-	if (name == "builder")
-	{
-		if (sound_builder_pack_loaded) { remove_sound_default_pack(@sound_builder_pack); sound_builder_pack.close(); sound_builder_pack_files.resize(0); sound_builder_pack_folders.delete_all(); }
-		if (!sound_builder_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
-		{
-			sound_builder_pack_loaded = false;
-			sound_builder_pack_files.resize(0);
-			sound_builder_pack_folders.delete_all();
-			return false;
-		}
-		sound_builder_pack_loaded = true;
-		sound_builder_pack_files = sound_builder_pack.list_files();
-		build_pack_folder_index(@sound_builder_pack_files, @sound_builder_pack_folders);
-		add_sound_default_pack(@sound_builder_pack);
-		return true;
-	}
-	return false;
+string compiled_path = "sounds/compiled/" + name + ".spack";
+if (!file_exists(compiled_path)) return false;
+if (name == "main")
+{
+if (sound_main_pack_loaded) { remove_sound_default_pack(@sound_main_pack); sound_main_pack.close(); sound_main_pack_files.resize(0); sound_main_pack_folders.delete_all(); }
+if (!sound_main_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
+{
+sound_main_pack_loaded = false;
+sound_main_pack_files.resize(0);
+sound_main_pack_folders.delete_all();
+return false;
+}
+sound_main_pack_loaded = true;
+sound_main_pack_files = sound_main_pack.list_files();
+build_pack_folder_index(@sound_main_pack_files, @sound_main_pack_folders);
+add_sound_default_pack(@sound_main_pack);
+return true;
+}
+if (name == "builder")
+{
+if (sound_builder_pack_loaded) { remove_sound_default_pack(@sound_builder_pack); sound_builder_pack.close(); sound_builder_pack_files.resize(0); sound_builder_pack_folders.delete_all(); }
+if (!sound_builder_pack.open(compiled_path, PACK_OPEN_MODE_READ, true))
+{
+sound_builder_pack_loaded = false;
+sound_builder_pack_files.resize(0);
+sound_builder_pack_folders.delete_all();
+return false;
+}
+sound_builder_pack_loaded = true;
+sound_builder_pack_files = sound_builder_pack.list_files();
+build_pack_folder_index(@sound_builder_pack_files, @sound_builder_pack_folders);
+add_sound_default_pack(@sound_builder_pack);
+return true;
+}
+return false;
 }
 
 pack@ resolve_pack(const string&in path)
 {
-	if (map_pack_loaded && (string_starts_with(path, "assets/") || string_starts_with(path, "data/"))) return @map_pack;
-	if (sound_main_pack_loaded && string_starts_with(path, "main/")) return @sound_main_pack;
-	if (sound_builder_pack_loaded && string_starts_with(path, "builder/")) return @sound_builder_pack;
-	return null;
+if (map_pack_loaded && (string_starts_with(path, "assets/") || string_starts_with(path, "data/"))) return @map_pack;
+if (sound_main_pack_loaded && string_starts_with(path, "main/")) return @sound_main_pack;
+if (sound_builder_pack_loaded && string_starts_with(path, "builder/")) return @sound_builder_pack;
+return null;
 }
 string find_sound_in_disk(string soundname)
 {
@@ -84,597 +84,597 @@ return "";
 
 string[]@ pack_file_cache(pack@ p)
 {
-	if (p is null) return null;
-	if (sound_main_pack_loaded && @p is @sound_main_pack) return @sound_main_pack_files;
-	if (sound_builder_pack_loaded && @p is @sound_builder_pack) return @sound_builder_pack_files;
-	if (map_pack_loaded && @p is @map_pack) return @map_pack_files;
-	return null;
+if (p is null) return null;
+if (sound_main_pack_loaded && @p is @sound_main_pack) return @sound_main_pack_files;
+if (sound_builder_pack_loaded && @p is @sound_builder_pack) return @sound_builder_pack_files;
+if (map_pack_loaded && @p is @map_pack) return @map_pack_files;
+return null;
 }
 
 dictionary@ pack_folder_index(pack@ p)
 {
-	if (p is null) return null;
-	if (sound_main_pack_loaded && @p is @sound_main_pack) return @sound_main_pack_folders;
-	if (sound_builder_pack_loaded && @p is @sound_builder_pack) return @sound_builder_pack_folders;
-	if (map_pack_loaded && @p is @map_pack) return @map_pack_folders;
-	return null;
+if (p is null) return null;
+if (sound_main_pack_loaded && @p is @sound_main_pack) return @sound_main_pack_folders;
+if (sound_builder_pack_loaded && @p is @sound_builder_pack) return @sound_builder_pack_folders;
+if (map_pack_loaded && @p is @map_pack) return @map_pack_folders;
+return null;
 }
 
 void build_pack_folder_index(string[]@ files, dictionary@ index)
 {
-	index.delete_all();
-	if (files is null) return;
-	for (uint i = 0; i < files.length(); i++)
-	{
-		string path = files[i];
-		int last_slash = -1;
-		for (int j = int(path.length()) - 1; j >= 0; j--)
-		{
-			if (path.substr(j, 1) == "/") { last_slash = j; break; }
-		}
-		if (last_slash < 0) continue;
-		string folder = path.substr(0, last_slash + 1);
-		string[]@ folder_files = null;
-		if (index.exists(folder)) index.get(folder, @folder_files);
-		if (folder_files is null)
-		{
-			string[] new_list;
-			new_list.insert_last(path);
-			index.set(folder, @new_list);
-		}
-		else
-		{
-			folder_files.insert_last(path);
-		}
-	}
+index.delete_all();
+if (files is null) return;
+for (uint i = 0; i < files.length(); i++)
+{
+string path = files[i];
+int last_slash = -1;
+for (int j = int(path.length()) - 1; j >= 0; j--)
+{
+if (path.substr(j, 1) == "/") { last_slash = j; break; }
+}
+if (last_slash < 0) continue;
+string folder = path.substr(0, last_slash + 1);
+string[]@ folder_files = null;
+if (index.exists(folder)) index.get(folder, @folder_files);
+if (folder_files is null)
+{
+string[] new_list;
+new_list.insert_last(path);
+index.set(folder, @new_list);
+}
+else
+{
+folder_files.insert_last(path);
+}
+}
 }
 
 string[] list_pack_folders(pack@ p, const string&in prefix)
 {
-	string[] result;
-	if (p is null) return result;
-	dictionary seen;
-	string[]@ files = pack_file_cache(p);
-	string[] uncached;
-	if (files is null) { uncached = p.list_files(); @files = @uncached; }
-	for (uint i = 0; i < files.length(); i++)
-	{
-		if (!string_starts_with(files[i], prefix)) continue;
-		string rest = files[i].substr(prefix.length());
-		int slash = string_find(rest, "/");
-		if (slash < 0) continue;
-		string folder = rest.substr(0, slash);
-		if (!seen.exists(folder))
-		{
-			seen[folder] = true;
-			result.insert_last(folder);
-		}
-	}
-	return result;
+string[] result;
+if (p is null) return result;
+dictionary seen;
+string[]@ files = pack_file_cache(p);
+string[] uncached;
+if (files is null) { uncached = p.list_files(); @files = @uncached; }
+for (uint i = 0; i < files.length(); i++)
+{
+if (!string_starts_with(files[i], prefix)) continue;
+string rest = files[i].substr(prefix.length());
+int slash = string_find(rest, "/");
+if (slash < 0) continue;
+string folder = rest.substr(0, slash);
+if (!seen.exists(folder))
+{
+seen[folder] = true;
+result.insert_last(folder);
+}
+}
+return result;
 }
 
 string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
 {
-	if (p is null)
-		return "";
-	int wild_pos = string_find(soundname, "*");
-	int scan_end = (wild_pos < 0) ? int(soundname.length()) : wild_pos;
-	int last_slash = -1;
-	for (int j = scan_end - 1; j >= 0; j--)
-	{
-		if (soundname.substr(j, 1) == "/") { last_slash = j; break; }
-	}
-	dictionary@ index = pack_folder_index(p);
-	string[]@ folder_files = null;
-	if (last_slash >= 0 && index !is null)
-	{
-		string folder = soundname.substr(0, last_slash + 1);
-		if (index.exists(folder)) index.get(folder, @folder_files);
-	}
-	string[] uncached;
-	if (folder_files is null)
-	{
-		string[]@ all_files = pack_file_cache(p);
-		if (all_files is null) { uncached = p.list_files(); @all_files = @uncached; }
-		string prefix = (wild_pos < 0) ? soundname : soundname.substr(0, wild_pos);
-		string pattern_fb = soundname;
-		pattern_fb = string_replace(pattern_fb, ".", "\\.", true);
-		pattern_fb = string_replace(pattern_fb, "*", ".*", true);
-		pattern_fb = "^" + pattern_fb + "$";
-		regexp re_fb(pattern_fb, RE_CASELESS);
-		string[] fb_matches;
-		for (uint i = 0; i < all_files.length(); i++)
-		{
-			if (!string_starts_with(all_files[i], prefix)) continue;
-			if (re_fb.match(all_files[i])) fb_matches.insert_last(all_files[i]);
-		}
-		if (fb_matches.length() > 0) return fb_matches[random(0, fb_matches.length() - 1)];
-		return "";
-	}
-	string pattern = soundname;
-	pattern = string_replace(pattern, ".", "\\.", true);
-	pattern = string_replace(pattern, "*", ".*", true);
-	pattern = "^" + pattern + "$";
-	regexp re(pattern, RE_CASELESS);
-	string[] matches;
-	for (uint i = 0; i < folder_files.length(); i++)
-	{
-		if (re.match(folder_files[i])) matches.insert_last(folder_files[i]);
-	}
-	if (matches.length() > 0) return matches[random(0, matches.length() - 1)];
-	return "";
+if (p is null)
+return "";
+int wild_pos = string_find(soundname, "*");
+int scan_end = (wild_pos < 0) ? int(soundname.length()) : wild_pos;
+int last_slash = -1;
+for (int j = scan_end - 1; j >= 0; j--)
+{
+if (soundname.substr(j, 1) == "/") { last_slash = j; break; }
+}
+dictionary@ index = pack_folder_index(p);
+string[]@ folder_files = null;
+if (last_slash >= 0 && index !is null)
+{
+string folder = soundname.substr(0, last_slash + 1);
+if (index.exists(folder)) index.get(folder, @folder_files);
+}
+string[] uncached;
+if (folder_files is null)
+{
+string[]@ all_files = pack_file_cache(p);
+if (all_files is null) { uncached = p.list_files(); @all_files = @uncached; }
+string prefix = (wild_pos < 0) ? soundname : soundname.substr(0, wild_pos);
+string pattern_fb = soundname;
+pattern_fb = string_replace(pattern_fb, ".", "\\.", true);
+pattern_fb = string_replace(pattern_fb, "*", ".*", true);
+pattern_fb = "^" + pattern_fb + "$";
+regexp re_fb(pattern_fb, RE_CASELESS);
+string[] fb_matches;
+for (uint i = 0; i < all_files.length(); i++)
+{
+if (!string_starts_with(all_files[i], prefix)) continue;
+if (re_fb.match(all_files[i])) fb_matches.insert_last(all_files[i]);
+}
+if (fb_matches.length() > 0) return fb_matches[random(0, fb_matches.length() - 1)];
+return "";
+}
+string pattern = soundname;
+pattern = string_replace(pattern, ".", "\\.", true);
+pattern = string_replace(pattern, "*", ".*", true);
+pattern = "^" + pattern + "$";
+regexp re(pattern, RE_CASELESS);
+string[] matches;
+for (uint i = 0; i < folder_files.length(); i++)
+{
+if (re.match(folder_files[i])) matches.insert_last(folder_files[i]);
+}
+if (matches.length() > 0) return matches[random(0, matches.length() - 1)];
+return "";
 }
 
 string[] get_map_sound_folders(const string&in path)
 {
-	dictionary seen;
-	string[] result;
-	string map_path = "data/builder/maps/decompiled/" + mapname + "/assets/" + path;
-	if (directory_exists("data/builder/maps/decompiled/" + mapname + "/assets"))
-	{
-		string[] map_dirs = find_directories(map_path);
-		for (uint i = 0; i < map_dirs.length(); i++)
-		{
-			seen[map_dirs[i]] = true;
-			result.insert_last(map_dirs[i]);
-		}
-	}
-	string global_path = "sounds/decompiled/" + path;
-	if (directory_exists("sounds/decompiled"))
-	{
-		string[] global_dirs = find_directories(global_path);
-		for (uint i = 0; i < global_dirs.length(); i++)
-		{
-			if (!seen.exists(global_dirs[i]))
-			{
-				seen[global_dirs[i]] = true;
-				result.insert_last(global_dirs[i]);
-			}
-		}
-	}
-	{
-		string prefix = path;
-		pack@ p = null;
-		if (string_starts_with(prefix, "main/")) { @p = @sound_main_pack; prefix = prefix.substr(5); }
-		else if (string_starts_with(prefix, "builder/")) { @p = @sound_builder_pack; prefix = prefix.substr(8); }
-		if (string_ends_with(prefix, "/*")) prefix = prefix.substr(0, prefix.length() - 2);
-		if (prefix != "" && !string_ends_with(prefix, "/")) prefix += "/";
-		if (@p != null)
-		{
-			string[] pack_dirs = list_pack_folders(p, prefix);
-			for (uint i = 0; i < pack_dirs.length(); i++)
-			{
-				if (!seen.exists(pack_dirs[i]))
-					result.insert_last(pack_dirs[i]);
-			}
-		}
-	}
-	if (result.length() > 0) sort_naturally(result);
-	return result;
+dictionary seen;
+string[] result;
+string map_path = "data/builder/maps/decompiled/" + mapname + "/assets/" + path;
+if (directory_exists("data/builder/maps/decompiled/" + mapname + "/assets"))
+{
+string[] map_dirs = find_directories(map_path);
+for (uint i = 0; i < map_dirs.length(); i++)
+{
+seen[map_dirs[i]] = true;
+result.insert_last(map_dirs[i]);
+}
+}
+string global_path = "sounds/decompiled/" + path;
+if (directory_exists("sounds/decompiled"))
+{
+string[] global_dirs = find_directories(global_path);
+for (uint i = 0; i < global_dirs.length(); i++)
+{
+if (!seen.exists(global_dirs[i]))
+{
+seen[global_dirs[i]] = true;
+result.insert_last(global_dirs[i]);
+}
+}
+}
+{
+string prefix = path;
+pack@ p = null;
+if (string_starts_with(prefix, "main/")) { @p = @sound_main_pack; prefix = prefix.substr(5); }
+else if (string_starts_with(prefix, "builder/")) { @p = @sound_builder_pack; prefix = prefix.substr(8); }
+if (string_ends_with(prefix, "/*")) prefix = prefix.substr(0, prefix.length() - 2);
+if (prefix != "" && !string_ends_with(prefix, "/")) prefix += "/";
+if (@p != null)
+{
+string[] pack_dirs = list_pack_folders(p, prefix);
+for (uint i = 0; i < pack_dirs.length(); i++)
+{
+if (!seen.exists(pack_dirs[i]))
+result.insert_last(pack_dirs[i]);
+}
+}
+}
+if (result.length() > 0) sort_naturally(result);
+return result;
 }
 string get_map_sound(const string&in path)
 {
-	if (map_pack_loaded)
-	{
-		string basepath = "assets/" + path;
-		string result = find_sound_in_pack(basepath, @map_pack);
-		if (result != "")
-			return result;
-	}
-	string soundpath = "data/builder/maps/decompiled/" + mapname + "/assets/" + path;
-	string result = find_sound_in_disk(soundpath);
-	if (result != "")
-		return result;
-	string global_path = "sounds/decompiled/" + path;
-	result = find_sound_in_disk(global_path);
-	if (result != "")
-		return result;
-	if (string_starts_with(path, "main/") && sound_main_pack_loaded)
-		return find_sound_in_pack(path.substr(5), @sound_main_pack);
-	if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
-		return find_sound_in_pack(path.substr(8), @sound_builder_pack);
-	return "";
+if (map_pack_loaded)
+{
+string basepath = "assets/" + path;
+string result = find_sound_in_pack(basepath, @map_pack);
+if (result != "")
+return result;
+}
+string soundpath = "data/builder/maps/decompiled/" + mapname + "/assets/" + path;
+string result = find_sound_in_disk(soundpath);
+if (result != "")
+return result;
+string global_path = "sounds/decompiled/" + path;
+result = find_sound_in_disk(global_path);
+if (result != "")
+return result;
+if (string_starts_with(path, "main/") && sound_main_pack_loaded)
+return find_sound_in_pack(path.substr(5), @sound_main_pack);
+if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
+return find_sound_in_pack(path.substr(8), @sound_builder_pack);
+return "";
 }
 
 string[] get_pack_sound_folders(const string&in path)
 {
-	string[] result;
-	string global_path = "sounds/decompiled/" + path;
-	if (directory_exists(global_path) || directory_exists("sounds/decompiled"))
-		result = find_directories(global_path);
-	if (result.length() == 0)
-	{
-		string prefix = path;
-		pack@ p = null;
-		if (string_starts_with(prefix, "main/")) { @p = @sound_main_pack; prefix = prefix.substr(5); }
-		else if (string_starts_with(prefix, "builder/")) { @p = @sound_builder_pack; prefix = prefix.substr(8); }
-		if (string_ends_with(prefix, "/*")) prefix = prefix.substr(0, prefix.length() - 2);
-		if (prefix != "" && !string_ends_with(prefix, "/")) prefix += "/";
-		if (@p != null) result = list_pack_folders(p, prefix);
-	}
-	if (result.length() > 0) sort_naturally(result);
-	return result;
+string[] result;
+string global_path = "sounds/decompiled/" + path;
+if (directory_exists(global_path) || directory_exists("sounds/decompiled"))
+result = find_directories(global_path);
+if (result.length() == 0)
+{
+string prefix = path;
+pack@ p = null;
+if (string_starts_with(prefix, "main/")) { @p = @sound_main_pack; prefix = prefix.substr(5); }
+else if (string_starts_with(prefix, "builder/")) { @p = @sound_builder_pack; prefix = prefix.substr(8); }
+if (string_ends_with(prefix, "/*")) prefix = prefix.substr(0, prefix.length() - 2);
+if (prefix != "" && !string_ends_with(prefix, "/")) prefix += "/";
+if (@p != null) result = list_pack_folders(p, prefix);
+}
+if (result.length() > 0) sort_naturally(result);
+return result;
 }
 string get_pack_sound(const string&in path)
 {
-	string fullpath = "sounds/decompiled/" + path;
-	string result = find_sound_in_disk(fullpath);
-	if (result != "")
-		return result;
-	if (string_starts_with(path, "main/") && sound_main_pack_loaded)
-		return find_sound_in_pack(path.substr(5), @sound_main_pack);
-	if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
-		return find_sound_in_pack(path.substr(8), @sound_builder_pack);
-	return "";
+string fullpath = "sounds/decompiled/" + path;
+string result = find_sound_in_disk(fullpath);
+if (result != "")
+return result;
+if (string_starts_with(path, "main/") && sound_main_pack_loaded)
+return find_sound_in_pack(path.substr(5), @sound_main_pack);
+if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
+return find_sound_in_pack(path.substr(8), @sound_builder_pack);
+return "";
 }
 
 
 string read_map_mode_from_text(const string&in text)
 {
-	string[] lines = delinear(text);
-	for (uint j = 0; j < lines.length(); j++)
-	{
-		string[] sd = string_split(lines[j], " ", true);
-		if (sd[0] == "mode" && sd.length() == 2) return sd[1];
-	}
-	return "";
+string[] lines = delinear(text);
+for (uint j = 0; j < lines.length(); j++)
+{
+string[] sd = string_split(lines[j], " ", true);
+if (sd[0] == "mode" && sd.length() == 2) return sd[1];
+}
+return "";
 }
 
 string read_map_mode_decompiled(const string&in map_name)
 {
-	string path = "data/builder/maps/decompiled/" + map_name + "/data/main.sif";
-	if (!file_exists(path)) return "";
-	file f;
-	if (!f.open(path, "rb")) return "";
-	string text = f.read(2048);
-	f.close();
-	return read_map_mode_from_text(text);
+string path = "data/builder/maps/decompiled/" + map_name + "/data/main.sif";
+if (!file_exists(path)) return "";
+file f;
+if (!f.open(path, "rb")) return "";
+string text = f.read(2048);
+f.close();
+return read_map_mode_from_text(text);
 }
 
 string read_map_mode_compiled(const string&in map_path)
 {
-	pack preview_pack;
-	if (!preview_pack.open(map_path, PACK_OPEN_MODE_READ)) return "";
-	string mode = "";
-	if (preview_pack.file_exists("data/main.sif"))
-	{
-		uint size = preview_pack.get_file_size("data/main.sif");
-		uint read_size = size < 2048 ? size : 2048;
-		string text = preview_pack.read_file("data/main.sif", 0, read_size);
-		mode = read_map_mode_from_text(text);
-	}
-	preview_pack.close();
-	return mode;
+pack preview_pack;
+if (!preview_pack.open(map_path, PACK_OPEN_MODE_READ)) return "";
+string mode = "";
+if (preview_pack.file_exists("data/main.sif"))
+{
+uint size = preview_pack.get_file_size("data/main.sif");
+uint read_size = size < 2048 ? size : 2048;
+string text = preview_pack.read_file("data/main.sif", 0, read_size);
+mode = read_map_mode_from_text(text);
+}
+preview_pack.close();
+return mode;
 }
 
 void compile_map()
 {
-	string[] folders = find_directories("data/builder/maps/decompiled/*");
-	if (folders.length() == 0)
-	{
-		alert("Error", "There are no decompiled maps available to compile.");
-		maptoolsmenu();
-		return;
-	}
-	if (!directory_exists("data/builder/maps/compiled"))
-		directory_create("data/builder/maps/compiled");
-	setupmenu();
-	for (uint i = 0; i < folders.length(); i++)
-	{
-		string folder_name = folders[i];
-		string temp_mode = read_map_mode_decompiled(folder_name);
-		uint64 bytes = get_directory_size("data/builder/maps/decompiled/" + folder_name);
-		m.add_item(folder_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), folder_name);
-	}
-	m.intro_text = "Choose a map to compile";
-	int mres = m.run();
-	if (mres < 0)
-	{
-		speak("canceled");
-		maptoolsmenu();
-		return;
-	}
-	string chosen = m.selected_item_id;
-	string full_output_path = "data/builder/maps/compiled/" + chosen + ".map";
-	if (file_exists(full_output_path))
-	{
-		setupmenu();
-		m.add_item("yes");
-		m.add_item("no");
-		m.intro_text = "This map already exists. Do you want to overwrite it?";
-		int conf = m.run();
-		if (conf != 0)
-		{
-			compile_map();
-			return;
-		}
-	}
-	string source_folder = "data/builder/maps/decompiled/" + chosen;
-	if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
-	{
-		alert("Error", "Failed to create map file at: " + full_output_path);
-		maptoolsmenu();
-		return;
-	}
-	file_list.resize(0);
-	find_stuff(source_folder, source_folder);
-	alert("Map Compiler", "There are " + file_list.length() + " files in the map. Press OK to start compiling!");
-	show_window("Compiling map.");
-	wait(5);
-	int percent = -1;
-	for (uint i = 0; i < file_list.length(); i++)
-	{
-		double progress = (double(i) / double(file_list.length())) * 100.0;
-		int rounded = int(progress);
-		if (rounded != percent)
-		{
-			percent = rounded;
-			beep_percentage(percent);
-		}
-		string relative = string_replace(file_list[i], source_folder + "/", "", true);
-		pfile.add_file(file_list[i], relative);
-	}
-	pfile.close();
-	alert("Success!", "Map compiled to " + full_output_path);
-	show_window("Simple fighter, version "+version);
-	compile_map();
+string[] folders = find_directories("data/builder/maps/decompiled/*");
+if (folders.length() == 0)
+{
+alert("Error", "There are no decompiled maps available to compile.");
+maptoolsmenu();
+return;
+}
+if (!directory_exists("data/builder/maps/compiled"))
+directory_create("data/builder/maps/compiled");
+setupmenu();
+for (uint i = 0; i < folders.length(); i++)
+{
+string folder_name = folders[i];
+string temp_mode = read_map_mode_decompiled(folder_name);
+uint64 bytes = get_directory_size("data/builder/maps/decompiled/" + folder_name);
+m.add_item(folder_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), folder_name);
+}
+m.intro_text = "Choose a map to compile";
+int mres = m.run();
+if (mres < 0)
+{
+speak("canceled");
+maptoolsmenu();
+return;
+}
+string chosen = m.selected_item_id;
+string full_output_path = "data/builder/maps/compiled/" + chosen + ".map";
+if (file_exists(full_output_path))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "This map already exists. Do you want to overwrite it?";
+int conf = m.run();
+if (conf != 0)
+{
+compile_map();
+return;
+}
+}
+string source_folder = "data/builder/maps/decompiled/" + chosen;
+if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
+{
+alert("Error", "Failed to create map file at: " + full_output_path);
+maptoolsmenu();
+return;
+}
+file_list.resize(0);
+find_stuff(source_folder, source_folder);
+alert("Map Compiler", "There are " + file_list.length() + " files in the map. Press OK to start compiling!");
+show_window("Compiling map.");
+wait(5);
+int percent = -1;
+for (uint i = 0; i < file_list.length(); i++)
+{
+double progress = (double(i) / double(file_list.length())) * 100.0;
+int rounded = int(progress);
+if (rounded != percent)
+{
+percent = rounded;
+beep_percentage(percent);
+}
+string relative = string_replace(file_list[i], source_folder + "/", "", true);
+pfile.add_file(file_list[i], relative);
+}
+pfile.close();
+alert("Success!", "Map compiled to " + full_output_path);
+show_window("Simple fighter, version "+version);
+compile_map();
 }
 void decompile_map()
 {
-	string[] maps = find_files("data/builder/maps/compiled/*.map");
-	if (maps.length() == 0)
-	{
-		alert("Error", "There are no compiled maps available to decompile.");
-		maptoolsmenu();
-		return;
-	}
-	if (!directory_exists("data/builder/maps/decompiled"))
-		directory_create("data/builder/maps/decompiled");
-	setupmenu();
-	for (uint i = 0; i < maps.length(); i++)
-	{
-		string map_filename = maps[i];
-		string map_path = "data/builder/maps/compiled/" + map_filename;
-		string base_name = string_replace(map_filename, ".map", "", true);
-		string temp_mode = read_map_mode_compiled(map_path);
-		uint64 bytes = file_get_size(map_path);
-		m.add_item(base_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), base_name);
-	}
-	m.intro_text = "Choose a map to decompile";
-	int mres = m.run();
-	if (mres < 0)
-	{
-		speak("canceled");
-		maptoolsmenu();
-		return;
-	}
-	string chosen = m.selected_item_id;
-	string base_dir = "data/builder/maps/decompiled/" + chosen;
-	if (directory_exists(base_dir))
-	{
-		setupmenu();
-		m.add_item("yes");
-		m.add_item("no");
-		m.intro_text = "This map already exists. Do you want to overwrite it?";
-		int conf = m.run();
-		if (conf != 0)
-		{
-			decompile_map();
-			return;
-		}
-	}
-	string filename = "data/builder/maps/compiled/" + chosen + ".map";
-	if (!pfile.open(filename, PACK_OPEN_MODE_READ))
-	{
-		alert("Error", "Could not open the specified map file: " + filename);
-		maptoolsmenu();
-		return;
-	}
-	contents = pfile.list_files();
-	if (contents.length() == 0)
-	{
-		alert("Error", "No files found in this map.");
-		pfile.close();
-		maptoolsmenu();
-		return;
-	}
-	alert("Get Ready", contents.length() + " files are about to be extracted!");
-	if (!directory_exists(base_dir))
-		directory_create(base_dir);
-	show_window("Decompiling map.");
-	wait(5);
-	double prev_percent = -1;
-	for (uint i = 0; i < contents.length(); i++)
-	{
-		double percent = ((i + 1.0) / contents.length()) * 100.0;
-		percent = round(percent, 0);
-		if (percent != prev_percent)
-		{
-			beep_percentage(int(percent));
-			prev_percent = percent;
-		}
-		string relative_path = contents[i];
-		string output_path = base_dir + "/" + relative_path;
-		create_subfolders(output_path);
-		extract_file(pfile, relative_path, output_path);
-	}
-	pfile.close();
-	alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
-	show_window("Simple fighter, version "+version);
-	decompile_map();
+string[] maps = find_files("data/builder/maps/compiled/*.map");
+if (maps.length() == 0)
+{
+alert("Error", "There are no compiled maps available to decompile.");
+maptoolsmenu();
+return;
+}
+if (!directory_exists("data/builder/maps/decompiled"))
+directory_create("data/builder/maps/decompiled");
+setupmenu();
+for (uint i = 0; i < maps.length(); i++)
+{
+string map_filename = maps[i];
+string map_path = "data/builder/maps/compiled/" + map_filename;
+string base_name = string_replace(map_filename, ".map", "", true);
+string temp_mode = read_map_mode_compiled(map_path);
+uint64 bytes = file_get_size(map_path);
+m.add_item(base_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), base_name);
+}
+m.intro_text = "Choose a map to decompile";
+int mres = m.run();
+if (mres < 0)
+{
+speak("canceled");
+maptoolsmenu();
+return;
+}
+string chosen = m.selected_item_id;
+string base_dir = "data/builder/maps/decompiled/" + chosen;
+if (directory_exists(base_dir))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "This map already exists. Do you want to overwrite it?";
+int conf = m.run();
+if (conf != 0)
+{
+decompile_map();
+return;
+}
+}
+string filename = "data/builder/maps/compiled/" + chosen + ".map";
+if (!pfile.open(filename, PACK_OPEN_MODE_READ))
+{
+alert("Error", "Could not open the specified map file: " + filename);
+maptoolsmenu();
+return;
+}
+contents = pfile.list_files();
+if (contents.length() == 0)
+{
+alert("Error", "No files found in this map.");
+pfile.close();
+maptoolsmenu();
+return;
+}
+alert("Get Ready", contents.length() + " files are about to be extracted!");
+if (!directory_exists(base_dir))
+directory_create(base_dir);
+show_window("Decompiling map.");
+wait(5);
+double prev_percent = -1;
+for (uint i = 0; i < contents.length(); i++)
+{
+double percent = ((i + 1.0) / contents.length()) * 100.0;
+percent = round(percent, 0);
+if (percent != prev_percent)
+{
+beep_percentage(int(percent));
+prev_percent = percent;
+}
+string relative_path = contents[i];
+string output_path = base_dir + "/" + relative_path;
+create_subfolders(output_path);
+extract_file(pfile, relative_path, output_path);
+}
+pfile.close();
+alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
+show_window("Simple fighter, version "+version);
+decompile_map();
 }
 
 void compile_sound_pack()
 {
-	string[] candidates = {"builder", "main"};
-	string[] available;
-	for (uint i = 0; i < candidates.length(); i++)
-	{
-		if (directory_exists("sounds/decompiled/" + candidates[i])) available.insert_last(candidates[i]);
-	}
-	if (available.length() == 0)
-	{
-		alert("Error", "There are no decompiled sound packs available to compile.");
-		packtoolsmenu();
-		return;
-	}
-	if (!directory_exists("sounds/compiled"))
-		directory_create("sounds/compiled");
-	setupmenu();
-	for (uint i = 0; i < available.length(); i++)
-	{
-		string pack_name = available[i];
-		uint64 bytes = get_directory_size("sounds/decompiled/" + pack_name);
-		m.add_item(pack_name + ", total size, " + measure_file_size(bytes), pack_name);
-	}
-	m.intro_text = "Choose a sound pack to compile";
-	int mres = m.run();
-	if (mres < 0)
-	{
-		speak("canceled");
-		packtoolsmenu();
-		return;
-	}
-	string chosen = m.selected_item_id;
-	string full_output_path = "sounds/compiled/" + chosen + ".spack";
-	if (file_exists(full_output_path))
-	{
-		setupmenu();
-		m.add_item("yes");
-		m.add_item("no");
-		m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
-		int conf = m.run();
-		if (conf != 0)
-		{
-			compile_sound_pack();
-			return;
-		}
-	}
-	string source_folder = "sounds/decompiled/" + chosen;
-	if (chosen == "main" && sound_main_pack_loaded) { remove_sound_default_pack(@sound_main_pack); sound_main_pack.close(); sound_main_pack_loaded = false; }
-	if (chosen == "builder" && sound_builder_pack_loaded) { remove_sound_default_pack(@sound_builder_pack); sound_builder_pack.close(); sound_builder_pack_loaded = false; }
-	if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
-	{
-		alert("Error", "Failed to create sound pack file at: " + full_output_path);
-		packtoolsmenu();
-		return;
-	}
-	file_list.resize(0);
-	find_stuff(source_folder, source_folder);
-	alert("Sound Pack Compiler", "There are " + file_list.length() + " files in the sound pack. Press OK to start compiling!");
-	show_window("Compiling sound pack.");
-	wait(5);
-	int percent = -1;
-	for (uint i = 0; i < file_list.length(); i++)
-	{
-		double progress = (double(i) / double(file_list.length())) * 100.0;
-		int rounded = int(progress);
-		if (rounded != percent)
-		{
-			percent = rounded;
-			beep_percentage(percent);
-		}
-		string relative = string_replace(file_list[i], source_folder + "/", "", true);
-		pfile.add_file(file_list[i], relative);
-	}
-	pfile.close();
-	load_sound_pack(chosen, "");
-	alert("Success!", "Sound pack compiled to " + full_output_path);
-	show_window("Simple fighter, version "+version);
-	compile_sound_pack();
+string[] candidates = {"builder", "main"};
+string[] available;
+for (uint i = 0; i < candidates.length(); i++)
+{
+if (directory_exists("sounds/decompiled/" + candidates[i])) available.insert_last(candidates[i]);
+}
+if (available.length() == 0)
+{
+alert("Error", "There are no decompiled sound packs available to compile.");
+packtoolsmenu();
+return;
+}
+if (!directory_exists("sounds/compiled"))
+directory_create("sounds/compiled");
+setupmenu();
+for (uint i = 0; i < available.length(); i++)
+{
+string pack_name = available[i];
+uint64 bytes = get_directory_size("sounds/decompiled/" + pack_name);
+m.add_item(pack_name + ", total size, " + measure_file_size(bytes), pack_name);
+}
+m.intro_text = "Choose a sound pack to compile";
+int mres = m.run();
+if (mres < 0)
+{
+speak("canceled");
+packtoolsmenu();
+return;
+}
+string chosen = m.selected_item_id;
+string full_output_path = "sounds/compiled/" + chosen + ".spack";
+if (file_exists(full_output_path))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
+int conf = m.run();
+if (conf != 0)
+{
+compile_sound_pack();
+return;
+}
+}
+string source_folder = "sounds/decompiled/" + chosen;
+if (chosen == "main" && sound_main_pack_loaded) { remove_sound_default_pack(@sound_main_pack); sound_main_pack.close(); sound_main_pack_loaded = false; }
+if (chosen == "builder" && sound_builder_pack_loaded) { remove_sound_default_pack(@sound_builder_pack); sound_builder_pack.close(); sound_builder_pack_loaded = false; }
+if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
+{
+alert("Error", "Failed to create sound pack file at: " + full_output_path);
+packtoolsmenu();
+return;
+}
+file_list.resize(0);
+find_stuff(source_folder, source_folder);
+alert("Sound Pack Compiler", "There are " + file_list.length() + " files in the sound pack. Press OK to start compiling!");
+show_window("Compiling sound pack.");
+wait(5);
+int percent = -1;
+for (uint i = 0; i < file_list.length(); i++)
+{
+double progress = (double(i) / double(file_list.length())) * 100.0;
+int rounded = int(progress);
+if (rounded != percent)
+{
+percent = rounded;
+beep_percentage(percent);
+}
+string relative = string_replace(file_list[i], source_folder + "/", "", true);
+pfile.add_file(file_list[i], relative);
+}
+pfile.close();
+load_sound_pack(chosen, "");
+alert("Success!", "Sound pack compiled to " + full_output_path);
+show_window("Simple fighter, version "+version);
+compile_sound_pack();
 }
 
 void decompile_sound_pack()
 {
-	string[] found = find_files("sounds/compiled/*.spack");
-	if (found.length() == 0)
-	{
-		alert("Error", "There are no compiled sound packs available to decompile.");
-		packtoolsmenu();
-		return;
-	}
-	if (!directory_exists("sounds/decompiled"))
-		directory_create("sounds/decompiled");
-	string[] spacks;
-	string[] preferred = {"builder.spack", "main.spack"};
-	for (uint p = 0; p < preferred.length(); p++)
-		for (uint i = 0; i < found.length(); i++)
-			if (found[i] == preferred[p]) spacks.insert_last(found[i]);
-	for (uint i = 0; i < found.length(); i++)
-	{
-		bool already = false;
-		for (uint j = 0; j < spacks.length(); j++) if (spacks[j] == found[i]) { already = true; break; }
-		if (!already) spacks.insert_last(found[i]);
-	}
-	setupmenu();
-	for (uint i = 0; i < spacks.length(); i++)
-	{
-		string spack_filename = spacks[i];
-		string spack_path = "sounds/compiled/" + spack_filename;
-		string base_name = string_replace(spack_filename, ".spack", "", true);
-		uint64 bytes = file_get_size(spack_path);
-		m.add_item(base_name + ", total size, " + measure_file_size(bytes), base_name);
-	}
-	m.intro_text = "Choose a sound pack to decompile";
-	int mres = m.run();
-	if (mres < 0)
-	{
-		speak("canceled");
-		packtoolsmenu();
-		return;
-	}
-	string chosen = m.selected_item_id;
-	string base_dir = "sounds/decompiled/" + chosen;
-	if (directory_exists(base_dir))
-	{
-		setupmenu();
-		m.add_item("yes");
-		m.add_item("no");
-		m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
-		int conf = m.run();
-		if (conf != 0)
-		{
-			decompile_sound_pack();
-			return;
-		}
-	}
-	string filename = "sounds/compiled/" + chosen + ".spack";
-	if (!pfile.open(filename, PACK_OPEN_MODE_READ))
-	{
-		alert("Error", "Could not open the specified sound pack file: " + filename);
-		packtoolsmenu();
-		return;
-	}
-	contents = pfile.list_files();
-	if (contents.length() == 0)
-	{
-		alert("Error", "No files found in this sound pack.");
-		pfile.close();
-		packtoolsmenu();
-		return;
-	}
-	alert("Get Ready", contents.length() + " files are about to be extracted!");
-	if (!directory_exists(base_dir))
-		directory_create(base_dir);
-	show_window("Decompiling sound pack.");
-	wait(5);
-	double prev_percent = -1;
-	for (uint i = 0; i < contents.length(); i++)
-	{
-		double percent = ((i + 1.0) / contents.length()) * 100.0;
-		percent = round(percent, 0);
-		if (percent != prev_percent)
-		{
-			beep_percentage(int(percent));
-			prev_percent = percent;
-		}
-		string relative_path = contents[i];
-		string output_path = base_dir + "/" + relative_path;
-		create_subfolders(output_path);
-		extract_file(pfile, relative_path, output_path);
-	}
-	pfile.close();
-	alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
-	show_window("Simple fighter, version "+version);
-	decompile_sound_pack();
+string[] found = find_files("sounds/compiled/*.spack");
+if (found.length() == 0)
+{
+alert("Error", "There are no compiled sound packs available to decompile.");
+packtoolsmenu();
+return;
+}
+if (!directory_exists("sounds/decompiled"))
+directory_create("sounds/decompiled");
+string[] spacks;
+string[] preferred = {"builder.spack", "main.spack"};
+for (uint p = 0; p < preferred.length(); p++)
+for (uint i = 0; i < found.length(); i++)
+if (found[i] == preferred[p]) spacks.insert_last(found[i]);
+for (uint i = 0; i < found.length(); i++)
+{
+bool already = false;
+for (uint j = 0; j < spacks.length(); j++) if (spacks[j] == found[i]) { already = true; break; }
+if (!already) spacks.insert_last(found[i]);
+}
+setupmenu();
+for (uint i = 0; i < spacks.length(); i++)
+{
+string spack_filename = spacks[i];
+string spack_path = "sounds/compiled/" + spack_filename;
+string base_name = string_replace(spack_filename, ".spack", "", true);
+uint64 bytes = file_get_size(spack_path);
+m.add_item(base_name + ", total size, " + measure_file_size(bytes), base_name);
+}
+m.intro_text = "Choose a sound pack to decompile";
+int mres = m.run();
+if (mres < 0)
+{
+speak("canceled");
+packtoolsmenu();
+return;
+}
+string chosen = m.selected_item_id;
+string base_dir = "sounds/decompiled/" + chosen;
+if (directory_exists(base_dir))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
+int conf = m.run();
+if (conf != 0)
+{
+decompile_sound_pack();
+return;
+}
+}
+string filename = "sounds/compiled/" + chosen + ".spack";
+if (!pfile.open(filename, PACK_OPEN_MODE_READ))
+{
+alert("Error", "Could not open the specified sound pack file: " + filename);
+packtoolsmenu();
+return;
+}
+contents = pfile.list_files();
+if (contents.length() == 0)
+{
+alert("Error", "No files found in this sound pack.");
+pfile.close();
+packtoolsmenu();
+return;
+}
+alert("Get Ready", contents.length() + " files are about to be extracted!");
+if (!directory_exists(base_dir))
+directory_create(base_dir);
+show_window("Decompiling sound pack.");
+wait(5);
+double prev_percent = -1;
+for (uint i = 0; i < contents.length(); i++)
+{
+double percent = ((i + 1.0) / contents.length()) * 100.0;
+percent = round(percent, 0);
+if (percent != prev_percent)
+{
+beep_percentage(int(percent));
+prev_percent = percent;
+}
+string relative_path = contents[i];
+string output_path = base_dir + "/" + relative_path;
+create_subfolders(output_path);
+extract_file(pfile, relative_path, output_path);
+}
+pfile.close();
+alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
+show_window("Simple fighter, version "+version);
+decompile_sound_pack();
 }

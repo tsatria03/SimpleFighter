@@ -1,680 +1,680 @@
 void npc_chooser()
 {
-	bool do_build = true;
-	int b_add, b_edit, b_remove, b_view, b_back;
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			form.reset();
-			form.create_window("npc", false, true, false);
-			b_add = form.create_button("&add npc");
-			b_edit = form.create_button("&edit npc");
-			b_remove = form.create_button("&remove npc");
-			b_view = form.create_button("&view npc");
-			b_back = form.create_button("&back", false, true);
-			form.focus(b_add);
-		}
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
-		{
-			return;
-		}
-		if(form.is_pressed(b_add)) { add_npc(); do_build = true; continue; }
-		if(form.is_pressed(b_edit)) { edit_npc(); do_build = true; continue; }
-		if(form.is_pressed(b_remove)) { remove_npc(); do_build = true; continue; }
-		if(form.is_pressed(b_view)) { view_npc(); do_build = true; continue; }
-	}
+bool do_build = true;
+int b_add, b_edit, b_remove, b_view, b_back;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+form.reset();
+form.create_window("npc", false, true, false);
+b_add = form.create_button("&add npc");
+b_edit = form.create_button("&edit npc");
+b_remove = form.create_button("&remove npc");
+b_view = form.create_button("&view npc");
+b_back = form.create_button("&back", false, true);
+form.focus(b_add);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
+{
+return;
+}
+if(form.is_pressed(b_add)) { add_npc(); do_build = true; continue; }
+if(form.is_pressed(b_edit)) { edit_npc(); do_build = true; continue; }
+if(form.is_pressed(b_remove)) { remove_npc(); do_build = true; continue; }
+if(form.is_pressed(b_view)) { view_npc(); do_build = true; continue; }
+}
 }
 
 bool add_npc_form(string path_choice, string category, string subtype)
 {
-	string target_path = (path_choice == "global")
-		? "sounds/decompiled/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif"
-		: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif";
-	string[] keys = {"x attack range", "y attack range", "z attack range", "x sight range", "y sight range", "z sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "patrol z range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee time", "flee speed", "provoke speed", "terrain"};
-	string[] cb_keys = {"attacking", "move x", "move y", "move z", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
-	form.reset();
-	form.create_window("add "+subtype, false, true, false);
-	int[] inputs;
-	for(uint i=0; i<keys.length(); i++)
-		inputs.insert_last(form.create_input_box(keys[i]));
-	string[] mode_opts = {"auto", "own", "player", "never"};
-	int steps_list = form.create_list("use steps");
-	int falls_list = form.create_list("use falls");
-	for(uint i=0; i<mode_opts.length(); i++)
-	{
-		form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
-		form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
-	}
-	form.set_list_position(steps_list, 0, false);
-	form.set_list_position(falls_list, 0, false);
-	string[] wt_opts;
-	string[] wt2_opts;
-	build_npc_weapon_lists(wt_opts, wt2_opts);
-	int wt_list = form.create_list("weapon type");
-	int wt2_list = form.create_list("weapon type2");
-	for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
-	for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
-	form.set_list_position(wt_list, 0, false);
-	form.set_list_position(wt2_list, 0, false);
-	int[] checkboxes;
-	for(uint i=0; i<cb_keys.length(); i++)
-		checkboxes.insert_last(form.create_checkbox(cb_keys[i]));
-	int b_save = form.create_button("&save", true);
-	int b_cancel = form.create_button("&cancel", false, true);
-	form.focus(inputs[0]);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return false;
-		}
-		if(form.is_pressed(b_save))
-		{
-			bool blank = false;
-			for(uint i=0; i<inputs.length(); i++)
-			{
-				if(form.get_text(inputs[i]) == "")
-				{
-					speak(keys[i]+" is required.");
-					form.focus(inputs[i]);
-					blank = true;
-					break;
-				}
-			}
-			if(blank) continue;
-			if(file_exists(target_path))
-			{
-				setupmenu();
-				m.add_item("yes");
-				m.add_item("no");
-				m.intro_text = "An info.sif already exists for this NPC. Overwrite?";
-				int mres = m.run();
-				if(mres != 0) continue;
-			}
-			string content = "";
-			for(uint i=0; i<inputs.length(); i++)
-				content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-			for(uint i=0; i<checkboxes.length(); i++)
-				content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
-			content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
-			content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
-			content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
-			content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
-			create_subfolders(target_path);
-			file fout;
-			if(!fout.open(target_path, "w"))
-			{
-				speak("Failed to open file for writing.");
-				continue;
-			}
-			fout.write(content);
-			fout.close();
-			speak("Saved.");
-			return true;
-		}
-	}
-	return false;
+string target_path = (path_choice == "global")
+? "sounds/decompiled/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif"
+: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif";
+string[] keys = {"x attack range", "y attack range", "z attack range", "x sight range", "y sight range", "z sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "patrol z range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee time", "flee speed", "provoke speed", "terrain"};
+string[] cb_keys = {"attacking", "move x", "move y", "move z", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
+form.reset();
+form.create_window("add "+subtype, false, true, false);
+int[] inputs;
+for(uint i=0; i<keys.length(); i++)
+inputs.insert_last(form.create_input_box(keys[i]));
+string[] mode_opts = {"auto", "own", "player", "never"};
+int steps_list = form.create_list("use steps");
+int falls_list = form.create_list("use falls");
+for(uint i=0; i<mode_opts.length(); i++)
+{
+form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
+form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
+}
+form.set_list_position(steps_list, 0, false);
+form.set_list_position(falls_list, 0, false);
+string[] wt_opts;
+string[] wt2_opts;
+build_npc_weapon_lists(wt_opts, wt2_opts);
+int wt_list = form.create_list("weapon type");
+int wt2_list = form.create_list("weapon type2");
+for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
+for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
+form.set_list_position(wt_list, 0, false);
+form.set_list_position(wt2_list, 0, false);
+int[] checkboxes;
+for(uint i=0; i<cb_keys.length(); i++)
+checkboxes.insert_last(form.create_checkbox(cb_keys[i]));
+int b_save = form.create_button("&save", true);
+int b_cancel = form.create_button("&cancel", false, true);
+form.focus(inputs[0]);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(b_save))
+{
+bool blank = false;
+for(uint i=0; i<inputs.length(); i++)
+{
+if(form.get_text(inputs[i]) == "")
+{
+speak(keys[i]+" is required.");
+form.focus(inputs[i]);
+blank = true;
+break;
+}
+}
+if(blank) continue;
+if(file_exists(target_path))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "An info.sif already exists for this NPC. Overwrite?";
+int mres = m.run();
+if(mres != 0) continue;
+}
+string content = "";
+for(uint i=0; i<inputs.length(); i++)
+content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+for(uint i=0; i<checkboxes.length(); i++)
+content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
+content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
+content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
+content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
+content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
+create_subfolders(target_path);
+file fout;
+if(!fout.open(target_path, "w"))
+{
+speak("Failed to open file for writing.");
+continue;
+}
+fout.write(content);
+fout.close();
+speak("Saved.");
+return true;
+}
+}
+return false;
 }
 
 string read_npc_info_file(string base, string subtype)
 {
-	string path = base+"/"+subtype+"/data/info.sif";
-	file fin;
-	if(!fin.open(path, "rb")) return "";
-	string content = fin.read();
-	fin.close();
-	return content;
+string path = base+"/"+subtype+"/data/info.sif";
+file fin;
+if(!fin.open(path, "rb")) return "";
+string content = fin.read();
+fin.close();
+return content;
 }
 
 void view_npc()
 {
-	string[] paths = {"global", "map"};
-	string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-	int saved_path_pos = 0;
-	int saved_cat_pos = 0;
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int last_path_pos = -1;
-	int last_cat_pos = -1;
-	int last_sub_pos = -1;
-	int focus_after_build = 0;
-	int path_list, cat_list, sub_list, content_box, b_cancel;
-	string[] sub_data;
-	string base = "";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			base = (saved_path_pos == 0)
-				? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
-				: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			string initial_content = (sub_data.length() > 0) ? read_npc_info_file(base, sub_data[sp]) : "";
-			string initial_caption = (sub_data.length() > 0) ? "contents for "+sub_data[sp] : "contents";
-			form.reset();
-			form.create_window("view npc", false, true, last_path_pos != -1);
-			path_list = form.create_list("path");
-			for(uint i=0; i<paths.length(); i++)
-				form.add_list_item(path_list, paths[i], paths[i]);
-			form.set_list_position(path_list, saved_path_pos, false);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			form.set_list_position(sub_list, sp, false);
-			content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
-			b_cancel = form.create_button("&cancel", false, true);
-			last_sub_pos = sp;
-			if(last_path_pos == -1)
-			{
-				form.focus(path_list);
-			}
-			else if(focus_after_build == 1)
-				form.focus_silently(cat_list);
-			else
-				form.focus_silently(path_list);
-			last_path_pos = saved_path_pos;
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_path = form.get_list_position(path_list);
-		if(cur_path != -1 && cur_path != last_path_pos)
-		{
-			saved_path_pos = cur_path;
-			saved_sub_pos = 0;
-			focus_after_build = 0;
-			do_build = true;
-			continue;
-		}
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			saved_sub_pos = 0;
-			focus_after_build = 1;
-			do_build = true;
-			continue;
-		}
-		int cur_sub = form.get_list_position(sub_list);
-		if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
-		{
-			saved_sub_pos = cur_sub;
-			last_sub_pos = cur_sub;
-			form.set_text(content_box, read_npc_info_file(base, sub_data[cur_sub]));
-			form.set_caption(content_box, "contents for "+sub_data[cur_sub]);
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-	}
+string[] paths = {"global", "map"};
+string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
+int saved_path_pos = 0;
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+bool do_build = true;
+int last_path_pos = -1;
+int last_cat_pos = -1;
+int last_sub_pos = -1;
+int focus_after_build = 0;
+int path_list, cat_list, sub_list, content_box, b_cancel;
+string[] sub_data;
+string base = "";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+base = (saved_path_pos == 0)
+? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
+: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+string initial_content = (sub_data.length() > 0) ? read_npc_info_file(base, sub_data[sp]) : "";
+string initial_caption = (sub_data.length() > 0) ? "contents for "+sub_data[sp] : "contents";
+form.reset();
+form.create_window("view npc", false, true, last_path_pos != -1);
+path_list = form.create_list("path");
+for(uint i=0; i<paths.length(); i++)
+form.add_list_item(path_list, paths[i], paths[i]);
+form.set_list_position(path_list, saved_path_pos, false);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+form.set_list_position(sub_list, sp, false);
+content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
+b_cancel = form.create_button("&cancel", false, true);
+last_sub_pos = sp;
+if(last_path_pos == -1)
+{
+form.focus(path_list);
+}
+else if(focus_after_build == 1)
+form.focus_silently(cat_list);
+else
+form.focus_silently(path_list);
+last_path_pos = saved_path_pos;
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_path = form.get_list_position(path_list);
+if(cur_path != -1 && cur_path != last_path_pos)
+{
+saved_path_pos = cur_path;
+saved_sub_pos = 0;
+focus_after_build = 0;
+do_build = true;
+continue;
+}
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+saved_sub_pos = 0;
+focus_after_build = 1;
+do_build = true;
+continue;
+}
+int cur_sub = form.get_list_position(sub_list);
+if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
+{
+saved_sub_pos = cur_sub;
+last_sub_pos = cur_sub;
+form.set_text(content_box, read_npc_info_file(base, sub_data[cur_sub]));
+form.set_caption(content_box, "contents for "+sub_data[cur_sub]);
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+}
 }
 
 void remove_npc()
 {
-	string[] paths = {"global", "map"};
-	string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-	int saved_path_pos = 0;
-	int saved_cat_pos = 0;
-	bool do_build = true;
-	int last_path_pos = -1;
-	int last_cat_pos = -1;
-	int focus_after_build = 0;
-	int path_list, cat_list, sub_list, b_remove, b_cancel;
-	string[] sub_data;
-	string base = "";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			base = (saved_path_pos == 0)
-				? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
-				: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("remove npc", false, true, last_path_pos != -1);
-			path_list = form.create_list("path");
-			for(uint i=0; i<paths.length(); i++)
-				form.add_list_item(path_list, paths[i], paths[i]);
-			form.set_list_position(path_list, saved_path_pos, false);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype", 0, true);
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			b_remove = form.create_button("&remove", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			if(last_path_pos == -1)
-			{
-				form.focus(path_list);
-			}
-			else if(focus_after_build == 1)
-				form.focus_silently(cat_list);
-			else
-				form.focus_silently(path_list);
-			last_path_pos = saved_path_pos;
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_path = form.get_list_position(path_list);
-		if(cur_path != -1 && cur_path != last_path_pos)
-		{
-			saved_path_pos = cur_path;
-			focus_after_build = 0;
-			do_build = true;
-			continue;
-		}
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			focus_after_build = 1;
-			do_build = true;
-			continue;
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_remove))
-		{
-			int[]@ checked = form.get_checked_list_items(sub_list);
-			if(checked is null || checked.length() == 0)
-			{
-				speak("No subtypes selected.");
-				form.focus(sub_list);
-				continue;
-			}
-			setupmenu();
-			m.add_item("yes");
-			m.add_item("no");
-			m.intro_text = "Are you sure you would like to remove "+checked.length()+" info.sif files?";
-			int mres = m.run();
-			if(mres != 0)
-			{
-				do_build = true;
-				continue;
-			}
-			for(uint i=0; i<checked.length(); i++)
-			{
-				string p = base+"/"+sub_data[checked[i]]+"/data/info.sif";
-				if(file_exists(p)) file_delete(p);
-			}
-			speak("Removed "+checked.length()+" info.sif files.");
-			return;
-		}
-	}
+string[] paths = {"global", "map"};
+string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
+int saved_path_pos = 0;
+int saved_cat_pos = 0;
+bool do_build = true;
+int last_path_pos = -1;
+int last_cat_pos = -1;
+int focus_after_build = 0;
+int path_list, cat_list, sub_list, b_remove, b_cancel;
+string[] sub_data;
+string base = "";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+base = (saved_path_pos == 0)
+? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
+: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("remove npc", false, true, last_path_pos != -1);
+path_list = form.create_list("path");
+for(uint i=0; i<paths.length(); i++)
+form.add_list_item(path_list, paths[i], paths[i]);
+form.set_list_position(path_list, saved_path_pos, false);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype", 0, true);
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+b_remove = form.create_button("&remove", true);
+b_cancel = form.create_button("&cancel", false, true);
+if(last_path_pos == -1)
+{
+form.focus(path_list);
+}
+else if(focus_after_build == 1)
+form.focus_silently(cat_list);
+else
+form.focus_silently(path_list);
+last_path_pos = saved_path_pos;
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_path = form.get_list_position(path_list);
+if(cur_path != -1 && cur_path != last_path_pos)
+{
+saved_path_pos = cur_path;
+focus_after_build = 0;
+do_build = true;
+continue;
+}
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+focus_after_build = 1;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_remove))
+{
+int[]@ checked = form.get_checked_list_items(sub_list);
+if(checked is null || checked.length() == 0)
+{
+speak("No subtypes selected.");
+form.focus(sub_list);
+continue;
+}
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "Are you sure you would like to remove "+checked.length()+" info.sif files?";
+int mres = m.run();
+if(mres != 0)
+{
+do_build = true;
+continue;
+}
+for(uint i=0; i<checked.length(); i++)
+{
+string p = base+"/"+sub_data[checked[i]]+"/data/info.sif";
+if(file_exists(p)) file_delete(p);
+}
+speak("Removed "+checked.length()+" info.sif files.");
+return;
+}
+}
 }
 
 bool edit_npc_form(string target_path, string subtype)
 {
-	string[] keys = {"x attack range", "y attack range", "z attack range", "x sight range", "y sight range", "z sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "patrol z range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee time", "flee speed", "provoke speed", "terrain"};
-	string[] cb_keys = {"attacking", "move x", "move y", "move z", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
-	dictionary existing;
-	file fin;
-	if(fin.open(target_path, "rb"))
-	{
-		string content = fin.read();
-		fin.close();
-		string[] lines = split_lines(content);
-		for(uint i=0; i<lines.length(); i++)
-		{
-			int eq = string_contains(lines[i], "=", 1);
-			if(eq < 0) continue;
-			string k = string_left(lines[i], eq);
-			string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
-			existing[k] = v;
-		}
-	}
-	form.reset();
-	form.create_window("edit "+subtype, false, true, false);
-	int[] inputs;
-	for(uint i=0; i<keys.length(); i++)
-	{
-		string preset = "";
-		if(existing.exists(keys[i])) existing.get(keys[i], preset);
-		inputs.insert_last(form.create_input_box(keys[i], preset));
-	}
-	string[] mode_opts = {"auto", "own", "player", "never"};
-	int steps_list = form.create_list("use steps");
-	int falls_list = form.create_list("use falls");
-	for(uint i=0; i<mode_opts.length(); i++)
-	{
-		form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
-		form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
-	}
-	string steps_pre = "auto"; if(existing.exists("use steps")) existing.get("use steps", steps_pre);
-	string falls_pre = "auto"; if(existing.exists("use falls")) existing.get("use falls", falls_pre);
-	int steps_idx = 0, falls_idx = 0;
-	for(uint i=0; i<mode_opts.length(); i++)
-	{
-		if(mode_opts[i] == steps_pre) steps_idx = i;
-		if(mode_opts[i] == falls_pre) falls_idx = i;
-	}
-	form.set_list_position(steps_list, steps_idx, false);
-	form.set_list_position(falls_list, falls_idx, false);
-	string[] wt_opts;
-	string[] wt2_opts;
-	build_npc_weapon_lists(wt_opts, wt2_opts);
-	int wt_list = form.create_list("weapon type");
-	int wt2_list = form.create_list("weapon type2");
-	for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
-	for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
-	string wt_pre = "none"; if(existing.exists("weapon type")) existing.get("weapon type", wt_pre);
-	string wt2_pre = "none"; if(existing.exists("weapon type2")) existing.get("weapon type2", wt2_pre);
-	int wt_idx = 0, wt2_idx = 0;
-	for(uint i=0; i<wt_opts.length(); i++) if(wt_opts[i] == wt_pre) wt_idx = i;
-	for(uint i=0; i<wt2_opts.length(); i++) if(wt2_opts[i] == wt2_pre) wt2_idx = i;
-	form.set_list_position(wt_list, wt_idx, false);
-	form.set_list_position(wt2_list, wt2_idx, false);
-	int[] checkboxes;
-	for(uint i=0; i<cb_keys.length(); i++)
-	{
-		string cv = "";
-		if(existing.exists(cb_keys[i])) existing.get(cb_keys[i], cv);
-		checkboxes.insert_last(form.create_checkbox(cb_keys[i], cv == "true"));
-	}
-	int b_save = form.create_button("&save", true);
-	int b_cancel = form.create_button("&cancel", false, true);
-	form.focus(inputs[0]);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return false;
-		}
-		if(form.is_pressed(b_save))
-		{
-			bool blank = false;
-			for(uint i=0; i<inputs.length(); i++)
-			{
-				if(form.get_text(inputs[i]) == "")
-				{
-					speak(keys[i]+" is required.");
-					form.focus(inputs[i]);
-					blank = true;
-					break;
-				}
-			}
-			if(blank) continue;
-			string content = "";
-			for(uint i=0; i<inputs.length(); i++)
-				content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-			for(uint i=0; i<checkboxes.length(); i++)
-				content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
-			content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
-			content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
-			content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
-			content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
-			file fout;
-			if(!fout.open(target_path, "w"))
-			{
-				speak("Failed to open file for writing.");
-				continue;
-			}
-			fout.write(content);
-			fout.close();
-			speak("Saved.");
-			return true;
-		}
-	}
-	return false;
+string[] keys = {"x attack range", "y attack range", "z attack range", "x sight range", "y sight range", "z sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "patrol z range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee time", "flee speed", "provoke speed", "terrain"};
+string[] cb_keys = {"attacking", "move x", "move y", "move z", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
+dictionary existing;
+file fin;
+if(fin.open(target_path, "rb"))
+{
+string content = fin.read();
+fin.close();
+string[] lines = split_lines(content);
+for(uint i=0; i<lines.length(); i++)
+{
+int eq = string_contains(lines[i], "=", 1);
+if(eq < 0) continue;
+string k = string_left(lines[i], eq);
+string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
+existing[k] = v;
+}
+}
+form.reset();
+form.create_window("edit "+subtype, false, true, false);
+int[] inputs;
+for(uint i=0; i<keys.length(); i++)
+{
+string preset = "";
+if(existing.exists(keys[i])) existing.get(keys[i], preset);
+inputs.insert_last(form.create_input_box(keys[i], preset));
+}
+string[] mode_opts = {"auto", "own", "player", "never"};
+int steps_list = form.create_list("use steps");
+int falls_list = form.create_list("use falls");
+for(uint i=0; i<mode_opts.length(); i++)
+{
+form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
+form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
+}
+string steps_pre = "auto"; if(existing.exists("use steps")) existing.get("use steps", steps_pre);
+string falls_pre = "auto"; if(existing.exists("use falls")) existing.get("use falls", falls_pre);
+int steps_idx = 0, falls_idx = 0;
+for(uint i=0; i<mode_opts.length(); i++)
+{
+if(mode_opts[i] == steps_pre) steps_idx = i;
+if(mode_opts[i] == falls_pre) falls_idx = i;
+}
+form.set_list_position(steps_list, steps_idx, false);
+form.set_list_position(falls_list, falls_idx, false);
+string[] wt_opts;
+string[] wt2_opts;
+build_npc_weapon_lists(wt_opts, wt2_opts);
+int wt_list = form.create_list("weapon type");
+int wt2_list = form.create_list("weapon type2");
+for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
+for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
+string wt_pre = "none"; if(existing.exists("weapon type")) existing.get("weapon type", wt_pre);
+string wt2_pre = "none"; if(existing.exists("weapon type2")) existing.get("weapon type2", wt2_pre);
+int wt_idx = 0, wt2_idx = 0;
+for(uint i=0; i<wt_opts.length(); i++) if(wt_opts[i] == wt_pre) wt_idx = i;
+for(uint i=0; i<wt2_opts.length(); i++) if(wt2_opts[i] == wt2_pre) wt2_idx = i;
+form.set_list_position(wt_list, wt_idx, false);
+form.set_list_position(wt2_list, wt2_idx, false);
+int[] checkboxes;
+for(uint i=0; i<cb_keys.length(); i++)
+{
+string cv = "";
+if(existing.exists(cb_keys[i])) existing.get(cb_keys[i], cv);
+checkboxes.insert_last(form.create_checkbox(cb_keys[i], cv == "true"));
+}
+int b_save = form.create_button("&save", true);
+int b_cancel = form.create_button("&cancel", false, true);
+form.focus(inputs[0]);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(b_save))
+{
+bool blank = false;
+for(uint i=0; i<inputs.length(); i++)
+{
+if(form.get_text(inputs[i]) == "")
+{
+speak(keys[i]+" is required.");
+form.focus(inputs[i]);
+blank = true;
+break;
+}
+}
+if(blank) continue;
+string content = "";
+for(uint i=0; i<inputs.length(); i++)
+content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+for(uint i=0; i<checkboxes.length(); i++)
+content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
+content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
+content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
+content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
+content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
+file fout;
+if(!fout.open(target_path, "w"))
+{
+speak("Failed to open file for writing.");
+continue;
+}
+fout.write(content);
+fout.close();
+speak("Saved.");
+return true;
+}
+}
+return false;
 }
 
 void build_npc_weapon_lists(string[]@ types, string[]@ subs)
 {
-	types.resize(0);
-	subs.resize(0);
-	types.insert_last("none");
-	subs.insert_last("none");
-	string[] cats = get_pack_sound_folders("main/equipments/weapons/*");
-	cats.sort_ascending();
-	for(uint i=0; i<cats.length(); i++) types.insert_last(cats[i]);
-	string[] all_subs;
-	for(uint i=0; i<cats.length(); i++)
-	{
-		string[] s = get_pack_sound_folders("main/equipments/weapons/"+cats[i]+"/*");
-		for(uint j=0; j<s.length(); j++)
-			if(all_subs.find(s[j]) < 0) all_subs.insert_last(s[j]);
-	}
-	all_subs.sort_ascending();
-	for(uint i=0; i<all_subs.length(); i++) subs.insert_last(all_subs[i]);
-	types.insert_last("random");
-	subs.insert_last("random");
+types.resize(0);
+subs.resize(0);
+types.insert_last("none");
+subs.insert_last("none");
+string[] cats = get_pack_sound_folders("main/equipments/weapons/*");
+cats.sort_ascending();
+for(uint i=0; i<cats.length(); i++) types.insert_last(cats[i]);
+string[] all_subs;
+for(uint i=0; i<cats.length(); i++)
+{
+string[] s = get_pack_sound_folders("main/equipments/weapons/"+cats[i]+"/*");
+for(uint j=0; j<s.length(); j++)
+if(all_subs.find(s[j]) < 0) all_subs.insert_last(s[j]);
+}
+all_subs.sort_ascending();
+for(uint i=0; i<all_subs.length(); i++) subs.insert_last(all_subs[i]);
+types.insert_last("random");
+subs.insert_last("random");
 }
 
 void edit_npc()
 {
-	string[] paths = {"global", "map"};
-	string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-	int saved_path_pos = 0;
-	int saved_cat_pos = 0;
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int last_path_pos = -1;
-	int last_cat_pos = -1;
-	int focus_after_build = 0;
-	int path_list, cat_list, sub_list, b_edit, b_cancel;
-	string[] sub_data;
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			string base = (saved_path_pos == 0)
-				? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
-				: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("edit npc", false, true, last_path_pos != -1);
-			path_list = form.create_list("path");
-			for(uint i=0; i<paths.length(); i++)
-				form.add_list_item(path_list, paths[i], paths[i]);
-			form.set_list_position(path_list, saved_path_pos, false);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			form.set_list_position(sub_list, sp, false);
-			b_edit = form.create_button("&edit", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			if(last_path_pos == -1)
-			{
-				form.focus(path_list);
-			}
-			else if(focus_after_build == 1)
-				form.focus_silently(cat_list);
-			else
-				form.focus_silently(path_list);
-			last_path_pos = saved_path_pos;
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_path = form.get_list_position(path_list);
-		if(cur_path != -1 && cur_path != last_path_pos)
-		{
-			saved_path_pos = cur_path;
-			saved_sub_pos = 0;
-			focus_after_build = 0;
-			do_build = true;
-			continue;
-		}
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			saved_sub_pos = 0;
-			focus_after_build = 1;
-			do_build = true;
-			continue;
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_edit))
-		{
-			int p = form.get_list_position(sub_list);
-			if(p < 0 || p >= int(sub_data.length()))
-			{
-				speak("Subtype is required.");
-				form.focus(sub_list);
-				continue;
-			}
-			string chosen_sub = sub_data[p];
-			string chosen_cat = categories[saved_cat_pos];
-			string target_path = (saved_path_pos == 0)
-				? "sounds/decompiled/builder/kombat/npc/"+chosen_cat+"/"+chosen_sub+"/data/info.sif"
-				: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+chosen_cat+"/"+chosen_sub+"/data/info.sif";
-			saved_sub_pos = p;
-			if(edit_npc_form(target_path, chosen_sub)) return;
-			do_build = true;
-			continue;
-		}
-	}
+string[] paths = {"global", "map"};
+string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
+int saved_path_pos = 0;
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+bool do_build = true;
+int last_path_pos = -1;
+int last_cat_pos = -1;
+int focus_after_build = 0;
+int path_list, cat_list, sub_list, b_edit, b_cancel;
+string[] sub_data;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+string base = (saved_path_pos == 0)
+? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
+: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+if(file_exists(base+"/"+all_dirs[i]+"/data/info.sif"))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("edit npc", false, true, last_path_pos != -1);
+path_list = form.create_list("path");
+for(uint i=0; i<paths.length(); i++)
+form.add_list_item(path_list, paths[i], paths[i]);
+form.set_list_position(path_list, saved_path_pos, false);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+form.set_list_position(sub_list, sp, false);
+b_edit = form.create_button("&edit", true);
+b_cancel = form.create_button("&cancel", false, true);
+if(last_path_pos == -1)
+{
+form.focus(path_list);
+}
+else if(focus_after_build == 1)
+form.focus_silently(cat_list);
+else
+form.focus_silently(path_list);
+last_path_pos = saved_path_pos;
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_path = form.get_list_position(path_list);
+if(cur_path != -1 && cur_path != last_path_pos)
+{
+saved_path_pos = cur_path;
+saved_sub_pos = 0;
+focus_after_build = 0;
+do_build = true;
+continue;
+}
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+saved_sub_pos = 0;
+focus_after_build = 1;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_edit))
+{
+int p = form.get_list_position(sub_list);
+if(p < 0 || p >= int(sub_data.length()))
+{
+speak("Subtype is required.");
+form.focus(sub_list);
+continue;
+}
+string chosen_sub = sub_data[p];
+string chosen_cat = categories[saved_cat_pos];
+string target_path = (saved_path_pos == 0)
+? "sounds/decompiled/builder/kombat/npc/"+chosen_cat+"/"+chosen_sub+"/data/info.sif"
+: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+chosen_cat+"/"+chosen_sub+"/data/info.sif";
+saved_sub_pos = p;
+if(edit_npc_form(target_path, chosen_sub)) return;
+do_build = true;
+continue;
+}
+}
 }
 
 void add_npc()
 {
-	string[] paths = {"global", "map"};
-	string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
-	int saved_path_pos = 0;
-	int saved_cat_pos = 0;
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int last_path_pos = -1;
-	int last_cat_pos = -1;
-	int focus_after_build = 0;
-	int path_list, cat_list, sub_list, b_add, b_cancel;
-	string[] sub_data;
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			string base = (saved_path_pos == 0)
-				? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
-				: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
-			sub_data = find_directories(base+"/*");
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("add npc", false, true, last_path_pos != -1);
-			path_list = form.create_list("path");
-			for(uint i=0; i<paths.length(); i++)
-				form.add_list_item(path_list, paths[i], paths[i]);
-			form.set_list_position(path_list, saved_path_pos, false);
-			cat_list = form.create_list("category");
-			for(uint i=0; i<categories.length(); i++)
-				form.add_list_item(cat_list, categories[i], categories[i]);
-			form.set_list_position(cat_list, saved_cat_pos, false);
-			sub_list = form.create_list("subtype");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			form.set_list_position(sub_list, sp, false);
-			b_add = form.create_button("&add", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			if(last_path_pos == -1)
-			{
-				form.focus(path_list);
-			}
-			else if(focus_after_build == 1)
-				form.focus_silently(cat_list);
-			else
-				form.focus_silently(path_list);
-			last_path_pos = saved_path_pos;
-			last_cat_pos = saved_cat_pos;
-		}
-		form.monitor();
-		int cur_path = form.get_list_position(path_list);
-		if(cur_path != -1 && cur_path != last_path_pos)
-		{
-			saved_path_pos = cur_path;
-			saved_sub_pos = 0;
-			focus_after_build = 0;
-			do_build = true;
-			continue;
-		}
-		int cur_cat = form.get_list_position(cat_list);
-		if(cur_cat != -1 && cur_cat != last_cat_pos)
-		{
-			saved_cat_pos = cur_cat;
-			saved_sub_pos = 0;
-			focus_after_build = 1;
-			do_build = true;
-			continue;
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_add))
-		{
-			int p = form.get_list_position(sub_list);
-			if(p < 0 || p >= int(sub_data.length()))
-			{
-				speak("Subtype is required.");
-				form.focus(sub_list);
-				continue;
-			}
-			string chosen_sub = sub_data[p];
-			string chosen_cat = categories[saved_cat_pos];
-			string chosen_path = paths[saved_path_pos];
-			saved_sub_pos = p;
-			if(add_npc_form(chosen_path, chosen_cat, chosen_sub)) return;
-			do_build = true;
-			continue;
-		}
-	}
+string[] paths = {"global", "map"};
+string[] categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
+int saved_path_pos = 0;
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+bool do_build = true;
+int last_path_pos = -1;
+int last_cat_pos = -1;
+int focus_after_build = 0;
+int path_list, cat_list, sub_list, b_add, b_cancel;
+string[] sub_data;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+string base = (saved_path_pos == 0)
+? "sounds/decompiled/builder/kombat/npc/"+categories[saved_cat_pos]
+: "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+categories[saved_cat_pos];
+sub_data = find_directories(base+"/*");
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("add npc", false, true, last_path_pos != -1);
+path_list = form.create_list("path");
+for(uint i=0; i<paths.length(); i++)
+form.add_list_item(path_list, paths[i], paths[i]);
+form.set_list_position(path_list, saved_path_pos, false);
+cat_list = form.create_list("category");
+for(uint i=0; i<categories.length(); i++)
+form.add_list_item(cat_list, categories[i], categories[i]);
+form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("subtype");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+form.set_list_position(sub_list, sp, false);
+b_add = form.create_button("&add", true);
+b_cancel = form.create_button("&cancel", false, true);
+if(last_path_pos == -1)
+{
+form.focus(path_list);
+}
+else if(focus_after_build == 1)
+form.focus_silently(cat_list);
+else
+form.focus_silently(path_list);
+last_path_pos = saved_path_pos;
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_path = form.get_list_position(path_list);
+if(cur_path != -1 && cur_path != last_path_pos)
+{
+saved_path_pos = cur_path;
+saved_sub_pos = 0;
+focus_after_build = 0;
+do_build = true;
+continue;
+}
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != last_cat_pos)
+{
+saved_cat_pos = cur_cat;
+saved_sub_pos = 0;
+focus_after_build = 1;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_add))
+{
+int p = form.get_list_position(sub_list);
+if(p < 0 || p >= int(sub_data.length()))
+{
+speak("Subtype is required.");
+form.focus(sub_list);
+continue;
+}
+string chosen_sub = sub_data[p];
+string chosen_cat = categories[saved_cat_pos];
+string chosen_path = paths[saved_path_pos];
+saved_sub_pos = p;
+if(add_npc_form(chosen_path, chosen_cat, chosen_sub)) return;
+do_build = true;
+continue;
+}
+}
 }

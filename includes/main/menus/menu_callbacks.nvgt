@@ -194,59 +194,59 @@ prevslot=t.play_stationary(get_pack_sound("main/menus/"+menuchanges+"/*wrap*"), 
 
 string shieldsmenu()
 {
-	if(glider_engine_on) glider_engine_stop();
-	string[] armors = get_pack_sound_folders("main/equipments/shields/*");
-	setupmenu();
-	@m.background_callback=@shields_callback;
-	@m.disabled_callback=@shield_locked_callback;
-	m.disabled_sound=get_pack_sound("main/menus/"+menutype+"/*error*");
-	m.intro_text="Shields menu";
-	shield_unlock_levels.delete_all();
-	for (uint i = 0; i < armors.length(); i++)
-	{
-		string shield_name = armors[i];
+if(glider_engine_on) glider_engine_stop();
+string[] armors = get_pack_sound_folders("main/equipments/shields/*");
+setupmenu();
+@m.background_callback=@shields_callback;
+@m.disabled_callback=@shield_locked_callback;
+m.disabled_sound=get_pack_sound("main/menus/"+menutype+"/*error*");
+m.intro_text="Shields menu";
+shield_unlock_levels.delete_all();
+for (uint i = 0; i < armors.length(); i++)
+{
+string shield_name = armors[i];
 string info_path = "sounds/decompiled/main/equipments/shields/" + shield_name + "/data/info.sif";
-		double unlock_level = 0;
-		if (file_exists(info_path))
-		{
-			file f;
-			f.open(info_path, "rb");
-			string[] lines = split_lines(f.read());
-			f.close();
-			for (uint j = 0; j < lines.length(); j++)
-			{
-				string[] kv = string_split(lines[j], "=", true);
-				if (kv.length() == 2 && kv[0] == "unlock level")
-				{
-					unlock_level = parse_double(kv[1]);
-					break;
-				}
-			}
-		}
-		shield_unlock_levels.set(shield_name, unlock_level);
-		bool is_unlocked = level >= unlock_level;
-		string label = shield_name;
-		if (!is_unlocked)
-			label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-		m.add_item(label, shield_name, -1, is_unlocked);
-	}
-	int mres = m.run();
-	if (mres < 0)
-	{
-		resume_pools();
-		speak("Canceled");
-		return "";
-	}
-	if (mres >= 0 && mres < int(armors.length()))
-	{
-		resume_pools();
-		shieldtype = m.get_item_id(mres);
-		shieldparse();
-		t.destroy_sound(prevslot);
+double unlock_level = 0;
+if (file_exists(info_path))
+{
+file f;
+f.open(info_path, "rb");
+string[] lines = split_lines(f.read());
+f.close();
+for (uint j = 0; j < lines.length(); j++)
+{
+string[] kv = string_split(lines[j], "=", true);
+if (kv.length() == 2 && kv[0] == "unlock level")
+{
+unlock_level = parse_double(kv[1]);
+break;
+}
+}
+}
+shield_unlock_levels.set(shield_name, unlock_level);
+bool is_unlocked = level >= unlock_level;
+string label = shield_name;
+if (!is_unlocked)
+label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+m.add_item(label, shield_name, -1, is_unlocked);
+}
+int mres = m.run();
+if (mres < 0)
+{
+resume_pools();
+speak("Canceled");
+return "";
+}
+if (mres >= 0 && mres < int(armors.length()))
+{
+resume_pools();
+shieldtype = m.get_item_id(mres);
+shieldparse();
+t.destroy_sound(prevslot);
 prevslot=t.play_stationary(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*draw*"), false);
-		speak(shieldtype + " " + "equipped");
-	}
-	return m.get_item_id(mres);
+speak(shieldtype + " " + "equipped");
+}
+return m.get_item_id(mres);
 }
 void shields_callback(form_menu@ m, string data)
 {
@@ -282,186 +282,186 @@ prevslot=t.play_stationary(get_pack_sound("main/equipments/shields/"+shieldtype+
 }
 string invmenu()
 {
-	if(glider_engine_on) glider_engine_stop();
-	setupmenu();
-	m.intro_text="Inventory menu.";
-	int total = inv.get_size();
-	m.add_item("Total items " + total + ".");
-	string[] keys = inv.get_keys();
-	keys.sort_ascending();
-	for (uint i = 0; i < keys.length(); i++)
-	{
-		int amt;
-		inv.items.get(keys[i], amt);
-		string label = keys[i] + (amt == 1 ? "" : "s") + ", you have " + amt;
-		m.add_item(label, keys[i]);
-	}
-	int mres = m.run();
-	if (mres < 0)
-	{
-		resume_pools();
-		speak("Canceled");
-		return "";
-	}
-	string choice = m.get_item_id(mres);
-	if (choice == "")
-	{
-		resume_pools();
-		return "";
-	}
-	resume_pools();
-	inv.focus_item(choice);
-	double invpan = convert_to_pan(keys.length(), inv.pos, -25, 25);
-	inv.sound_slot = invpool.play_stationary_extended(get_pack_sound("main/characters/" + chartype+"/general/*inv*"), false, 0, invpan, 0, 100, false);
-	int amt;
-	inv.items.get(choice, amt);
-	speak(choice + (amt == 1 ? "" : "s") + " focused");
-	return choice;
+if(glider_engine_on) glider_engine_stop();
+setupmenu();
+m.intro_text="Inventory menu.";
+int total = inv.get_size();
+m.add_item("Total items " + total + ".");
+string[] keys = inv.get_keys();
+keys.sort_ascending();
+for (uint i = 0; i < keys.length(); i++)
+{
+int amt;
+inv.items.get(keys[i], amt);
+string label = keys[i] + (amt == 1 ? "" : "s") + ", you have " + amt;
+m.add_item(label, keys[i]);
+}
+int mres = m.run();
+if (mres < 0)
+{
+resume_pools();
+speak("Canceled");
+return "";
+}
+string choice = m.get_item_id(mres);
+if (choice == "")
+{
+resume_pools();
+return "";
+}
+resume_pools();
+inv.focus_item(choice);
+double invpan = convert_to_pan(keys.length(), inv.pos, -25, 25);
+inv.sound_slot = invpool.play_stationary_extended(get_pack_sound("main/characters/" + chartype+"/general/*inv*"), false, 0, invpan, 0, 100, false);
+int amt;
+inv.items.get(choice, amt);
+speak(choice + (amt == 1 ? "" : "s") + " focused");
+return choice;
 }
 void weapons_callback(form_menu@ m, string data)
 {
-	int tab = m.active_tab;
-	int idx = m.focused_item;
-	if(tab < 0 || tab >= int(weapon_source_cat.length())) return;
-	if(idx < 0 || idx >= int(weapon_source_cat[tab].length())) return;
-	string folder = "main/equipments/weapons/" + weapon_source_cat[tab][idx] + "/" + m.get_item_id(idx) + "/general/";
-	if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
-	{
-		t.destroy_sound(prevslot);
-		prevslot = t.play_stationary(get_pack_sound(folder + "*fire*"), false);
-		keytimer.restart();
-	}
-	if(control_is_down() && key_repeating(KEY_L))
-	{
-		t.destroy_sound(prevslot);
-		prevslot = t.play_stationary(get_pack_sound(folder + "*draw*"), false);
-	}
-	if(control_is_down() && key_repeating(KEY_H))
-	{
-		t.destroy_sound(prevslot);
-		prevslot = t.play_stationary(get_pack_sound(folder + "*hit*"), false);
-	}
-	if(control_is_down() && key_repeating(KEY_E))
-	{
-		t.destroy_sound(prevslot);
-		prevslot = t.play_stationary(get_pack_sound(folder + "*empty*"), false);
-	}
-	if(control_is_down() && key_repeating(KEY_R))
-	{
-		t.destroy_sound(prevslot);
-		prevslot = t.play_stationary(get_pack_sound(folder + "*reload*"), false);
-	}
+int tab = m.active_tab;
+int idx = m.focused_item;
+if(tab < 0 || tab >= int(weapon_source_cat.length())) return;
+if(idx < 0 || idx >= int(weapon_source_cat[tab].length())) return;
+string folder = "main/equipments/weapons/" + weapon_source_cat[tab][idx] + "/" + m.get_item_id(idx) + "/general/";
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_pack_sound(folder + "*fire*"), false);
+keytimer.restart();
+}
+if(control_is_down() && key_repeating(KEY_L))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_pack_sound(folder + "*draw*"), false);
+}
+if(control_is_down() && key_repeating(KEY_H))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_pack_sound(folder + "*hit*"), false);
+}
+if(control_is_down() && key_repeating(KEY_E))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_pack_sound(folder + "*empty*"), false);
+}
+if(control_is_down() && key_repeating(KEY_R))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_pack_sound(folder + "*reload*"), false);
+}
 }
 void weaponsmenu()
 {
-	if(glider_engine_on) glider_engine_stop();
-	string[] cats = get_pack_sound_folders("main/equipments/weapons/*");
-	if(cats.length() == 0)
-	{
-		dlg("Error. There are no weapon categories available to view. Press enter to continue.");
-		resume_pools();
-		return;
-	}
-	string[] tab_cats;
-	tab_cats.insert_last("all");
-	for(uint i = 0; i < cats.length(); i++) tab_cats.insert_last(cats[i]);
-	string[][] weapon_labels(tab_cats.length());
-	string[][] weapon_ids(tab_cats.length());
-	bool[][] weapon_unlocked(tab_cats.length());
-	weapon_source_cat.resize(tab_cats.length());
-	for(uint i = 0; i < tab_cats.length(); i++) weapon_source_cat[i].resize(0);
-	weapon_unlock_levels.delete_all();
-	for(uint i = 0; i < cats.length(); i++)
-	{
-		string[] weps = get_pack_sound_folders("main/equipments/weapons/" + cats[i] + "/*");
-		for(uint j = 0; j < weps.length(); j++)
-		{
-			weapon temp;
-			temp.parse(cats[i], weps[j]);
-			double unlock_level = temp.level;
-			bool is_unlocked = level >= unlock_level;
-			string label = weps[j];
-			if(!is_unlocked) label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
-			weapon_unlock_levels.set(weps[j], unlock_level);
-			weapon_labels[i+1].insert_last(label);
-			weapon_ids[i+1].insert_last(weps[j]);
-			weapon_unlocked[i+1].insert_last(is_unlocked);
-			weapon_source_cat[i+1].insert_last(cats[i]);
-			weapon_labels[0].insert_last(label);
-			weapon_ids[0].insert_last(weps[j]);
-			weapon_unlocked[0].insert_last(is_unlocked);
-			weapon_source_cat[0].insert_last(cats[i]);
-		}
-	}
-	int[] order(weapon_labels[0].length());
-	for(uint i = 0; i < order.length(); i++) order[i] = int(i);
-	for(uint i = 1; i < order.length(); i++)
-	{
-		int key = order[i];
-		int j = int(i) - 1;
-		while(j >= 0 && weapon_labels[0][order[j]] > weapon_labels[0][key])
-		{
-			order[j+1] = order[j];
-			j--;
-		}
-		order[j+1] = key;
-	}
-	string[] sorted_labels(order.length());
-	string[] sorted_ids(order.length());
-	bool[] sorted_unlocked(order.length());
-	string[] sorted_sources(order.length());
-	for(uint i = 0; i < order.length(); i++)
-	{
-		sorted_labels[i] = weapon_labels[0][order[i]];
-		sorted_ids[i] = weapon_ids[0][order[i]];
-		sorted_unlocked[i] = weapon_unlocked[0][order[i]];
-		sorted_sources[i] = weapon_source_cat[0][order[i]];
-	}
-	weapon_labels[0] = sorted_labels;
-	weapon_ids[0] = sorted_ids;
-	weapon_unlocked[0] = sorted_unlocked;
-	weapon_source_cat[0] = sorted_sources;
+if(glider_engine_on) glider_engine_stop();
+string[] cats = get_pack_sound_folders("main/equipments/weapons/*");
+if(cats.length() == 0)
+{
+dlg("Error. There are no weapon categories available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+string[] tab_cats;
+tab_cats.insert_last("all");
+for(uint i = 0; i < cats.length(); i++) tab_cats.insert_last(cats[i]);
+string[][] weapon_labels(tab_cats.length());
+string[][] weapon_ids(tab_cats.length());
+bool[][] weapon_unlocked(tab_cats.length());
+weapon_source_cat.resize(tab_cats.length());
+for(uint i = 0; i < tab_cats.length(); i++) weapon_source_cat[i].resize(0);
+weapon_unlock_levels.delete_all();
+for(uint i = 0; i < cats.length(); i++)
+{
+string[] weps = get_pack_sound_folders("main/equipments/weapons/" + cats[i] + "/*");
+for(uint j = 0; j < weps.length(); j++)
+{
+weapon temp;
+temp.parse(cats[i], weps[j]);
+double unlock_level = temp.level;
+bool is_unlocked = level >= unlock_level;
+string label = weps[j];
+if(!is_unlocked) label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
+weapon_unlock_levels.set(weps[j], unlock_level);
+weapon_labels[i+1].insert_last(label);
+weapon_ids[i+1].insert_last(weps[j]);
+weapon_unlocked[i+1].insert_last(is_unlocked);
+weapon_source_cat[i+1].insert_last(cats[i]);
+weapon_labels[0].insert_last(label);
+weapon_ids[0].insert_last(weps[j]);
+weapon_unlocked[0].insert_last(is_unlocked);
+weapon_source_cat[0].insert_last(cats[i]);
+}
+}
+int[] order(weapon_labels[0].length());
+for(uint i = 0; i < order.length(); i++) order[i] = int(i);
+for(uint i = 1; i < order.length(); i++)
+{
+int key = order[i];
+int j = int(i) - 1;
+while(j >= 0 && weapon_labels[0][order[j]] > weapon_labels[0][key])
+{
+order[j+1] = order[j];
+j--;
+}
+order[j+1] = key;
+}
+string[] sorted_labels(order.length());
+string[] sorted_ids(order.length());
+bool[] sorted_unlocked(order.length());
+string[] sorted_sources(order.length());
+for(uint i = 0; i < order.length(); i++)
+{
+sorted_labels[i] = weapon_labels[0][order[i]];
+sorted_ids[i] = weapon_ids[0][order[i]];
+sorted_unlocked[i] = weapon_unlocked[0][order[i]];
+sorted_sources[i] = weapon_source_cat[0][order[i]];
+}
+weapon_labels[0] = sorted_labels;
+weapon_ids[0] = sorted_ids;
+weapon_unlocked[0] = sorted_unlocked;
+weapon_source_cat[0] = sorted_sources;
 
-	setupmenu();
-	@m.background_callback = @weapons_callback;
-	@m.disabled_callback = @weapon_locked_callback;
-	m.disabled_sound = get_pack_sound("main/menus/" + menutype + "/*error*");
-	m.intro_text = "Weapons menu";
-	m.tab_caption = "Category";
-	for(uint i = 0; i < tab_cats.length(); i++)
-	{
-		int t_idx = m.add_tab(tab_cats[i]);
-		for(uint j = 0; j < weapon_labels[i].length(); j++)
-			m.add_item_to_tab(t_idx, weapon_labels[i][j], weapon_ids[i][j], -1, weapon_unlocked[i][j]);
-	}
-	if(weapons_last_tab >= 0 && weapons_last_tab < int(tab_cats.length()))
-		m.set_active_tab_silent(weapons_last_tab);
-	int mres = m.run(-1, true, false);
-	int active_tab_after = m.active_tab;
-	if(active_tab_after >= 0) weapons_last_tab = active_tab_after;
-	if(mres < 0)
-	{
-		t.destroy_sound(prevslot);
-		resume_pools();
-		speak("canceled");
-		return;
-	}
-	int tab = m.selected_tab;
-	if(tab < 0 || tab >= int(weapon_source_cat.length()) || mres < 0 || mres >= int(weapon_source_cat[tab].length()))
-	{
-		resume_pools();
-		return;
-	}
-	string source_cat = weapon_source_cat[tab][mres];
-	string id = m.selected_item_id;
-	t.destroy_sound(prevslot);
-	resume_pools();
-	p.destroy_sound(refslot);
-	wepdef = 0;
-	wepchar.cad = source_cat;
-	wepchar.sub = id;
-	wepchar.parse(source_cat, id);
-	wepchar.play_draw(int(me.x), int(me.y), int(me.z));
-	cloner_has_last = false;
-	speak(id + " equipped");
+setupmenu();
+@m.background_callback = @weapons_callback;
+@m.disabled_callback = @weapon_locked_callback;
+m.disabled_sound = get_pack_sound("main/menus/" + menutype + "/*error*");
+m.intro_text = "Weapons menu";
+m.tab_caption = "Category";
+for(uint i = 0; i < tab_cats.length(); i++)
+{
+int t_idx = m.add_tab(tab_cats[i]);
+for(uint j = 0; j < weapon_labels[i].length(); j++)
+m.add_item_to_tab(t_idx, weapon_labels[i][j], weapon_ids[i][j], -1, weapon_unlocked[i][j]);
+}
+if(weapons_last_tab >= 0 && weapons_last_tab < int(tab_cats.length()))
+m.set_active_tab_silent(weapons_last_tab);
+int mres = m.run(-1, true, false);
+int active_tab_after = m.active_tab;
+if(active_tab_after >= 0) weapons_last_tab = active_tab_after;
+if(mres < 0)
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+int tab = m.selected_tab;
+if(tab < 0 || tab >= int(weapon_source_cat.length()) || mres < 0 || mres >= int(weapon_source_cat[tab].length()))
+{
+resume_pools();
+return;
+}
+string source_cat = weapon_source_cat[tab][mres];
+string id = m.selected_item_id;
+t.destroy_sound(prevslot);
+resume_pools();
+p.destroy_sound(refslot);
+wepdef = 0;
+wepchar.cad = source_cat;
+wepchar.sub = id;
+wepchar.parse(source_cat, id);
+wepchar.play_draw(int(me.x), int(me.y), int(me.z));
+cloner_has_last = false;
+speak(id + " equipped");
 }

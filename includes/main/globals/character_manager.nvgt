@@ -1,569 +1,569 @@
 void character_chooser()
 {
-	bool do_build = true;
-	int b_add, b_edit, b_remove, b_view, b_back;
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			form.reset();
-			form.create_window("character", false, true, false);
-			b_add = form.create_button("&add character");
-			b_edit = form.create_button("&edit character");
-			b_remove = form.create_button("&remove character");
-			b_view = form.create_button("&view character");
-			b_back = form.create_button("&back", false, true);
-			form.focus(b_add);
-		}
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
-		{
-			return;
-		}
-		if(form.is_pressed(b_add)) { add_character(); do_build = true; continue; }
-		if(form.is_pressed(b_edit)) { edit_character(); do_build = true; continue; }
-		if(form.is_pressed(b_remove)) { remove_character(); do_build = true; continue; }
-		if(form.is_pressed(b_view)) { view_character(); do_build = true; continue; }
-	}
+bool do_build = true;
+int b_add, b_edit, b_remove, b_view, b_back;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+form.reset();
+form.create_window("character", false, true, false);
+b_add = form.create_button("&add character");
+b_edit = form.create_button("&edit character");
+b_remove = form.create_button("&remove character");
+b_view = form.create_button("&view character");
+b_back = form.create_button("&back", false, true);
+form.focus(b_add);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
+{
+return;
+}
+if(form.is_pressed(b_add)) { add_character(); do_build = true; continue; }
+if(form.is_pressed(b_edit)) { edit_character(); do_build = true; continue; }
+if(form.is_pressed(b_remove)) { remove_character(); do_build = true; continue; }
+if(form.is_pressed(b_view)) { view_character(); do_build = true; continue; }
+}
 }
 
 string[] character_main_keys()
 {
-	string[] keys = {"break verbs", "body verbs", "attack", "defence", "points", "fall modifier", "health", "stamina", "kills", "lives", "level", "level modifier", "experience", "experience modifier", "experience required"};
-	return keys;
+string[] keys = {"break verbs", "body verbs", "attack", "defence", "points", "fall modifier", "health", "stamina", "kills", "lives", "level", "level modifier", "experience", "experience modifier", "experience required"};
+return keys;
 }
 
 string[] character_kombat_keys()
 {
-	string[] keys = {"damage_normal", "damage_gas", "damage_air", "damage_battery", "damage_powder", "damage_arrow", "damage_rocket", "damage_water", "damage_knife", "damage_needle", "damage_dart", "damage_ball", "damage_mana", "damage_fuel", "damage_rock", "damage_grenade", "damage_melee", "reserve_normal", "reserve_gas", "reserve_air", "reserve_battery", "reserve_powder", "reserve_arrow", "reserve_rocket", "reserve_water", "reserve_knife", "reserve_needle", "reserve_dart", "reserve_ball", "reserve_mana", "reserve_fuel", "reserve_rock", "reserve_grenade"};
-	return keys;
+string[] keys = {"damage_normal", "damage_gas", "damage_air", "damage_battery", "damage_powder", "damage_arrow", "damage_rocket", "damage_water", "damage_knife", "damage_needle", "damage_dart", "damage_ball", "damage_mana", "damage_fuel", "damage_rock", "damage_grenade", "damage_melee", "reserve_normal", "reserve_gas", "reserve_air", "reserve_battery", "reserve_powder", "reserve_arrow", "reserve_rocket", "reserve_water", "reserve_knife", "reserve_needle", "reserve_dart", "reserve_ball", "reserve_mana", "reserve_fuel", "reserve_rock", "reserve_grenade"};
+return keys;
 }
 
 dictionary read_character_keyvalue_file(string target_path)
 {
-	dictionary existing;
-	file fin;
-	if(fin.open(target_path, "rb"))
-	{
-		string content = fin.read();
-		fin.close();
-		string[] lines = split_lines(content);
-		for(uint i=0; i<lines.length(); i++)
-		{
-			int eq = string_contains(lines[i], "=", 1);
-			if(eq < 0) continue;
-			string k = string_left(lines[i], eq);
-			string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
-			existing[k] = v;
-		}
-	}
-	return existing;
+dictionary existing;
+file fin;
+if(fin.open(target_path, "rb"))
+{
+string content = fin.read();
+fin.close();
+string[] lines = split_lines(content);
+for(uint i=0; i<lines.length(); i++)
+{
+int eq = string_contains(lines[i], "=", 1);
+if(eq < 0) continue;
+string k = string_left(lines[i], eq);
+string v = string_mid(lines[i], eq+2, lines[i].length()-eq-1);
+existing[k] = v;
+}
+}
+return existing;
 }
 
 bool character_main_form(string subtype, bool is_edit)
 {
-	string target_path = "sounds/decompiled/main/characters/"+subtype+"/data/main.sif";
-	string[] keys = character_main_keys();
-	dictionary existing;
-	if(is_edit) existing = read_character_keyvalue_file(target_path);
-	form.reset();
-	form.create_window((is_edit ? "edit " : "add ")+subtype+" main", false, true, false);
-	int[] inputs;
-	for(uint i=0; i<keys.length(); i++)
-	{
-		string preset = "";
-		if(existing.exists(keys[i])) existing.get(keys[i], preset);
-		inputs.insert_last(form.create_input_box(keys[i], preset));
-	}
-	string[] wt_opts;
-	string[] wt2_opts;
-	build_npc_weapon_lists(wt_opts, wt2_opts);
-	int wt_list = form.create_list("weapon type");
-	int wt2_list = form.create_list("weapon type2");
-	for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
-	for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
-	string wt_pre = "none"; if(existing.exists("weapon type")) existing.get("weapon type", wt_pre);
-	string wt2_pre = "none"; if(existing.exists("weapon type2")) existing.get("weapon type2", wt2_pre);
-	int wt_idx = 0, wt2_idx = 0;
-	for(uint i=0; i<wt_opts.length(); i++) if(wt_opts[i] == wt_pre) wt_idx = i;
-	for(uint i=0; i<wt2_opts.length(); i++) if(wt2_opts[i] == wt2_pre) wt2_idx = i;
-	form.set_list_position(wt_list, wt_idx, false);
-	form.set_list_position(wt2_list, wt2_idx, false);
-	string[] shield_opts;
-	shield_opts.insert_last("none");
-	string[] discovered_shields = get_pack_sound_folders("main/equipments/shields/*");
-	discovered_shields.sort_ascending();
-	for(uint i=0; i<discovered_shields.length(); i++) shield_opts.insert_last(discovered_shields[i]);
-	shield_opts.insert_last("random");
-	int shield_list = form.create_list("shield type");
-	for(uint i=0; i<shield_opts.length(); i++) form.add_list_item(shield_list, shield_opts[i], shield_opts[i]);
-	string shield_pre = "none"; if(existing.exists("shield type")) existing.get("shield type", shield_pre);
-	int shield_idx = 0;
-	for(uint i=0; i<shield_opts.length(); i++) if(shield_opts[i] == shield_pre) shield_idx = i;
-	form.set_list_position(shield_list, shield_idx, false);
-	int b_save = form.create_button("&save", true);
-	int b_cancel = form.create_button("&cancel", false, true);
-	form.focus(inputs[0]);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return false;
-		}
-		if(form.is_pressed(b_save))
-		{
-			bool blank = false;
-			for(uint i=0; i<inputs.length(); i++)
-			{
-				if(form.get_text(inputs[i]) == "")
-				{
-					speak(keys[i]+" is required.");
-					form.focus(inputs[i]);
-					blank = true;
-					break;
-				}
-			}
-			if(blank) continue;
-			if(!is_edit && file_exists(target_path))
-			{
-				setupmenu();
-				m.add_item("yes");
-				m.add_item("no");
-				m.intro_text = "A main.sif already exists for this character. Overwrite?";
-				int mres = m.run();
-				if(mres != 0) continue;
-			}
-			string content = "";
-			for(uint i=0; i<inputs.length(); i++)
-				content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-			content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
-			content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
-			content += "shield type="+shield_opts[form.get_list_position(shield_list)]+"\r\n";
-			create_subfolders(target_path);
-			file fout;
-			if(!fout.open(target_path, "w"))
-			{
-				speak("Failed to open file for writing.");
-				continue;
-			}
-			fout.write(content);
-			fout.close();
-			speak("Saved.");
-			return true;
-		}
-	}
-	return false;
+string target_path = "sounds/decompiled/main/characters/"+subtype+"/data/main.sif";
+string[] keys = character_main_keys();
+dictionary existing;
+if(is_edit) existing = read_character_keyvalue_file(target_path);
+form.reset();
+form.create_window((is_edit ? "edit " : "add ")+subtype+" main", false, true, false);
+int[] inputs;
+for(uint i=0; i<keys.length(); i++)
+{
+string preset = "";
+if(existing.exists(keys[i])) existing.get(keys[i], preset);
+inputs.insert_last(form.create_input_box(keys[i], preset));
+}
+string[] wt_opts;
+string[] wt2_opts;
+build_npc_weapon_lists(wt_opts, wt2_opts);
+int wt_list = form.create_list("weapon type");
+int wt2_list = form.create_list("weapon type2");
+for(uint i=0; i<wt_opts.length(); i++) form.add_list_item(wt_list, wt_opts[i], wt_opts[i]);
+for(uint i=0; i<wt2_opts.length(); i++) form.add_list_item(wt2_list, wt2_opts[i], wt2_opts[i]);
+string wt_pre = "none"; if(existing.exists("weapon type")) existing.get("weapon type", wt_pre);
+string wt2_pre = "none"; if(existing.exists("weapon type2")) existing.get("weapon type2", wt2_pre);
+int wt_idx = 0, wt2_idx = 0;
+for(uint i=0; i<wt_opts.length(); i++) if(wt_opts[i] == wt_pre) wt_idx = i;
+for(uint i=0; i<wt2_opts.length(); i++) if(wt2_opts[i] == wt2_pre) wt2_idx = i;
+form.set_list_position(wt_list, wt_idx, false);
+form.set_list_position(wt2_list, wt2_idx, false);
+string[] shield_opts;
+shield_opts.insert_last("none");
+string[] discovered_shields = get_pack_sound_folders("main/equipments/shields/*");
+discovered_shields.sort_ascending();
+for(uint i=0; i<discovered_shields.length(); i++) shield_opts.insert_last(discovered_shields[i]);
+shield_opts.insert_last("random");
+int shield_list = form.create_list("shield type");
+for(uint i=0; i<shield_opts.length(); i++) form.add_list_item(shield_list, shield_opts[i], shield_opts[i]);
+string shield_pre = "none"; if(existing.exists("shield type")) existing.get("shield type", shield_pre);
+int shield_idx = 0;
+for(uint i=0; i<shield_opts.length(); i++) if(shield_opts[i] == shield_pre) shield_idx = i;
+form.set_list_position(shield_list, shield_idx, false);
+int b_save = form.create_button("&save", true);
+int b_cancel = form.create_button("&cancel", false, true);
+form.focus(inputs[0]);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(b_save))
+{
+bool blank = false;
+for(uint i=0; i<inputs.length(); i++)
+{
+if(form.get_text(inputs[i]) == "")
+{
+speak(keys[i]+" is required.");
+form.focus(inputs[i]);
+blank = true;
+break;
+}
+}
+if(blank) continue;
+if(!is_edit && file_exists(target_path))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "A main.sif already exists for this character. Overwrite?";
+int mres = m.run();
+if(mres != 0) continue;
+}
+string content = "";
+for(uint i=0; i<inputs.length(); i++)
+content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
+content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
+content += "shield type="+shield_opts[form.get_list_position(shield_list)]+"\r\n";
+create_subfolders(target_path);
+file fout;
+if(!fout.open(target_path, "w"))
+{
+speak("Failed to open file for writing.");
+continue;
+}
+fout.write(content);
+fout.close();
+speak("Saved.");
+return true;
+}
+}
+return false;
 }
 
 bool character_kombat_form(string subtype, bool is_edit)
 {
-	string target_path = "sounds/decompiled/main/characters/"+subtype+"/data/kombat.sif";
-	string[] keys = character_kombat_keys();
-	dictionary existing;
-	if(is_edit) existing = read_character_keyvalue_file(target_path);
-	form.reset();
-	form.create_window((is_edit ? "edit " : "add ")+subtype+" kombat", false, true, false);
-	int[] inputs;
-	for(uint i=0; i<keys.length(); i++)
-	{
-		string preset = "";
-		if(existing.exists(keys[i])) existing.get(keys[i], preset);
-		inputs.insert_last(form.create_input_box(keys[i], preset));
-	}
-	int b_save = form.create_button("&save", true);
-	int b_cancel = form.create_button("&cancel", false, true);
-	form.focus(inputs[0]);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return false;
-		}
-		if(form.is_pressed(b_save))
-		{
-			bool blank = false;
-			for(uint i=0; i<inputs.length(); i++)
-			{
-				if(form.get_text(inputs[i]) == "")
-				{
-					speak(keys[i]+" is required.");
-					form.focus(inputs[i]);
-					blank = true;
-					break;
-				}
-			}
-			if(blank) continue;
-			if(!is_edit && file_exists(target_path))
-			{
-				setupmenu();
-				m.add_item("yes");
-				m.add_item("no");
-				m.intro_text = "A kombat.sif already exists for this character. Overwrite?";
-				int mres = m.run();
-				if(mres != 0) continue;
-			}
-			string content = "";
-			for(uint i=0; i<inputs.length(); i++)
-				content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
-			create_subfolders(target_path);
-			file fout;
-			if(!fout.open(target_path, "w"))
-			{
-				speak("Failed to open file for writing.");
-				continue;
-			}
-			fout.write(content);
-			fout.close();
-			speak("Saved.");
-			return true;
-		}
-	}
-	return false;
+string target_path = "sounds/decompiled/main/characters/"+subtype+"/data/kombat.sif";
+string[] keys = character_kombat_keys();
+dictionary existing;
+if(is_edit) existing = read_character_keyvalue_file(target_path);
+form.reset();
+form.create_window((is_edit ? "edit " : "add ")+subtype+" kombat", false, true, false);
+int[] inputs;
+for(uint i=0; i<keys.length(); i++)
+{
+string preset = "";
+if(existing.exists(keys[i])) existing.get(keys[i], preset);
+inputs.insert_last(form.create_input_box(keys[i], preset));
+}
+int b_save = form.create_button("&save", true);
+int b_cancel = form.create_button("&cancel", false, true);
+form.focus(inputs[0]);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(b_save))
+{
+bool blank = false;
+for(uint i=0; i<inputs.length(); i++)
+{
+if(form.get_text(inputs[i]) == "")
+{
+speak(keys[i]+" is required.");
+form.focus(inputs[i]);
+blank = true;
+break;
+}
+}
+if(blank) continue;
+if(!is_edit && file_exists(target_path))
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "A kombat.sif already exists for this character. Overwrite?";
+int mres = m.run();
+if(mres != 0) continue;
+}
+string content = "";
+for(uint i=0; i<inputs.length(); i++)
+content += keys[i]+"="+form.get_text(inputs[i])+"\r\n";
+create_subfolders(target_path);
+file fout;
+if(!fout.open(target_path, "w"))
+{
+speak("Failed to open file for writing.");
+continue;
+}
+fout.write(content);
+fout.close();
+speak("Saved.");
+return true;
+}
+}
+return false;
 }
 
 string read_character_data_file(string subtype, string filename)
 {
-	string path = "sounds/decompiled/main/characters/"+subtype+"/data/"+filename;
-	file fin;
-	if(!fin.open(path, "rb")) return "";
-	string content = fin.read();
-	fin.close();
-	return content;
+string path = "sounds/decompiled/main/characters/"+subtype+"/data/"+filename;
+file fin;
+if(!fin.open(path, "rb")) return "";
+string content = fin.read();
+fin.close();
+return content;
 }
 
 int character_file_picker(string subtype, string verb, bool offer_both)
 {
-	form.reset();
-	form.create_window(verb+" "+subtype, false, true, false);
-	int file_list = form.create_list("file");
-	if(offer_both) form.add_list_item(file_list, "both", "both");
-	form.add_list_item(file_list, "main.sif", "main");
-	form.add_list_item(file_list, "kombat.sif", "kombat");
-	form.set_list_position(file_list, 0, false);
-	int b_ok = form.create_button("&"+verb, true);
-	int b_cancel = form.create_button("&cancel", false, true);
-	form.focus(file_list);
-	while(true)
-	{
-		wait(5);
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return -1;
-		}
-		if(form.is_pressed(b_ok))
-		{
-			int p = form.get_list_position(file_list);
-			if(p < 0) continue;
-			if(offer_both)
-			{
-				if(p == 0) return 2;
-				if(p == 1) return 0;
-				return 1;
-			}
-			return p;
-		}
-	}
-	return -1;
+form.reset();
+form.create_window(verb+" "+subtype, false, true, false);
+int file_list = form.create_list("file");
+if(offer_both) form.add_list_item(file_list, "both", "both");
+form.add_list_item(file_list, "main.sif", "main");
+form.add_list_item(file_list, "kombat.sif", "kombat");
+form.set_list_position(file_list, 0, false);
+int b_ok = form.create_button("&"+verb, true);
+int b_cancel = form.create_button("&cancel", false, true);
+form.focus(file_list);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return -1;
+}
+if(form.is_pressed(b_ok))
+{
+int p = form.get_list_position(file_list);
+if(p < 0) continue;
+if(offer_both)
+{
+if(p == 0) return 2;
+if(p == 1) return 0;
+return 1;
+}
+return p;
+}
+}
+return -1;
 }
 
 void add_character()
 {
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int sub_list, b_add, b_cancel;
-	string[] sub_data;
-	string base = "sounds/decompiled/main/characters";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			sub_data = find_directories(base+"/*");
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("add character", false, true, false);
-			sub_list = form.create_list("character");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			form.set_list_position(sub_list, sp, false);
-			b_add = form.create_button("&add", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			form.focus(sub_list);
-		}
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_add))
-		{
-			int p = form.get_list_position(sub_list);
-			if(p < 0 || p >= int(sub_data.length()))
-			{
-				speak("Character is required.");
-				form.focus(sub_list);
-				continue;
-			}
-			string chosen_sub = sub_data[p];
-			saved_sub_pos = p;
-			int which = character_file_picker(chosen_sub, "add", true);
-			if(which == -1)
-			{
-				do_build = true;
-				continue;
-			}
-			if(which == 0)
-			{
-				if(character_main_form(chosen_sub, false)) return;
-			}
-			else if(which == 1)
-			{
-				if(character_kombat_form(chosen_sub, false)) return;
-			}
-			else
-			{
-				bool main_ok = character_main_form(chosen_sub, false);
-				if(!main_ok) { do_build = true; continue; }
-				bool kombat_ok = character_kombat_form(chosen_sub, false);
-				if(main_ok && kombat_ok) return;
-			}
-			do_build = true;
-			continue;
-		}
-	}
+int saved_sub_pos = 0;
+bool do_build = true;
+int sub_list, b_add, b_cancel;
+string[] sub_data;
+string base = "sounds/decompiled/main/characters";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+sub_data = find_directories(base+"/*");
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("add character", false, true, false);
+sub_list = form.create_list("character");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+form.set_list_position(sub_list, sp, false);
+b_add = form.create_button("&add", true);
+b_cancel = form.create_button("&cancel", false, true);
+form.focus(sub_list);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_add))
+{
+int p = form.get_list_position(sub_list);
+if(p < 0 || p >= int(sub_data.length()))
+{
+speak("Character is required.");
+form.focus(sub_list);
+continue;
+}
+string chosen_sub = sub_data[p];
+saved_sub_pos = p;
+int which = character_file_picker(chosen_sub, "add", true);
+if(which == -1)
+{
+do_build = true;
+continue;
+}
+if(which == 0)
+{
+if(character_main_form(chosen_sub, false)) return;
+}
+else if(which == 1)
+{
+if(character_kombat_form(chosen_sub, false)) return;
+}
+else
+{
+bool main_ok = character_main_form(chosen_sub, false);
+if(!main_ok) { do_build = true; continue; }
+bool kombat_ok = character_kombat_form(chosen_sub, false);
+if(main_ok && kombat_ok) return;
+}
+do_build = true;
+continue;
+}
+}
 }
 
 void edit_character()
 {
-	int saved_sub_pos = 0;
-	bool do_build = true;
-	int sub_list, b_edit, b_cancel;
-	string[] sub_data;
-	string base = "sounds/decompiled/main/characters";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				string mp = base+"/"+all_dirs[i]+"/data/main.sif";
-				string kp = base+"/"+all_dirs[i]+"/data/kombat.sif";
-				if(file_exists(mp) || file_exists(kp))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("edit character", false, true, false);
-			sub_list = form.create_list("character");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			form.set_list_position(sub_list, sp, false);
-			b_edit = form.create_button("&edit", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			form.focus(sub_list);
-		}
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_edit))
-		{
-			int p = form.get_list_position(sub_list);
-			if(p < 0 || p >= int(sub_data.length()))
-			{
-				speak("Character is required.");
-				form.focus(sub_list);
-				continue;
-			}
-			string chosen_sub = sub_data[p];
-			saved_sub_pos = p;
-			int which = character_file_picker(chosen_sub, "edit", false);
-			if(which == -1)
-			{
-				do_build = true;
-				continue;
-			}
-			if(which == 0)
-			{
-				if(character_main_form(chosen_sub, true)) return;
-			}
-			else
-			{
-				if(character_kombat_form(chosen_sub, true)) return;
-			}
-			do_build = true;
-			continue;
-		}
-	}
+int saved_sub_pos = 0;
+bool do_build = true;
+int sub_list, b_edit, b_cancel;
+string[] sub_data;
+string base = "sounds/decompiled/main/characters";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+string mp = base+"/"+all_dirs[i]+"/data/main.sif";
+string kp = base+"/"+all_dirs[i]+"/data/kombat.sif";
+if(file_exists(mp) || file_exists(kp))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("edit character", false, true, false);
+sub_list = form.create_list("character");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+form.set_list_position(sub_list, sp, false);
+b_edit = form.create_button("&edit", true);
+b_cancel = form.create_button("&cancel", false, true);
+form.focus(sub_list);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_edit))
+{
+int p = form.get_list_position(sub_list);
+if(p < 0 || p >= int(sub_data.length()))
+{
+speak("Character is required.");
+form.focus(sub_list);
+continue;
+}
+string chosen_sub = sub_data[p];
+saved_sub_pos = p;
+int which = character_file_picker(chosen_sub, "edit", false);
+if(which == -1)
+{
+do_build = true;
+continue;
+}
+if(which == 0)
+{
+if(character_main_form(chosen_sub, true)) return;
+}
+else
+{
+if(character_kombat_form(chosen_sub, true)) return;
+}
+do_build = true;
+continue;
+}
+}
 }
 
 void view_character()
 {
-	int saved_sub_pos = 0;
-	int saved_file_pos = 0;
-	bool do_build = true;
-	int last_sub_pos = -1;
-	int last_file_pos = -1;
-	int sub_list, file_list, content_box, b_cancel;
-	string[] sub_data;
-	string[] file_opts = {"main.sif", "kombat.sif"};
-	string base = "sounds/decompiled/main/characters";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				string mp = base+"/"+all_dirs[i]+"/data/main.sif";
-				string kp = base+"/"+all_dirs[i]+"/data/kombat.sif";
-				if(file_exists(mp) || file_exists(kp))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
-			int fp = saved_file_pos;
-			string initial_content = (sub_data.length() > 0) ? read_character_data_file(sub_data[sp], file_opts[fp]) : "";
-			string initial_caption = (sub_data.length() > 0) ? "contents of "+file_opts[fp]+" for "+sub_data[sp] : "contents";
-			form.reset();
-			form.create_window("view character", false, true, false);
-			sub_list = form.create_list("character");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			form.set_list_position(sub_list, sp, false);
-			file_list = form.create_list("file");
-			for(uint i=0; i<file_opts.length(); i++)
-				form.add_list_item(file_list, file_opts[i], file_opts[i]);
-			form.set_list_position(file_list, fp, false);
-			content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
-			b_cancel = form.create_button("&cancel", false, true);
-			last_sub_pos = sp;
-			last_file_pos = fp;
-			form.focus(sub_list);
-		}
-		form.monitor();
-		int cur_sub = form.get_list_position(sub_list);
-		if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
-		{
-			saved_sub_pos = cur_sub;
-			last_sub_pos = cur_sub;
-			form.set_text(content_box, read_character_data_file(sub_data[cur_sub], file_opts[last_file_pos]));
-			form.set_caption(content_box, "contents of "+file_opts[last_file_pos]+" for "+sub_data[cur_sub]);
-		}
-		int cur_file = form.get_list_position(file_list);
-		if(cur_file != -1 && cur_file != last_file_pos && cur_file < int(file_opts.length()))
-		{
-			saved_file_pos = cur_file;
-			last_file_pos = cur_file;
-			form.set_text(content_box, read_character_data_file(sub_data[last_sub_pos], file_opts[cur_file]));
-			form.set_caption(content_box, "contents of "+file_opts[cur_file]+" for "+sub_data[last_sub_pos]);
-		}
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-	}
+int saved_sub_pos = 0;
+int saved_file_pos = 0;
+bool do_build = true;
+int last_sub_pos = -1;
+int last_file_pos = -1;
+int sub_list, file_list, content_box, b_cancel;
+string[] sub_data;
+string[] file_opts = {"main.sif", "kombat.sif"};
+string base = "sounds/decompiled/main/characters";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+string mp = base+"/"+all_dirs[i]+"/data/main.sif";
+string kp = base+"/"+all_dirs[i]+"/data/kombat.sif";
+if(file_exists(mp) || file_exists(kp))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+int sp = (saved_sub_pos < int(sub_data.length())) ? saved_sub_pos : 0;
+int fp = saved_file_pos;
+string initial_content = (sub_data.length() > 0) ? read_character_data_file(sub_data[sp], file_opts[fp]) : "";
+string initial_caption = (sub_data.length() > 0) ? "contents of "+file_opts[fp]+" for "+sub_data[sp] : "contents";
+form.reset();
+form.create_window("view character", false, true, false);
+sub_list = form.create_list("character");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+form.set_list_position(sub_list, sp, false);
+file_list = form.create_list("file");
+for(uint i=0; i<file_opts.length(); i++)
+form.add_list_item(file_list, file_opts[i], file_opts[i]);
+form.set_list_position(file_list, fp, false);
+content_box = form.create_input_box(initial_caption, initial_content, "", 0, true, true, false);
+b_cancel = form.create_button("&cancel", false, true);
+last_sub_pos = sp;
+last_file_pos = fp;
+form.focus(sub_list);
+}
+form.monitor();
+int cur_sub = form.get_list_position(sub_list);
+if(cur_sub != -1 && cur_sub != last_sub_pos && cur_sub < int(sub_data.length()))
+{
+saved_sub_pos = cur_sub;
+last_sub_pos = cur_sub;
+form.set_text(content_box, read_character_data_file(sub_data[cur_sub], file_opts[last_file_pos]));
+form.set_caption(content_box, "contents of "+file_opts[last_file_pos]+" for "+sub_data[cur_sub]);
+}
+int cur_file = form.get_list_position(file_list);
+if(cur_file != -1 && cur_file != last_file_pos && cur_file < int(file_opts.length()))
+{
+saved_file_pos = cur_file;
+last_file_pos = cur_file;
+form.set_text(content_box, read_character_data_file(sub_data[last_sub_pos], file_opts[cur_file]));
+form.set_caption(content_box, "contents of "+file_opts[cur_file]+" for "+sub_data[last_sub_pos]);
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+}
 }
 
 void remove_character()
 {
-	bool do_build = true;
-	int sub_list, file_list, b_remove, b_cancel;
-	string[] sub_data;
-	string[] file_opts = {"main.sif", "kombat.sif"};
-	string base = "sounds/decompiled/main/characters";
-	while(true)
-	{
-		wait(5);
-		if(do_build)
-		{
-			do_build = false;
-			string[] all_dirs = find_directories(base+"/*");
-			sub_data.resize(0);
-			for(uint i=0; i<all_dirs.length(); i++)
-			{
-				string mp = base+"/"+all_dirs[i]+"/data/main.sif";
-				string kp = base+"/"+all_dirs[i]+"/data/kombat.sif";
-				if(file_exists(mp) || file_exists(kp))
-					sub_data.insert_last(all_dirs[i]);
-			}
-			if(sub_data.length() > 0) sort_naturally(sub_data);
-			form.reset();
-			form.create_window("remove character", false, true, false);
-			sub_list = form.create_list("character");
-			for(uint i=0; i<sub_data.length(); i++)
-				form.add_list_item(sub_list, sub_data[i], sub_data[i]);
-			file_list = form.create_list("files", 0, true);
-			for(uint i=0; i<file_opts.length(); i++)
-				form.add_list_item(file_list, file_opts[i], file_opts[i]);
-			b_remove = form.create_button("&remove", true);
-			b_cancel = form.create_button("&cancel", false, true);
-			form.focus(sub_list);
-		}
-		form.monitor();
-		if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
-		{
-			speak("canceled");
-			return;
-		}
-		if(form.is_pressed(b_remove))
-		{
-			int sp = form.get_list_position(sub_list);
-			if(sp < 0 || sp >= int(sub_data.length()))
-			{
-				speak("Character is required.");
-				form.focus(sub_list);
-				continue;
-			}
-			int[]@ checked = form.get_checked_list_items(file_list);
-			if(checked is null || checked.length() == 0)
-			{
-				speak("No files selected.");
-				form.focus(file_list);
-				continue;
-			}
-			setupmenu();
-			m.add_item("yes");
-			m.add_item("no");
-			m.intro_text = "Are you sure you would like to remove "+checked.length()+" file(s) for "+sub_data[sp]+"?";
-			int mres = m.run();
-			if(mres != 0)
-			{
-				do_build = true;
-				continue;
-			}
-			int removed = 0;
-			for(uint i=0; i<checked.length(); i++)
-			{
-				string p = base+"/"+sub_data[sp]+"/data/"+file_opts[checked[i]];
-				if(file_exists(p)) { file_delete(p); removed++; }
-			}
-			speak("Removed "+removed+" file(s).");
-			return;
-		}
-	}
+bool do_build = true;
+int sub_list, file_list, b_remove, b_cancel;
+string[] sub_data;
+string[] file_opts = {"main.sif", "kombat.sif"};
+string base = "sounds/decompiled/main/characters";
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+string[] all_dirs = find_directories(base+"/*");
+sub_data.resize(0);
+for(uint i=0; i<all_dirs.length(); i++)
+{
+string mp = base+"/"+all_dirs[i]+"/data/main.sif";
+string kp = base+"/"+all_dirs[i]+"/data/kombat.sif";
+if(file_exists(mp) || file_exists(kp))
+sub_data.insert_last(all_dirs[i]);
+}
+if(sub_data.length() > 0) sort_naturally(sub_data);
+form.reset();
+form.create_window("remove character", false, true, false);
+sub_list = form.create_list("character");
+for(uint i=0; i<sub_data.length(); i++)
+form.add_list_item(sub_list, sub_data[i], sub_data[i]);
+file_list = form.create_list("files", 0, true);
+for(uint i=0; i<file_opts.length(); i++)
+form.add_list_item(file_list, file_opts[i], file_opts[i]);
+b_remove = form.create_button("&remove", true);
+b_cancel = form.create_button("&cancel", false, true);
+form.focus(sub_list);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cancel))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(b_remove))
+{
+int sp = form.get_list_position(sub_list);
+if(sp < 0 || sp >= int(sub_data.length()))
+{
+speak("Character is required.");
+form.focus(sub_list);
+continue;
+}
+int[]@ checked = form.get_checked_list_items(file_list);
+if(checked is null || checked.length() == 0)
+{
+speak("No files selected.");
+form.focus(file_list);
+continue;
+}
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "Are you sure you would like to remove "+checked.length()+" file(s) for "+sub_data[sp]+"?";
+int mres = m.run();
+if(mres != 0)
+{
+do_build = true;
+continue;
+}
+int removed = 0;
+for(uint i=0; i<checked.length(); i++)
+{
+string p = base+"/"+sub_data[sp]+"/data/"+file_opts[checked[i]];
+if(file_exists(p)) { file_delete(p); removed++; }
+}
+speak("Removed "+removed+" file(s).");
+return;
+}
+}
 }

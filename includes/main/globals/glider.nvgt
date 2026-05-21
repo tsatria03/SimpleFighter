@@ -6,320 +6,320 @@ timer glider_strike_timer;
 
 void glider_engine_start()
 {
-	if(glider_engine_on) return;
-	if(glider_fuel_out) return;
-	if(wepchar.stamina_drain > 0 && stamina <= 0) return;
-	glider_engine_on = true;
-	if(falling)
-	{
-		falling = false;
-		fallcounter = 0;
-		if(fallslot != 0) p.destroy_sound(fallslot);
-	}
-	if(mapmode == "3d") me.z += 1;
-	else if(mapmode == "2d") me.y += 1;
-	gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*on*"), false);
-	if(glider_loop_slot != 0) { gliderpool.destroy_sound(glider_loop_slot); glider_loop_slot = 0; }
-	glider_loop_slot = gliderpool.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*loop*"), true, 0, 0, 0, 100, false);
+if(glider_engine_on) return;
+if(glider_fuel_out) return;
+if(wepchar.stamina_drain > 0 && stamina <= 0) return;
+glider_engine_on = true;
+if(falling)
+{
+falling = false;
+fallcounter = 0;
+if(fallslot != 0) p.destroy_sound(fallslot);
+}
+if(mapmode == "3d") me.z += 1;
+else if(mapmode == "2d") me.y += 1;
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*on*"), false);
+if(glider_loop_slot != 0) { gliderpool.destroy_sound(glider_loop_slot); glider_loop_slot = 0; }
+glider_loop_slot = gliderpool.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*loop*"), true, 0, 0, 0, 100, false);
 }
 
 void glider_engine_stop()
 {
-	if(!glider_engine_on) return;
-	glider_engine_on = false;
-	gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*off*"), false);
-	if(glider_loop_slot != 0) { gliderpool.destroy_sound(glider_loop_slot); glider_loop_slot = 0; }
+if(!glider_engine_on) return;
+glider_engine_on = false;
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*off*"), false);
+if(glider_loop_slot != 0) { gliderpool.destroy_sound(glider_loop_slot); glider_loop_slot = 0; }
 }
 
 void glider_contact_strike()
 {
-	if(!glider_engine_on || !wepchar.is_glider()) return;
-	int hx = int(me.x), hy = int(me.y), hz = int(me.z);
-	if(mapmode == "2d") hy -= 1;
-	else if(mapmode == "3d") hz -= 1;
-	int dmg = wepchar.damage;
-	for(uint j = 0; j < npcs.length(); j++)
-	{
-		if(npcs[j].x != hx || npcs[j].y != hy) continue;
-		if(mapmode == "3d" && npcs[j].z != hz) continue;
-		int actual = max(0, dmg - int(npcs[j].defence) * 3);
-		npcs[j].health -= actual;
-		kombatlog.insert_last(actual + " damage to " + npcs[j].subtype + " by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && npcs[j].health > 0)
-		{
-			sound_pool@ npool = npc_pool(npcs[j].category);
-			npool.destroy_sound(npcs[j].hurtsound);
-			npool.pause_sound(npcs[j].mainsound);
-			npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-			npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].hurtsound), 0);
-			npcs[j].hurttimer.restart();
-			npcs[j].hurting = true;
-		}
-		if(npcs[j].health <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < ttsenemies.length(); j++)
-	{
-		if(ttsenemies[j].ttsemx != hx || ttsenemies[j].ttsemy != hy) continue;
-		if(mapmode == "3d" && ttsenemies[j].ttsemz != hz) continue;
-		int actual = max(0, dmg - ttsenemies[j].defense * 3);
-		ttsenemies[j].ttsenehealth -= actual;
-		kombatlog.insert_last(actual + " damage to tts enemie by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && ttsenemies[j].ttsenehealth > 0)
-		{
-			ttsempool.destroy_sound(ttsenemies[j].hurtsound);
-			ttsempool.pause_sound(ttsenemies[j].ttsemsound);
-			ttsenemies[j].hurtsound = ttsempool.play_extended_3d(ttsenemies[j].hurt_file, me.x, me.y, me.z, ttsenemies[j].ttsemx, ttsenemies[j].ttsemy, ttsenemies[j].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-			ttsenemies[j].hurtdelay = round(ttsempool.get_sound_length(ttsenemies[j].hurtsound), 0);
-			ttsenemies[j].hurttimer.restart();
-			ttsenemies[j].hurting = true;
-		}
-		if(ttsenemies[j].ttsenehealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < calendars.length(); j++)
-	{
-		if(calendars[j].calendarx != hx || calendars[j].calendary != hy) continue;
-		if(mapmode == "3d" && calendars[j].calendarz != hz) continue;
-		if(!calendars[j].destroyable) continue;
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		calpool.destroy_sound(calendars[j].calendarsound);
-		calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[j].calendartype+"/*break*"), me.x, me.y, me.z, calendars[j].calendarx, calendars[j].calendary, calendars[j].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		calendars.remove_at(j);
-		return;
-	}
-	for(uint j = 0; j < clocks.length(); j++)
-	{
-		if(clocks[j].clockx != hx || clocks[j].clocky != hy) continue;
-		if(mapmode == "3d" && clocks[j].clockz != hz) continue;
-		if(!clocks[j].destroyable) continue;
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		clockpool.destroy_sound(clocks[j].clocksound);
-		clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, me.z, clocks[j].clockx, clocks[j].clocky, clocks[j].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		clocks.remove_at(j);
-		return;
-	}
-	for(uint j = 0; j < signs.length(); j++)
-	{
-		if(signs[j].signx != hx || signs[j].signy != hy) continue;
-		if(mapmode == "3d" && signs[j].signz != hz) continue;
-		if(!signs[j].destroyable) continue;
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		signpool.destroy_sound(signs[j].signsound);
-		signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, me.z, signs[j].signx, signs[j].signy, signs[j].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		signs.remove_at(j);
-		return;
-	}
-	for(uint j = 0; j < objs.length(); j++)
-	{
-		if(objs[j].itx != hx || objs[j].ity != hy) continue;
-		if(mapmode == "3d" && objs[j].itz != hz) continue;
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		itempool.destroy_sound(objs[j].objsound);
-		itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[j].objtype+"/"+objs[j].objtype2+"/*break*"), me.x, me.y, me.z, objs[j].itx, objs[j].ity, objs[j].itz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		objs.remove_at(j);
-		return;
-	}
-	for(uint j = 0; j < walls.length(); j++)
-	{
-		if(hx < walls[j].minx || hx > walls[j].maxx || hy < walls[j].miny || hy > walls[j].maxy) continue;
-		if(mapmode == "3d" && (hz < walls[j].minz || hz > walls[j].maxz)) continue;
-		if(!walls[j].destroyable) continue;
-		int actual = max(0, dmg);
-		walls[j].wallhealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + string_replace(walls[j].wall, "wall", "", true) + " wall by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && walls[j].wallhealth > 0)
-			walls[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/walls/"+walls[j].wall+"/*hurt*"), me.x, me.y, me.z, walls[j].minx, walls[j].miny, walls[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch, false);
-		if(walls[j].wallhealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < staircases.length(); j++)
-	{
-		if(hx < staircases[j].minx || hx > staircases[j].maxx || hy < staircases[j].miny || hy > staircases[j].maxy) continue;
-		if(mapmode == "3d" && (hz < staircases[j].minz || hz > staircases[j].maxz)) continue;
-		if(!staircases[j].destroyable) continue;
-		int actual = max(0, dmg);
-		staircases[j].stairshealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + staircases[j].tile + " staircase by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && staircases[j].stairshealth > 0)
-			staircases[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/platforms/"+staircases[j].tile+"/*hurt*"), me.x, me.y, me.z, staircases[j].minx, staircases[j].miny, staircases[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
-		if(staircases[j].stairshealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < platforms.length(); j++)
-	{
-		if(platforms[j].is_backing) continue;
-		if(hx < platforms[j].minx || hx > platforms[j].maxx || hy < platforms[j].miny || hy > platforms[j].maxy) continue;
-		if(mapmode == "3d" && platforms[j].z != hz) continue;
-		if(!platforms[j].destroyable) continue;
-		int actual = max(0, dmg);
-		platforms[j].plathealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + platforms[j].tile + " platform by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && platforms[j].plathealth > 0)
-			platforms[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/platforms/"+platforms[j].tile+"/*hurt*"), me.x, me.y, me.z, platforms[j].minx, platforms[j].miny, platforms[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
-		if(platforms[j].plathealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < doors.length(); j++)
-	{
-		if(hx < doors[j].minx || hx > doors[j].maxx || hy < doors[j].miny || hy > doors[j].maxy) continue;
-		if(mapmode == "3d" && (hz < doors[j].minz || hz > doors[j].maxz)) continue;
-		if(!doors[j].destroyable) continue;
-		int actual = max(0, dmg);
-		doors[j].doorhealth -= actual;
-		kombatlog.insert_last(actual + " damage to door by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && doors[j].doorhealth > 0)
-			doors[j].hurtsound = doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/dest/"+doors[j].desttype+"/*hurt*"), me.x, me.y, me.z, doors[j].minx, doors[j].miny, doors[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		if(doors[j].doorhealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < vehicles.length(); j++)
-	{
-		if(vehicles[j].vehx != hx || vehicles[j].vehy != hy) continue;
-		if(mapmode == "3d" && vehicles[j].vehz != hz) continue;
-		if(vehicles[j].moveable) continue;
-		int actual = max(0, dmg);
-		vehicles[j].vehhealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + vehicles[j].vehtype + " by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && vehicles[j].vehhealth > 0)
-			vehicles[j].hurtsound = vehpool.play_extended_3d(get_map_sound("builder/transportation/vehicles/"+vehicles[j].vehtype+"/*hurt*"), me.x, me.y, me.z, vehicles[j].vehx, vehicles[j].vehy, vehicles[j].vehz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		if(vehicles[j].vehhealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < bikes.length(); j++)
-	{
-		if(bikes[j].bikex != hx || bikes[j].bikey != hy) continue;
-		if(mapmode == "3d" && bikes[j].bikez != hz) continue;
-		if(bikes[j].moveable) continue;
-		int actual = max(0, dmg);
-		bikes[j].bikehealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + bikes[j].biketype + " by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && bikes[j].bikehealth > 0)
-			bikes[j].hurtsound = bikepool.play_extended_3d(get_map_sound("builder/transportation/bikes/"+bikes[j].biketype+"/misc/*hurt*"), me.x, me.y, me.z, bikes[j].bikex, bikes[j].bikey, bikes[j].bikez, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		if(bikes[j].bikehealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < aircrafts.length(); j++)
-	{
-		if(aircrafts[j].plainx != hx || aircrafts[j].plainy != hy) continue;
-		if(mapmode == "3d" && aircrafts[j].plainz != hz) continue;
-		if(aircrafts[j].moveable) continue;
-		int actual = max(0, dmg);
-		aircrafts[j].plainhealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + aircrafts[j].plaintype + " by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && aircrafts[j].plainhealth > 0)
-			aircrafts[j].hurtsound = plainpool.play_extended_3d(get_map_sound("builder/transportation/aircrafts/"+aircrafts[j].plaintype+"/*hurt*"), me.x, me.y, me.z, aircrafts[j].plainx, aircrafts[j].plainy, aircrafts[j].plainz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		if(aircrafts[j].plainhealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < sucams.length(); j++)
-	{
-		if(sucams[j].sucamx != hx || sucams[j].sucamy != hy) continue;
-		if(mapmode == "3d" && sucams[j].sucamz != hz) continue;
-		int actual = max(0, dmg);
-		sucams[j].camhealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + sucams[j].cameratype + " by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && sucams[j].camhealth > 0)
-			sucams[j].hurtsound = campool.play_extended_3d(get_map_sound("builder/traps/security cameras/"+sucams[j].cameratype+"/*hurt*"), me.x, me.y, me.z, sucams[j].sucamx, sucams[j].sucamy, sucams[j].sucamz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		if(sucams[j].camhealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < spikes.length(); j++)
-	{
-		if(hx < spikes[j].minx || hx > spikes[j].maxx || hy < spikes[j].miny || hy > spikes[j].maxy) continue;
-		if(mapmode == "3d" && (hz < spikes[j].minz || hz > spikes[j].maxz)) continue;
-		if(!spikes[j].destroyable) continue;
-		int actual = max(0, dmg);
-		spikes[j].spikehealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + spikes[j].spiketype + " by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && spikes[j].spikehealth > 0)
-			spikes[j].hurtsound = spikepool.play_extended_3d(get_map_sound("builder/traps/spikes/"+spikes[j].spiketype+"/*hurt*"), me.x, me.y, me.z, spikes[j].minx, spikes[j].miny, spikes[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		if(spikes[j].spikehealth <= 0)
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-		return;
-	}
-	for(uint j = 0; j < projectiles.length(); j++)
-	{
-		if(projectiles[j].prox != hx || projectiles[j].proy != hy) continue;
-		if(mapmode == "3d" && projectiles[j].proz != hz) continue;
-		if(!projectiles[j].destroyable) continue;
-		int actual = max(0, dmg);
-		projectiles[j].projhealth -= actual;
-		kombatlog.insert_last(actual + " damage to " + projectiles[j].projtype + " by " + wepchar.sub + "'s weapon attack.");
-		gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
-		if(actual > 0 && projectiles[j].projhealth > 0)
-			projectiles[j].wepsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*hurt*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-		if(projectiles[j].projhealth <= 0)
-		{
-			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
-			projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*death*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-			destroy_projectile(j);
-		}
-		return;
-	}
+if(!glider_engine_on || !wepchar.is_glider()) return;
+int hx = int(me.x), hy = int(me.y), hz = int(me.z);
+if(mapmode == "2d") hy -= 1;
+else if(mapmode == "3d") hz -= 1;
+int dmg = wepchar.damage;
+for(uint j = 0; j < npcs.length(); j++)
+{
+if(npcs[j].x != hx || npcs[j].y != hy) continue;
+if(mapmode == "3d" && npcs[j].z != hz) continue;
+int actual = max(0, dmg - int(npcs[j].defence) * 3);
+npcs[j].health -= actual;
+kombatlog.insert_last(actual + " damage to " + npcs[j].subtype + " by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && npcs[j].health > 0)
+{
+sound_pool@ npool = npc_pool(npcs[j].category);
+npool.destroy_sound(npcs[j].hurtsound);
+npool.pause_sound(npcs[j].mainsound);
+npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].hurtsound), 0);
+npcs[j].hurttimer.restart();
+npcs[j].hurting = true;
+}
+if(npcs[j].health <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < ttsenemies.length(); j++)
+{
+if(ttsenemies[j].ttsemx != hx || ttsenemies[j].ttsemy != hy) continue;
+if(mapmode == "3d" && ttsenemies[j].ttsemz != hz) continue;
+int actual = max(0, dmg - ttsenemies[j].defense * 3);
+ttsenemies[j].ttsenehealth -= actual;
+kombatlog.insert_last(actual + " damage to tts enemie by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && ttsenemies[j].ttsenehealth > 0)
+{
+ttsempool.destroy_sound(ttsenemies[j].hurtsound);
+ttsempool.pause_sound(ttsenemies[j].ttsemsound);
+ttsenemies[j].hurtsound = ttsempool.play_extended_3d(ttsenemies[j].hurt_file, me.x, me.y, me.z, ttsenemies[j].ttsemx, ttsenemies[j].ttsemy, ttsenemies[j].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+ttsenemies[j].hurtdelay = round(ttsempool.get_sound_length(ttsenemies[j].hurtsound), 0);
+ttsenemies[j].hurttimer.restart();
+ttsenemies[j].hurting = true;
+}
+if(ttsenemies[j].ttsenehealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < calendars.length(); j++)
+{
+if(calendars[j].calendarx != hx || calendars[j].calendary != hy) continue;
+if(mapmode == "3d" && calendars[j].calendarz != hz) continue;
+if(!calendars[j].destroyable) continue;
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+calpool.destroy_sound(calendars[j].calendarsound);
+calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[j].calendartype+"/*break*"), me.x, me.y, me.z, calendars[j].calendarx, calendars[j].calendary, calendars[j].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+calendars.remove_at(j);
+return;
+}
+for(uint j = 0; j < clocks.length(); j++)
+{
+if(clocks[j].clockx != hx || clocks[j].clocky != hy) continue;
+if(mapmode == "3d" && clocks[j].clockz != hz) continue;
+if(!clocks[j].destroyable) continue;
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+clockpool.destroy_sound(clocks[j].clocksound);
+clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, me.z, clocks[j].clockx, clocks[j].clocky, clocks[j].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+clocks.remove_at(j);
+return;
+}
+for(uint j = 0; j < signs.length(); j++)
+{
+if(signs[j].signx != hx || signs[j].signy != hy) continue;
+if(mapmode == "3d" && signs[j].signz != hz) continue;
+if(!signs[j].destroyable) continue;
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+signpool.destroy_sound(signs[j].signsound);
+signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, me.z, signs[j].signx, signs[j].signy, signs[j].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+signs.remove_at(j);
+return;
+}
+for(uint j = 0; j < objs.length(); j++)
+{
+if(objs[j].itx != hx || objs[j].ity != hy) continue;
+if(mapmode == "3d" && objs[j].itz != hz) continue;
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+itempool.destroy_sound(objs[j].objsound);
+itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[j].objtype+"/"+objs[j].objtype2+"/*break*"), me.x, me.y, me.z, objs[j].itx, objs[j].ity, objs[j].itz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+objs.remove_at(j);
+return;
+}
+for(uint j = 0; j < walls.length(); j++)
+{
+if(hx < walls[j].minx || hx > walls[j].maxx || hy < walls[j].miny || hy > walls[j].maxy) continue;
+if(mapmode == "3d" && (hz < walls[j].minz || hz > walls[j].maxz)) continue;
+if(!walls[j].destroyable) continue;
+int actual = max(0, dmg);
+walls[j].wallhealth -= actual;
+kombatlog.insert_last(actual + " damage to " + string_replace(walls[j].wall, "wall", "", true) + " wall by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && walls[j].wallhealth > 0)
+walls[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/walls/"+walls[j].wall+"/*hurt*"), me.x, me.y, me.z, walls[j].minx, walls[j].miny, walls[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch, false);
+if(walls[j].wallhealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < staircases.length(); j++)
+{
+if(hx < staircases[j].minx || hx > staircases[j].maxx || hy < staircases[j].miny || hy > staircases[j].maxy) continue;
+if(mapmode == "3d" && (hz < staircases[j].minz || hz > staircases[j].maxz)) continue;
+if(!staircases[j].destroyable) continue;
+int actual = max(0, dmg);
+staircases[j].stairshealth -= actual;
+kombatlog.insert_last(actual + " damage to " + staircases[j].tile + " staircase by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && staircases[j].stairshealth > 0)
+staircases[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/platforms/"+staircases[j].tile+"/*hurt*"), me.x, me.y, me.z, staircases[j].minx, staircases[j].miny, staircases[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+if(staircases[j].stairshealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < platforms.length(); j++)
+{
+if(platforms[j].is_backing) continue;
+if(hx < platforms[j].minx || hx > platforms[j].maxx || hy < platforms[j].miny || hy > platforms[j].maxy) continue;
+if(mapmode == "3d" && platforms[j].z != hz) continue;
+if(!platforms[j].destroyable) continue;
+int actual = max(0, dmg);
+platforms[j].plathealth -= actual;
+kombatlog.insert_last(actual + " damage to " + platforms[j].tile + " platform by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && platforms[j].plathealth > 0)
+platforms[j].hurtsound = p.play_extended_3d(get_map_sound("builder/construction/platforms/"+platforms[j].tile+"/*hurt*"), me.x, me.y, me.z, platforms[j].minx, platforms[j].miny, platforms[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+if(platforms[j].plathealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < doors.length(); j++)
+{
+if(hx < doors[j].minx || hx > doors[j].maxx || hy < doors[j].miny || hy > doors[j].maxy) continue;
+if(mapmode == "3d" && (hz < doors[j].minz || hz > doors[j].maxz)) continue;
+if(!doors[j].destroyable) continue;
+int actual = max(0, dmg);
+doors[j].doorhealth -= actual;
+kombatlog.insert_last(actual + " damage to door by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && doors[j].doorhealth > 0)
+doors[j].hurtsound = doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/dest/"+doors[j].desttype+"/*hurt*"), me.x, me.y, me.z, doors[j].minx, doors[j].miny, doors[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(doors[j].doorhealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < vehicles.length(); j++)
+{
+if(vehicles[j].vehx != hx || vehicles[j].vehy != hy) continue;
+if(mapmode == "3d" && vehicles[j].vehz != hz) continue;
+if(vehicles[j].moveable) continue;
+int actual = max(0, dmg);
+vehicles[j].vehhealth -= actual;
+kombatlog.insert_last(actual + " damage to " + vehicles[j].vehtype + " by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && vehicles[j].vehhealth > 0)
+vehicles[j].hurtsound = vehpool.play_extended_3d(get_map_sound("builder/transportation/vehicles/"+vehicles[j].vehtype+"/*hurt*"), me.x, me.y, me.z, vehicles[j].vehx, vehicles[j].vehy, vehicles[j].vehz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(vehicles[j].vehhealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < bikes.length(); j++)
+{
+if(bikes[j].bikex != hx || bikes[j].bikey != hy) continue;
+if(mapmode == "3d" && bikes[j].bikez != hz) continue;
+if(bikes[j].moveable) continue;
+int actual = max(0, dmg);
+bikes[j].bikehealth -= actual;
+kombatlog.insert_last(actual + " damage to " + bikes[j].biketype + " by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && bikes[j].bikehealth > 0)
+bikes[j].hurtsound = bikepool.play_extended_3d(get_map_sound("builder/transportation/bikes/"+bikes[j].biketype+"/misc/*hurt*"), me.x, me.y, me.z, bikes[j].bikex, bikes[j].bikey, bikes[j].bikez, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(bikes[j].bikehealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < aircrafts.length(); j++)
+{
+if(aircrafts[j].plainx != hx || aircrafts[j].plainy != hy) continue;
+if(mapmode == "3d" && aircrafts[j].plainz != hz) continue;
+if(aircrafts[j].moveable) continue;
+int actual = max(0, dmg);
+aircrafts[j].plainhealth -= actual;
+kombatlog.insert_last(actual + " damage to " + aircrafts[j].plaintype + " by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && aircrafts[j].plainhealth > 0)
+aircrafts[j].hurtsound = plainpool.play_extended_3d(get_map_sound("builder/transportation/aircrafts/"+aircrafts[j].plaintype+"/*hurt*"), me.x, me.y, me.z, aircrafts[j].plainx, aircrafts[j].plainy, aircrafts[j].plainz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(aircrafts[j].plainhealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < sucams.length(); j++)
+{
+if(sucams[j].sucamx != hx || sucams[j].sucamy != hy) continue;
+if(mapmode == "3d" && sucams[j].sucamz != hz) continue;
+int actual = max(0, dmg);
+sucams[j].camhealth -= actual;
+kombatlog.insert_last(actual + " damage to " + sucams[j].cameratype + " by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && sucams[j].camhealth > 0)
+sucams[j].hurtsound = campool.play_extended_3d(get_map_sound("builder/traps/security cameras/"+sucams[j].cameratype+"/*hurt*"), me.x, me.y, me.z, sucams[j].sucamx, sucams[j].sucamy, sucams[j].sucamz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(sucams[j].camhealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < spikes.length(); j++)
+{
+if(hx < spikes[j].minx || hx > spikes[j].maxx || hy < spikes[j].miny || hy > spikes[j].maxy) continue;
+if(mapmode == "3d" && (hz < spikes[j].minz || hz > spikes[j].maxz)) continue;
+if(!spikes[j].destroyable) continue;
+int actual = max(0, dmg);
+spikes[j].spikehealth -= actual;
+kombatlog.insert_last(actual + " damage to " + spikes[j].spiketype + " by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && spikes[j].spikehealth > 0)
+spikes[j].hurtsound = spikepool.play_extended_3d(get_map_sound("builder/traps/spikes/"+spikes[j].spiketype+"/*hurt*"), me.x, me.y, me.z, spikes[j].minx, spikes[j].miny, spikes[j].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(spikes[j].spikehealth <= 0)
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+return;
+}
+for(uint j = 0; j < projectiles.length(); j++)
+{
+if(projectiles[j].prox != hx || projectiles[j].proy != hy) continue;
+if(mapmode == "3d" && projectiles[j].proz != hz) continue;
+if(!projectiles[j].destroyable) continue;
+int actual = max(0, dmg);
+projectiles[j].projhealth -= actual;
+kombatlog.insert_last(actual + " damage to " + projectiles[j].projtype + " by " + wepchar.sub + "'s weapon attack.");
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
+if(actual > 0 && projectiles[j].projhealth > 0)
+projectiles[j].wepsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*hurt*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(projectiles[j].projhealth <= 0)
+{
+gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
+projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*death*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+destroy_projectile(j);
+}
+return;
+}
 }
 
 void glider_apply_drains()
 {
-	if(wepchar.stamina_drain > 0)
-	{
-		stamina -= wepchar.stamina_drain;
-		if(stamina < 0) stamina = 0;
-	}
-	if(wepchar.health_drain > 0)
-	{
-		health -= wepchar.health_drain;
-		if(health < 0) health = 0;
-	}
+if(wepchar.stamina_drain > 0)
+{
+stamina -= wepchar.stamina_drain;
+if(stamina < 0) stamina = 0;
+}
+if(wepchar.health_drain > 0)
+{
+health -= wepchar.health_drain;
+if(health < 0) health = 0;
+}
 }
 
 void glider_loop()
 {
-	if(!glider_engine_on || !wepchar.is_glider()) return;
-	if(mapmode == "3d" && me.z < 1)
-	{
-		me.z = 0;
-		glider_fuel_out = true;
-		glider_engine_stop();
-		tileslot = p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+platform_tile_at(me.x, me.y, me.z)+"/*land*"), false, 0, 0, tilevolume, tilepitch);
-		return;
-	}
-	else if(mapmode == "2d" && me.y < 1)
-	{
-		me.y = 0;
-		glider_fuel_out = true;
-		glider_engine_stop();
-		tileslot = p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+gmt(me.x, me.y)+"/*land*"), false, 0, 0, tilevolume, tilepitch);
-		return;
-	}
-	if(glider_strike_timer.elapsed < movetime) return;
-	glider_strike_timer.restart();
-	glider_contact_strike();
-	glider_apply_drains();
-	if(stamina <= 0 && wepchar.stamina_drain > 0) { glider_fuel_out = true; glider_engine_stop(); }
+if(!glider_engine_on || !wepchar.is_glider()) return;
+if(mapmode == "3d" && me.z < 1)
+{
+me.z = 0;
+glider_fuel_out = true;
+glider_engine_stop();
+tileslot = p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+platform_tile_at(me.x, me.y, me.z)+"/*land*"), false, 0, 0, tilevolume, tilepitch);
+return;
+}
+else if(mapmode == "2d" && me.y < 1)
+{
+me.y = 0;
+glider_fuel_out = true;
+glider_engine_stop();
+tileslot = p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+gmt(me.x, me.y)+"/*land*"), false, 0, 0, tilevolume, tilepitch);
+return;
+}
+if(glider_strike_timer.elapsed < movetime) return;
+glider_strike_timer.restart();
+glider_contact_strike();
+glider_apply_drains();
+if(stamina <= 0 && wepchar.stamina_drain > 0) { glider_fuel_out = true; glider_engine_stop(); }
 }
