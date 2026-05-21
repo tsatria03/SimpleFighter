@@ -1,0 +1,334 @@
+air_turbulence@[] air_turbulences(0);
+
+class air_turbulence
+{
+double x;
+double y;
+double miny, maxy;
+double minz, maxz;
+int announce_distance;
+int alarm_distance;
+bool warned = false;
+bool cleared = false;
+bool spawn_played = false;
+int warn_side = 0;
+double last_x = 0;
+bool have_last_x = false;
+int alarmsound, spawnsound, remsound;
+
+air_turbulence(double tx, double ty, double mny, double mxy, double mnz, double mxz, int ad, int al)
+{
+x = tx;
+y = ty;
+miny = mny;
+maxy = mxy;
+minz = mnz;
+maxz = mxz;
+announce_distance = ad;
+// Author cannot make the alarm fire before the announce — silently clamp.
+alarm_distance = (al > ad) ? ad : al;
+}
+
+// In 2d, miny/maxy are the altitude band on y. In 3d, the patch sits on a single ground tile (x, y) with minz/maxz as the altitude band on z.
+bool altitude_in_band()
+{
+if(mapmode == "3d") return me.y == y && me.z >= minz && me.z <= maxz;
+return me.y >= miny && me.y <= maxy;
+}
+
+bool is_on()
+{
+return me.x == x && altitude_in_band();
+}
+
+bool is_approaching(int plaindir)
+{
+if(plaindir == 1 && me.x < x) return true;
+if(plaindir == 0 && me.x > x) return true;
+return false;
+}
+}
+
+int find_active_aircraft_index()
+{
+if(!inplain) return -1;
+for(uint i = 0; i < aircrafts.length(); i++)
+{
+bool tile = aircrafts[i].plainx == me.x && aircrafts[i].plainy == me.y;
+if(mapmode == "3d") tile = tile && aircrafts[i].plainz == me.z;
+if(tile) return int(i);
+}
+return -1;
+}
+
+void air_turbulence_check()
+{
+if(!inplain) return;
+int ai = find_active_aircraft_index();
+if(ai < 0) return;
+aircraft@ ac = aircrafts[ai];
+string base = "builder/transportation/aircrafts/" + ac.plaintype;
+
+for(uint i = 0; i < air_turbulences.length(); i++)
+{
+air_turbulence@ tb = air_turbulences[i];
+bool in_announce_range = absolute(me.x - tb.x) <= tb.announce_distance;
+bool in_alarm_range = absolute(me.x - tb.x) <= tb.alarm_distance;
+bool approaching = tb.is_approaching(ac.plaindir);
+bool altitude_match = tb.altitude_in_band();
+
+// Announce + appear fire on first approach within announce range, regardless of altitude — purely informational so the player knows turbulence exists at this column, even on a safe high-altitude flyover.
+if(!tb.spawn_played && in_announce_range && approaching)
+{
+tb.spawn_played = true;
+tb.warn_side = (me.x < tb.x) ? -1 : 1;
+tb.spawnsound = turbpool.play_stationary(get_map_sound(base + "/*appear*"), false);
+string altpart;
+if(mapmode == "3d")
+{
+if(tb.minz == tb.maxz) altpart = "altitude, " + int(tb.minz);
+else altpart = "altitude, " + int(tb.minz) + ", to, " + int(tb.maxz);
+speak("Turbulence: location, " + int(tb.x) + ", " + int(tb.y) + ": " + altpart + ".");
+}
+else
+{
+if(tb.miny == tb.maxy) altpart = "altitude, " + int(tb.miny);
+else altpart = "altitude, " + int(tb.miny) + ", to, " + int(tb.maxy);
+speak("Turbulence: location, " + int(tb.x) + ": " + altpart + ".");
+}
+}
+
+// Alarm loop fires only on collision course (altitude inside the band) within the tighter alarm range. Stops the moment any of the conditions falls away.
+if(!tb.warned && in_alarm_range && approaching && altitude_match)
+{
+tb.warned = true;
+tb.alarmsound = turbpool.play_stationary(get_map_sound(base + "/*alarm*"), true);
+}
+else if(tb.warned && (!in_alarm_range || !approaching || !altitude_match))
+{
+turbpool.destroy_sound(tb.alarmsound);
+tb.warned = false;
+}
+
+if(tb.is_on())
+{
+cammable = true;
+jumpable = true;
+moveable = true;
+speedable = true;
+spiable = true;
+turnable = true;
+destroy_all_airbeacons();
+plainpool.destroy_sound(ac.altsound);
+plainpool.destroy_sound(ac.speedsound);
+plainpool.destroy_sound(ac.hurtsound);
+plainpool.destroy_sound(ac.plainsound);
+if(mapmode == "2d") { me.y = 0; ac.plainy = 0; }
+else if(mapmode == "3d") { me.z = 0; ac.plainz = 0; }
+ac.plainspeed = 10;
+inplain = false;
+ac.landing = false;
+ac.moveable = false;
+wepdef = 0;
+p.destroy_sound(refslot);
+dlgplay(get_map_sound(base + "/*crash*"));
+aircrafts.remove_at(ai);
+destroymap();
+show_death_prompt();
+return;
+}
+
+// Pass clip fires when the plane crosses the column after being announced. Gated on spawn_played (persistent) rather than warned (now toggles on altitude changes) so a safe flyover at a clear altitude still gets the "cleared" cue.
+if(tb.spawn_played && !tb.cleared && tb.have_last_x)
+{
+bool crossed = (tb.last_x < tb.x && me.x >= tb.x) || (tb.last_x > tb.x && me.x <= tb.x);
+if(crossed)
+{
+tb.cleared = true;
+turbpool.destroy_sound(tb.alarmsound);
+tb.warned = false;
+tb.remsound = turbpool.play_stationary(get_map_sound(base + "/*pass*"), false);
+speak("Turbulence: passed.");
+}
+}
+
+tb.last_x = me.x;
+tb.have_last_x = true;
+}
+}
+
+void spawn_air_turbulence(double x, double y, double miny, double maxy, double minz, double maxz, int announce_distance, int alarm_distance)
+{
+air_turbulence tb(x, y, miny, maxy, minz, maxz, announce_distance, alarm_distance);
+air_turbulences.insert_last(tb);
+}
+
+void destroy_all_air_turbulences()
+{
+for(uint i = 0; i < air_turbulences.length(); i++)
+{
+turbpool.destroy_sound(air_turbulences[i].alarmsound);
+turbpool.destroy_sound(air_turbulences[i].spawnsound);
+turbpool.destroy_sound(air_turbulences[i].remsound);
+}
+air_turbulences.resize(0);
+}
+
+void build_air_turbulence()
+{
+if(mapmode == "topdown")
+{
+dlg("Error. Aircraft turbulence is only available on 2d and 3d maps. Press enter to continue.");
+resume_pools();
+return;
+}
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.reset();
+form.create_window("aircraft turbulence", false);
+int fx = form.create_input_box("starting x", sel_left_set ? sel_left : "");
+int fy = -1, fmny = -1, fmxy = -1, fmnz = -1, fmxz = -1;
+if(mapmode == "3d")
+{
+fy = form.create_input_box("starting y", sel_back_set ? sel_back : "");
+fmnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+fmxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+else
+{
+fmny = form.create_input_box("minimum y", sel_bottom_set ? sel_bottom : "");
+fmxy = form.create_input_box("maximum y", sel_top_set ? sel_top : "");
+}
+int fad = form.create_input_box("announce distance", "10");
+int fal = form.create_input_box("alarm distance", "5");
+form.set_disallowed_chars(fx, disallowed_nums, false, "This character is not allowed.");
+if(fy != -1) form.set_disallowed_chars(fy, disallowed_nums, false, "This character is not allowed.");
+if(fmny != -1) form.set_disallowed_chars(fmny, disallowed_nums, false, "This character is not allowed.");
+if(fmxy != -1) form.set_disallowed_chars(fmxy, disallowed_nums, false, "This character is not allowed.");
+if(fmnz != -1) form.set_disallowed_chars(fmnz, disallowed_nums, false, "This character is not allowed.");
+if(fmxz != -1) form.set_disallowed_chars(fmxz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fad, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fal, disallowed_nums, false, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(fx);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(fx) == "")
+{
+speak("Starting x is required.");
+form.focus(fx);
+continue;
+}
+if(fy != -1 && form.get_text(fy) == "")
+{
+speak("Starting y is required.");
+form.focus(fy);
+continue;
+}
+if(fmny != -1 && form.get_text(fmny) == "")
+{
+speak("Minimum y is required.");
+form.focus(fmny);
+continue;
+}
+if(fmxy != -1 && form.get_text(fmxy) == "")
+{
+speak("Maximum y is required.");
+form.focus(fmxy);
+continue;
+}
+if(fmnz != -1 && form.get_text(fmnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(fmnz);
+continue;
+}
+if(fmxz != -1 && form.get_text(fmxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(fmxz);
+continue;
+}
+if(form.get_text(fad) == "")
+{
+speak("Announce distance is required.");
+form.focus(fad);
+continue;
+}
+if(form.get_text(fal) == "")
+{
+speak("Alarm distance is required.");
+form.focus(fal);
+continue;
+}
+double bx = string_to_number(form.get_text(fx));
+double by = (fy != -1) ? string_to_number(form.get_text(fy)) : 0;
+double bmny = (fmny != -1) ? string_to_number(form.get_text(fmny)) : 0;
+double bmxy = (fmxy != -1) ? string_to_number(form.get_text(fmxy)) : 0;
+double bmnz = (fmnz != -1) ? string_to_number(form.get_text(fmnz)) : 0;
+double bmxz = (fmxz != -1) ? string_to_number(form.get_text(fmxz)) : 0;
+int bad = string_to_number(form.get_text(fad));
+int bal = string_to_number(form.get_text(fal));
+resume_pools();
+write_air_turbulence(bx, by, bmny, bmxy, bmnz, bmxz, bad, bal);
+spawn_air_turbulence(bx, by, bmny, bmxy, bmnz, bmxz, bad, bal);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/" + chartype + "/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
+
+void read_air_turbulence(string[] sd)
+{
+//   2d (6): air_turbulence x miny maxy announce_distance alarm_distance
+//   3d (7): air_turbulence x y minz maxz announce_distance alarm_distance
+if(mapmode == "3d")
+{
+double x = stn(sd[1]);
+double y = stn(sd[2]);
+double minz = stn(sd[3]);
+double maxz = stn(sd[4]);
+int ad = stn(sd[5]);
+int al = stn(sd[6]);
+spawn_air_turbulence(x, y, 0, 0, minz, maxz, ad, al);
+}
+else
+{
+double x = stn(sd[1]);
+double miny = stn(sd[2]);
+double maxy = stn(sd[3]);
+int ad = stn(sd[4]);
+int al = stn(sd[5]);
+spawn_air_turbulence(x, 0, miny, maxy, 0, 0, ad, al);
+}
+}
+
+void write_air_turbulence(double x, double y, double miny, double maxy, double minz, double maxz, int announce_distance, int alarm_distance)
+{
+mapper.open("data/builder/maps/decompiled/" + mapname + "/" + "data/main.sif", "ab");
+mapdata = mapper.read();
+string body;
+if(mapmode == "3d") body = x + " " + y + " " + minz + " " + maxz;
+else body = x + " " + miny + " " + maxy;
+mapper.write("\r\n" + "air_turbulence " + body + " " + announce_distance + " " + alarm_distance);
+mapper.close();
+bump_map_modified();
+}
