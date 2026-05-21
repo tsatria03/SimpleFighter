@@ -102,7 +102,13 @@ speak("Turbulence: location, " + int(tb.x) + ": " + altpart + ".");
 if(!tb.warned && in_alarm_range && approaching && altitude_match)
 {
 tb.warned = true;
-tb.alarmsound = turbpool.play_stationary(get_map_sound(base + "/*alarm*"), true);
+double src_x = tb.x;
+double src_y = (mapmode == "3d") ? tb.y : tb.miny;
+double src_z = (mapmode == "3d") ? tb.minz : 0;
+tb.alarmsound = turbpool.play_extended_3d(get_map_sound(base + "/*alarm*"), me.x, me.y, me.z, src_x, src_y, src_z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+int yr = (mapmode == "3d") ? 0 : int(tb.maxy - tb.miny);
+int zr = (mapmode == "3d") ? int(tb.maxz - tb.minz) : 0;
+turbpool.update_sound_range_3d(tb.alarmsound, 0, 0, 0, yr, 0, zr);
 }
 else if(tb.warned && (!in_alarm_range || !approaching || !altitude_match))
 {

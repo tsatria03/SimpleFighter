@@ -1,0 +1,45 @@
+Aircraft, aircraft beacons, and aircraft turbulences.
+
+These three entities form the aircraft kit. An aircraft is a rideable plane the player can board and fly across the map; an aircraft beacon is a designated landing zone the plane needs in order to set down safely; an aircraft turbulence is a hazardous column of bad air that crashes a flying plane on contact. Beacons and turbulences only matter once an aircraft is in the air, so they're documented together.
+
+Aircraft.
+
+An aircraft sits on its parked tile until a player walks onto it and presses Enter. The boarding sequence plays the enter, start, and flight clips in order, kicks off the continuous engine loop, and lifts the player by one altitude tick — so a plane parked on the ground at altitude 0 ends up at 1 once you've taken off. Most of the player's normal capabilities are suspended while in the air — camera lock, the grappling hook, jumping, the pause and quit keys, the speed step, the spier, and body rotation all switch off until landing.
+
+Flight controls reuse the player's normal arrow keys with shift as the steering modifier. Left and right arrow alone change the plane's speed across a range from 1 to 20, defaulting to 10; shift plus left or right turns the plane on the x axis; on any non-2d map, shift plus up or down turns the plane on the y axis. Up and down arrow alone change altitude — up climbs, down descends. The plane auto-turns when it hits a map edge or a wall, so steering carelessly into a barrier doesn't end the flight. Speed changes are announced and pitched into the engine loop so faster flight sounds visibly higher; altitude changes are announced after each release.
+
+Pressing L while flying engages the landing gear, the irreversible setup for setting the plane down. The gear clip plays once and every aircraft beacon on the map starts looping its idle audio so the player can hear them and home in from the air. Engaging the gear also unlocks the final altitude step on 2d and 3d maps — without the gear, down arrow stops the descent one tile above the ground; with the gear engaged, the plane can drop all the way to altitude 0. Once the gear is engaged, you cannot disengage it mid-flight; the plane either lands or crashes.
+
+Landing on a 2d or 3d map: with the gear engaged, descend to altitude 0 while standing on an aircraft beacon and the plane sets you down with the land clip, the tile land sound, and the character's land sound. All suspended capabilities switch back on. Descend to altitude 0 anywhere else and the plane crashes — the crash clip plays, the map tears down, and the death prompt opens. Without the gear engaged at all, the down arrow stops one tile above the ground and no landing logic fires, so a flight in 2d or 3d is only at risk once the gear is engaged.
+
+Landing on a topdown map: topdown has no altitude axis, so the gear's unlock-the-floor behavior doesn't apply. Instead, with the gear engaged the plane needs to be on top of an aircraft beacon to actually set down. Touch a beacon while the gear is on and the plane lands. Engage the gear on a topdown map that has no beacons placed at all and the plane crashes immediately on engage, since there's no possible landing zone to find. Engage the gear on a topdown map that does have beacons but you're not yet on one, and the plane stays aloft — you have to fly toward a beacon to set down.
+
+The aircraft also has a health pool that depletes from weapon hits and similar damage. At zero health, the plane plays its death clip and is removed from the map. Crash kills — failed landings or turbulence contact — are a separate path that goes straight to the death prompt instead of leaving a destroyed plane on the field.
+
+Aircraft beacons.
+
+A beacon is a designated landing zone the author places anywhere a player should be allowed to set their plane down. Beacons are silent until a flying player engages the landing gear; once the gear is on, every beacon on the map starts looping its idle audio from its own position so the player can home in on the nearest one. In 2d a beacon is a strip on the x axis at a single altitude; in 3d it's a rectangle on the x and y axes at a single altitude; in topdown it's a rectangle on the x and y axes with no altitude at all. The builder asks for whichever fields fit the active map mode.
+
+For the landing to actually fire on a 2d or 3d map, the beacon needs to be placed at altitude 0 — the plane descends to altitude 0 when the gear unlocks the final tick, and only beacons at that altitude register the player as standing on them. Beacons set at higher altitudes in 2d or 3d don't function as landing zones, since the plane passes through their altitude on the way down. In topdown there's no altitude check at all, so any beacon counts as a valid landing zone the moment the gear is engaged on top of it.
+
+Aircraft turbulences.
+
+A turbulence is a hazardous column of bad air at one x position, with an altitude band the plane has to thread to survive. On 2d maps the band is set by a minimum and maximum y (altitude). On 3d maps the turbulence sits on a single ground tile — one x, one y — and the altitude band is set by a minimum and maximum z. Turbulence isn't available in topdown maps since there's no altitude axis to dodge on; the builder hides the entry on topdown.
+
+Each turbulence has two distance fields the author sets:
+
+Announce distance — how far before the column the player gets the spoken "Turbulence: location, X: altitude, Y" warning plus the appear clip. The announcement fires once per turbulence on first approach and is purely informational; it plays regardless of whether the player is at a colliding altitude, so a safe high-altitude flyover still gets warned the turbulence exists. The announcement doesn't replay later in the same session even if the player turns around and approaches the same turbulence again.
+
+Alarm distance — how far before the column the looping alarm clip starts. The alarm only fires when the plane is actually on a collision course (within the altitude band, and for 3d on the correct y tile too) and stops the moment any of those conditions falls away. Climbing or descending out of the altitude band silences the alarm immediately; dropping back in re-arms it. If the author sets the alarm distance higher than the announce distance, the alarm distance is silently clamped down to match the announce distance so the alarm can never fire before the spoken warning.
+
+Dodge options: in 2d, change altitude. In 3d, change altitude or step one tile of depth on the y axis. Any safe crossing of the column plays the pass clip and speaks "Turbulence: passed." Crashing into a turbulence is one of the kill paths that ends with the death prompt, the same as a failed landing.
+
+Authoring.
+
+Aircraft, aircraft beacon, and aircraft turbulence each have their own entry under the transportation submenu of the builder. The form fields adapt to the active map mode automatically — 3d adds a z field where appropriate; topdown hides aircraft turbulence entirely.
+
+Aircraft audio clips live under the sounds folder, in the aircrafts category of the transportation builder assets, one folder per aircraft type. A complete aircraft pack needs: loop (the continuous in-flight loop the parked plane plays before boarding), enter, start, and flight (the boarding sequence), engin (the engine pitch loop driven by speed), change (the cue when speed or altitude changes), turn (the direction-change cue), gear (the landing-gear toggle when the L key engages), land (the touchdown after a successful landing), crash (failed landing or turbulence contact), death (the plane's health hits zero), hurt (the plane takes damage), and beacon (the loop a beacon plays once landing gear is engaged). Aircraft turbulences reuse the aircraft pack for their cues — alarm (the collision-course loop), appear (the one-shot played with the spoken announcement), and pass (the safe-crossing cue).
+
+When placing beacons on 2d or 3d maps, set their altitude to 0 so the plane can actually land on them. The builder lets you set higher altitudes, but a plane on a 2d or 3d map descends to altitude 0 the moment its landing gear unlocks the final tick, so beacons placed any higher than 0 will never register as landed-on. Topdown beacons have no altitude field at all so this caveat doesn't apply there.
+
+A practical starting setup for an authored turbulence is an announce distance of 10 and an alarm distance of 5. The player hears the spoken warning at ten tiles out, has the alarm kick in at five if they haven't started dodging, and crashes at zero if they haven't broken out of the altitude band. Authors aiming for higher difficulty can shrink both numbers (or set them equal), and authors aiming for tutorial pacing can stretch the announce distance further out so the warning gives ample time to climb.
