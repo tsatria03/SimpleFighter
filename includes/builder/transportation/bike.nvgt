@@ -5,7 +5,7 @@ bike@[]bikes(0);
 class bike
 {
 bool moveable;
-int bellsound, bikesound, changesound, crashsound, defsound, hurtsound, speedsound, radarsound, turnsound, stucksound;
+int bellsound, bikesound, changesound, crashsound, defsound, hurtsound, speedsound, radarsound, turnsound, stucksound, startsound, stopsound;
 double bikehealth;
 double bikemaxhealth;
 int bikex;
@@ -153,7 +153,8 @@ speedable=false;
 spiable=false;
 turnable=false;
 bikepool.destroy_sound(bikes[i].bikesound);
-bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/misc/*start*"),false,0,0,0,100,false);
+bikepool.destroy_sound(bikes[i].startsound);
+bikes[i].startsound=bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/misc/*start*"),false,0,0,0,100,false);
 speak("moving");
 facing="right";
 bikes[i].bikedir=1;
@@ -174,7 +175,10 @@ speedable=true;
 spiable=true;
 turnable=true;
 bikepool.destroy_sound(bikes[i].bikesound);
-bikes[i].bikesound=bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/misc/*stop*"),false,0,0,0,100,false);
+bikepool.destroy_sound(bikes[i].stopsound);
+bikes[i].stopsound=bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/misc/*stop*"),false,0,0,0,100,false);
+double sz = (mapmode == "3d") ? bikes[i].bikez : 0;
+bikes[i].bikesound=bikepool.play_extended_3d(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/misc/*beacon*"),me.x,me.y,me.z,bikes[i].bikex,bikes[i].bikey,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 speak("stopped");
 facing="left";
 bikes[i].bikedir=0;
@@ -363,6 +367,8 @@ for(uint i=0; i<bikes.length(); i++)
 {
 bikepool.destroy_sound(bikes[i].bellsound);
 bikepool.destroy_sound(bikes[i].bikesound);
+bikepool.destroy_sound(bikes[i].startsound);
+bikepool.destroy_sound(bikes[i].stopsound);
 }
 bikes.resize(0);
 onbike=false;
