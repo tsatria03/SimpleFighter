@@ -165,6 +165,7 @@ Letter, M. Speak your shield strength.
 Letter, N. Speak the direction and distance to the object you're tracking. Tracking is started from the object viewer.
 Shift plus letter N. Stop tracking the current object.
 Left bracket. Speak your total kills.
+Shift plus left bracket. Drop the inventory item currently in focus.
 Letter, Z. Toggle zone announcements on or off.
 Alt plus letter Q. Speak the text zone you're currently standing in.
 
