@@ -23,7 +23,6 @@ bool load_map_pack(const string&in name, const string&in key)
 	return true;
 }
 
-// Opens sounds/compiled/<name>.spack into the matching global pack handle (sound_main_pack for name="main", sound_builder_pack for name="builder"), sets its _loaded flag, registers the handle in the engine's sound-default-pack chain so audio playback transparently falls back to it when the file isn't on disk, and returns true. Silently returns false if the file is missing or the name is unrecognized — the chain stays unchanged in that case and disk lookups continue to win. Mirrors load_map_pack's shape so map and sound pack lifetimes look the same.
 bool load_sound_pack(const string&in name, const string&in key)
 {
 	string compiled_path = "sounds/compiled/" + name + ".spack";
@@ -63,11 +62,6 @@ bool load_sound_pack(const string&in name, const string&in key)
 	return false;
 }
 
-// Returns the pack handle that owns the given logical path, or null if no loaded pack matches and the path should be served from disk. Dispatches by the path's first segment:
-//   - "assets/..." or "data/..." → the active map pack (if a compiled map is loaded)
-//   - "main/..."                  → sound_main_pack (if sounds/compiled/main.spack is loaded)
-//   - "builder/..."               → sound_builder_pack (if sounds/compiled/builder.spack is loaded)
-// Callers are responsible for translating the logical path into the path-inside-pack when they call read_file / file_exists on the returned handle — map_pack stores paths as "assets/..." and "data/..." verbatim, while sound packs drop the "main/" or "builder/" prefix since the pack name itself names that bucket.
 pack@ resolve_pack(const string&in path)
 {
 	if (map_pack_loaded && (string_starts_with(path, "assets/") || string_starts_with(path, "data/"))) return @map_pack;
@@ -88,7 +82,6 @@ else
 return "";
 }
 
-// Returns a reference to the cached file list for the given pack handle so callers don't pay the cost of pack.list_files() on every lookup. pack.list_files() apparently rebuilds the array each call, which for an 800MB spack with thousands of files turns map load into a slideshow. The caches are populated once at load_sound_pack / load_map_pack time and reset on close.
 string[]@ pack_file_cache(pack@ p)
 {
 	if (p is null) return null;
@@ -98,7 +91,6 @@ string[]@ pack_file_cache(pack@ p)
 	return null;
 }
 
-// Returns a handle to the per-folder index for the given pack — a dictionary keyed by folder path (always ending with a "/") whose values are string[] lists of files in that folder. Built once at pack load time so audio lookups can do O(1) folder lookup + O(few-files-in-folder) regex match instead of O(every-file-in-pack) prefix scan. Without this index, a single get_map_sound call against a 10k-file pack iterates all 10k file paths just to find the handful that actually live in the requested folder.
 dictionary@ pack_folder_index(pack@ p)
 {
 	if (p is null) return null;
@@ -108,7 +100,6 @@ dictionary@ pack_folder_index(pack@ p)
 	return null;
 }
 
-// Walks the cached file list of a pack and groups paths by their containing folder. Called by load_map_pack / load_sound_pack right after the file list is cached. The index lives for the pack's lifetime and is wiped on close.
 void build_pack_folder_index(string[]@ files, dictionary@ index)
 {
 	index.delete_all();
@@ -138,7 +129,6 @@ void build_pack_folder_index(string[]@ files, dictionary@ index)
 	}
 }
 
-// Lists the unique sub-folder names directly under `prefix` inside the given pack. Spacks store flat file paths, not folders, so we derive folder names by scanning every file whose path begins with `prefix` and grabbing the first segment after it. Returns an unsorted array of folder names (e.g. for prefix "equipments/weapons/" inside a main spack, returns "archery", "melee", etc.).
 string[] list_pack_folders(pack@ p, const string&in prefix)
 {
 	string[] result;
@@ -167,7 +157,6 @@ string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
 {
 	if (p is null)
 		return "";
-	// Extract the containing folder from the pattern: everything up to and including the last "/" before the first wildcard. With a per-folder index built at pack load time, this turns the lookup from O(all_files_in_pack) into O(files_in_just_this_folder), which is the difference between a map with 50 signs feeling instant vs. dragging through hundreds of thousands of comparisons per footstep.
 	int wild_pos = string_find(soundname, "*");
 	int scan_end = (wild_pos < 0) ? int(soundname.length()) : wild_pos;
 	int last_slash = -1;
@@ -182,7 +171,6 @@ string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
 		string folder = soundname.substr(0, last_slash + 1);
 		if (index.exists(folder)) index.get(folder, @folder_files);
 	}
-	// Fallback path — no folder prefix in the pattern, or no index built for this pack. Walk the cached file list with the old prefix-filter to stay correct.
 	string[] uncached;
 	if (folder_files is null)
 	{
@@ -203,7 +191,6 @@ string find_sound_in_pack(string soundname, pack@ p=@sound_default_pack)
 		if (fb_matches.length() > 0) return fb_matches[random(0, fb_matches.length() - 1)];
 		return "";
 	}
-	// Fast path — we have the folder's file list, just regex-match the few entries it contains.
 	string pattern = soundname;
 	pattern = string_replace(pattern, ".", "\\.", true);
 	pattern = string_replace(pattern, "*", ".*", true);
@@ -245,7 +232,6 @@ string[] get_map_sound_folders(const string&in path)
 			}
 		}
 	}
-	// Disk missed (or partially missed) — also pull folder names from the matching global spack with the bare bucket-relative prefix.
 	{
 		string prefix = path;
 		pack@ p = null;
@@ -283,7 +269,6 @@ string get_map_sound(const string&in path)
 	result = find_sound_in_disk(global_path);
 	if (result != "")
 		return result;
-	// Last resort: query the matching global spack with the bare bucket-relative pattern. The engine's sound-pack chain will load the matched file at play time.
 	if (string_starts_with(path, "main/") && sound_main_pack_loaded)
 		return find_sound_in_pack(path.substr(5), @sound_main_pack);
 	if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
@@ -299,7 +284,6 @@ string[] get_pack_sound_folders(const string&in path)
 		result = find_directories(global_path);
 	if (result.length() == 0)
 	{
-		// Disk missed — fall back to the matching global spack with the bare bucket-relative prefix.
 		string prefix = path;
 		pack@ p = null;
 		if (string_starts_with(prefix, "main/")) { @p = @sound_main_pack; prefix = prefix.substr(5); }
@@ -317,7 +301,6 @@ string get_pack_sound(const string&in path)
 	string result = find_sound_in_disk(fullpath);
 	if (result != "")
 		return result;
-	// Disk missed — fall back to the matching global spack with the bare bucket-relative pattern. The engine's sound-pack chain will load the matched file at play time.
 	if (string_starts_with(path, "main/") && sound_main_pack_loaded)
 		return find_sound_in_pack(path.substr(5), @sound_main_pack);
 	if (string_starts_with(path, "builder/") && sound_builder_pack_loaded)
@@ -325,9 +308,7 @@ string get_pack_sound(const string&in path)
 	return "";
 }
 
-//compile/decompile map functions, seprat soundpack equivalents will also go here.
 
-// Reads the `mode` line from a chunk of data/main.sif text (decompiled file or compiled-pack read_file output) and returns the mode value, or empty string on miss.
 string read_map_mode_from_text(const string&in text)
 {
 	string[] lines = delinear(text);
@@ -339,7 +320,6 @@ string read_map_mode_from_text(const string&in text)
 	return "";
 }
 
-// Opens data/main.sif on disk for the named decompiled map and returns the parsed mode (`2d`, `topdown`, `3d`) or empty string if the file is missing or the mode line isn't present. Used by every menu that lists decompiled maps.
 string read_map_mode_decompiled(const string&in map_name)
 {
 	string path = "data/builder/maps/decompiled/" + map_name + "/data/main.sif";
@@ -351,7 +331,6 @@ string read_map_mode_decompiled(const string&in map_name)
 	return read_map_mode_from_text(text);
 }
 
-// Opens the compiled .map pack at the given full path, reads data/main.sif from inside, and returns the parsed mode or empty string on miss. Used by every menu that lists compiled maps.
 string read_map_mode_compiled(const string&in map_path)
 {
 	pack preview_pack;
@@ -572,7 +551,6 @@ void compile_sound_pack()
 		}
 	}
 	string source_folder = "sounds/decompiled/" + chosen;
-	// If a previous spack of this name is still open, remove it from the chain and close it so the file can be overwritten.
 	if (chosen == "main" && sound_main_pack_loaded) { remove_sound_default_pack(@sound_main_pack); sound_main_pack.close(); sound_main_pack_loaded = false; }
 	if (chosen == "builder" && sound_builder_pack_loaded) { remove_sound_default_pack(@sound_builder_pack); sound_builder_pack.close(); sound_builder_pack_loaded = false; }
 	if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
@@ -617,7 +595,6 @@ void decompile_sound_pack()
 	}
 	if (!directory_exists("sounds/decompiled"))
 		directory_create("sounds/decompiled");
-	// Reorder so builder.spack lists first, then main.spack, then anything else in original order.
 	string[] spacks;
 	string[] preferred = {"builder.spack", "main.spack"};
 	for (uint p = 0; p < preferred.length(); p++)

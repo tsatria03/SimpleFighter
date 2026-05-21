@@ -27,7 +27,6 @@ toggled=tg;
 destroying_sound=dst_snd;
 looping=lp;
 singleuse=sgl;
-// Loop plays at spawn whenever looping=true, EXCEPT in the "loop tracks toggled state" mode (destroying_sound=true), where it only plays at spawn if the switch is also currently on.
 bool should_play_at_spawn = looping && (!destroying_sound || toggled);
 if(should_play_at_spawn)
 {
@@ -35,7 +34,6 @@ double zr = (mapmode == "3d") ? (maxz-minz) : 0;
 switchsound=switchpool.play_extended_3d(get_map_sound("builder/interaction/switches/"+switchtype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 switchpool.update_sound_range_3d(switchsound, 0, maxx-minx, 0, maxy-miny, 0, zr);
 }
-// Auto-activated switches also fire their on_command at spawn — same as a player press would. Safe to call now that comstack queues instead of busy-waiting.
 if(toggled && on_command != "") comstack(on_command);
 }
 }
@@ -60,7 +58,6 @@ return;
 if(switchers[i].toggled==true)
 {
 switchers[i].toggled=false;
-// In the "loop tracks toggled state" mode, flipping off stops the loop. In persistent mode the loop is left alone.
 if(switchers[i].looping==true && switchers[i].destroying_sound==true) switchpool.destroy_sound(switchers[i].switchsound);
 switchers[i].pressound=switchpool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
 if(switchers[i].off_command != "") comstack(switchers[i].off_command);
@@ -69,7 +66,6 @@ return;
 else if(switchers[i].toggled==false)
 {
 switchers[i].toggled=true;
-// In the "loop tracks toggled state" mode, flipping on (re)starts the loop. In persistent mode the loop is already running from spawn — leave it alone.
 if(switchers[i].looping==true && switchers[i].destroying_sound==true)
 {
 switchpool.destroy_sound(switchers[i].switchsound);
@@ -279,7 +275,6 @@ bool tg = false;
 bool dst = false;
 bool lp = false;
 bool scl = false;
-// New format has two double-quoted command strings between switchtype and the bools. Legacy maps (no quotes) had bools right after switchtype with no commands. Detect by checking whether the next token starts with a quote — that tells the two formats apart unambiguously, since the bool tokens are literally "true" or "false" with no quotes.
 bool has_quotes = (int(sd.length()) > o+1 && sd[o+1].length() > 0 && sd[o+1].substr(0,1) == "\"");
 if(has_quotes)
 {
@@ -289,7 +284,6 @@ array<string> quoted = extract_quoted(combined, remainder);
 if(quoted.length() >= 1) on_cmd = quoted[0];
 if(quoted.length() >= 2) off_cmd = quoted[1];
 array<string> tail = string_split(string_trim_sides(remainder), " ");
-// Tail-bool count distinguishes successive format revisions. Four bools = current (toggled, destroying_sound, looping, singleuse). Three bools = the prior format that added looping but not destroying_sound (toggled, looping, singleuse). Two bools = the earliest quoted format with no looping or destroying_sound (toggled, singleuse). Missing fields default to false, preserving each old map's original behavior.
 if(tail.length() >= 4)
 {
 tg = string_to_bool(tail[0]);

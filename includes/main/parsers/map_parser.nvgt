@@ -1,4 +1,3 @@
-// Routes a single map-entity line (already tokenized into sd, with sd[0] holding the entity name) to the appropriate read_<entity> function. Returns true if the entity name matched a known case, false if no case matched. The map loader's main loop calls this once per non-header line so the dispatch logic stays in one place; the /spawn command in the command parser also calls it to build an entity in memory from typed args without touching main.sif. Header lines (minx, maxx, mode, etc.) are NOT handled here — those only make sense during a map load and live in the loader's main loop directly.
 bool dispatch_entity_line(string[] sd)
 {
 if(sd[0]=="platform" && (sd.length()==10 || sd.length()==11 || sd.length()==12))
@@ -252,7 +251,6 @@ else if(i % 100 == 0)
 {
 wait(0);
 }
-// Normalize the line so tabs and runs of whitespace count as a single field separator. Authors who lay out entity lines with tabs (for column alignment in a text editor) get the same tokenization as the canonical space-delimited form, and a mix of the two on the same line is fine. Tabs and spaces become equivalent; consecutive whitespace collapses; leading/trailing whitespace is dropped.
 string normalized_line = string_replace(lines[i], "\t", " ", true);
 int prev_length;
 do {
@@ -323,7 +321,6 @@ if (force_spawned)
 	}
 	else
 	{
-		// No spawnpoint — fall back to (0,0,0), clamped to the map's bounds so a map whose bounds don't include zero (e.g. minx=5 maxx=20) doesn't drop the player outside the map.
 		me.x = (0 < minx) ? minx : ((0 > maxx) ? maxx : 0);
 		me.y = (0 < miny) ? miny : ((0 > maxy) ? maxy : 0);
 		me.z = (mapmode == "3d") ? ((0 < minz) ? minz : ((0 > maxz) ? maxz : 0)) : 0;

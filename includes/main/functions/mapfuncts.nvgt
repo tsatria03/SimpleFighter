@@ -82,7 +82,6 @@ else
 return string_to_number(str);
 }
 
-// Free-form string-level version of stn's random expansion. Scans the input for every random(low,high) token, rolls a value for each, and replaces the token with the rolled number. Used by text-bearing commands like /speak where the argument is not a single number-shaped string. Malformed tokens (no comma, unmatched parens) are left in place so authors can see what they typed.
 string expand_random_tokens(string str)
 {
 int start = 0;
@@ -223,7 +222,6 @@ else if(buildtype == "item_passage") return "passage";
 return buildtype;
 }
 
-// Current time as an ISO 8601 UTC string suitable for meta.sif stamps (e.g. 2026-05-13T14:30:00Z). Used by create_map and every save path that updates the modified date.
 string utc_iso8601_now()
 {
 	timestamp t;
@@ -231,7 +229,6 @@ string utc_iso8601_now()
 	return t.format(DATE_TIME_FORMAT_ISO8601, 0);
 }
 
-// Per-map metadata loaded from data/meta.sif. The four fields are written by create_map and the map menu's metadata-editing options, and read by load_map (for owner) and /mapinfo (for the full display).
 class map_meta
 {
 	string owner;
@@ -246,7 +243,6 @@ class map_meta
 		modified_date = "";
 	}
 }
-// Parses raw meta.sif text into a populated map_meta. Empty text returns the default map_meta with safe defaults. Missing keys are left at their default; unknown keys are ignored.
 map_meta@ parse_map_meta(string meta_text)
 {
 	map_meta@ result = map_meta();
@@ -265,7 +261,6 @@ map_meta@ parse_map_meta(string meta_text)
 	}
 	return result;
 }
-// Stamps the currently-loaded map's data/meta.sif `modified date` to the current UTC time and writes meta.sif back with the other three fields preserved. Called by every save path that writes to main.sif (line add/edit/remove, paste rawdata, and every entity-builder write). If the map's meta.sif is missing the file is created from defaults plus the current time as both created and modified dates.
 void bump_map_modified(string map_name = "")
 {
 	if (map_name == "") map_name = mapname;
@@ -283,7 +278,6 @@ void bump_map_modified(string map_name = "")
 		"modified date=" + meta.modified_date + "\r\n");
 	f.close();
 }
-// Rewrites every travelpoint line in every decompiled map's data/main.sif so that any destination matching old_name (with or without a `.map` suffix) is replaced by new_name (preserving the suffix the line originally used). Bumps the modified date of any map that actually changed. Returns the number of maps rewritten.
 int fixup_travelpoint_destmaps(string old_name, string new_name)
 {
 	int touched = 0;
@@ -336,7 +330,6 @@ int fixup_travelpoint_destmaps(string old_name, string new_name)
 	return touched;
 }
 
-// Writes all four meta fields to data/meta.sif for the given decompiled map. Stamps modified date to now; backfills created date with now if it's empty. Returns true on success.
 bool write_map_meta(string map_name, map_meta@ meta)
 {
 	if (map_name == "") return false;
@@ -354,7 +347,6 @@ bool write_map_meta(string map_name, map_meta@ meta)
 	return true;
 }
 
-// Reads data/meta.sif from a decompiled map folder. Returns the parsed map_meta. If the file is missing the map_meta defaults are used.
 map_meta@ read_map_meta_decompiled(string map_name)
 {
 	string path = "data/builder/maps/decompiled/" + map_name + "/data/meta.sif";
@@ -366,7 +358,6 @@ map_meta@ read_map_meta_decompiled(string map_name)
 	return parse_map_meta(text);
 }
 
-// Opens the compiled .map pack at the given full path and reads data/meta.sif from inside, returning the parsed map_meta. Defaults are used if the file or the pack is missing. Used by every menu that lists compiled maps.
 map_meta@ read_map_meta_compiled(string map_path)
 {
 	pack preview_pack;
@@ -381,17 +372,14 @@ map_meta@ read_map_meta_compiled(string map_path)
 	return parse_map_meta(text);
 }
 
-// Returns true if the line contains any block-comment closing token (*/, *#, or *;).
 bool line_has_block_close(string line)
 {
 return string_find(line, "*/") >= 0 || string_find(line, "*#") >= 0 || string_find(line, "*;") >= 0;
 }
-// Returns true if the line (after trimming leading whitespace) opens a block comment with /*, #*, or ;*.
 bool line_opens_block_comment(string trimmed)
 {
 return string_starts_with(trimmed, "/*") || string_starts_with(trimmed, "#*") || string_starts_with(trimmed, ";*");
 }
-// Walks lines and returns the visible ones — empty lines, line comments (#, //, ;), and block comments (/* */, #* *#, ;* *;) are all skipped, with original_lines tracking the index of each kept line in the source array so callers can write edits back to the right position.
 void filter_empty_lines(string[] lines, string[]& filtered_lines, uint[]& original_lines)
 {
 filtered_lines.resize(0);
@@ -407,12 +395,9 @@ continue;
 }
 string trimmed = string_trim_sides(lines[i]);
 if (trimmed.length()==0) continue;
-// // beats /* so a "//* foo" line is treated as a whole-line // comment, not a block open.
 if (string_starts_with(trimmed, "//")) continue;
-// Block opens. Check the # and ; variants before bare # and ; so #* and ;* aren't eaten by the line-comment rule below.
 if (line_opens_block_comment(trimmed))
 {
-// Same-line open+close: line is a self-contained block, do not enter block state.
 if (!line_has_block_close(lines[i])) in_block = true;
 continue;
 }

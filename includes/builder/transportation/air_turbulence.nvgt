@@ -25,11 +25,9 @@ maxy = mxy;
 minz = mnz;
 maxz = mxz;
 announce_distance = ad;
-// Author cannot make the alarm fire before the announce — silently clamp.
 alarm_distance = (al > ad) ? ad : al;
 }
 
-// In 2d, miny/maxy are the altitude band on y. In 3d, the patch sits on a single ground tile (x, y) with minz/maxz as the altitude band on z.
 bool altitude_in_band()
 {
 if(mapmode == "3d") return me.y == y && me.z >= minz && me.z <= maxz;
@@ -77,7 +75,6 @@ bool in_alarm_range = absolute(me.x - tb.x) <= tb.alarm_distance;
 bool approaching = tb.is_approaching(ac.plaindir);
 bool altitude_match = tb.altitude_in_band();
 
-// Announce + appear fire on first approach within announce range, regardless of altitude — purely informational so the player knows turbulence exists at this column, even on a safe high-altitude flyover.
 if(!tb.spawn_played && in_announce_range && approaching)
 {
 tb.spawn_played = true;
@@ -98,7 +95,6 @@ speak("Turbulence: location, " + int(tb.x) + ": " + altpart + ".");
 }
 }
 
-// Alarm loop fires only on collision course (altitude inside the band) within the tighter alarm range. Stops the moment any of the conditions falls away.
 if(!tb.warned && in_alarm_range && approaching && altitude_match)
 {
 tb.warned = true;
@@ -144,7 +140,6 @@ show_death_prompt();
 return;
 }
 
-// Pass clip fires when the plane crosses the column after being announced. Gated on spawn_played (persistent) rather than warned (now toggles on altitude changes) so a safe flyover at a clear altitude still gets the "cleared" cue.
 if(tb.spawn_played && !tb.cleared && tb.have_last_x)
 {
 bool crossed = (tb.last_x < tb.x && me.x >= tb.x) || (tb.last_x > tb.x && me.x <= tb.x);
@@ -304,8 +299,6 @@ return;
 
 void read_air_turbulence(string[] sd)
 {
-//   2d (6): air_turbulence x miny maxy announce_distance alarm_distance
-//   3d (7): air_turbulence x y minz maxz announce_distance alarm_distance
 if(mapmode == "3d")
 {
 double x = stn(sd[1]);

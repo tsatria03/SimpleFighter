@@ -1,10 +1,8 @@
 class weapon
 {
-	// identity
 	string cad;
 	string sub;
 
-	// stats parsed from info.sif
 	int damage;
 	int range;
 	int range2;
@@ -20,53 +18,42 @@ class weapon
 	string ammo_type;
 	bool is_player_weapon;
 
-	// ammo and level
 	double ammo;
 	double max_ammo;
 	double loaded_ammo;
 	double level;
 
-	// category-of-use flags (per-weapon, defaulted by category if absent in info.sif)
 	bool melee;
 	bool reflection;
 	int refchance;
 	bool refcushion;
 
-	// multi-target / wind-up
 	int scadder_radius;
 	int scadder_count;
 	int swing_speed;
 
-	// knockback (signed at hit-time; negative author value = pull)
 	int push_x;
 	int push_y;
 	int push_z;
 
-	// health cost per fire (drains the firer; player or npc; clamped non-negative; can kill the firer)
 	int health_drain;
 
-	// life cost per fire (consumes life cards from the firer; each card plays the life clip and refills health)
 	int life_drain;
 
-	// stamina cost per fire (player only; clamped non-negative)
 	int stamina_drain;
 
-	// reload state
 	bool is_reloading;
 	double pending_ammo;
 	int reload_duration;
 	timer reload_timer;
 
-	// fire cadence timers
 	timer firetimer;
 	timer firetimer2;
 
-	// manual-fire wind-up state (player-only, gated by swing_speed > 0 on melee weapons)
 	bool is_swinging;
 	timer swing_timer;
 	int pending_dmg;
 
-	// last played sound handle
 	int sound_slot;
 
 	weapon()
@@ -123,7 +110,6 @@ class weapon
 
 	void parse(string c, string s)
 	{
-		// If we're parsing while a glider was previously equipped, kill the engine state so re-drawing or switching weapons doesn't leave the player floating with a dead handle. glider_engine_stop() also plays the off.ogg cue from the old glider's pack since cad/sub still point at the old weapon at this point.
 		if(is_glider()) glider_engine_stop();
 		cad = c;
 		sub = s;
@@ -148,7 +134,6 @@ class weapon
 		launch_subtype = "";
 		ammo_type = (cad == "melee") ? "none" : "normal";
 		stun = 0;
-		// Reset numeric fields to safe defaults BEFORE reading info.sif, so a weapon whose info.sif omits a line falls back to a known value instead of inheriting whatever the previously-parsed weapon had. Important for cleanly handling weapons that intentionally skip ammo lines (the NPC-only ammo field is commonly omitted) and for /relweps refreshing chamber state on weapons with non-standard info.sif.
 		damage = 1;
 		range = 1;
 		range2 = 1;
@@ -256,7 +241,6 @@ class weapon
 				if(rc_parts.length() >= 2) refcushion = (rc_parts[1] == "true");
 			}
 		}
-		// Glider-class weapons override several fields regardless of what info.sif says, since the glider's combat and firing model is hardcoded (contact-only melee, no bullets, no swing wind-up, Ctrl drives the engine rather than the fire action).
 		if(is_glider())
 		{
 			fire_mode = 1;
@@ -525,7 +509,6 @@ class weapon
 				if(stun > 0) stun_target("me", "", stun);
 				return;
 			}
-			// player isn't a valid target — pick the nearest npc target the firer would attack.
 			bool npc_is_3d = (mapmode == "3d");
 			int best_npc_idx = -1;
 			int best_npc_dist = -1;
@@ -569,14 +552,9 @@ class weapon
 			melee_strike_all(fx, fy, fz, dmg, facing, is_3d, scadder_radius, scadder_count);
 			return;
 		}
-		// player swinging melee — find nearest valid target across all bullet-targetable types
-		// type tags: 1=npc 2=tts 3=calendar 4=clock 5=door 6=obj 7=sign 8=spike 9=sucam
-		//            10=vehicle 11=wall 12=staircase 13=platform 14=aircraft 15=projectile 16=bike
-		//            17=indestructible_wall (rico, no damage)
 		int best_type = 0;
 		int best_idx = -1;
 		int best_dist = -1;
-		// npcs (single tile)
 		for(uint j = 0; j < npcs.length(); j++)
 		{
 			if(npcs[j].targets.length() == 0) continue;
@@ -589,7 +567,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 1; best_idx = int(j); best_dist = d; }
 		}
-		// tts enemies
 		for(uint jt = 0; jt < ttsenemies.length(); jt++)
 		{
 			if(!target_in_facing(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, ttsenemies[jt].ttsemz, fx, fy, fz, facing, is_3d)) continue;
@@ -600,7 +577,6 @@ class weapon
 			int d = dx + dy + dz;
 			if(best_dist < 0 or d < best_dist) { best_type = 2; best_idx = int(jt); best_dist = d; }
 		}
-		// calendars (single tile, destroyable)
 		for(uint i = 0; i < calendars.length(); i++)
 		{
 			if(!calendars[i].destroyable) continue;
@@ -613,7 +589,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 3; best_idx = int(i); best_dist = d; }
 		}
-		// clocks (single tile, destroyable)
 		for(uint i = 0; i < clocks.length(); i++)
 		{
 			if(!clocks[i].destroyable) continue;
@@ -626,7 +601,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 4; best_idx = int(i); best_dist = d; }
 		}
-		// doors (box, destroyable)
 		for(uint i = 0; i < doors.length(); i++)
 		{
 			if(!doors[i].destroyable) continue;
@@ -639,7 +613,6 @@ class weapon
 			int d = dx + dy + dz;
 			if(best_dist < 0 or d < best_dist) { best_type = 5; best_idx = int(i); best_dist = d; }
 		}
-		// objs (items; single tile)
 		for(uint i = 0; i < objs.length(); i++)
 		{
 			if(!target_in_facing(objs[i].itx, objs[i].itx, objs[i].ity, objs[i].ity, objs[i].itz, objs[i].itz, fx, fy, fz, facing, is_3d)) continue;
@@ -651,7 +624,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 6; best_idx = int(i); best_dist = d; }
 		}
-		// signs (single tile, destroyable)
 		for(uint i = 0; i < signs.length(); i++)
 		{
 			if(!signs[i].destroyable) continue;
@@ -664,7 +636,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 7; best_idx = int(i); best_dist = d; }
 		}
-		// spikes (box, destroyable)
 		for(uint i = 0; i < spikes.length(); i++)
 		{
 			if(!spikes[i].destroyable) continue;
@@ -677,7 +648,6 @@ class weapon
 			int d = dx + dy + dz;
 			if(best_dist < 0 or d < best_dist) { best_type = 8; best_idx = int(i); best_dist = d; }
 		}
-		// security cameras (single tile)
 		for(uint i = 0; i < sucams.length(); i++)
 		{
 			if(!target_in_facing(sucams[i].sucamx, sucams[i].sucamx, sucams[i].sucamy, sucams[i].sucamy, sucams[i].sucamz, sucams[i].sucamz, fx, fy, fz, facing, is_3d)) continue;
@@ -689,7 +659,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 9; best_idx = int(i); best_dist = d; }
 		}
-		// parked vehicles (single tile, moveable==false)
 		for(uint i = 0; i < vehicles.length(); i++)
 		{
 			if(vehicles[i].moveable) continue;
@@ -702,7 +671,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 10; best_idx = int(i); best_dist = d; }
 		}
-		// walls (box) — destructible take damage; indestructible block the swing and play rico
 		for(uint i = 0; i < walls.length(); i++)
 		{
 			if(!target_in_facing(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, walls[i].minz, walls[i].maxz, fx, fy, fz, facing, is_3d)) continue;
@@ -714,7 +682,6 @@ class weapon
 			int d = dx + dy + dz;
 			if(best_dist < 0 or d < best_dist) { best_type = walls[i].destroyable ? 11 : 17; best_idx = int(i); best_dist = d; }
 		}
-		// staircases (box, destroyable)
 		for(uint i = 0; i < staircases.length(); i++)
 		{
 			if(!staircases[i].destroyable) continue;
@@ -727,7 +694,6 @@ class weapon
 			int d = dx + dy + dz;
 			if(best_dist < 0 or d < best_dist) { best_type = 12; best_idx = int(i); best_dist = d; }
 		}
-		// platforms (x/y box, z exact, destroyable)
 		for(uint i = 0; i < platforms.length(); i++)
 		{
 			if(!platforms[i].destroyable) continue;
@@ -740,7 +706,6 @@ class weapon
 			int d = dx + dy + dz;
 			if(best_dist < 0 or d < best_dist) { best_type = 13; best_idx = int(i); best_dist = d; }
 		}
-		// parked aircrafts (single tile, moveable==false)
 		for(uint i = 0; i < aircrafts.length(); i++)
 		{
 			if(aircrafts[i].moveable) continue;
@@ -753,7 +718,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 14; best_idx = int(i); best_dist = d; }
 		}
-		// projectiles (single tile, destroyable)
 		for(uint i = 0; i < projectiles.length(); i++)
 		{
 			if(!projectiles[i].destroyable) continue;
@@ -766,7 +730,6 @@ class weapon
 			int d = dx + dy + (is_3d ? dz : 0);
 			if(best_dist < 0 or d < best_dist) { best_type = 15; best_idx = int(i); best_dist = d; }
 		}
-		// parked bikes (single tile, moveable==false)
 		for(uint i = 0; i < bikes.length(); i++)
 		{
 			if(bikes[i].moveable) continue;
@@ -780,7 +743,6 @@ class weapon
 			if(best_dist < 0 or d < best_dist) { best_type = 16; best_idx = int(i); best_dist = d; }
 		}
 		if(best_type == 0) return; // no target in range — silent miss; swing audio already played
-		// dispatch on best_type
 		if(best_type == 1)
 		{
 			uint j = uint(best_idx);
@@ -1045,7 +1007,6 @@ class weapon
 
 	void melee_strike_all(int fx, int fy, int fz, int dmg, string facing, bool is_3d, int sr, int sc)
 	{
-		// npcs
 		for(uint j = 0; j < npcs.length(); j++)
 		{
 			if(npcs[j].targets.length() == 0) continue;
@@ -1103,7 +1064,6 @@ class weapon
 			if(stun > 0) { stuntimer.restart(); stunned = true; stundir = stun; npcs[j].fireable = false; npcs[j].move_x = false; npcs[j].move_y = false; npcs[j].move_z = false; }
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// tts enemies (2d only)
 		for(uint jt = 0; jt < ttsenemies.length(); jt++)
 		{
 			if(!target_in_facing(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, ttsenemies[jt].ttsemz, fx, fy, fz, facing, is_3d)) continue;
@@ -1128,7 +1088,6 @@ class weapon
 			}
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// calendars (destroy on hit; iterate backward)
 		for(int i = int(calendars.length()) - 1; i >= 0; i--)
 		{
 			if(!calendars[i].destroyable) continue;
@@ -1146,7 +1105,6 @@ class weapon
 			calendars.remove_at(uint(i));
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// clocks (destroy; backward)
 		for(int i = int(clocks.length()) - 1; i >= 0; i--)
 		{
 			if(!clocks[i].destroyable) continue;
@@ -1164,7 +1122,6 @@ class weapon
 			clocks.remove_at(uint(i));
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// doors (damage)
 		for(uint i = 0; i < doors.length(); i++)
 		{
 			if(!doors[i].destroyable) continue;
@@ -1183,7 +1140,6 @@ class weapon
 			if(hd > 0) doors[i].hurtsound = doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/dest/"+doors[i].desttype+"/*hurt*"), me.x, me.y, me.z, doors[i].minx, doors[i].miny, doors[i].minz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// objs/items (destroy; backward)
 		for(int i = int(objs.length()) - 1; i >= 0; i--)
 		{
 			if(!target_in_facing(objs[i].itx, objs[i].itx, objs[i].ity, objs[i].ity, objs[i].itz, objs[i].itz, fx, fy, fz, facing, is_3d)) continue;
@@ -1200,7 +1156,6 @@ class weapon
 			objs.remove_at(uint(i));
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// signs (destroy; backward)
 		for(int i = int(signs.length()) - 1; i >= 0; i--)
 		{
 			if(!signs[i].destroyable) continue;
@@ -1218,7 +1173,6 @@ class weapon
 			signs.remove_at(uint(i));
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// spikes (damage)
 		for(uint i = 0; i < spikes.length(); i++)
 		{
 			if(!spikes[i].destroyable) continue;
@@ -1242,7 +1196,6 @@ class weapon
 			}
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// sucams (damage)
 		for(uint i = 0; i < sucams.length(); i++)
 		{
 			if(!target_in_facing(sucams[i].sucamx, sucams[i].sucamx, sucams[i].sucamy, sucams[i].sucamy, sucams[i].sucamz, sucams[i].sucamz, fx, fy, fz, facing, is_3d)) continue;
@@ -1260,7 +1213,6 @@ class weapon
 			if(hd > 0) sucams[i].hurtsound = campool.play_extended_3d(get_map_sound("builder/traps/security cameras/"+sucams[i].cameratype+"/*hurt*"), me.x, me.y, me.z, sucams[i].sucamx, sucams[i].sucamy, sucams[i].sucamz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// parked vehicles (damage)
 		for(uint i = 0; i < vehicles.length(); i++)
 		{
 			if(vehicles[i].moveable) continue;
@@ -1279,7 +1231,6 @@ class weapon
 			if(hd > 0) vehicles[i].hurtsound = vehpool.play_extended_3d(get_map_sound("builder/transportation/vehicles/"+vehicles[i].vehtype+"/*hurt*"), me.x, me.y, me.z, vehicles[i].vehx, vehicles[i].vehy, vehicles[i].vehz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// walls — destructible take damage; indestructible play rico and skip damage
 		for(uint i = 0; i < walls.length(); i++)
 		{
 			if(!target_in_facing(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, walls[i].minz, walls[i].maxz, fx, fy, fz, facing, is_3d)) continue;
@@ -1307,7 +1258,6 @@ class weapon
 			}
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// staircases (damage)
 		for(uint i = 0; i < staircases.length(); i++)
 		{
 			if(!staircases[i].destroyable) continue;
@@ -1331,7 +1281,6 @@ class weapon
 			}
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// platforms (damage; z exact on 3d)
 		for(uint i = 0; i < platforms.length(); i++)
 		{
 			if(!platforms[i].destroyable) continue;
@@ -1355,7 +1304,6 @@ class weapon
 			}
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// parked aircrafts (damage)
 		for(uint i = 0; i < aircrafts.length(); i++)
 		{
 			if(aircrafts[i].moveable) continue;
@@ -1374,7 +1322,6 @@ class weapon
 			if(hd > 0) aircrafts[i].hurtsound = plainpool.play_extended_3d(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*hurt*"), me.x, me.y, me.z, aircrafts[i].plainx, aircrafts[i].plainy, aircrafts[i].plainz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// projectiles (damage; backward because death triggers destroy_projectile)
 		for(int i = int(projectiles.length()) - 1; i >= 0; i--)
 		{
 			if(!projectiles[i].destroyable) continue;
@@ -1398,7 +1345,6 @@ class weapon
 			}
 			if(sc > 0) { sc--; if(sc <= 0) return; }
 		}
-		// parked bikes (damage)
 		for(uint i = 0; i < bikes.length(); i++)
 		{
 			if(bikes[i].moveable) continue;
@@ -1513,9 +1459,6 @@ class weapon
 	void update_z_range(int new_range) { update_range_axis("z", new_range); }
 }
 
-// blocked predicate for push-resolution: tile is blocked if it falls outside map bounds
-// or lies inside any wall (3d uses z, 2d ignores it). doors/platforms/vehicles are NOT
-// considered blockers here — start with the simple wall + bounds default.
 bool tile_blocked(int x, int y, int z, bool is_3d)
 {
 	if(x < int(minx) or x > int(maxx)) return true;
@@ -1534,18 +1477,6 @@ bool tile_blocked(int x, int y, int z, bool is_3d)
 	return false;
 }
 
-// Resolves a knockback against a target. Mutates tx/ty/tz in place to the final tile
-// (stopping flush against the first blocker on each axis), and returns total impact
-// damage from leftover-tile shoves the caller should add to the target's hit damage.
-//
-//   tx, ty, tz   target's current tile (in/out — updated to final tile)
-//   ax, ay, az   attacker's tile (used as melee fallback sign source)
-//   px, py, pz   weapon push magnitudes (signed: negative author value = pull)
-//   is_3d        true if mapmode == "3d"
-//   bdir         bullet direction string for ranged hits ("right", "left", "forward",
-//                "backward", "up", "down"); empty for melee. When non-empty the bullet's
-//                travel sign is preferred on the axis it points along; other axes fall
-//                back to attacker→target delta so a sideways shot can still push z.
 int apply_push(int &inout tx, int &inout ty, int &inout tz, int ax, int ay, int az, int px, int py, int pz, bool is_3d, string bdir = "")
 {
 	int impact = 0;

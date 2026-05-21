@@ -309,7 +309,6 @@ string resolve_npc_fall_sound(npc@ self)
 	return snd == "" ? "skip" : snd;
 }
 
-// Reads the NPC info.sif contents for a (category, subtype) pair, honoring the spawn line's `path` field. "map" pins to the map-local override only (disk-only since map_pack reads aren't wired here yet). "global" pins to the shared builder bucket (disk under sounds/decompiled/builder/, with spack fallback via read_datafile). "any" tries map-local first and falls back to global. Returns the file contents on success or empty string on miss. Mirrors the resolution rules the player picks on the spawn form.
 string read_npc_info(string category, string subtype, string path = "any")
 {
 	string maplocal = "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif";
@@ -895,10 +894,8 @@ void npcloop()
 			npcs[i].hurting = false;
 		}
 
-		// tick the human's reload timer
 		if(human_armed) npcs[i].wephum.check_reload(npcs[i].x, npcs[i].y, npcs[i].z);
 
-		// human melee reflection toggle
 		if(human_armed && npcs[i].fireable && npcs[i].wephum.reflection && npcs[i].reftimer.elapsed >= random(5000, 10000))
 		{
 			pool.destroy_sound(npcs[i].refsound2);
@@ -916,7 +913,6 @@ void npcloop()
 			npcs[i].reftimer.restart();
 		}
 
-		// detect damage taken since last tick (drives provoke)
 		if(npcs[i].health < npcs[i].last_health)
 		{
 			npcs[i].provoked = true;
@@ -924,7 +920,6 @@ void npcloop()
 		}
 		npcs[i].last_health = npcs[i].health;
 
-		// territorial trigger: player standing on a defended tile provokes the creature
 		npcs[i].active_terrain_speed = 0;
 		if(npc_targets(npcs[i], "player") && inplain == false && invehicle == false)
 		{
@@ -937,7 +932,6 @@ void npcloop()
 			}
 		}
 
-		// pick nearest valid combat target (player or another npc)
 		bool combat_found = false;
 		bool target_is_player = false;
 		int target_npc = -1;
@@ -971,14 +965,12 @@ void npcloop()
 			}
 		}
 
-		// determine state: normal / wounded / healing
 		bool sub_threshold = npc_below_threshold(npcs[i]);
 		bool target_in_w_sight = combat_found && absolute(combat_tx - npcs[i].x) <= npcs[i].w_hsight && absolute(combat_ty - npcs[i].y) <= npcs[i].w_vsight && (mapmode != "3d" || absolute(combat_tz - npcs[i].z) <= npcs[i].w_zsight);
 		bool in_wounded = sub_threshold && target_in_w_sight;
 		bool in_healing = sub_threshold && !target_in_w_sight;
 		bool in_normal = !sub_threshold;
 
-		// state transition: reset wander state on entering normal
 		string cur_state = in_normal ? "normal" : (in_wounded ? "wounded" : "healing");
 		if(cur_state != npcs[i].last_state)
 		{
@@ -1009,7 +1001,6 @@ void npcloop()
 		int eff_lives_cap = in_normal ? npcs[i].lives : (in_wounded ? npcs[i].w_lives : npcs[i].h_lives);
 		if(npcs[i].currentlives > eff_lives_cap) npcs[i].currentlives = eff_lives_cap;
 
-		// rest heal tick (fires while in healing state)
 		if(in_healing && npcs[i].rest_heal_time > 0 && npcs[i].heal_amount > 0 && npcs[i].rest_heal_timer.elapsed >= npcs[i].rest_heal_time)
 		{
 			npcs[i].healsound = pool.play_extended_3d(get_map_sound(sound_base+"/*heal*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
@@ -1017,7 +1008,6 @@ void npcloop()
 			if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
 			npcs[i].rest_heal_timer.restart();
 		}
-		// ambient heal tick (fires regardless of state when enabled)
 		if(npcs[i].ambient_heal && npcs[i].ambient_heal_time > 0 && npcs[i].heal_amount > 0 && npcs[i].ambient_heal_timer.elapsed >= npcs[i].ambient_heal_time)
 		{
 			npcs[i].healsound = pool.play_extended_3d(get_map_sound(sound_base+"/*heal*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
@@ -1026,7 +1016,6 @@ void npcloop()
 			npcs[i].ambient_heal_timer.restart();
 		}
 
-		// launch tick (summons an npc on its own clock, paused while resting in healing state)
 		if(npcs[i].launching && !in_healing && npcs[i].launch_time > 0 && npcs[i].launch_timer.elapsed >= npcs[i].launch_time)
 		{
 			int dx;
@@ -1074,7 +1063,6 @@ void npcloop()
 			npcs[i].launch_timer.restart();
 		}
 
-		// teleport tick
 		if(npcs[i].tel_x || npcs[i].tel_y || (mapmode == "3d" && npcs[i].tel_z))
 		{
 			int tel_min = in_normal ? npcs[i].tel_n_min : (in_wounded ? npcs[i].tel_w_min : npcs[i].tel_h_min);
@@ -1095,7 +1083,6 @@ void npcloop()
 			}
 		}
 
-		// determine pursuing flag from chase trigger (only relevant in normal state)
 		bool pursuing = false;
 		bool combat_in_sight = combat_found && absolute(combat_tx - npcs[i].x) <= eff_hsight && absolute(combat_ty - npcs[i].y) <= eff_vsight && (mapmode != "3d" || absolute(combat_tz - npcs[i].z) <= eff_zsight);
 		if(in_normal && combat_found)
@@ -1113,9 +1100,7 @@ void npcloop()
 				}
 				if(npcs[i].random_chasing) pursuing = combat_in_sight;
 			}
-			// "never" leaves pursuing false and is exempt from the provoke override below
 
-			// Universal provoke: a hit starts the chase regardless of trigger, except for "never"
 			if(npcs[i].provoked && trigger != "never")
 			{
 				if(combat_in_sight)
@@ -1131,7 +1116,6 @@ void npcloop()
 			}
 		}
 
-		// determine movement target (tx, ty, tz) and whether to require sight
 		int tx = 0, ty = 0, tz = 0;
 		bool has_move = false;
 		bool sight_required = true;
@@ -1241,7 +1225,6 @@ void npcloop()
 			}
 		}
 
-		// movement / spotting
 		int eff_move_step = (npcs[i].fleeing && npcs[i].flee_speed > 0) ? npcs[i].flee_speed : ((npcs[i].active_terrain_speed > 0) ? npcs[i].active_terrain_speed : ((npcs[i].provoked && npcs[i].provoke_speed > 0) ? npcs[i].provoke_speed : eff_movetime));
 		if(has_move && npcs[i].movetimer.elapsed >= eff_move_step)
 		{
@@ -1353,7 +1336,6 @@ void npcloop()
 			}
 		}
 
-		// taunt
 		if(npcs[i].taunttimer.elapsed >= npcs[i].taunttime and !npcs[i].hurting)
 		{
 			npcs[i].mainsound = pool.play_extended_3d(get_map_sound(sound_base+"/*taunt*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
@@ -1362,7 +1344,6 @@ void npcloop()
 			npcs[i].taunttimer.restart();
 		}
 
-		// attack chosen target
 		if(npcs[i].fleeing && npcs[i].flee_time > 0 && npcs[i].flee_timer.elapsed >= npcs[i].flee_time)
 			npcs[i].fleeing = false;
 		if(human_armed && npcs[i].wephum.is_swinging)
@@ -1479,7 +1460,6 @@ void npcloop()
 			}
 		}
 
-		// hit nearby items
 		for(uint k = 0; k < objs.length(); k++)
 		{
 			if(objs[k].itx == npcs[i].x and objs[k].ity == npcs[i].y and (mapmode != "3d" or objs[k].itz == npcs[i].z) and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable)
@@ -1493,7 +1473,6 @@ void npcloop()
 			}
 		}
 
-		// hit player vehicle
 		for(uint k = 0; k < vehicles.length(); k++)
 		{
 			if(vehicles[k].vehx == npcs[i].x and vehicles[k].vehy == npcs[i].y and (mapmode != "3d" or vehicles[k].vehz == npcs[i].z) and npcs[i].firetimer.elapsed >= eff_firetime and npcs[i].fireable and invehicle)
@@ -1504,7 +1483,6 @@ void npcloop()
 			}
 		}
 
-		// death / revive
 		if(npcs[i].health <= 0)
 		{
 			if(npcs[i].currentlives >= 2 and paused == 0)

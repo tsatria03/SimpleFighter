@@ -7,18 +7,15 @@ timer glider_strike_timer;
 void glider_engine_start()
 {
 	if(glider_engine_on) return;
-	// If the glider drains stamina and the player's stamina pool is empty, refuse to engage silently. The fuel-out latch (set when stamina cut the engine) keeps us silent for as long as the player keeps Ctrl held — only a deliberate release-and-re-press after stamina has recovered will play the on clip again, avoiding on/off whiplash.
 	if(glider_fuel_out) return;
 	if(wepchar.stamina_drain > 0 && stamina <= 0) return;
 	glider_engine_on = true;
-	// Stop any in-progress fall and reset the fall counter, so re-engaging the engine mid-fall catches the player at their current altitude the same way pressing F on the hook re-grabs.
 	if(falling)
 	{
 		falling = false;
 		fallcounter = 0;
 		if(fallslot != 0) p.destroy_sound(fallslot);
 	}
-	// Engaging the glider lifts the player one altitude tick above their current spot, the same way aircraft takeoff does — so engaging on the ground at altitude 0 puts the player at 1, and engaging mid-air at 11 puts them at 12.
 	if(mapmode == "3d") me.z += 1;
 	else if(mapmode == "2d") me.y += 1;
 	gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*on*"), false);
@@ -30,7 +27,6 @@ void glider_engine_stop()
 {
 	if(!glider_engine_on) return;
 	glider_engine_on = false;
-	// All glider audio (on, loop, off, and the contact-strike hit/death clips) plays through the dedicated gliderpool instead of the shared player pool. A landing from altitude 1 floods p with fall-cleanup sounds (destroy of fallslot, character land clip, tile land clip) all on the same frame a glider clip would start, evicting it from p's slot table — the lower the altitude, the more thoroughly the clip gets cut, which is why the off clip vanished entirely at height 1 and only played fully at height 3+ when it lived on the shared pool. The isolated gliderpool sees only glider audio, so nothing else can evict any glider clip mid-play.
 	gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*off*"), false);
 	if(glider_loop_slot != 0) { gliderpool.destroy_sound(glider_loop_slot); glider_loop_slot = 0; }
 }
@@ -39,7 +35,6 @@ void glider_contact_strike()
 {
 	if(!glider_engine_on || !wepchar.is_glider()) return;
 	int hx = int(me.x), hy = int(me.y), hz = int(me.z);
-	// The glider sits one altitude above ground level due to the takeoff lift, so contact strikes have to look one tile below the player on the altitude axis to actually hit ground-level entities.
 	if(mapmode == "2d") hy -= 1;
 	else if(mapmode == "3d") hz -= 1;
 	int dmg = wepchar.damage;
@@ -281,7 +276,6 @@ void glider_contact_strike()
 			projectiles[j].wepsound = projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*hurt*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 		if(projectiles[j].projhealth <= 0)
 		{
-			// Projectiles have no per-frame death sweep (unlike walls/platforms/doors/vehicles/etc., which clean up dead instances in their own *check loop). Bullet hits explicitly call destroy_projectile when health hits zero; the glider's contact strike has to do the same, otherwise the projectile sits in the array at negative health and the strike keeps re-hitting it for as long as the player stays on its tile.
 			gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
 			projpool.play_extended_3d(get_map_sound("builder/kombat/projectiles/"+projectiles[j].projtype+"/*death*"), me.x, me.y, me.z, projectiles[j].prox, projectiles[j].proy, projectiles[j].proz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 			destroy_projectile(j);
@@ -307,7 +301,6 @@ void glider_apply_drains()
 void glider_loop()
 {
 	if(!glider_engine_on || !wepchar.is_glider()) return;
-	// Hand-glider auto-land: a jet would crash, but a glider just touches down. If altitude dropped below 1 (player descended past the engaged ceiling), clamp to ground, play the tile-under-foot land clip, and cut the engine. Set the fuel-out latch so the engine can't immediately re-engage while Ctrl is still held — same trick the stamina-out path uses below; the latch clears in handle_glider_keys() the moment Ctrl is released.
 	if(mapmode == "3d" && me.z < 1)
 	{
 		me.z = 0;
@@ -328,6 +321,5 @@ void glider_loop()
 	glider_strike_timer.restart();
 	glider_contact_strike();
 	glider_apply_drains();
-	// Stamina acts as fuel: when it bottoms out, the engine cuts out and the player begins to fall under standard physics. The fuel-out latch keeps the engine from immediately re-engaging while Ctrl is still held (which would cause on/off whiplash as passive regen ticks stamina up by 1 only for the next loop tick to drain it back to 0); the latch clears the moment the player releases Ctrl, so a deliberate re-press once stamina has recovered will fire the on clip again.
 	if(stamina <= 0 && wepchar.stamina_drain > 0) { glider_fuel_out = true; glider_engine_stop(); }
 }

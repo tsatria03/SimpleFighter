@@ -38,7 +38,6 @@ void bikeloop()
 for(uint i=0; i<bikes.length(); i++)
 {
 if(onbike && bikes[i].moveable) { bikes[i].bikex = int(me.x); bikes[i].bikey = me.y; if(mapmode == "3d") bikes[i].bikez = int(me.z); }
-// Resolve which direction the player is requesting on this frame.
 int new_bikedir = -1;
 string new_facing = "";
 int dx = 0, dy = 0;
@@ -50,7 +49,6 @@ if(new_bikedir >= 0 && bikes[i].biketimer.elapsed >= bikes[i].biketime && bikes[
 {
 if(facing != new_facing)
 {
-// Turn-and-face: rotate without stepping. The first press of a new direction key spends the timer tick on the turn; the next press starts moving.
 bikepool.destroy_sound(bikes[i].turnsound);
 bikes[i].turnsound = bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/misc/*turn*"), false, 0, 0, 0, 100, false);
 facing = new_facing;
@@ -60,7 +58,6 @@ bikes[i].biketimer.restart();
 }
 else
 {
-// Bikes step 5 tiles per move, so scan every intermediate tile between current position and destination for both edge crossings and walls — a wall anywhere in that path triggers the same stuck-at-low-speed / crash-at-high-speed split that map edges do, instead of letting the bike jump over the wall to land at the destination.
 double next_x = me.x + dx;
 double next_y = me.y + dy;
 bool past_edge = (next_x < minx || next_x > maxx || next_y < miny || next_y > maxy);
@@ -81,7 +78,6 @@ if(past_edge || wall_ahead)
 {
 if(bikes[i].bikespeed2 >= 1 and bikes[i].bikespeed2 <= 10)
 {
-// Low-speed: stuck. Play the stuck clip and flip direction in place; no position change.
 bikes[i].stucksound = bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/misc/*stuck*"), false, 0, 0, 0, 100, false);
 if(bikes[i].bikedir == 1) { bikes[i].bikedir = 0; facing = "left"; }
 else if(bikes[i].bikedir == 0) { bikes[i].bikedir = 1; facing = "right"; }
@@ -91,7 +87,6 @@ bikes[i].biketimer.restart();
 }
 else if(bikes[i].bikespeed2 >= 11 and bikes[i].bikespeed2 <= 20)
 {
-// High-speed: full crash and dismount. Restores all capability flags, plays the crash clip, removes the bike from the live array.
 cammable = true;
 hookable = true;
 jumpable = true;
@@ -114,7 +109,6 @@ return;
 }
 else
 {
-// Path is clear of walls and edges. Check unbikable terrain (swamps, debris, fire, etc.) — those still just refuse movement with no crash, just like before.
 string nexttile = gmt(next_x, next_y);
 if(!is_bikable(nexttile))
 {
