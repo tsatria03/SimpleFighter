@@ -349,11 +349,12 @@ return mode;
 
 void compile_map()
 {
+while(true)
+{
 string[] folders = find_directories("data/builder/maps/decompiled/*");
 if (folders.length() == 0)
 {
 alert("Error", "There are no decompiled maps available to compile.");
-maptoolsmenu();
 return;
 }
 if (!directory_exists("data/builder/maps/compiled"))
@@ -371,7 +372,6 @@ int mres = m.run();
 if (mres < 0)
 {
 speak("canceled");
-maptoolsmenu();
 return;
 }
 string chosen = m.selected_item_id;
@@ -385,15 +385,13 @@ m.intro_text = "This map already exists. Do you want to overwrite it?";
 int conf = m.run();
 if (conf != 0)
 {
-compile_map();
-return;
+continue;
 }
 }
 string source_folder = "data/builder/maps/decompiled/" + chosen;
 if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
 {
 alert("Error", "Failed to create map file at: " + full_output_path);
-maptoolsmenu();
 return;
 }
 file_list.resize(0);
@@ -417,15 +415,16 @@ pfile.add_file(file_list[i], relative);
 pfile.close();
 alert("Success!", "Map compiled to " + full_output_path);
 show_window("Simple fighter, version "+version);
-compile_map();
+}
 }
 void decompile_map()
+{
+while(true)
 {
 string[] maps = find_files("data/builder/maps/compiled/*.map");
 if (maps.length() == 0)
 {
 alert("Error", "There are no compiled maps available to decompile.");
-maptoolsmenu();
 return;
 }
 if (!directory_exists("data/builder/maps/decompiled"))
@@ -445,7 +444,6 @@ int mres = m.run();
 if (mres < 0)
 {
 speak("canceled");
-maptoolsmenu();
 return;
 }
 string chosen = m.selected_item_id;
@@ -459,15 +457,13 @@ m.intro_text = "This map already exists. Do you want to overwrite it?";
 int conf = m.run();
 if (conf != 0)
 {
-decompile_map();
-return;
+continue;
 }
 }
 string filename = "data/builder/maps/compiled/" + chosen + ".map";
 if (!pfile.open(filename, PACK_OPEN_MODE_READ))
 {
 alert("Error", "Could not open the specified map file: " + filename);
-maptoolsmenu();
 return;
 }
 contents = pfile.list_files();
@@ -475,7 +471,6 @@ if (contents.length() == 0)
 {
 alert("Error", "No files found in this map.");
 pfile.close();
-maptoolsmenu();
 return;
 }
 alert("Get Ready", contents.length() + " files are about to be extracted!");
@@ -501,10 +496,12 @@ extract_file(pfile, relative_path, output_path);
 pfile.close();
 alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
 show_window("Simple fighter, version "+version);
-decompile_map();
+}
 }
 
 void compile_sound_pack()
+{
+while(true)
 {
 string[] candidates = {"builder", "main"};
 string[] available;
@@ -515,7 +512,6 @@ if (directory_exists("sounds/decompiled/" + candidates[i])) available.insert_las
 if (available.length() == 0)
 {
 alert("Error", "There are no decompiled sound packs available to compile.");
-packtoolsmenu();
 return;
 }
 if (!directory_exists("sounds/compiled"))
@@ -532,7 +528,6 @@ int mres = m.run();
 if (mres < 0)
 {
 speak("canceled");
-packtoolsmenu();
 return;
 }
 string chosen = m.selected_item_id;
@@ -546,8 +541,7 @@ m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
 int conf = m.run();
 if (conf != 0)
 {
-compile_sound_pack();
-return;
+continue;
 }
 }
 string source_folder = "sounds/decompiled/" + chosen;
@@ -556,7 +550,6 @@ if (chosen == "builder" && sound_builder_pack_loaded) { remove_sound_default_pac
 if (!pfile.open(full_output_path, PACK_OPEN_MODE_CREATE))
 {
 alert("Error", "Failed to create sound pack file at: " + full_output_path);
-packtoolsmenu();
 return;
 }
 file_list.resize(0);
@@ -581,16 +574,17 @@ pfile.close();
 load_sound_pack(chosen, "");
 alert("Success!", "Sound pack compiled to " + full_output_path);
 show_window("Simple fighter, version "+version);
-compile_sound_pack();
+}
 }
 
 void decompile_sound_pack()
+{
+while(true)
 {
 string[] found = find_files("sounds/compiled/*.spack");
 if (found.length() == 0)
 {
 alert("Error", "There are no compiled sound packs available to decompile.");
-packtoolsmenu();
 return;
 }
 if (!directory_exists("sounds/decompiled"))
@@ -620,7 +614,6 @@ int mres = m.run();
 if (mres < 0)
 {
 speak("canceled");
-packtoolsmenu();
 return;
 }
 string chosen = m.selected_item_id;
@@ -634,15 +627,13 @@ m.intro_text = "This sound pack already exists. Do you want to overwrite it?";
 int conf = m.run();
 if (conf != 0)
 {
-decompile_sound_pack();
-return;
+continue;
 }
 }
 string filename = "sounds/compiled/" + chosen + ".spack";
 if (!pfile.open(filename, PACK_OPEN_MODE_READ))
 {
 alert("Error", "Could not open the specified sound pack file: " + filename);
-packtoolsmenu();
 return;
 }
 contents = pfile.list_files();
@@ -650,7 +641,6 @@ if (contents.length() == 0)
 {
 alert("Error", "No files found in this sound pack.");
 pfile.close();
-packtoolsmenu();
 return;
 }
 alert("Get Ready", contents.length() + " files are about to be extracted!");
@@ -676,5 +666,5 @@ extract_file(pfile, relative_path, output_path);
 pfile.close();
 alert("Success", "Extraction completed. " + contents.length() + " files extracted to " + base_dir);
 show_window("Simple fighter, version "+version);
-decompile_sound_pack();
+}
 }
