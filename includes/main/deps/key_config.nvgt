@@ -1,0 +1,817 @@
+/* key_config.nvgt - pure-script action binding system.
+ *
+ * A drop-in replacement for the engine's input_bind / input_conf that uses
+ * only public engine primitives: key_pressed/down/released/repeating,
+ * get_key_code, get_key_name, ini.nvgt, and joystick.button_* methods.
+ *
+ * No engine rebuild required — drop in and #include.
+*/
+
+#include "ini.nvgt"
+
+// ---- Key-name translation table ----
+// NVGT's get_key_code() wraps SDL_GetScancodeFromName, which expects names like
+// "Space", "Left Shift", "/" — not the friendlier "SPACE", "LSHIFT", "SLASH"
+// users (and the old input_bind) expect. We maintain our own table that maps
+// the NVGT-style names directly to scancodes using the KEY_* enum.
+
+dictionary _kc_name_to_code;
+dictionary _kc_code_to_name;
+
+void _kc_register(const string&in name, uint code) {
+	_kc_name_to_code.set(name, code);
+	string key = "" + code;
+	if (!_kc_code_to_name.exists(key))   // first name registered for a code wins on round-trip
+		_kc_code_to_name.set(key, name);
+}
+
+void _kc_init_keymap() {
+	if (_kc_name_to_code.get_size() > 0) return;
+	// Letters and digits — SDL accepts these as-is
+	string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	for (uint i = 0; i < 26; i++) {
+		string l = letters.substr(i, 1);
+		uint c = uint(get_key_code(l));
+		if (c != 0) _kc_register(l, c);
+	}
+	string digits = "0123456789";
+	for (uint i = 0; i < 10; i++) {
+		string d = digits.substr(i, 1);
+		uint c = uint(get_key_code(d));
+		if (c != 0) _kc_register(d, c);
+	}
+	// Named keys via KEY_* enum (values are SDL scancodes)
+	_kc_register("SPACE", KEY_SPACE);
+	_kc_register("RETURN", KEY_RETURN);
+	_kc_register("TAB", KEY_TAB);
+	_kc_register("ESCAPE", KEY_ESCAPE);
+	_kc_register("BACKSPACE", KEY_BACK);
+	_kc_register("BACK", KEY_BACK);
+	_kc_register("LEFT", KEY_LEFT);
+	_kc_register("RIGHT", KEY_RIGHT);
+	_kc_register("UP", KEY_UP);
+	_kc_register("DOWN", KEY_DOWN);
+	_kc_register("PAGEUP", KEY_PAGEUP);
+	_kc_register("PAGEDOWN", KEY_PAGEDOWN);
+	_kc_register("HOME", KEY_HOME);
+	_kc_register("END", KEY_END);
+	_kc_register("INSERT", KEY_INSERT);
+	_kc_register("DELETE", KEY_DELETE);
+	_kc_register("LSHIFT", KEY_LSHIFT);
+	_kc_register("RSHIFT", KEY_RSHIFT);
+	_kc_register("LCTRL", KEY_LCTRL);
+	_kc_register("RCTRL", KEY_RCTRL);
+	_kc_register("LALT", KEY_LALT);
+	_kc_register("RALT", KEY_RALT);
+	// Legacy aliases (BGT/Win32 names)
+	_kc_register("LCONTROL", KEY_LCTRL);
+	_kc_register("RCONTROL", KEY_RCTRL);
+	_kc_register("LMENU", KEY_LALT);
+	_kc_register("RMENU", KEY_RALT);
+	_kc_register("LWIN", KEY_LGUI);
+	_kc_register("RWIN", KEY_RGUI);
+	_kc_register("PRIOR", KEY_PAGEUP);
+	_kc_register("NEXT", KEY_PAGEDOWN);
+	_kc_register("NUMPADENTER", KEY_NUMPAD_ENTER);
+	_kc_register("DASH", KEY_MINUS);
+	_kc_register("LGUI", KEY_LGUI);
+	_kc_register("RGUI", KEY_RGUI);
+	// Function keys F1-F24
+	_kc_register("F1", KEY_F1);   _kc_register("F2", KEY_F2);
+	_kc_register("F3", KEY_F3);   _kc_register("F4", KEY_F4);
+	_kc_register("F5", KEY_F5);   _kc_register("F6", KEY_F6);
+	_kc_register("F7", KEY_F7);   _kc_register("F8", KEY_F8);
+	_kc_register("F9", KEY_F9);   _kc_register("F10", KEY_F10);
+	_kc_register("F11", KEY_F11); _kc_register("F12", KEY_F12);
+	_kc_register("F13", KEY_F13); _kc_register("F14", KEY_F14);
+	_kc_register("F15", KEY_F15); _kc_register("F16", KEY_F16);
+	_kc_register("F17", KEY_F17); _kc_register("F18", KEY_F18);
+	_kc_register("F19", KEY_F19); _kc_register("F20", KEY_F20);
+	_kc_register("F21", KEY_F21); _kc_register("F22", KEY_F22);
+	_kc_register("F23", KEY_F23); _kc_register("F24", KEY_F24);
+	// Punctuation / symbol row
+	_kc_register("LEFTBRACKET", KEY_LEFTBRACKET);
+	_kc_register("RIGHTBRACKET", KEY_RIGHTBRACKET);
+	_kc_register("LBRACKET", KEY_LEFTBRACKET);   // alias
+	_kc_register("RBRACKET", KEY_RIGHTBRACKET);  // alias
+	_kc_register("SEMICOLON", KEY_SEMICOLON);
+	_kc_register("APOSTROPHE", KEY_APOSTROPHE);
+	_kc_register("COMMA", KEY_COMMA);
+	_kc_register("PERIOD", KEY_PERIOD);
+	_kc_register("SLASH", KEY_SLASH);
+	_kc_register("BACKSLASH", KEY_BACKSLASH);
+	_kc_register("MINUS", KEY_MINUS);
+	_kc_register("EQUALS", KEY_EQUALS);
+	_kc_register("GRAVE", KEY_GRAVE);
+	_kc_register("NONUSHASH", KEY_NONUSHASH);
+	_kc_register("CAPSLOCK", KEY_CAPSLOCK);
+	// Numpad
+	_kc_register("NUMLOCKCLEAR", KEY_NUMLOCKCLEAR);
+	_kc_register("NUMPAD_DIVIDE", KEY_NUMPAD_DIVIDE);
+	_kc_register("NUMPAD_MULTIPLY", KEY_NUMPAD_MULTIPLY);
+	_kc_register("NUMPAD_MINUS", KEY_NUMPAD_MINUS);
+	_kc_register("NUMPAD_PLUS", KEY_NUMPAD_PLUS);
+	_kc_register("NUMPAD_ENTER", KEY_NUMPAD_ENTER);
+	_kc_register("NUMPAD_0", KEY_NUMPAD_0);
+	_kc_register("NUMPAD_1", KEY_NUMPAD_1);
+	_kc_register("NUMPAD_2", KEY_NUMPAD_2);
+	_kc_register("NUMPAD_3", KEY_NUMPAD_3);
+	_kc_register("NUMPAD_4", KEY_NUMPAD_4);
+	_kc_register("NUMPAD_5", KEY_NUMPAD_5);
+	_kc_register("NUMPAD_6", KEY_NUMPAD_6);
+	_kc_register("NUMPAD_7", KEY_NUMPAD_7);
+	_kc_register("NUMPAD_8", KEY_NUMPAD_8);
+	_kc_register("NUMPAD_9", KEY_NUMPAD_9);
+	_kc_register("NUMPAD_PERIOD", KEY_NUMPAD_PERIOD);
+	// System / state keys
+	_kc_register("MODE", KEY_MODE);
+	_kc_register("APPLICATION", KEY_APPLICATION);
+	_kc_register("POWER", KEY_POWER);
+	_kc_register("PRINTSCREEN", KEY_PRINTSCREEN);
+	_kc_register("SCROLLLOCK", KEY_SCROLLLOCK);
+	_kc_register("PAUSE", KEY_PAUSE);
+	// Media keys
+	_kc_register("MUTE", KEY_MUTE);
+	_kc_register("VOLUMEUP", KEY_VOLUMEUP);
+	_kc_register("VOLUMEDOWN", KEY_VOLUMEDOWN);
+	_kc_register("MEDIA_NEXT_TRACK", KEY_MEDIA_NEXT_TRACK);
+	_kc_register("MEDIA_PREVIOUS_TRACK", KEY_MEDIA_PREVIOUS_TRACK);
+	_kc_register("MEDIA_STOP", KEY_MEDIA_STOP);
+	_kc_register("MEDIA_PLAY", KEY_MEDIA_PLAY);
+	_kc_register("MEDIA_SELECT", KEY_MEDIA_SELECT);
+	_kc_register("MEDIA_EJECT", KEY_MEDIA_EJECT);
+	_kc_register("MEDIA_REWIND", KEY_MEDIA_REWIND);
+	_kc_register("MEDIA_FAST_FORWARD", KEY_MEDIA_FAST_FORWARD);
+	_kc_register("SLEEP", KEY_SLEEP);
+	// Browser / AC keys
+	_kc_register("AC_SEARCH", KEY_AC_SEARCH);
+	_kc_register("AC_HOME", KEY_AC_HOME);
+	_kc_register("AC_BACK", KEY_AC_BACK);
+	_kc_register("AC_FORWARD", KEY_AC_FORWARD);
+	_kc_register("AC_STOP", KEY_AC_STOP);
+	_kc_register("AC_REFRESH", KEY_AC_REFRESH);
+	_kc_register("AC_BOOKMARKS", KEY_AC_BOOKMARKS);
+	// Phone / soft keys (mobile)
+	_kc_register("SOFTLEFT", KEY_SOFTLEFT);
+	_kc_register("SOFTRIGHT", KEY_SOFTRIGHT);
+	_kc_register("CALL", KEY_CALL);
+	_kc_register("ENDCALL", KEY_ENDCALL);
+}
+
+// Returns scancode for a NVGT-style name, or 0 if unknown.
+uint kc_name_to_code(const string&in name) {
+	_kc_init_keymap();
+	string upper = name.upper().trim_whitespace();
+	if (_kc_name_to_code.exists(upper)) {
+		uint c;
+		_kc_name_to_code.get(upper, c);
+		return c;
+	}
+	// Fallback: SDL's own names ("Space", "Left Shift", etc.)
+	return uint(get_key_code(name));
+}
+
+// Returns NVGT-style name for a scancode, or SDL's name if unknown.
+string kc_code_to_name(uint code) {
+	_kc_init_keymap();
+	string key = "" + code;
+	if (_kc_code_to_name.exists(key)) {
+		string n;
+		_kc_code_to_name.get(key, n);
+		return n;
+	}
+	return get_key_name(code);
+}
+
+enum kc_trigger { KC_PRESS, KC_DOWN, KC_RELEASE, KC_REPEAT, KC_UP }
+
+class kc_combo {
+	uint[] keys;        // modifiers..., primary key last
+	kc_trigger trigger = KC_PRESS;
+}
+
+class kc_joybind {
+	int button;
+	kc_trigger trigger = KC_PRESS;
+}
+
+class key_config {
+	private dictionary kb;        // action -> kc_combo@[]
+	private dictionary jb;        // action -> kc_joybind@[]
+	joystick@ pad = null;
+
+	// Frame-cached consumed-key set. Built once per frame on demand:
+	// any primary key used by a multi-key combo that's currently firing is
+	// added so that single-key bindings on the same key don't double-fire.
+	private dictionary consumed;
+	private uint64 consumed_frame = 0;
+	// Per-frame snapshot of key_pressed/released/repeating results. NVGT's
+	// native versions CONSUME their state on first call, so we capture them
+	// here so multiple queries against the same key in one frame agree.
+	// Packed: bit0 = pressed, bit1 = repeating (incl. initial press), bit2 = released.
+	private dictionary _kc_key_state;
+
+	// ---- action management ----
+	void add_action(const string&in a) {
+		if (!kb.exists(a)) kb.set(a, array<kc_combo@>());
+		if (!jb.exists(a)) jb.set(a, array<kc_joybind@>());
+	}
+	void remove_action(const string&in a) { kb.delete(a); jb.delete(a); }
+	bool has_action(const string&in a) const { return kb.exists(a); }
+	string[]@ get_actions() const { return kb.get_keys(); }
+	void clear() { kb.delete_all(); jb.delete_all(); consumed.delete_all(); }
+
+	// ---- keyboard binding ----
+	// combo_str: "SPACE", "LSHIFT+A", "LSHIFT+A:release"
+	// Tokens ALT, SHIFT, CTRL/CONTROL, GUI/WIN are side-agnostic and expand
+	// into both left/right variants — e.g. "ALT+SHIFT+LEFT" binds all four
+	// combinations (LALT+LSHIFT, LALT+RSHIFT, RALT+LSHIFT, RALT+RSHIFT)+LEFT.
+	void bind_key(const string&in action, const string&in combo_str, kc_trigger trigger = KC_PRESS) {
+		add_action(action);
+		string[] variants = _kc_expand_modifiers(combo_str);
+		kc_combo@[]@ list;
+		kb.get(action, @list);
+		for (uint v = 0; v < variants.length(); v++) {
+			kc_combo@ c = parse_combo(variants[v], trigger);
+			if (@c == null || c.keys.length() == 0) continue;
+			list.insert_last(c);
+		}
+		invalidate_cache();
+	}
+	void bind_key(const string&in action, uint key, kc_trigger trigger = KC_PRESS) {
+		add_action(action);
+		kc_combo c;
+		c.keys.insert_last(key);
+		c.trigger = trigger;
+		kc_combo@[]@ list;
+		kb.get(action, @list);
+		list.insert_last(@c);
+		invalidate_cache();
+	}
+	void clear_keyboard_action(const string&in a) {
+		if (kb.exists(a)) kb.set(a, array<kc_combo@>());
+		invalidate_cache();
+	}
+
+	// ---- joystick binding ----
+	void set_joystick(joystick@ j) { @pad = @j; }
+	void bind_joystick_button(const string&in action, int button, kc_trigger trigger = KC_PRESS) {
+		add_action(action);
+		kc_joybind b;
+		b.button = button;
+		b.trigger = trigger;
+		kc_joybind@[]@ list;
+		jb.get(action, @list);
+		list.insert_last(@b);
+	}
+	void unbind_joystick_button(const string&in action, int button) {
+		if (!jb.exists(action)) return;
+		kc_joybind@[]@ list;
+		jb.get(action, @list);
+		for (uint i = 0; i < list.length(); i++) {
+			if (list[i].button == button) {
+				list.remove_at(i);
+				return;
+			}
+		}
+	}
+	void clear_joystick_action(const string&in a) {
+		if (jb.exists(a)) jb.set(a, array<kc_joybind@>());
+	}
+
+	// ---- queries ----
+	bool action_pressed   (const string&in a) { return query(a, KC_PRESS); }
+	bool action_down      (const string&in a) { return query(a, KC_DOWN); }
+	bool action_released  (const string&in a) { return query(a, KC_RELEASE); }
+	bool action_repeating (const string&in a) { return query(a, KC_REPEAT); }
+	bool action_up        (const string&in a) { return query(a, KC_UP); }
+
+	// Each binding uses its own stored trigger type, not a queried one.
+	bool action_triggered(const string&in action) {
+		if (kb.exists(action)) {
+			kc_combo@[]@ list;
+			kb.get(action, @list);
+			refresh_consumed();
+			for (uint i = 0; i < list.length(); i++) {
+				kc_combo@ c = list[i];
+				if (c.keys.length() == 0) continue;
+				if (!combo_modifiers_down(c)) continue;
+				uint primary = c.keys[c.keys.length() - 1];
+				if (c.keys.length() == 1 && consumed.exists("" + primary)) continue;
+				if (check_key(primary, c.trigger)) return true;
+			}
+		}
+		if (@pad != null && jb.exists(action)) {
+			kc_joybind@[]@ list;
+			jb.get(action, @list);
+			for (uint i = 0; i < list.length(); i++)
+				if (check_button(list[i].button, list[i].trigger)) return true;
+		}
+		return false;
+	}
+
+	// ---- INI I/O ----
+	// File layout:
+	//   [keyboard]
+	//   jump=SPACE:press
+	//   dash=LSHIFT+A:press,RSHIFT+A:press
+	//
+	//   [joystick]
+	//   jump=0:press
+	//   dash=2:press,3:press
+	bool load(const string&in path) {
+		ini cfg;
+		if (!cfg.load(path)) return false;
+		load_keyboard_from(cfg);
+		load_joystick_from(cfg);
+		return true;
+	}
+	bool save(const string&in path) {
+		ini cfg;
+		save_keyboard_to(cfg);
+		save_joystick_to(cfg);
+		return cfg.save(path);
+	}
+	bool load_keyboard(const string&in path) {
+		// Bypass ini.nvgt — read the file line by line and treat every action=value
+		// line as a binding regardless of section header. This matches what the
+		// old C++ input_bind did and handles arbitrary section organization.
+		file f;
+		if (!f.open(path, "rb")) return false;
+		string content = f.read();
+		f.close();
+		content = string_replace(content, "\r\n", "\n", true);
+		string[] lines = content.split("\n", true);
+		bool loaded = false;
+		string current_section = "";
+		for (uint i = 0; i < lines.length(); i++) {
+			string line = lines[i].trim_whitespace();
+			if (line.length() == 0) continue;
+			if (line.substr(0, 1) == ";" || line.substr(0, 1) == "#") continue;
+			if (line.substr(0, 1) == "[") {
+				int close = line.find_first("]");
+				if (close > 0) current_section = line.substr(1, close - 1).lower();
+				continue;
+			}
+			if (current_section == "joystick") continue;
+			int eq = line.find_first("=");
+			if (eq < 0) continue;
+			string a = line.substr(0, eq).trim_whitespace();
+			string value = line.substr(eq + 1).trim_whitespace();
+			if (a == "") continue;
+			clear_keyboard_action(a);
+			string[] entries = value.split(",", true);
+			for (uint j = 0; j < entries.length(); j++) {
+				string e = entries[j].trim_whitespace();
+				if (e != "") bind_key(a, e);
+			}
+			loaded = true;
+		}
+		return loaded;
+	}
+	bool save_keyboard(const string&in path) {
+		ini cfg;
+		save_keyboard_to(cfg);
+		return cfg.save(path);
+	}
+	bool load_joystick(const string&in path) {
+		ini cfg;
+		if (!cfg.load(path)) return false;
+		return load_joystick_from(cfg);
+	}
+	bool save_joystick(const string&in path) {
+		ini cfg;
+		save_joystick_to(cfg);
+		return cfg.save(path);
+	}
+
+	// ---- internals ----
+	private bool load_keyboard_from(ini@ cfg) {
+		// Scan ALL sections except [joystick]. Section headers are decorative —
+		// they let users organize bindings by category. Matches the C++ input_bind behavior.
+		string[]@ sections = cfg.list_sections(true);
+		if (@sections == null) return false;
+		bool loaded = false;
+		for (uint s = 0; s < sections.length(); s++) {
+			if (sections[s] == "joystick") continue;
+			string[]@ actions = cfg.list_keys(sections[s]);
+			if (@actions == null) continue;
+			for (uint i = 0; i < actions.length(); i++) {
+				string a = actions[i];
+				clear_keyboard_action(a);
+				string[] entries = cfg.get_string(sections[s], a, "").split(",", true);
+				for (uint j = 0; j < entries.length(); j++) {
+					string e = entries[j].trim_whitespace();
+					if (e != "") bind_key(a, e);
+				}
+				loaded = true;
+			}
+		}
+		return loaded;
+	}
+	private void save_keyboard_to(ini@ cfg) {
+		string[]@ actions = kb.get_keys();
+		for (uint i = 0; i < actions.length(); i++)
+			cfg.set_string("keyboard", actions[i], get_keyboard_action_string(actions[i]));
+	}
+
+	// Returns the bindings for one action as an ini-format string,
+	// e.g. "LSHIFT+A:press,RSHIFT+A:press". Empty string if no bindings.
+	string get_keyboard_action_string(const string&in action) {
+		if (!kb.exists(action)) return "";
+		kc_combo@[]@ list;
+		kb.get(action, @list);
+		string result = "";
+		for (uint i = 0; i < list.length(); i++) {
+			if (i > 0) result += ",";
+			kc_combo@ c = list[i];
+			for (uint j = 0; j < c.keys.length(); j++) {
+				if (j > 0) result += "+";
+				result += kc_code_to_name(c.keys[j]);
+			}
+			result += ":" + trigger_name(c.trigger);
+		}
+		return result;
+	}
+	private bool load_joystick_from(ini@ cfg) {
+		string[]@ actions = cfg.list_keys("joystick");
+		if (@actions == null) return false;
+		for (uint i = 0; i < actions.length(); i++) {
+			string a = actions[i];
+			clear_joystick_action(a);
+			string[] entries = cfg.get_string("joystick", a, "").split(",", true);
+			for (uint j = 0; j < entries.length(); j++) {
+				string e = entries[j].trim_whitespace();
+				if (e == "") continue;
+				int colon = e.find_first(":");
+				kc_trigger t = KC_PRESS;
+				string num = e;
+				if (colon >= 0) {
+					t = parse_trigger(e.substr(colon + 1));
+					num = e.substr(0, colon);
+				}
+				bind_joystick_button(a, parse_int(num), t);
+			}
+		}
+		return true;
+	}
+	private void save_joystick_to(ini@ cfg) {
+		string[]@ actions = jb.get_keys();
+		for (uint i = 0; i < actions.length(); i++)
+			cfg.set_string("joystick", actions[i], serialize_joystick_action(actions[i]));
+	}
+	private string serialize_joystick_action(const string&in action) {
+		kc_joybind@[]@ list;
+		jb.get(action, @list);
+		string result = "";
+		for (uint i = 0; i < list.length(); i++) {
+			if (i > 0) result += ",";
+			result += list[i].button + ":" + trigger_name(list[i].trigger);
+		}
+		return result;
+	}
+	private int parse_int(const string&in s) {
+		string t = s.trim_whitespace();
+		if (t == "") return 0;
+		return parse_double(t);
+	}
+
+	// Expands ambiguous modifier tokens (ALT, SHIFT, CTRL, GUI/WIN) into the
+	// cartesian product of left/right variants. Tokens with explicit L/R
+	// prefixes are kept as-is.
+	// "ALT+SHIFT+LEFT" → ["LALT+LSHIFT+LEFT", "LALT+RSHIFT+LEFT",
+	//                     "RALT+LSHIFT+LEFT", "RALT+RSHIFT+LEFT"]
+	// "LALT+SHIFT+LEFT" → ["LALT+LSHIFT+LEFT", "LALT+RSHIFT+LEFT"]
+	// "LSHIFT+A" → ["LSHIFT+A"]   (no ambiguous tokens, returns one)
+	private string[] _kc_expand_modifiers(const string&in combo_str) {
+		string body = combo_str;
+		string trig_suffix = "";
+		int colon = body.find_first(":");
+		if (colon >= 0) {
+			trig_suffix = body.substr(colon);
+			body = body.substr(0, colon);
+		}
+		string[] parts = body.split("+", true);
+		// For each part, collect the list of names it can resolve to.
+		array<string[]> opts;
+		for (uint i = 0; i < parts.length(); i++) {
+			string p = parts[i].trim_whitespace().upper();
+			string[] options;
+			if (p == "ALT") {
+				options.insert_last("LALT");
+				options.insert_last("RALT");
+			} else if (p == "SHIFT") {
+				options.insert_last("LSHIFT");
+				options.insert_last("RSHIFT");
+			} else if (p == "CTRL" || p == "CONTROL") {
+				options.insert_last("LCTRL");
+				options.insert_last("RCTRL");
+			} else if (p == "GUI" || p == "WIN") {
+				options.insert_last("LGUI");
+				options.insert_last("RGUI");
+			} else {
+				options.insert_last(p);
+			}
+			opts.insert_last(options);
+		}
+		// Cartesian product of all option lists.
+		string[] result;
+		result.insert_last("");
+		for (uint i = 0; i < opts.length(); i++) {
+			string[] next;
+			for (uint r = 0; r < result.length(); r++) {
+				for (uint o = 0; o < opts[i].length(); o++) {
+					string s = result[r];
+					if (s.length() > 0) s += "+";
+					s += opts[i][o];
+					next.insert_last(s);
+				}
+			}
+			result = next;
+		}
+		if (trig_suffix.length() > 0) {
+			for (uint i = 0; i < result.length(); i++)
+				result[i] += trig_suffix;
+		}
+		return result;
+	}
+
+	private kc_combo@ parse_combo(const string&in s, kc_trigger default_trigger) {
+		string body = s;
+		kc_trigger trig = default_trigger;
+		int colon = body.find_first(":");
+		if (colon >= 0) {
+			trig = parse_trigger(body.substr(colon + 1));
+			body = body.substr(0, colon);
+		}
+		kc_combo c;
+		c.trigger = trig;
+		string[] parts = body.split("+", true);
+		for (uint i = 0; i < parts.length(); i++) {
+			string p = parts[i].trim_whitespace();
+			if (p == "") continue;
+			uint code = kc_name_to_code(p);
+			if (code == 0) continue;  // unknown key name — silently skipped
+			c.keys.insert_last(code);
+		}
+		return @c;
+	}
+	private kc_trigger parse_trigger(const string&in s) {
+		string t = s.lower().trim_whitespace();
+		if (t == "down")    return KC_DOWN;
+		if (t == "release") return KC_RELEASE;
+		if (t == "repeat")  return KC_REPEAT;
+		if (t == "up")      return KC_UP;
+		return KC_PRESS;
+	}
+	private string trigger_name(kc_trigger t) {
+		if (t == KC_DOWN)    return "down";
+		if (t == KC_RELEASE) return "release";
+		if (t == KC_REPEAT)  return "repeat";
+		if (t == KC_UP)      return "up";
+		return "press";
+	}
+	private bool check_key(uint k, kc_trigger trig) {
+		if (trig == KC_PRESS)    return cached_key_pressed(k);
+		if (trig == KC_DOWN)     return key_down(k);
+		if (trig == KC_RELEASE)  return cached_key_released(k);
+		if (trig == KC_REPEAT)   return cached_key_repeating(k);
+		if (trig == KC_UP)       return !key_down(k);
+		return false;
+	}
+	private bool check_button(int b, kc_trigger trig) {
+		if (@pad == null) return false;
+		// joystick has no native "repeating" — map to "pressed" for consistency.
+		if (trig == KC_PRESS || trig == KC_REPEAT) return pad.button_pressed(b);
+		if (trig == KC_DOWN)                       return pad.button_down(b);
+		if (trig == KC_RELEASE)                    return pad.button_released(b);
+		if (trig == KC_UP)                         return !pad.button_down(b);
+		return false;
+	}
+	private bool combo_modifiers_down(kc_combo@ c) {
+		for (uint j = 0; j + 1 < c.keys.length(); j++)
+			if (!key_down(c.keys[j])) return false;
+		return true;
+	}
+	private bool query(const string&in action, kc_trigger trig) {
+		bool hit = false;
+		if (kb.exists(action)) {
+			refresh_consumed();
+			kc_combo@[]@ list;
+			kb.get(action, @list);
+			for (uint i = 0; i < list.length(); i++) {
+				kc_combo@ c = list[i];
+				if (c.keys.length() == 0) continue;
+				if (!combo_modifiers_down(c)) continue;
+				uint primary = c.keys[c.keys.length() - 1];
+				if (c.keys.length() == 1 && consumed.exists("" + primary)) continue;
+				if (check_key(primary, trig)) { hit = true; break; }
+			}
+		}
+		if (!hit && @pad != null && jb.exists(action)) {
+			kc_joybind@[]@ list;
+			jb.get(action, @list);
+			for (uint i = 0; i < list.length(); i++)
+				if (check_button(list[i].button, trig)) { hit = true; break; }
+		}
+		return hit;
+	}
+
+	// Rebuild consumed-key set once per frame (uses ticks() as the frame stamp).
+	// Also invalidates the per-frame key-state cache used by cached_key_*.
+	private void refresh_consumed() {
+		uint64 now = ticks();
+		if (now == consumed_frame) return;
+		consumed_frame = now;
+		consumed.delete_all();
+		_kc_key_state.delete_all();
+		string[]@ actions = kb.get_keys();
+		for (uint a = 0; a < actions.length(); a++) {
+			kc_combo@[]@ list;
+			kb.get(actions[a], @list);
+			for (uint i = 0; i < list.length(); i++) {
+				kc_combo@ c = list[i];
+				if (c.keys.length() < 2) continue;
+				if (!combo_modifiers_down(c)) continue;
+				uint primary = c.keys[c.keys.length() - 1];
+				// Use only key_down — calling key_pressed/released/repeating
+				// here would consume the event state before queries can see it.
+				if (key_down(primary))
+					consumed.set("" + primary, true);
+			}
+		}
+	}
+	private void invalidate_cache() { consumed_frame = 0; }
+
+	// Capture all event-state results for one key, ONCE per frame, into the cache.
+	// Order matters: key_pressed first (clears the pressed bit), then key_repeating
+	// (which now returns the repeating bit alone), then key_released.
+	private void _capture_key_state(uint k) {
+		string key = "" + k;
+		if (_kc_key_state.exists(key)) return;
+		bool pressed = key_pressed(k);
+		bool repeating_raw = key_repeating(k);
+		bool released = key_released(k);
+		uint state = 0;
+		if (pressed) state = state | 1;
+		if (pressed || repeating_raw) state = state | 2;
+		if (released) state = state | 4;
+		_kc_key_state.set(key, state);
+	}
+	private bool cached_key_pressed(uint k) {
+		refresh_consumed();
+		_capture_key_state(k);
+		uint s;
+		_kc_key_state.get("" + k, s);
+		return (s & 1) != 0;
+	}
+	private bool cached_key_repeating(uint k) {
+		refresh_consumed();
+		_capture_key_state(k);
+		uint s;
+		_kc_key_state.get("" + k, s);
+		return (s & 2) != 0;
+	}
+	private bool cached_key_released(uint k) {
+		refresh_consumed();
+		_capture_key_state(k);
+		uint s;
+		_kc_key_state.get("" + k, s);
+		return (s & 4) != 0;
+	}
+}
+
+// =========================================================
+// Optional helpers — application-level glue for key_config.
+//
+// These functions wrap common app-side tasks: bootstrap loading,
+// hand-edited ini round-tripping, interactive combo capture, and
+// trigger-type selection. They take their dependencies as parameters
+// (no hidden globals) so the same helpers work across projects.
+//
+// The UI helpers require: audio_form (from form.nvgt) for combo capture,
+// and the BGT-style global menu `m` + `setupmenu()` (from m_pro.nvgt) for
+// the Escape-prompt and the trigger-type picker. Include both before
+// key_config.nvgt if you're going to call the UI helpers.
+// =========================================================
+
+// Pure-text helpers for ini "action=binding" lines.
+string kc_entry_action(const string&in entry) {
+	int eq = entry.find("=");
+	if (eq < 0) return entry;
+	return entry.substr(0, eq);
+}
+string kc_entry_bindings(const string&in entry) {
+	int eq = entry.find("=");
+	if (eq < 0) return "";
+	return entry.substr(eq + 1);
+}
+
+// Writes `kc`'s keyboard bindings back to `path`, PRESERVING comments,
+// blank lines, and section headers from the existing file. Any action
+// known to `kc` updates its line in place; actions present in `kc` but
+// missing from the file are appended at the end.
+//
+// This matches the original save_keyboard_ini() — it's the right choice
+// when users hand-edit the file for organization, since key_config's own
+// save_keyboard() collapses everything into a single [keyboard] section.
+bool kc_save_preserving(key_config@ kc, const string&in path) {
+	if (!file_exists(path)) return false;
+	file f;
+	if (!f.open(path, "rb")) return false;
+	string content = f.read();
+	f.close();
+	string[] lines = content.split("\n", true);
+	string output = "";
+	dictionary written;
+	for (uint i = 0; i < lines.length(); i++) {
+		string line = lines[i];
+		// Strip a trailing \r so Windows line-endings round-trip cleanly.
+		if (line.length() > 0 && line.substr(line.length() - 1, 1) == "\r")
+			line = line.substr(0, line.length() - 1);
+		string trimmed = line.trim_whitespace();
+		if (trimmed.length() == 0 || trimmed.substr(0, 1) == ";" || trimmed.substr(0, 1) == "#" || trimmed.substr(0, 1) == "[") {
+			output += line + "\n";
+			continue;
+		}
+		int eq = trimmed.find("=");
+		if (eq < 0) { output += line + "\n"; continue; }
+		string act = trimmed.substr(0, eq).trim_whitespace();
+		if (!kc.has_action(act)) { output += line + "\n"; continue; }
+		string val = kc.get_keyboard_action_string(act);
+		if (val.length() > 0) {
+			output += act + "=" + val + "\n";
+			written.set(act, true);
+		}
+	}
+	string[]@ actions = kc.get_actions();
+	for (uint i = 0; i < actions.length(); i++) {
+		if (written.exists(actions[i])) continue;
+		string val = kc.get_keyboard_action_string(actions[i]);
+		if (val.length() > 0)
+			output += actions[i] + "=" + val + "\n";
+	}
+	file fw;
+	if (!fw.open(path, "wb")) return false;
+	fw.write(output);
+	fw.close();
+	return true;
+}
+
+// Interactive: capture a key combo from the user. Uses the passed-in
+// audio_form (resets it). Returns the combo as a string like "LSHIFT+A",
+// or "" if the user cancels.
+//
+// Escape is treated specially: pops a BGT-menu (uses the global `m` and
+// `setupmenu`) asking whether to bind it or cancel.
+string kc_capture_combo(audio_form@ form, const string&in prompt) {
+	form.reset();
+	form.create_window(prompt, false);
+	int karea = form.create_keyboard_area(prompt);
+	form.focus(karea);
+	speak(prompt);
+	while (true) {
+		wait(5);
+		form.monitor();
+		key_code[]@ pressed = keys_pressed();
+		for (uint i = 0; i < pressed.length(); i++) {
+			uint k = pressed[i];
+			if (k == KEY_ESCAPE) {
+				setupmenu(false);
+				m.add_item("Bind Escape to this action", "bind");
+				m.add_item("Cancel", "cancel");
+				m.intro_text = "You pressed Escape. Do you want to bind it, or cancel?";
+				int eres = m.run();
+				if (eres == -1 || m.get_item_id(eres) == "cancel") return "";
+				return "ESCAPE";
+			}
+			// Skip modifier-only presses — wait for a real key.
+			if (k == KEY_LSHIFT || k == KEY_RSHIFT || k == KEY_LCTRL || k == KEY_RCTRL || k == KEY_LALT || k == KEY_RALT) continue;
+			string combo = "";
+			if (key_down(KEY_LSHIFT) || key_down(KEY_RSHIFT)) combo += "LSHIFT+";
+			if (key_down(KEY_LCTRL)  || key_down(KEY_RCTRL))  combo += "LCTRL+";
+			if (key_down(KEY_LALT)   || key_down(KEY_RALT))   combo += "LALT+";
+			combo += get_key_name(k);
+			return combo;
+		}
+	}
+	return "";
+}
+
+// Interactive: ask the user to pick a trigger type for a binding.
+// Uses the BGT-style global menu (`m` + `setupmenu`). Returns KC_PRESS on cancel.
+kc_trigger kc_choose_trigger() {
+	setupmenu(false);
+	m.add_item("Press (fires once when key is pressed)", "press");
+	m.add_item("Repeat (fires repeatedly while held)", "repeat");
+	m.add_item("Down (fires every frame while held)", "down");
+	m.add_item("Release (fires once when key is released)", "release");
+	m.intro_text = "Choose the trigger type for this binding.";
+	int res = m.run();
+	if (res == -1) return KC_PRESS;
+	string id = m.get_item_id(res);
+	if (id == "repeat")  return KC_REPEAT;
+	if (id == "down")    return KC_DOWN;
+	if (id == "release") return KC_RELEASE;
+	return KC_PRESS;
+}
