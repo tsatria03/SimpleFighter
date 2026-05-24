@@ -1,0 +1,158 @@
+Controls.
+
+Every action in the game — movement, combat, camera, sonar, menus, inventory, info readouts, the lot — is bound to a key through a config file at data/main/config/keyboard.ini, and you can rebind any of them by hand-editing that file. The defaults match what the game shipped with so you don't need to touch anything unless you want to. There is no in-game rebind menu yet.
+
+Format and shorthand.
+
+Each line in the ini reads action=KEY, or action=MODIFIER+KEY, or action=MODIFIER+KEY:trigger. Triggers are optional and choose when the action fires: press (the default, fires once on the initial keypress), down (fires every frame while the key is held), release (fires once when the key is let go), repeat (fires on the initial press and again on each operating-system key-repeat tick while held), and up (fires every frame while the key is not held).
+Multiple keys can be assigned to the same action by separating them with commas — for example, an action could be bound to both H and a numpad key by writing action=H,NUMPAD_4. Modifier names are LSHIFT, RSHIFT, LCTRL, RCTRL, LALT, and RALT for the specific side, or the side-agnostic shorthand SHIFT, CTRL, ALT, and GUI which expands to both left and right variants — so SHIFT+H covers LSHIFT+H and RSHIFT+H without writing both. Section headers inside the file (the lines in square brackets) are purely decorative; the loader reads every action=value line regardless of which section it lives under, so you can organize the file however you like.
+
+Context-driven keys.
+
+Several physical keys do double duty depending on what you're doing — a key that walks your character on foot may also drive vehicle direction, a sonar key may also be a camera marker key. This is intentional and matches how the game has always worked. The disambiguation happens in the game logic, not in the config: when you press a key, every action bound to that key reports as pressed, and only the action whose surrounding state currently applies actually does anything. The practical consequence is that you can't rebind, say, vehicle acceleration separately from on-foot movement up — they share the same line in the config because they share the same physical key. Notable overlaps are called out in the per-action descriptions below.
+
+Activation and command console.
+
+command_console: Opens the command console where slash commands like /draw or /go can be typed. See the command_console help topic for the full command list.
+interact: The universal "use what I'm standing on" key. Activates doors, elevators, calendars, clocks, signs, switches, text squares, story zones, menu zones, travel points, passages — and boards vehicles, bikes, and aircraft when you're standing on their tile. The same press also picks up items that are flagged manual rather than automatic. SHIFT+interact instead becomes item_use (see Inventory below), so the shift modifier safely diverts the press without firing an unwanted activation.
+
+Movement.
+
+move_left, move_right, move_down, move_up: Step one tile in the cardinal direction. On 3d maps these are horizontal moves; up and down move you toward and away on the depth axis. The press-trigger entries above fire the initial step; the matching _held versions (move_left_held, move_right_held, move_down_held, move_up_held) are the held variants that drive the auto-repeat step loop once you've been holding the key past the walk timer.
+move_pgdown, move_pgup: Change altitude by one tile on 3d maps. These are the page-down and page-up keys.
+move_pgdown_3d, move_pgup_3d: Alternate altitude keys available only on 3d maps, bound to S and W by default so you can climb and descend without reaching for the page keys.
+
+Context overlap: the same arrow keys also drive vehicle turn direction when you're driving a vehicle, bike direction when you're on a bike, and aircraft speed and altitude when you're piloting an aircraft. You don't need to do anything for this — the game knows whether you're on foot, on a bike, in a car, or in a plane, and routes the press to the right behavior. Similarly W, S, page-up, and page-down accelerate and brake vehicles and bikes in 3d.
+
+Rotation.
+
+rotate_left, rotate_right: Rotate your body in 3d and topdown maps. The default Q and E keys correspond to a counter-clockwise and clockwise rotation respectively. On 2d maps these do nothing.
+
+Facing.
+
+face_left, face_right, face_backward, face_forward: Aim your character in a direction without taking a step. Useful for adjusting where attacks and tools will project when you don't want to move from the spot you're on. Bound to ALT+SHIFT+arrows by default, which means any combination of left or right alt and left or right shift plus the arrow works — you don't have to be careful about which alt or shift you press.
+face_down, face_up: Aim down or up on 3d maps. Bound to ALT+SHIFT+page-down and ALT+SHIFT+S for face_down, and ALT+SHIFT+page-up and ALT+SHIFT+W for face_up, so either pair works.
+
+Jumping.
+
+jump, jump_held: Jump straight up. If the auto-jump setting is on, the jump fires while the key is held; otherwise only the initial press triggers a jump. Has no effect on topdown maps.
+
+Combat.
+
+fire_auto: Autofire your weapon while the key is held. The default CTRL key works with either side.
+fire_manual: Single-shot fire on each press of the same key, useful for weapons where you want one shot per press rather than a held burst.
+
+ammo_check: Speak the current ammo loaded and the reserve count.
+reload: Reload the current weapon. If the weapon is melee or already at full ammo the game speaks an explanation instead of reloading.
+
+weapon_reflection_toggle: Toggle the current weapon's reflection mode on or off, for weapons that support it.
+
+Context overlap: the same R key is also camera_describe and the same T key is also camera_playback — when you're in camera mode (holding G or in dexterity-camera mode) those keys describe what's under the camera or play the recorded camera path; otherwise they reload and toggle weapon reflection. The same M key also overlaps with info_shield and with the camera MFC toggle.
+
+Drawing weapons and shields.
+
+weapons_menu: Open the weapons chooser. Bound to ALT+W.
+shields_menu: Open the shields chooser. Bound to ALT+S.
+
+Spier (inspection cursor).
+
+spy_left, spy_right, spy_down, spy_up: Move the spier cursor one tile in the cardinal direction without moving your character. Bound to SHIFT+arrows.
+spy_pgup, spy_pgdown: Move the spier cursor up or down an altitude tile. Bound to SHIFT+W or SHIFT+page-up and SHIFT+S or SHIFT+page-down.
+
+Context overlap: when you're piloting an aircraft, SHIFT+arrows change the aircraft's heading instead of moving a spier cursor.
+
+Camera (selection markers and recording).
+
+camera_dexterity_toggle: Toggle dexterity-camera mode on or off, so the camera keys work without having to hold G. Bound to Y on repeat.
+
+camera_mark_left, camera_mark_right, camera_mark_back, camera_mark_front: Set the corresponding selection marker to the camera's current position. Bound to J, L, K, and I respectively. Only fire while you're in camera mode (G held or dexterity-camera on).
+camera_mark_bottom_3d, camera_mark_top_3d: Set the bottom and top selection markers on the z-axis in 3d. Bound to SHIFT+K and SHIFT+I respectively.
+
+camera_view_markers: Speak all currently-set selection markers. Bound to semicolon.
+camera_clear_markers: Clear all selection markers. Bound to apostrophe.
+
+camera_describe: Speak a description of the tile, hazards, and other entities at the camera's current position, plus the camera's offset from your character. Bound to R.
+camera_mfc_toggle: Toggle move-follows-camera mode, which has your camera follow your character's facing direction. Bound to M on repeat.
+camera_playback: Play back the recorded camera path. Bound to T on repeat.
+
+Context overlap: J, L, K, and I are also the sonar direction keys (see Sonar below). When you're in camera mode the camera marker behavior wins; otherwise the same press points the sonar.
+
+Sonar.
+
+sonar_cycle_follow, sonar_cycle_mode, sonar_cycle_speed: Cycle through follow modes, scan modes, and scan speeds for the sonar. Bound to SHIFT+F1, SHIFT+F2, and SHIFT+F3.
+
+sonar_left, sonar_right, sonar_back, sonar_front: Point the sonar in the cardinal direction. Bound to J, L, K, and I — same as the camera markers; the disambiguation is camera mode.
+sonar_up_3d, sonar_down_3d: Point the sonar up or down in 3d. Bound to SHIFT+I and SHIFT+K.
+
+Movement speed.
+
+speed_up, speed_down: Increase or decrease your character's movement speed by one step. Bound to SHIFT+D and SHIFT+A on repeat.
+speed_reset: Reset movement speed to the default. Bound to SHIFT+F.
+
+Jump height.
+
+jump_height_down, jump_height_up: Decrease or increase how many tiles your jump rises. Bound to F1 and F2 on repeat. Has no effect on topdown maps where jumping is disabled.
+jump_height_reset: Reset jump height to the default. Bound to F3.
+
+Hook.
+
+hook_forward: Throw the grappling hook forward. Bound to F. In 3d this throws straight up; in 2d it throws forward in the direction you're facing.
+hook_back: Throw the grappling hook backward. Bound to V. In 3d this throws straight down; in 2d it throws backward.
+
+Inventory.
+
+inventory_open: Open the inventory menu to use, examine, or drop items in a list view. Bound to ALT+I.
+inventory_cycle, inventory_cycle_back: Cycle through inventory items in place without opening the menu. TAB on repeat moves forward through the list; SHIFT+TAB on repeat moves backward.
+
+item_use: Use the item currently in focus. Bound to SHIFT+RETURN on repeat.
+item_drop: Drop the item currently in focus onto your tile. Bound to SHIFT+left-bracket on repeat.
+
+Menus.
+
+build_menu: Open the builder menu to add entities to the map. Bound to B. Only fires on decompiled maps; on compiled maps the press speaks an explanation instead.
+edit_menu: Open the map editing menu. Bound to U. Same compiled-map restriction.
+
+combat_log: Open the recent-combat log. Bound to SHIFT+ALT+E.
+
+objects_info_menu: Open the on-map objects inspector. Bound to ALT+E.
+shop_menu: Open the in-game shop. Bound to SHIFT+V.
+
+pause: Pause and unpause the game, or open the pause menu, depending on the pause-mode setting. Bound to P.
+quit: Exit the current map and return to the main menu. Bound to escape. Whether this prompts for confirmation depends on the exit-mode setting.
+
+Healing.
+
+heal_self: Start or stop the auto-heal loop for your health. Bound to backslash on repeat.
+heal_shield: Start or stop the auto-heal loop for your shield. Bound to right-bracket on repeat.
+
+shield_toggle: Raze or wear the currently-drawn shield. Bound to O on repeat. Behavior depends on the shield-mode setting: in toggle mode each press flips between razed and worn; in hold mode the key has to be held to wear the shield.
+shield_release: Release a held shield in hold mode. Bound to O on key-release.
+
+Info readouts.
+
+info_coords: Speak your current coordinates and the tile under your feet, plus your facing. Bound to C. The exact prose depends on the location-speech setting.
+info_zone: Speak the name of the text zone you're currently inside, or "unknown area" if you're outside every zone. Bound to ALT+Q.
+info_health: Speak your current health and remaining lives. Bound to H. The exact prose depends on the health-speech setting.
+info_stamina: Speak your current stamina. Bound to Y. Prose depends on the stamina-speech setting.
+info_shield: Speak the strength of your currently-worn shield, as a percent. Bound to M.
+info_kills: Speak how many entities you have killed this session. Bound to left-bracket.
+
+help: Open the help menu. Bound to SHIFT+H.
+
+Tracking.
+
+tracking_speak: Speak the current tracking target's position. Bound to N.
+tracking_stop: Stop tracking the current target. Bound to SHIFT+N.
+
+Aircraft.
+
+aircraft_land: Land an aircraft you're piloting. Bound to L. Only fires when you're on a plane tile.
+aircraft_dir_left, aircraft_dir_right, aircraft_dir_forward, aircraft_dir_backward: Change the aircraft's heading. Bound to SHIFT+arrows on repeat.
+
+Vehicle and bike.
+
+vehicle_horn: Sound the vehicle's horn or ring the bike's bell. Bound to SHIFT+SPACE. On a vehicle the horn loops while the key is held and stops on release; on a bike the bell rings once per press on repeat.
+
+Miscellaneous.
+
+zones_spoken_toggle: Toggle whether the game automatically speaks zone names as you enter them. Bound to Z.
