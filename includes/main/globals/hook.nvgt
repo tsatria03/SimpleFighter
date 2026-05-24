@@ -47,16 +47,6 @@ pending_index = i;
 return true;
 }
 }
-if(mapmode != "3d")
-{
-string t = gmt(tx, ty);
-if(t != "" && t != "air")
-{
-pending_type = 1;
-pending_index = -1;
-return true;
-}
-}
 for(uint i=0;i<staircases.length();i++)
 {
 if(tx>=staircases[i].minx && tx<=staircases[i].maxx && ty>=staircases[i].miny && ty<=staircases[i].maxy)
@@ -64,6 +54,16 @@ if(tx>=staircases[i].minx && tx<=staircases[i].maxx && ty>=staircases[i].miny &&
 if(mapmode == "3d" && (tz < staircases[i].minz || tz > staircases[i].maxz)) continue;
 pending_type = 3;
 pending_index = i;
+return true;
+}
+}
+if(mapmode != "3d")
+{
+string t = gmt(tx, ty);
+if(t != "" && t != "air")
+{
+pending_type = 1;
+pending_index = -1;
 return true;
 }
 }
@@ -268,6 +268,12 @@ lowZ = walls[hook_target_index].minz < hook_start_z ? walls[hook_target_index].m
 highZ = walls[hook_target_index].maxz > hook_start_z ? walls[hook_target_index].maxz : hook_start_z;
 wall_hook = true;
 }
+else if(hook_type == 3 && hook_target_index >= 0 && hook_target_index < int(staircases.length()))
+{
+lowZ = staircases[hook_target_index].minz < hook_start_z ? staircases[hook_target_index].minz : hook_start_z;
+highZ = staircases[hook_target_index].maxz > hook_start_z ? staircases[hook_target_index].maxz : hook_start_z;
+wall_hook = true;
+}
 else
 {
 lowZ = (hook_start_z < hook_target_z) ? hook_start_z : hook_target_z;
@@ -314,6 +320,12 @@ if(hook_type == 2 && hook_target_index >= 0 && hook_target_index < int(walls.len
 {
 lowY = walls[hook_target_index].miny < hook_start_y ? walls[hook_target_index].miny : hook_start_y;
 highY = walls[hook_target_index].maxy > hook_start_y ? walls[hook_target_index].maxy : hook_start_y;
+wall_hook = true;
+}
+else if(hook_type == 3 && hook_target_index >= 0 && hook_target_index < int(staircases.length()))
+{
+lowY = staircases[hook_target_index].miny < hook_start_y ? staircases[hook_target_index].miny : hook_start_y;
+highY = staircases[hook_target_index].maxy > hook_start_y ? staircases[hook_target_index].maxy : hook_start_y;
 wall_hook = true;
 }
 else
