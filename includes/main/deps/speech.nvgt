@@ -43,9 +43,11 @@ void raw_speak(string text, bool interrupt) {
 		if (!use_sr) {
 			int voice = tts_config_form.get_list_position(1);
 			int rate = tts_config_form.get_slider(2);
-			int volume = tts_config_form.get_slider(3);
+			int pitch = tts_config_form.get_slider(3);
+			int volume = tts_config_form.get_slider(4);
 			if (voice > -1 and tts.voice != voice) tts.set_voice(voice);
 			if (tts.rate != rate) tts.set_rate(rate);
+			if (tts.pitch != pitch) tts.set_pitch(pitch);
 			if (tts.volume != volume) tts.set_volume(volume);
 		}
 	}
@@ -62,7 +64,7 @@ void stop_speech() {
 string tts_dump_config(tts_voice@ v, bool save_screen_reader_setting = false) {
 	string o = v.get_voice_name(v.voice) + "||";
 	if (o == "||") o = "default||";
-	o += v.rate + "||0||" + v.volume;
+	o += v.rate + "||" + v.pitch + "||" + v.volume;
 	if (save_screen_reader_setting) o += "||" + (use_sr? "1" : "0");
 	return o;
 }
@@ -75,6 +77,7 @@ bool tts_load_config(string c, tts_voice@ v) {
 		if (i > -1) v.set_voice(i);
 	}
 	v.set_rate(parse_float(args[1]));
+	v.set_pitch(parse_float(args[2]));
 	v.set_volume(parse_float(args[3]));
 	if (args.length() > 4) use_sr = args[4] == "1";
 	return true;
@@ -84,6 +87,7 @@ void tts_config(tts_voice@ v, bool main_config = false) {
 	bool orig_sr = use_sr;
 	int orig_voice = v.voice;
 	int orig_rate = v.rate;
+	int orig_pitch = v.pitch;
 	int orig_volume = v.volume;
 	audio_form f;
 	f.create_window("Text to speech configuration", false, true);
@@ -92,6 +96,7 @@ void tts_config(tts_voice@ v, bool main_config = false) {
 		f.set_state(f_use_sr, true, main_config);
 	int f_voices = f.create_list("Voice");
 	int f_rate = f.create_slider("Rate", v.rate, -10, 10);
+	int f_pitch = f.create_slider("Pitch", v.pitch, -10, 10);
 	int f_volume = f.create_slider("Volume", v.volume, 0, 100);
 	int f_save = f.create_button("&Save settings", true);
 	int f_cancel = f.create_button("Cancel", false, true);
@@ -110,6 +115,7 @@ void tts_config(tts_voice@ v, bool main_config = false) {
 			use_sr = orig_sr;
 			if (v.voice != orig_voice) v.set_voice(orig_voice);
 			if (v.rate != orig_rate) v.set_rate(orig_rate);
+			if (v.pitch != orig_pitch) v.set_pitch(orig_pitch);
 			if (v.volume != orig_volume) v.set_volume(orig_volume);
 			speak("Canceled");
 			break;
@@ -117,6 +123,7 @@ void tts_config(tts_voice@ v, bool main_config = false) {
 			if (!main_config) {
 				v.set_voice(f.get_list_position(f_voices));
 				v.set_rate(f.get_slider(f_rate));
+				v.set_pitch(f.get_slider(f_pitch));
 				v.set_volume(f.get_slider(f_volume));
 			}
 			speak("Text to speech settings saved");

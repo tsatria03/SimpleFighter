@@ -1,7 +1,7 @@
 int tts_id_counter = 0;
 int tts_preview_counter = 0;
 
-bool generate_tts(string path, string text, string voice_name = "", int rate = 0, int volume = 100, int pitch = 0)
+bool generate_tts(string path, string text, string voice_name = "", int rate = 0, int pitch = 0, int volume = 100)
 {
 tts_voice tv;
 if (voice_name == "Nvda Sapi" || voice_name == "builtin fallback voice") voice_name = "";
@@ -18,8 +18,8 @@ break;
 }
 }
 tv.rate = rate;
-tv.volume = volume;
 tv.pitch = pitch;
+tv.volume = volume;
 return tv.speak_to_file(path, text);
 }
 
@@ -41,8 +41,8 @@ int firetime;
 int attack;
 int defense;
 int rate;
-int volume;
 int pitch;
+int volume;
 string ttsemtext;
 string ttsemhurt;
 string ttsemdeath;
@@ -58,7 +58,7 @@ timer hurttimer;
 timer firetimer;
 int hurtdelay;
 bool hurting;
-ttsenemie(int x, int y, double hp, int atk, int def, int ft, int sp, string txt, string ht, string dt, string vc, int rt, int vl, int pt, int z = 0, string wt = "", string wt2 = "")
+ttsenemie(int x, int y, double hp, int atk, int def, int ft, int sp, string txt, string ht, string dt, string vc, int rt, int pt, int vl, int z = 0, string wt = "", string wt2 = "")
 {
 ttsemx = x;
 ttsemy = y;
@@ -74,8 +74,8 @@ ttsemhurt = ht;
 ttsemdeath = dt;
 voice = vc;
 rate = rt;
-volume = vl;
 pitch = pt;
+volume = vl;
 if (wt != "" && wt2 != "")
 {
 weapontype = wt;
@@ -93,9 +93,9 @@ if(weapontype2 != "")
 drawsound = ttsempool.play_extended_3d(get_pack_sound("main/equipments/weapons/" + weapontype + "/" + weapontype2 + "/general/*draw*"), me.x, me.y, me.z, ttsemx, ttsemy, ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 }
 if (file_exists(taunt_file)) file_delete(taunt_file);
-generate_tts(taunt_file, ttsemtext, voice, rate, volume, pitch);
+generate_tts(taunt_file, ttsemtext, voice, rate, pitch, volume);
 if (file_exists(hurt_file)) file_delete(hurt_file);
-generate_tts(hurt_file, ttsemhurt, voice, rate, volume, pitch);
+generate_tts(hurt_file, ttsemhurt, voice, rate, pitch, volume);
 ttsemsound = ttsempool.play_extended_3d(taunt_file, me.x, me.y, me.z, ttsemx, ttsemy, ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
 }
 }
@@ -188,7 +188,7 @@ if(ttsenemies[i].ttsenehealth<=0)
 ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
 ttsempool.destroy_sound(ttsenemies[i].hurtsound);
 if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file);
-generate_tts(ttsenemies[i].death_file, ttsenemies[i].ttsemdeath, ttsenemies[i].voice, ttsenemies[i].rate, ttsenemies[i].volume, ttsenemies[i].pitch);
+generate_tts(ttsenemies[i].death_file, ttsenemies[i].ttsemdeath, ttsenemies[i].voice, ttsenemies[i].rate, ttsenemies[i].pitch, ttsenemies[i].volume);
 ttsenemies[i].defsound = ttsempool.play_extended_3d(ttsenemies[i].death_file, me.x, me.y, me.z, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, ttsenemies[i].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 int falldelay = round(ttsempool.get_sound_length(ttsenemies[i].defsound), 0);
 spawn_bodyfall(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, (falldelay <= 0 ? random(500, 1000) : falldelay));
@@ -200,9 +200,9 @@ return;
 }
 }
 }
-void spawn_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string ttsemtext, string ttsemhurt, string ttsemdeath, string voice, int rate, int volume, int pitch, int z = 0, string weapontype = "", string weapontype2 = "")
+void spawn_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string ttsemtext, string ttsemhurt, string ttsemdeath, string voice, int rate, int pitch, int volume, int z = 0, string weapontype = "", string weapontype2 = "")
 {
-ttsenemie ttsen1(x, y, hp, attack, defense, firetime, sp, ttsemtext, ttsemhurt, ttsemdeath, voice, rate, volume, pitch, z, weapontype, weapontype2);
+ttsenemie ttsen1(x, y, hp, attack, defense, firetime, sp, ttsemtext, ttsemhurt, ttsemdeath, voice, rate, pitch, volume, z, weapontype, weapontype2);
 ttsenemies.insert_last(ttsen1);
 }
 void destroy_all_ttsenemies()
@@ -244,12 +244,12 @@ string voice = quoted[3];
 array<string> parts = string_split(trim(remainder), " ");
 if(parts.length() < 3) return;
 int rate = stn(parts[0]);
-int volume = stn(parts[1]);
-int pitch = stn(parts[2]);
-spawn_ttsenemie(x, y, hp, attack, defense, firetime, sp, taunt, hurt, death, voice, rate, volume, pitch, z);
+int pitch = stn(parts[1]);
+int volume = stn(parts[2]);
+spawn_ttsenemie(x, y, hp, attack, defense, firetime, sp, taunt, hurt, death, voice, rate, pitch, volume, z);
 }
 
-void write_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string taunt, string hurt, string death, string voice, int rate, int volume, int pitch, int z = 0)
+void write_ttsenemie(int x, int y, double hp, int attack, int defense, int firetime, int sp, string taunt, string hurt, string death, string voice, int rate, int pitch, int volume, int z = 0)
 {
 string clean_taunt = string_replace(taunt, "\"", "", true);
 string clean_hurt = string_replace(hurt, "\"", "", true);
@@ -259,7 +259,7 @@ mapper.open("data/builder/maps/decompiled/"+mapname+"/data/main.sif", "ab");
 mapdata = mapper.read();
 string coords = ""+x+" "+y;
 if(mapmode == "3d") coords += " "+z;
-mapper.write("\r\n"+"ttsenemie "+coords+" "+hp+" "+attack+" "+defense+" "+firetime+" "+sp+" \""+clean_taunt+"\" \""+clean_hurt+"\" \""+clean_death+"\" \""+clean_voice+"\" "+rate+" "+volume+" "+pitch);
+mapper.write("\r\n"+"ttsenemie "+coords+" "+hp+" "+attack+" "+defense+" "+firetime+" "+sp+" \""+clean_taunt+"\" \""+clean_hurt+"\" \""+clean_death+"\" \""+clean_voice+"\" "+rate+" "+pitch+" "+volume);
 mapper.close();
 bump_map_modified();
 }
@@ -303,8 +303,8 @@ for(uint i = 0; i < voice_names.length(); i++)
 form.add_list_item(voice_list, voice_names[i], voice_names[i]);
 form.set_list_position(voice_list, 0, false);
 int rate_sl = form.create_slider("rate", 0, -10, 10, "", 1);
-int vol_sl = form.create_slider("volume", 100, 0, 100, "", 5);
 int pit_sl = form.create_slider("pitch", 0, -10, 10, "", 1);
+int vol_sl = form.create_slider("volume", 100, 0, 100, "", 5);
 int prev_btn = form.create_button("&preview taunt");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
@@ -340,11 +340,11 @@ continue;
 }
 string voice_pick = voice_names[form.get_list_position(voice_list)];
 int r = int(form.get_slider(rate_sl));
-int v = int(form.get_slider(vol_sl));
 int pt = int(form.get_slider(pit_sl));
+int v = int(form.get_slider(vol_sl));
 t.destroy_sound(prevslot);
 preview_file = DIRECTORY_TEMP + "\\tts_preview_" + format_int(tts_preview_counter++, 6) + ".ogg";
-generate_tts(preview_file, preview_text, voice_pick, r, v, pt);
+generate_tts(preview_file, preview_text, voice_pick, r, pt, v);
 prevslot = t.play_stationary(preview_file, false);
 }
 if(form.is_pressed(ok))
@@ -381,13 +381,13 @@ string bhurt = form.get_text(hurt_box);
 string bdeath = form.get_text(death_box);
 string bvoice = voice_names[form.get_list_position(voice_list)];
 int br = int(form.get_slider(rate_sl));
-int bv = int(form.get_slider(vol_sl));
 int bp = int(form.get_slider(pit_sl));
+int bv = int(form.get_slider(vol_sl));
 t.destroy_sound(prevslot);
 if(file_exists(preview_file)) file_delete(preview_file);
 resume_pools();
-write_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bv, bp, bz);
-spawn_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bv, bp, bz);
+write_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bp, bv, bz);
+spawn_ttsenemie(bx, by, bhp, batk, bdef, bft, bsp, btaunt, bhurt, bdeath, bvoice, br, bp, bv, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");

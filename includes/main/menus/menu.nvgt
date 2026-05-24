@@ -572,11 +572,15 @@ void settingsmenu(bool ingame=false)
 {
 form.reset();
 form.create_window("preferences", false);
-int tabs = form.create_tab_panel("Section");
-form.add_list_item(tabs, "General");
+int tabs = form.create_tab_panel("Category");
+if (!ingame) form.add_list_item(tabs, "General");
 form.add_list_item(tabs, "Game");
-form.add_list_item(tabs, "Keyboard");
+if (!ingame) form.add_list_item(tabs, "Keyboard");
 form.add_list_item(tabs, "Speech");
+int tab_general = ingame ? -1 : 0;
+int tab_game = ingame ? 0 : 1;
+int tab_keyboard = ingame ? -1 : 2;
+int tab_speech = ingame ? 1 : 3;
 int slt=-1, slk=-1, sln=-1, sdm=-1, defmap=-1;
 if (!ingame)
 {
@@ -584,61 +588,65 @@ if (chartype == "")
 slt = form.create_button("Select c&haracter theme. Currently set to nothing");
 else
 slt = form.create_button("Select c&haracter theme. Currently set to " + chartype);
-form.assign_to_tab(slt, tabs, 0);
+form.assign_to_tab(slt, tabs, tab_general);
 if (keyboardtheme == "")
 slk = form.create_button("Select &keyboard theme. Currently set to nothing");
 else
 slk = form.create_button("Select &keyboard theme. Currently set to " + keyboardtheme);
-form.assign_to_tab(slk, tabs, 0);
+form.assign_to_tab(slk, tabs, tab_general);
 if (menutype == "")
 sln = form.create_button("Select &menu theme. Currently set to nothing");
 else
 sln = form.create_button("Select &menu theme. Currently set to " + menutype);
-form.assign_to_tab(sln, tabs, 0);
+form.assign_to_tab(sln, tabs, tab_general);
 sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
-form.assign_to_tab(sdm, tabs, 0);
+form.assign_to_tab(sdm, tabs, tab_general);
 defmap = form.create_button("Set default &owner for new maps. Currently set to " + defowner);
-form.assign_to_tab(defmap, tabs, 0);
+form.assign_to_tab(defmap, tabs, tab_general);
 }
 int autup = form.create_checkbox("Enable checking for game updates at startup", auto_check_updates);
-form.assign_to_tab(autup, tabs, 1);
+form.assign_to_tab(autup, tabs, tab_game);
 int runmode = form.create_checkbox("Enable auto running in maps", autorun);
-form.assign_to_tab(runmode, tabs, 1);
+form.assign_to_tab(runmode, tabs, tab_game);
 int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
-form.assign_to_tab(sjn, tabs, 1);
+form.assign_to_tab(sjn, tabs, tab_game);
 int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
-form.assign_to_tab(fdv, tabs, 1);
+form.assign_to_tab(fdv, tabs, tab_game);
 int bml = form.create_checkbox("Enable bumping into walls repeatedly", wallbump);
-form.assign_to_tab(bml, tabs, 1);
+form.assign_to_tab(bml, tabs, tab_game);
 int trm = form.create_checkbox("Enable turning on the spot for 2d maps", int_to_bool(turnmode));
-form.assign_to_tab(trm, tabs, 1);
+form.assign_to_tab(trm, tabs, tab_game);
 int mlb = form.create_checkbox("Enable auditory beeps when loading maps", int_to_bool(maploadbeeps));
-form.assign_to_tab(mlb, tabs, 1);
+form.assign_to_tab(mlb, tabs, tab_game);
 int mls = form.create_checkbox("Enable indicator sounds when loading maps", int_to_bool(maploadsounds));
-form.assign_to_tab(mls, tabs, 1);
+form.assign_to_tab(mls, tabs, tab_game);
 int mcl = form.create_checkbox("Enable clearing entities when leaving or restarting a map", mapclear);
-form.assign_to_tab(mcl, tabs, 1);
+form.assign_to_tab(mcl, tabs, tab_game);
 int glh = form.create_checkbox("Enable global HRTF support", hrtf);
-form.assign_to_tab(glh, tabs, 1);
+form.assign_to_tab(glh, tabs, tab_game);
 int mrp = form.create_checkbox("Enable wrapping in menus", menuwrap);
-form.assign_to_tab(mrp, tabs, 1);
+form.assign_to_tab(mrp, tabs, tab_game);
 int flt = form.create_checkbox("Enable first letter navigation in menus", first_letter);
-form.assign_to_tab(flt, tabs, 1);
+form.assign_to_tab(flt, tabs, tab_game);
 int spn = form.create_checkbox("Enable position information in menus", speak_menu_position);
-form.assign_to_tab(spn, tabs, 1);
+form.assign_to_tab(spn, tabs, tab_game);
 int scr = form.create_checkbox("Enable side scrolling in menus", side_scrolling);
-form.assign_to_tab(scr, tabs, 1);
+form.assign_to_tab(scr, tabs, tab_game);
 int esc = form.create_checkbox("Ask to exit when pressing escape", int_to_bool(gamxit));
-form.assign_to_tab(esc, tabs, 1);
+form.assign_to_tab(esc, tabs, tab_game);
 int rest = -1;
 if (!ingame)
 {
 rest = form.create_button("&reset settings");
-form.assign_to_tab(rest, tabs, 0);
+form.assign_to_tab(rest, tabs, tab_general);
 }
+int ttscfg = form.create_button("&Configure voice");
+form.assign_to_tab(ttscfg, tabs, tab_speech);
+int speechtest = form.create_button("&Preview voice");
+form.assign_to_tab(speechtest, tabs, tab_speech);
 int preffsok = form.create_button("&save settings", true);
 int preffscn = form.create_button("&cancel");
-if (ingame) form.set_list_position(tabs, 1);
+if (ingame) form.set_list_position(tabs, tab_game);
 if (!ingame) form.focus(slt);
 else form.focus(autup);
 while (true)
@@ -789,6 +797,14 @@ if (mres == 1)
 form.reset();
 settingsmenu();
 }
+}
+if (form.is_pressed(ttscfg))
+{
+tts_config(tts, true);
+}
+if (form.is_pressed(speechtest))
+{
+speak("This is your current voice configuration.");
 }
 if (form.is_pressed(preffscn))
 {
