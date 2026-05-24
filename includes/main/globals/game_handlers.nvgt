@@ -736,7 +736,26 @@ jumptimer.restart();
 if(mapmode == "3d")
 {
 me.z += 1;
-if(wall_blocks(me.x, me.y, me.z) && !user_platform_overhead(ty2))
+if(onhook)
+{
+double top = ty2;
+double span_top = -1;
+if(hk.hook_type == 2 && hk.hook_target_index >= 0 && hk.hook_target_index < int(walls.length())) span_top = walls[hk.hook_target_index].maxz;
+if(hk.hook_type == 3 && hk.hook_target_index >= 0 && hk.hook_target_index < int(staircases.length())) span_top = staircases[hk.hook_target_index].maxz;
+if(span_top >= 0 && span_top < top) top = span_top;
+if(me.z >= top)
+{
+me.z = top;
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+if(span_top >= 0 && me.z >= span_top) hk.release_hook();
+return;
+}
+}
+else if(wall_blocks(me.x, me.y, me.z) && !user_platform_overhead(ty2))
 {
 for(uint i = 0; i < walls.length(); i++)
 {
@@ -815,15 +834,32 @@ else
 {
 me.y+=1;
 checkforwalls();
+if(onhook)
+{
+double top = ty2;
+double span_top = -1;
+if(hk.hook_type == 2 && hk.hook_target_index >= 0 && hk.hook_target_index < int(walls.length())) span_top = walls[hk.hook_target_index].maxy;
+if(hk.hook_type == 3 && hk.hook_target_index >= 0 && hk.hook_target_index < int(staircases.length())) span_top = staircases[hk.hook_target_index].maxy;
+if(span_top >= 0 && span_top < top) top = span_top;
+if(me.y >= top)
+{
+me.y = top;
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.y;
+if(span_top >= 0 && me.y >= span_top) hk.release_hook();
+return;
+}
+}
+else
+{
 string t = gmt(me.x, me.y);
 if(t != "" && t != "air")
 {
 if(is_staircase(me.x, me.y))
 {
-if(onhook)
-{
-hk.release_hook();
-}
 playland();
 jumping = 0;
 ascending = false;
@@ -836,7 +872,6 @@ if (me.y>=ty2)
 {
 if(in_staircase(me.x, me.y) || user_platform_at(me.x, me.y, 0))
 {
-if(onhook) hk.release_hook();
 playland();
 jumping = 0;
 ascending = false;
@@ -852,7 +887,6 @@ if(nx >= minx && nx <= maxx && user_platform_at(nx, me.y, 0))
 {
 me.x = nx;
 facing = dx > 0 ? "right" : "left";
-if(onhook) hk.release_hook();
 playland();
 jumping = 0;
 ascending = false;
@@ -864,6 +898,7 @@ return;
 ascending=false;
 jumptimer.restart();
 atapex=true;
+}
 }
 }
 }
