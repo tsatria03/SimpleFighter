@@ -568,6 +568,113 @@ return;
 }
 pausemenu();
 }
+
+void rebind_add_binding_flow()
+{
+string[]@ actions = keyboard_actions_in_order();
+if (actions.length() == 0)
+{
+dlg("No actions are defined. Press enter to continue.");
+return;
+}
+setupmenu(false);
+for (uint i = 0; i < actions.length(); i++)
+m.add_item(actions[i], actions[i]);
+m.intro_text = "Choose an action to add a binding to.";
+int mres = m.run();
+if (mres < 0) { speak("canceled"); return; }
+string action = m.get_item_id(mres);
+string combo = kc_capture_combo(form, "Press the key combo to bind to " + action + ", or escape to cancel.");
+if (combo == "") { speak("canceled"); return; }
+kc_trigger trig = kc_choose_trigger();
+controls.bind_key(action, combo, trig);
+if (!kc_save_preserving(controls, "data/main/config/keyboard.ini"))
+dlg("Added in this session, but failed to write the change to disk. Press enter to continue.");
+else
+dlg("Added " + combo + " to " + action + ". Press enter to continue.");
+}
+
+void rebind_edit_binding_flow(const string&in action)
+{
+string combo = kc_capture_combo(form, "Press the new key combo for " + action + ", or escape to cancel.");
+if (combo == "") { speak("canceled"); return; }
+kc_trigger trig = kc_choose_trigger();
+controls.clear_keyboard_action(action);
+controls.bind_key(action, combo, trig);
+if (!kc_save_preserving(controls, "data/main/config/keyboard.ini"))
+dlg("Changed in this session, but failed to write the change to disk. Press enter to continue.");
+else
+dlg(action + " is now bound to " + combo + ". Press enter to continue.");
+}
+
+void rebind_remove_binding_flow(const string&in action)
+{
+setupmenu(false);
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "Remove all bindings for " + action + "?";
+int mres = m.run();
+if (mres != 0) { speak("canceled"); return; }
+controls.clear_keyboard_action(action);
+if (!kc_save_preserving(controls, "data/main/config/keyboard.ini"))
+dlg("Removed in this session, but failed to write the change to disk. Press enter to continue.");
+else
+dlg(action + " bindings cleared. Press enter to continue.");
+}
+
+void rebind_keyboard_action()
+{
+while (true)
+{
+string[]@ actions = keyboard_actions_in_order();
+if (actions.length() == 0)
+{
+dlg("No actions are defined to rebind. Press enter to continue.");
+return;
+}
+form.reset();
+form.create_window("Rebind keyboard controls", false);
+int list = form.create_list("Current bindings");
+for (uint i = 0; i < actions.length(); i++)
+{
+string s = controls.get_keyboard_action_string(actions[i]);
+form.add_list_item(list, actions[i] + ": " + (s == "" ? "(unbound)" : s), actions[i]);
+}
+int add_btn = form.create_button("&Add binding");
+int edit_btn = form.create_button("&Edit binding");
+int remove_btn = form.create_button("&Remove binding");
+int close_btn = form.create_button("&Close", false, true);
+form.focus(list);
+bool exit_now = false;
+while (true)
+{
+wait(5);
+form.monitor();
+if (form.is_pressed(close_btn) || key_pressed(KEY_ESCAPE)) { exit_now = true; break; }
+if (form.is_pressed(add_btn))
+{
+rebind_add_binding_flow();
+break;
+}
+if (form.is_pressed(edit_btn))
+{
+int pos = form.get_list_position(list);
+if (pos >= 0 && pos < int(actions.length()))
+rebind_edit_binding_flow(actions[pos]);
+break;
+}
+if (form.is_pressed(remove_btn))
+{
+int pos = form.get_list_position(list);
+if (pos >= 0 && pos < int(actions.length()))
+rebind_remove_binding_flow(actions[pos]);
+break;
+}
+}
+if (exit_now) return;
+}
+}
+
 void settingsmenu(bool ingame=false)
 {
 form.reset();
@@ -639,6 +746,14 @@ if (!ingame)
 {
 rest = form.create_button("&reset settings");
 form.assign_to_tab(rest, tabs, tab_general);
+}
+int rebind = -1, viewbinds = -1;
+if (!ingame)
+{
+rebind = form.create_button("&Rebind keyboard controls");
+form.assign_to_tab(rebind, tabs, tab_keyboard);
+viewbinds = form.create_button("&View current keyboard bindings");
+form.assign_to_tab(viewbinds, tabs, tab_keyboard);
 }
 int ttscfg = form.create_button("&Configure voice");
 form.assign_to_tab(ttscfg, tabs, tab_speech);
@@ -806,6 +921,20 @@ if (form.is_pressed(speechtest))
 {
 speak("This is your current voice configuration.");
 }
+if (!ingame && form.is_pressed(viewbinds))
+{
+view_keyboard_bindings();
+form.reset();
+settingsmenu(ingame);
+return;
+}
+if (!ingame && form.is_pressed(rebind))
+{
+rebind_keyboard_action();
+form.reset();
+settingsmenu(ingame);
+return;
+}
 if (form.is_pressed(preffscn))
 {
 if (ingame) { speak("canceled"); resume_pools(); return; }
@@ -817,5 +946,65 @@ writepreffs();
 if (ingame) { speak("Settings saved."); resume_pools(); return; }
 else { dlg("Settings saved. Press enter to continue."); mainmenu(); }
 }
+}
+}
+void view_keyboard_bindings()
+{
+string body = "";
+string kpath = "data/main/config/keyboard.ini";
+file f;
+if (f.open(kpath, "rb"))
+{
+string content = f.read();
+f.close();
+content = string_replace(content, "\r\n", "\n", true);
+string[] lines = content.split("\n", true);
+string current_section = "";
+for (uint i = 0; i < lines.length(); i++)
+{
+string line = lines[i];
+string trimmed = line.trim_whitespace();
+if (trimmed.length() == 0) { body += "\r\n"; continue; }
+if (trimmed.substr(0, 1) == ";" || trimmed.substr(0, 1) == "#")
+{
+body += line + "\r\n";
+continue;
+}
+if (trimmed.substr(0, 1) == "[")
+{
+int sec_close = trimmed.find_first("]");
+if (sec_close > 0) current_section = trimmed.substr(1, sec_close - 1).lower();
+body += line + "\r\n";
+continue;
+}
+int eq = trimmed.find_first("=");
+if (eq < 0) { body += line + "\r\n"; continue; }
+string act = trimmed.substr(0, eq).trim_whitespace();
+if (current_section != "joystick" && controls.has_action(act))
+{
+string s = controls.get_keyboard_action_string(act);
+body += act + " = " + (s == "" ? "(unbound)" : s) + "\r\n";
+}
+else
+{
+body += line + "\r\n";
+}
+}
+}
+else
+{
+body = "Could not read " + kpath + ".";
+}
+form.reset();
+form.create_window("Current keyboard bindings", false, false, false);
+int view = form.create_input_box("Bindings", body, read_only:true, multiline:true);
+int close_btn = form.create_button("&close", false, true);
+form.focus(view);
+while (true)
+{
+wait(5);
+form.monitor();
+if (form.is_pressed(close_btn)) return;
+if (key_pressed(KEY_ESCAPE)) return;
 }
 }
