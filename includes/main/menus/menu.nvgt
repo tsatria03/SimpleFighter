@@ -140,6 +140,171 @@ else if(sel == "maptools") maptoolsmenu();
 else if(sel == "packtools") packtoolsmenu();
 }
 }
+void recmenu()
+{
+if (!directory_exists(recordingsPath)) directory_create(recordingsPath);
+string default_filename = get_date(false, true) + " " + get_time(false, false);
+default_filename = default_filename.replace(":", "-", true);
+default_filename = default_filename.replace("/", "-", true);
+while (true)
+{
+wait(5);
+form.reset();
+form.create_window("Recording settings", false);
+int deviceList = -1;
+int filenameBox = -1;
+int startBtn = -1;
+int stopBtn = -1;
+int playBtn = -1;
+int saveBtn = -1;
+int closeBtn = -1;
+if (is_recording)
+{
+    stopBtn = form.create_button("S&top recording");
+}
+else if (has_recording)
+{
+    filenameBox = form.create_input_box("Recording filename", default_filename);
+    playBtn = form.create_button("&Play recording");
+    saveBtn = form.create_button("Sa&ve recording");
+    closeBtn = form.create_button("&Clear recording");
+}
+else
+{
+    string[]@ all_devices = rec.list_recording_devices(true);
+    deviceList = form.create_list("Recording device: menu", 0);
+    int selected_device = 0;
+    for (uint i = 0; i < all_devices.length(); i++)
+    {
+        if (all_devices[i].lower().find_first("microphone") >= 0) continue;
+        if (all_devices[i].lower().find_first("default") >= 0) continue;
+        string dev_name = all_devices[i];
+        int colon_pos = dev_name.find_first(": ");
+        if (colon_pos >= 0) dev_name = dev_name.substr(colon_pos + 2);
+        form.add_list_item(deviceList, dev_name, ""+i);
+        if (i == rec.recording_device) selected_device = form.get_list_count(deviceList) - 1;
+    }
+    if (form.get_list_count(deviceList) == 0)
+    {
+        speak("No recording devices found.");
+        resume_pools();
+        return;
+    }
+    form.set_list_position(deviceList, selected_device);
+    startBtn = form.create_button("&Start recording");
+    closeBtn = form.create_button("&Close");
+}
+form.focus(is_recording ? stopBtn : (has_recording ? playBtn : startBtn));
+while (true)
+{
+    wait(5);
+    form.monitor();
+    if (closeBtn >= 0 && form.is_pressed(closeBtn))
+    {
+        if (has_recording)
+        {
+            rec.stop_playback();
+            rec.clear_recording();
+            has_recording = false;
+            break;
+        }
+        else
+        {
+            resume_pools();
+            return;
+        }
+    }
+    if (key_pressed(KEY_ESCAPE))
+    {
+        rec.stop_playback();
+        resume_pools();
+        return;
+    }
+    if (startBtn >= 0 && form.is_pressed(startBtn))
+    {
+        bool device_ok = true;
+        if (deviceList >= 0)
+        {
+            int devPos = form.get_list_position(deviceList);
+            if (devPos < 0)
+            {
+                speak("Please select a recording device first.");
+                device_ok = false;
+            }
+            else
+            {
+                string devId = form.get_list_item_id(deviceList, devPos);
+                rec.set_recording_device(string_to_int(devId));
+            }
+        }
+        if (device_ok)
+        {
+            if (rec.start_recording())
+            {
+                is_recording = true;
+                break;
+            }
+            else
+                speak("Failed to start recording.");
+        }
+    }
+    if (stopBtn >= 0 && form.is_pressed(stopBtn))
+    {
+        if (rec.stop_recording())
+        {
+            is_recording = false;
+            has_recording = true;
+            break;
+        }
+        else
+            speak("Failed to stop recording.");
+    }
+    if (playBtn >= 0 && form.is_pressed(playBtn))
+    {
+        if (rec.playback.playing)
+        {
+            rec.stop_playback();
+            speak("Stopped recorded audio.");
+        }
+        else
+        {
+            rec.play();
+            speak("Playing recorded audio.");
+        }
+    }
+    if (saveBtn >= 0 && form.is_pressed(saveBtn))
+    {
+        string filename = filenameBox >= 0 ? form.get_text(filenameBox).trim_whitespace_left().trim_whitespace_right() : "";
+        if (filename == "") filename = default_filename;
+        filename = filename.replace("\\", "-", true).replace("/", "-", true).replace(":", "-", true).replace("*", "-", true).replace("?", "-", true).replace("\"", "-", true).replace("<", "-", true).replace(">", "-", true).replace("|", "-", true);
+        string wav_path = recordingsPath + filename + ".wav";
+        string mp3_path = recordingsPath + filename + ".mp3";
+        if (rec.save_recording(wav_path))
+        {
+            speak("Saving recording, please wait.");
+            run("lib/lame.exe", "-b 192 \"" + wav_path + "\" \"" + mp3_path + "\"", true, true);
+            if (file_exists(mp3_path)) file_delete(wav_path);
+            if (file_exists(mp3_path))
+            {
+                dlg("Recording saved as " + filename + ".mp3. Press enter to continue.");
+                has_recording = false;
+                break;
+            }
+            else
+            {
+                dlg("Conversion failed. WAV file kept at " + wav_path+". Press enter to continue.");
+                break;
+            }
+        }
+        else
+        {
+            dlg("Failed to save recording. Press enter to continue.");
+            break;
+        }
+    }
+}
+}
+}
 void datamanagermenu()
 {
 while(true)

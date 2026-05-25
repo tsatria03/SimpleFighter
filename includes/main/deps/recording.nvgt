@@ -1,0 +1,208 @@
+bool is_recording = false;
+bool has_recording = false;
+
+class recording
+{
+    microphone@ mic;
+    sound@ playback;
+    timer record_timer;
+    uint device = uint(-1);
+    uint timed_recording_length_ms = 0;
+    uint[] devices;
+    bool timed_recording_running = false;
+    bool timed_recording_load_for_playback = true;
+    recording()
+    {
+        @mic = microphone();
+        @playback = sound();
+    }
+    string[]@ list_recording_devices(bool include_loopback = true)
+    {
+        return mic.list_recording_devices(include_loopback);
+    }
+    bool set_recording_device(uint index)
+    {
+        device = index;
+        devices.resize(1);
+        devices[0] = index;
+        return true;
+    }
+    bool set_recording_devices(const uint[]&in indices)
+    {
+        devices = indices;
+        device = devices.length() > 0 ? devices[0] : uint(-1);
+        return devices.length() > 0;
+    }
+    uint get_recording_device() const property
+    {
+        return device;
+    }
+    const uint[]@ get_recording_devices() const property
+    {
+        return devices;
+    }
+    bool get_multi_device() const property
+    {
+        return devices.length() > 1;
+    }
+    void reset_playback()
+    {
+        if(playback.playing)
+            playback.stop();
+        playback.close();
+    }
+    bool start_recording(bool monitor = false, bool append = false, uint rate = 44100, uint channels = 2)
+    {
+        reset_playback();
+        if(get_multi_device())
+            monitor = false;
+        if(get_multi_device())
+            return mic.start_recording(devices, rate, channels, true, monitor, append);
+        return mic.start_recording(device, rate, channels, true, monitor, append);
+    }
+    bool stop_recording(bool load_for_playback = true)
+    {
+        timed_recording_running = false;
+        bool result = mic.stop_recording(load_for_playback);
+        if(!load_for_playback)
+        {
+            reset_playback();
+            return result;
+        }
+        if(!result)
+            return false;
+        return mic.load_recording(playback);
+    }
+    bool record_seconds(uint ms, bool monitor = false)
+    {
+        if(!start_recording(monitor))
+            return false;
+        timer t;
+        while(t.elapsed < ms)
+            wait(5);
+        return stop_recording();
+    }
+    bool start_timed_recording(uint ms, bool monitor = false, bool append = false, uint rate = 44100, uint channels = 2, bool load_for_playback = true)
+    {
+        if(!start_recording(monitor, append, rate, channels))
+            return false;
+        timed_recording_length_ms = ms;
+        timed_recording_load_for_playback = load_for_playback;
+        timed_recording_running = true;
+        record_timer.restart();
+        return true;
+    }
+    bool update_timed_recording()
+    {
+        if(!timed_recording_running)
+            return false;
+        if(!mic.recording)
+        {
+            timed_recording_running = false;
+            return false;
+        }
+        if(record_timer.elapsed < timed_recording_length_ms)
+            return false;
+        return stop_recording(timed_recording_load_for_playback);
+    }
+    bool cancel_timed_recording(bool load_for_playback = true)
+    {
+        if(!timed_recording_running)
+            return false;
+        return stop_recording(load_for_playback);
+    }
+    bool get_timed_recording() const property
+    {
+        return timed_recording_running;
+    }
+    uint get_timed_recording_length() const property
+    {
+        return timed_recording_length_ms;
+    }
+    uint get_timed_recording_elapsed() const property
+    {
+        if(!timed_recording_running)
+            return 0;
+        return uint(record_timer.elapsed);
+    }
+    bool get_recording() const property
+    {
+        return mic.recording;
+    }
+    void clear_recording()
+    {
+        mic.clear_recording();
+        reset_playback();
+    }
+    bool save_recording(const string&in filename)
+    {
+        return mic.save_recording(filename);
+    }
+    bool start_monitoring(uint rate = 44100, uint channels = 2)
+    {
+        reset_playback();
+        if(get_multi_device())
+            return false;
+        return mic.start_monitoring(device, rate, channels, true);
+    }
+    bool stop_monitoring()
+    {
+        return mic.stop_monitoring();
+    }
+    bool get_monitoring() const property
+    {
+        return mic.monitoring;
+    }
+    bool play()
+    {
+        return playback.play();
+    }
+    bool play_looped()
+    {
+        return playback.play_looped();
+    }
+    bool play_wait()
+    {
+        return playback.play_wait();
+    }
+    bool pause_playback()
+    {
+        return playback.pause();
+    }
+    bool stop_playback()
+    {
+        return playback.stop();
+    }
+    float get_volume() const property
+    {
+        return playback.volume;
+    }
+    void set_volume(float v) property
+    {
+        playback.volume = v;
+    }
+    float get_pan() const property
+    {
+        return playback.pan;
+    }
+    void set_pan(float p) property
+    {
+        playback.pan = p;
+    }
+    float get_pitch() const property
+    {
+        return playback.pitch;
+    }
+    void set_pitch(float p) property
+    {
+        playback.pitch = p;
+    }
+    float get_length() const property
+    {
+        return playback.length;
+    }
+    microphone@ get_raw() const property
+    {
+        return mic;
+    }
+}
