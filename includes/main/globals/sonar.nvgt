@@ -82,7 +82,14 @@ else
 {
 string dir;
 if (follomode==1)
-dir = facing;
+{
+if (mapmode == "2d") dir = facing;
+else if (facing == "forward") dir = "up";
+else if (facing == "backward") dir = "down";
+else if (facing == "up") dir = "zup";
+else if (facing == "down") dir = "zdown";
+else dir = facing;
+}
 else
 dir = facedir;
 if (dir == "left") scan_direction("left", 0, last_left);
@@ -93,7 +100,22 @@ else if (dir == "zup") scan_direction("zup", 0, last_zup);
 else if (dir == "zdown") scan_direction("zdown", 0, last_zdown);
 }
 if (jumping == 1)
+{
+if (mapmode == "3d")
+{
+for (double zz = me.z - 1; zz >= minz; zz--)
+{
+string here = gmt(me.x, me.y, zz);
+if (here != "" && here != "air")
+{
+play_sonar("tile", me.x, me.y, 0, zz);
+break;
+}
+}
+}
+else
 scan_direction("down", 0, last_down);
+}
 }
 void scan_direction(const string&in dir, double pitch_offset, string &inout last_state)
 {
