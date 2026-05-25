@@ -1,3 +1,3 @@
 param([string]$HtmlFile, [string]$Version, [string]$Tag)
-$c = (Get-Content $HtmlFile) -replace 'V[\d]+\.[\d]+0', $Tag -replace 'V[\d]+\.[\d]+(?<!0)', "V$Version"
+$c = (Get-Content $HtmlFile) -replace '(SimpleFighter V)\d+\.\d+', "`${1}$Version" -replace '(releases/(?:download|tag)/)V\d+\.\d+', "`${1}$Tag"
 [System.IO.File]::WriteAllLines($HtmlFile, $c)
