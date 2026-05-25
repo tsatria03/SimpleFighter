@@ -29,12 +29,7 @@ void playerdeath()
 {
 if(last_checkpoint!is null)
 {
-checkpool.play_stationary_extended(get_map_sound("builder/misc/checkpoints/"+last_checkpoint.checktype+"/*get*"),false,0,0,0,100,false);
-me.x=last_checkpoint.checkx;
-me.y=last_checkpoint.checky;
-if(mapmode == "3d") me.z=last_checkpoint.checkz;
-health=maxhealth;
-load_map(mapname, mapowner, force_compiled:map_is_compiled, force_spawned:true);
+restore_last_checkpoint();
 }
 else if(lifecard<=1)
 {
@@ -96,6 +91,31 @@ mainmenu();
 }
 }
 }
+bool acquire_checkpoint()
+{
+for(uint i=0; i<checkpoints.length(); i++)
+{
+bool match = me.x==checkpoints[i].checkx and me.y==checkpoints[i].checky;
+if(mapmode == "3d") match = match and me.z==checkpoints[i].checkz;
+if(match)
+{
+checkpoints[i].getsound=checkpool.play_stationary_extended(get_map_sound("builder/misc/checkpoints/"+checkpoints[i].checktype+"/*get*"),false,0,0,0,100,false);
+@last_checkpoint=checkpoints[i];
+checkpoints.remove_at(i);
+return true;
+}
+}
+return false;
+}
+void restore_last_checkpoint()
+{
+checkpool.play_stationary_extended(get_map_sound("builder/misc/checkpoints/"+last_checkpoint.checktype+"/*get*"),false,0,0,0,100,false);
+me.x=last_checkpoint.checkx;
+me.y=last_checkpoint.checky;
+if(mapmode == "3d") me.z=last_checkpoint.checkz;
+health=maxhealth;
+load_map(mapname, mapowner, force_compiled:map_is_compiled, force_spawned:true);
+}
 void cploop()
 {
 for(uint i=0; i<checkpoints.length(); i++)
@@ -105,16 +125,8 @@ if(checkpoints[i].checktimer.elapsed>=checkpoints[i].checktime)
 checkpoints[i].checksound=checkpool.play_extended_3d(get_map_sound("builder/misc/checkpoints/"+checkpoints[i].checktype+"/*loop*"),me.x,me.y,me.z,checkpoints[i].checkx,checkpoints[i].checky,checkpoints[i].checkz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 checkpoints[i].checktimer.restart();
 }
-bool match = me.x==checkpoints[i].checkx and me.y==checkpoints[i].checky;
-if(mapmode == "3d") match = match and me.z==checkpoints[i].checkz;
-if(match)
-{
-checkpoints[i].getsound=checkpool.play_stationary_extended(get_map_sound("builder/misc/checkpoints/"+checkpoints[i].checktype+"/*get*"),false,0,0,0,100,false);
-@last_checkpoint=checkpoints[i];
-checkpoints.remove_at(i);
-return;
 }
-}
+acquire_checkpoint();
 }
 void spawn_checkpoint(int x,int y,int speed,string checktype,int z=0)
 {

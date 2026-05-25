@@ -807,13 +807,7 @@ if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construct
 }
 void playstep()
 {
-string current_text;
-if(is_in_blockage(current_text))
-{
-speak(current_text);
-pbounce();
-return;
-}
+if(blockage_check()) return;
 if (mapmode == "2d" && string_contains(gmt(me.x, me.y), "wall", 1) > -1)
 {
 if(glider_engine_on)
@@ -850,10 +844,7 @@ if(signs[i].looping==false) signs[i].signsound=signpool.play_3d(get_map_sound("b
 }
 if(!glider_engine_on)
 {
-for(uint i=0; i<forcefields.length(); i++)
-{
-if(forcefield_hit(i)) return;
-}
+if(forcefield_check()) return;
 for(uint i=0; i<hazards.length(); i++)
 {
 if(player_in_hazard(i) and !inplain)
@@ -886,6 +877,7 @@ wall_hit_once = false;
 }
 void playfall()
 {
+if(blockage_check()) return;
 update_healzone();
 update_safezone();
 {
@@ -897,6 +889,7 @@ pbounce();
 return;
 }
 }
+if(forcefield_check()) return;
 array<string> tiles;
 array<double> vols;
 array<double> pits;
@@ -923,6 +916,7 @@ break;
 }
 void playland()
 {
+if(blockage_check()) return;
 update_healzone();
 update_safezone();
 {
@@ -934,6 +928,7 @@ pbounce();
 return;
 }
 }
+if(forcefield_check()) return;
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*land*"),false);
 array<string> tiles;
 array<double> vols;
@@ -1465,18 +1460,7 @@ break_charbones(ct, dmg, 10 * fallcounter, count);
 }
 falling=false;
 fallcounter=0;
-for(uint i=0; i<checkpoints.length(); i++)
-{
-bool fall_cp_match = me.x==checkpoints[i].checkx and me.y==checkpoints[i].checky;
-if(mapmode == "3d") fall_cp_match = fall_cp_match and me.z==checkpoints[i].checkz;
-if(fall_cp_match)
-{
-checkpoints[i].getsound=checkpool.play_stationary_extended(get_map_sound("builder/misc/checkpoints/"+checkpoints[i].checktype+"/*get*"),false,0,0,0,100,false);
-@last_checkpoint=checkpoints[i];
-checkpoints.remove_at(i);
-return;
-}
-}
+acquire_checkpoint();
 }
 }
 }
