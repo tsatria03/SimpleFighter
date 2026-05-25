@@ -37,6 +37,7 @@ Sounds folder.
 Holds the game's audio, split into two siblings: main/ (characters, equipments for shields and weapons, keyboards, menus, and a small shared misc folder) and builder/ (per-entity sounds for everything you can drop on a map — kombat NPCs and projectiles, transitions like doors and elevators, transportation like bikes and vehicles, traps, construction tiles, zones, audio entities, and interaction items). Authored info.sif files for each weapon, shield, and npc live in that entity's data/ subfolder, and the corresponding audio clips live in that entity's general/ subfolder.
 
 Keyboard commands.
+These are the default keys the game ships with, not fixed assignments. Every action listed below can be rebound to a different key or key combination from the settings menu, so if your layout doesn't match what's printed here, that's why. The descriptions explain what each action does; the keys are just the out of the box bindings.
 Some keys behave differently depending on the map mode. Where a key has a mode dependent meaning, the mode is called out. On topdown and 3d maps, movement, sonar, spire, and camera arrow keys are body relative, meaning the same key always moves in the same direction relative to your character regardless of which way you've rotated.
 
 Movement.
@@ -89,10 +90,21 @@ Disabled on topdown. The hook is purely vertical and ignores body rotation.
 Letter, F. Toggle hooking upward. Throws the hook if you're not already hooked, or releases it if you are.
 Letter, V. Toggle hooking downward.
 
+Transportation.
+
+Board a vehicle, bike, or aircraft by pressing enter while standing on it. Bikes and vehicles are then driven with the normal movement keys; aircraft have their own flight controls below.
+
+Letter, L. Lower an aircraft's landing gear to begin landing.
+Shift plus spacebar. Sound a vehicle's or bike's horn.
+Shift plus left or right arrow. Steer an aircraft left or right.
+Shift plus up or down arrow. Steer an aircraft forward or backward (3d and topdown only).
+Left or right arrow. Decrease or increase an aircraft's speed while flying.
+Up or down arrow. Raise or lower an aircraft's altitude while flying.
+
 Sonar.
 
 Shift plus F1. Cycle the sonar following mode.
-Shift plus F2. Cycle the sonar tracking mode.
+Shift plus F2. Cycle the sonar mode (off, step, loop).
 Shift plus F3. Cycle the sonar looping speed.
 
 When the sonar is not following you, you can point it manually:
@@ -179,6 +191,7 @@ Shift plus letter H. Open the command help menu.
 Shift plus letter V. Open the points menu.
 Letter, B. Open the builder menu (disabled on compiled maps).
 Letter, U. Open the map editor menu (disabled on compiled maps).
+Alt plus letter R. Open the recording menu, where you can capture the game's audio and save it.
 
 System.
 
