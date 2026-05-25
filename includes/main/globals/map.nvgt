@@ -256,6 +256,10 @@ if(buildtype == "safe_zone")
 {
 build_safe_zone();
 }
+if(buildtype == "fall_zone")
+{
+build_fall_zone();
+}
 if(buildtype == "story_zone")
 {
 build_story_zone();
@@ -329,6 +333,7 @@ destroy_all_platforms();
 destroy_all_projectiles();
 destroy_all_projzones();
 destroy_all_safezones();
+destroy_all_fallzones();
 destroy_all_signs();
 destroy_all_soundsources();
 destroy_all_spawnpoints();
@@ -1214,8 +1219,9 @@ else if(platform_supports(me.x, me.y, me.z)) landed = true;
 if(landed)
 {
 if(fallcounter >= 0) p.destroy_sound(fallslot);
-if(fallcounter >= 8 and shieldon == 1) shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100);
-if(fallcounter < 8)
+bool soft_landing = (fallcounter < 8 || player_in_fallzone());
+if(!soft_landing and shieldon == 1) shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100);
+if(soft_landing)
 {
 playland();
 }
@@ -1327,12 +1333,13 @@ fallcounter++;
 if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
 {
 if(fallcounter>=0) p.destroy_sound(fallslot);
-if(fallcounter>=8 and shieldon==1) shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100);
-if(fallcounter<8)
+bool soft_landing = (fallcounter<8 || player_in_fallzone());
+if(!soft_landing and shieldon==1) shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100);
+if(soft_landing)
 {
 playland();
 }
-else if(fallcounter>7)
+else
 {
 playfall();
 if (fallcounter >= 8)

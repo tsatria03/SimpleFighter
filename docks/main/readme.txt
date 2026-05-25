@@ -37,6 +37,7 @@ Sounds folder.
 Holds the game's audio, split into two siblings: main/ (characters, equipments for shields and weapons, keyboards, menus, and a small shared misc folder) and builder/ (per-entity sounds for everything you can drop on a map — kombat NPCs and projectiles, transitions like doors and elevators, transportation like bikes and vehicles, traps, construction tiles, zones, audio entities, and interaction items). Authored info.sif files for each weapon, shield, and npc live in that entity's data/ subfolder, and the corresponding audio clips live in that entity's general/ subfolder.
 
 Keyboard commands.
+
 These are the default keys the game ships with, not fixed assignments. Every action listed below can be rebound to a different key or key combination from the settings menu, so if your layout doesn't match what's printed here, that's why. The descriptions explain what each action does; the keys are just the out of the box bindings.
 Some keys behave differently depending on the map mode. Where a key has a mode dependent meaning, the mode is called out. On topdown and 3d maps, movement, sonar, spire, and camera arrow keys are body relative, meaning the same key always moves in the same direction relative to your character regardless of which way you've rotated.
 
