@@ -276,8 +276,16 @@ if (mapmode == "3d" && dz != 0) above_below = (dz < 0) ? "below" : "above";
 if (has_horizontal)
 {
 double deg = calculate_x_y_angle(me.x, me.y, tx, ty, me_rotation);
-direction = tracking_bearing_phrase(deg);
-if (above_below != "") direction += " and " + above_below;
+string bearing = tracking_bearing_phrase(deg);
+if (above_below != "")
+{
+// Lead with altitude, then oxford-join so multi-part bearings read "below, behind and slightly to the right".
+string[] parts = bearing.split(" and ");
+parts.insert_at(0, above_below);
+direction = oxford_join(@parts);
+}
+else
+direction = bearing;
 }
 else if (above_below != "")
 direction = "directly " + above_below;
