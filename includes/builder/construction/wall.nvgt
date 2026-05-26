@@ -30,11 +30,11 @@ transparent=trp;
 if(mapmode == "3d")
 {
 for(double z = minz; z <= maxz; z++)
-platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, z));
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, z, true));
 }
 else
 {
-platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true));
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, 0, true));
 }
 }
 }
@@ -82,17 +82,10 @@ return;
 }
 bool wall_blocks(double x, double y, double z)
 {
-for(uint i = 0; i < walls.length(); i++)
-{
-if(x >= walls[i].minx && x <= walls[i].maxx
-&& y >= walls[i].miny && y <= walls[i].maxy
-&& z >= walls[i].minz && z <= walls[i].maxz)
-{
-if(point_in_open_passage(x, y, z)) continue;
-return true;
-}
-}
-return false;
+if(point_in_open_passage(x, y, z)) return false;
+// Defer to the same build-ordered tile resolution platform_tile_at uses: the cell only blocks if the top-most construction there is a wall (blocks=true). A platform built over the wall wins and the cell becomes walkable, matching 2d behavior.
+int idx = top_platform_index(x, y, z);
+return idx >= 0 && platforms[idx].blocks;
 }
 void bump_wall_at(double x, double y, double z)
 {

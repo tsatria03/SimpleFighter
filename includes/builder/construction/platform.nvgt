@@ -4,6 +4,7 @@ class platform
 bool destroyable;
 bool overlap;
 bool is_backing;
+bool blocks;
 int defsound,hurtsound;
 double minx, maxx, miny, maxy;
 double z;
@@ -11,7 +12,7 @@ double plathealth, platmaxhealth;
 double volume;
 double pitch;
 string tile;
-platform(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool vlp,bool bkg,double zv=0)
+platform(double mx,double mx2,double my,double my2,double hp,double maxhp,string ty,double vol,double semitone,bool dtb,bool vlp,bool bkg,double zv=0,bool blk=false)
 {
 minx=mx;
 maxx=mx2;
@@ -26,9 +27,10 @@ pitch=semitone;
 destroyable=dtb;
 overlap=vlp;
 is_backing=bkg;
+blocks=blk;
 }
 }
-string platform_tile_at(double x, double y, double z)
+int top_platform_index(double x, double y, double z)
 {
 array<int> stack;
 for(uint i = 0; i < platforms.length(); i++)
@@ -39,7 +41,7 @@ if(mapmode == "3d" && platforms[i].z != z) continue;
 stack.insert_last(i);
 }
 }
-if(stack.length() == 0) return "";
+if(stack.length() == 0) return -1;
 array<int> visible;
 for(uint i = 0; i < stack.length(); i++)
 {
@@ -60,8 +62,14 @@ else
 visible.insert_last(p);
 }
 }
-if(visible.length() == 0) return "";
-return platforms[visible[visible.length()-1]].tile;
+if(visible.length() == 0) return -1;
+return visible[visible.length()-1];
+}
+string platform_tile_at(double x, double y, double z)
+{
+int idx = top_platform_index(x, y, z);
+if(idx < 0) return "";
+return platforms[idx].tile;
 }
 
 bool platform_supports(double x, double y, double z)
@@ -162,9 +170,9 @@ return;
 }
 }
 }
-int spawn_platform(double x1, double x2, double y1, double y2, double hp, double maxhp, string tile, double tilevol, double tilepitch, bool destroyable, bool overlap, bool backing=false, double z=0)
+int spawn_platform(double x1, double x2, double y1, double y2, double hp, double maxhp, string tile, double tilevol, double tilepitch, bool destroyable, bool overlap, bool backing=false, double z=0, bool blocks=false)
 {
-platform pl1(x1, x2, y1, y2, hp, maxhp, tile, tilevol, tilepitch, destroyable, overlap, backing, z);
+platform pl1(x1, x2, y1, y2, hp, maxhp, tile, tilevol, tilepitch, destroyable, overlap, backing, z, blocks);
 platforms.insert_last(pl1);
 return platforms.length() - 1;
 }
