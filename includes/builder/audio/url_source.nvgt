@@ -1,0 +1,193 @@
+url_source@[] url_sources(0);
+class url_source
+{
+double minx, maxx, miny, maxy;
+double minz, maxz;
+int sorcesound;
+double volume;
+double pitch;
+string url;
+bool looping;
+url_source(double mx,double mx2,double my,double my2,string u,double vol,double semitone,bool loop,double mnz=0,double mxz=0)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+minz=mnz;
+maxz=mxz;
+url=u;
+volume=vol;
+pitch=semitone;
+looping=loop;
+if(mapmode == "3d")
+{
+sorcesound=urlpool.play_extended_3d(url,me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,looping,0,0,volume,pitch,false);
+urlpool.update_sound_3d(sorcesound,minx,miny,minz);
+urlpool.update_sound_range_3d(sorcesound, 0,maxx-minx,0,maxy-miny,0,maxz-minz);
+}
+else
+{
+sorcesound=urlpool.play_extended_3d(url,me.x,me.y,me.z,minx,miny,0,calculate_theta(me_rotation),0,0,0,0,0,0,looping,0,0,volume,pitch,false);
+urlpool.update_sound_3d(sorcesound,minx,miny,0);
+urlpool.update_sound_range_3d(sorcesound, 0,maxx-minx,0,maxy-miny,0,0);
+}
+}
+}
+void spawn_url_source(double x1,double x2,double y1,double y2,string url,double soundvol,double soundpitch,bool looping,double minz=0,double maxz=0)
+{
+url_source url1(x1,x2,y1,y2,url,soundvol,soundpitch,looping,minz,maxz);
+url_sources.insert_last(url1);
+}
+void destroy_all_url_sources()
+{
+for(uint i=0; i<url_sources.length(); i++)
+{
+urlpool.destroy_sound(url_sources[i].sorcesound);
+}
+url_sources.resize(0);
+}
+
+void build_url_source()
+{
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+bool y_uses_back_front = mapmode != "2d";
+string saved_url = "";
+form.reset();
+form.create_window("url source", false);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int my2 = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+int url_box = form.create_input_box("url", saved_url);
+form.set_disallowed_chars(url_box, " ", false, "Spaces are not allowed in a url.");
+int vol_s = form.create_slider("volume", 0, -100, 0, "", 5);
+int pit_s = form.create_slider("pitch", 100, 5, 500, "", 5);
+int loop_c = form.create_checkbox("looping", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+bool preview_playing = false;
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+bool in_group = (cur_focus == url_box || cur_focus == vol_s || cur_focus == pit_s || cur_focus == loop_c);
+if(!in_group && preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && in_group)
+{
+if(preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
+else if(form.get_text(url_box) != "")
+{
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+prevslot = t.play_stationary_extended(form.get_text(url_box), form.is_checked(loop_c), 0, 0, v, pt, false);
+preview_playing = true;
+}
+keytimer.restart();
+}
+if(preview_playing && prevslot != -1 && in_group)
+{
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="") { speak("Minimum x is required."); form.focus(mx); continue; }
+if(form.get_text(mx2)=="") { speak("Maximum x is required."); form.focus(mx2); continue; }
+if(form.get_text(my)=="") { speak("Minimum y is required."); form.focus(my); continue; }
+if(form.get_text(my2)=="") { speak("Maximum y is required."); form.focus(my2); continue; }
+if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
+if(form.get_text(url_box)=="") { speak("Url is required."); form.focus(url_box); continue; }
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+string burl = form.get_text(url_box);
+double bvol = form.get_slider(vol_s);
+double bpit = form.get_slider(pit_s);
+bool bloop = form.is_checked(loop_c);
+t.destroy_sound(prevslot);
+resume_pools();
+write_url_source(bx, bx2, by, by2, burl, bvol, bpit, bloop, bmnz, bmxz);
+spawn_url_source(bx, bx2, by, by2, burl, bvol, bpit, bloop, bmnz, bmxz);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
+
+void read_url_source(string[] sd)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double mnz=0, mxz=0;
+int o=5;
+if(mapmode == "3d")
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string url=sd[o];
+double soundvol=stn(sd[o+1]);
+double soundpitch=stn(sd[o+2]);
+bool looping=sd[o+3]=="true";
+spawn_url_source(mx, mx2, my, my2, url, soundvol, soundpitch, looping, mnz, mxz);
+}
+
+void write_url_source(double x1, double x2, double y1, double y2, string url, double vol, double pitch, bool looping, double minz=0, double maxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") coords += " "+minz+" "+maxz;
+mapper.write("\r\n"+"url_source "+coords+" "+url+" "+vol+" "+pitch+" "+(looping ? "true" : "false"));
+mapper.close();
+bump_map_modified();
+}
