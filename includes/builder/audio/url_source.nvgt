@@ -7,8 +7,7 @@ int sorcesound;
 double volume;
 double pitch;
 string url;
-bool looping;
-url_source(double mx,double mx2,double my,double my2,string u,double vol,double semitone,bool loop,double mnz=0,double mxz=0)
+url_source(double mx,double mx2,double my,double my2,string u,double vol,double semitone,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
@@ -19,24 +18,23 @@ maxz=mxz;
 url=u;
 volume=vol;
 pitch=semitone;
-looping=loop;
 if(mapmode == "3d")
 {
-sorcesound=urlpool.play_extended_3d(url,me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,looping,0,0,volume,pitch,false);
+sorcesound=urlpool.play_extended_3d(url,me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,volume,pitch,false);
 urlpool.update_sound_3d(sorcesound,minx,miny,minz);
 urlpool.update_sound_range_3d(sorcesound, 0,maxx-minx,0,maxy-miny,0,maxz-minz);
 }
 else
 {
-sorcesound=urlpool.play_extended_3d(url,me.x,me.y,me.z,minx,miny,0,calculate_theta(me_rotation),0,0,0,0,0,0,looping,0,0,volume,pitch,false);
+sorcesound=urlpool.play_extended_3d(url,me.x,me.y,me.z,minx,miny,0,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,volume,pitch,false);
 urlpool.update_sound_3d(sorcesound,minx,miny,0);
 urlpool.update_sound_range_3d(sorcesound, 0,maxx-minx,0,maxy-miny,0,0);
 }
 }
 }
-void spawn_url_source(double x1,double x2,double y1,double y2,string url,double soundvol,double soundpitch,bool looping,double minz=0,double maxz=0)
+void spawn_url_source(double x1,double x2,double y1,double y2,string url,double soundvol,double soundpitch,double minz=0,double maxz=0)
 {
-url_source url1(x1,x2,y1,y2,url,soundvol,soundpitch,looping,minz,maxz);
+url_source url1(x1,x2,y1,y2,url,soundvol,soundpitch,minz,maxz);
 url_sources.insert_last(url1);
 }
 void destroy_all_url_sources()
@@ -74,8 +72,7 @@ if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This chara
 int url_box = form.create_input_box("url", saved_url);
 form.set_disallowed_chars(url_box, " ", false, "Spaces are not allowed in a url.");
 int vol_s = form.create_slider("volume", 0, -100, 0, "", 5);
-int pit_s = form.create_slider("pitch", 100, 5, 500, "", 5);
-int loop_c = form.create_checkbox("looping", false);
+int pit_s = form.create_slider("pitch", 100, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -85,7 +82,7 @@ while(true)
 wait(5);
 form.monitor();
 int cur_focus = form.get_current_focus();
-bool in_group = (cur_focus == url_box || cur_focus == vol_s || cur_focus == pit_s || cur_focus == loop_c);
+bool in_group = (cur_focus == url_box || cur_focus == vol_s || cur_focus == pit_s);
 if(!in_group && preview_playing)
 {
 t.destroy_sound(prevslot);
@@ -104,7 +101,7 @@ else if(form.get_text(url_box) != "")
 {
 float v = form.get_slider(vol_s);
 float pt = form.get_slider(pit_s);
-prevslot = t.play_stationary_extended(form.get_text(url_box), form.is_checked(loop_c), 0, 0, v, pt, false);
+prevslot = t.play_stationary_extended(form.get_text(url_box), true, 0, 0, v, pt, false);
 preview_playing = true;
 }
 keytimer.restart();
@@ -147,11 +144,10 @@ double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 string burl = form.get_text(url_box);
 double bvol = form.get_slider(vol_s);
 double bpit = form.get_slider(pit_s);
-bool bloop = form.is_checked(loop_c);
 t.destroy_sound(prevslot);
 resume_pools();
-write_url_source(bx, bx2, by, by2, burl, bvol, bpit, bloop, bmnz, bmxz);
-spawn_url_source(bx, bx2, by, by2, burl, bvol, bpit, bloop, bmnz, bmxz);
+write_url_source(bx, bx2, by, by2, burl, bvol, bpit, bmnz, bmxz);
+spawn_url_source(bx, bx2, by, by2, burl, bvol, bpit, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -177,17 +173,16 @@ o=7;
 string url=sd[o];
 double soundvol=stn(sd[o+1]);
 double soundpitch=stn(sd[o+2]);
-bool looping=sd[o+3]=="true";
-spawn_url_source(mx, mx2, my, my2, url, soundvol, soundpitch, looping, mnz, mxz);
+spawn_url_source(mx, mx2, my, my2, url, soundvol, soundpitch, mnz, mxz);
 }
 
-void write_url_source(double x1, double x2, double y1, double y2, string url, double vol, double pitch, bool looping, double minz=0, double maxz=0)
+void write_url_source(double x1, double x2, double y1, double y2, string url, double vol, double pitch, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode == "3d") coords += " "+minz+" "+maxz;
-mapper.write("\r\n"+"url_source "+coords+" "+url+" "+vol+" "+pitch+" "+(looping ? "true" : "false"));
+mapper.write("\r\n"+"url_source "+coords+" "+url+" "+vol+" "+pitch);
 mapper.close();
 bump_map_modified();
 }
