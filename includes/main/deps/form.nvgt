@@ -1983,6 +1983,9 @@ class audio_form {
 			form_error = form_error_no_window;
 			return -1;
 		}
+		// While a find/goto sub-form is open it owns the keyboard, so report no focus. This stops application loops (builders, etc.) from acting on their focused control's keys (previews, first-letter list nav) as the user types into the dialog.
+		if (@utility_form != null)
+			return -1;
 		for (int counter = 0; counter < c_form.length(); counter++) {
 			if (c_form[counter].focused == true)
 				return counter;
@@ -3286,7 +3289,8 @@ if(char!=" " && char.is_upper()) formpool.play_stationary(get_pack_sound("main/k
 			string[] nav_items(list.length());
 			for (int i = 0; i < list.length(); i++)
 				nav_items[i] = list[i].item;
-			bool already_on_result = nav_items[list_position].find(text) > -1;
+			if (list_position < 0 || list_position >= int(list.length())) list_position = 0;
+				bool already_on_result = nav_items[list_position].find(text) > -1;
 			string wrapped = "";
 			for (int i = list_position + dir; i != list_position; i += dir) {
 				if (i < 0) {
