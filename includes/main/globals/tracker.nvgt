@@ -164,6 +164,91 @@ p.play_stationary(get_pack_sound("main/misc/*tracked*"), false);
 speak("target reached");
 }
 
+int tracking_bearing_index(double deg)
+{
+// Breakpoints mirror rotation.nvgt's calculate_x_y_string: cardinals (0/90/180/270) are exact and buckets are finer toward the front.
+if (deg <= 0 || deg >= 360) return 0;
+if (deg < 10) return 1;
+if (deg < 20) return 2;
+if (deg < 40) return 3;
+if (deg < 90) return 4;
+if (deg == 90) return 5;
+if (deg < 120) return 6;
+if (deg < 150) return 7;
+if (deg < 170) return 8;
+if (deg < 180) return 9;
+if (deg == 180) return 10;
+if (deg < 190) return 11;
+if (deg < 200) return 12;
+if (deg < 220) return 13;
+if (deg < 240) return 14;
+if (deg < 270) return 15;
+if (deg == 270) return 16;
+if (deg < 300) return 17;
+if (deg < 320) return 18;
+if (deg < 340) return 19;
+if (deg < 350) return 20;
+return 21;
+}
+string tracking_bearing_phrase(double ang)
+{
+// Horizontal plane (topdown / 3d): 0 = straight ahead, 90 = due right, 180 = behind, 270 = due left.
+string[] phrases = {
+"straight in front",
+"very slightly to the right",
+"slightly off to the right",
+"a little ways off to the right",
+"a fair distance off to the right",
+"straight off to the right",
+"slightly behind and far off to the right",
+"behind and a little ways off to the right",
+"behind and slightly to the right",
+"behind and very slightly to the right",
+"straight behind",
+"behind and very slightly to the left",
+"behind and slightly to the left",
+"behind and a little ways off to the left",
+"behind and a fair distance off to the left",
+"slightly behind and far off to the left",
+"straight off to the left",
+"far off to the left",
+"a ways off to the left",
+"a little ways off to the left",
+"slightly off to the left",
+"very slightly off to the left"
+};
+return phrases[tracking_bearing_index(ang)];
+}
+string tracking_vertical_phrase(double ang)
+{
+// 2d vertical plane: 0 = straight above, 90 = due right, 180 = straight below, 270 = due left.
+// Same list as the horizontal plane with "in front" / "behind" replaced by "above" / "below".
+string[] phrases = {
+"straight above",
+"very slightly to the right",
+"slightly off to the right",
+"a little ways off to the right",
+"a fair distance off to the right",
+"straight off to the right",
+"slightly below and far off to the right",
+"below and a little ways off to the right",
+"below and slightly to the right",
+"below and very slightly to the right",
+"straight below",
+"below and very slightly to the left",
+"below and slightly to the left",
+"below and a little ways off to the left",
+"below and a fair distance off to the left",
+"slightly below and far off to the left",
+"straight off to the left",
+"far off to the left",
+"a ways off to the left",
+"a little ways off to the left",
+"slightly off to the left",
+"very slightly off to the left"
+};
+return phrases[tracking_bearing_index(ang)];
+}
 void tracking_speak_position()
 {
 if (!tracking_active())
@@ -181,32 +266,31 @@ int dx = int(tx - me.x);
 int dy = int(ty - me.y);
 int dz = int(tz - me.z);
 int distance = absolute(dx) + absolute(dy) + (mapmode == "3d" ? absolute(dz) : 0);
-bool y_is_depth = mapmode != "2d";
-string[] dir_parts;
-if (y_is_depth)
+string direction;
+if (mapmode != "2d")
 {
-double rad = calculate_theta(me_rotation);
-double s = sin(rad);
-double c = cos(rad);
-double forward = double(dx) * s + double(dy) * c;
-double right = double(dx) * c - double(dy) * s;
-if (forward > 0.5) dir_parts.insert_last("in front");
-else if (forward < -0.5) dir_parts.insert_last("behind");
-if (mapmode == "3d" && dz != 0)
+// Topdown / 3d: body-relative bearing around the horizontal plane, with altitude as a tag.
+bool has_horizontal = (dx != 0 || dy != 0);
+string above_below = "";
+if (mapmode == "3d" && dz != 0) above_below = (dz < 0) ? "below" : "above";
+if (has_horizontal)
 {
-dir_parts.insert_last(dz < 0 ? "below" : "above");
+double deg = calculate_x_y_angle(me.x, me.y, tx, ty, me_rotation);
+direction = tracking_bearing_phrase(deg);
+if (above_below != "") direction += " and " + above_below;
 }
-if (right < -0.5) dir_parts.insert_last("to the left");
-else if (right > 0.5) dir_parts.insert_last("to the right");
+else if (above_below != "")
+direction = "directly " + above_below;
 }
 else
 {
-if (dy < 0) dir_parts.insert_last("below");
-else if (dy > 0) dir_parts.insert_last("above");
-if (dx < 0) dir_parts.insert_last("to the left");
-else if (dx > 0) dir_parts.insert_last("to the right");
+// 2d: side-view vertical plane. Up plays the role of "in front", down of "behind".
+if (dx != 0 || dy != 0)
+{
+double deg = calculate_x_y_angle(me.x, me.y, tx, ty, 0);
+direction = tracking_vertical_phrase(deg);
 }
-string direction = oxford_join(@dir_parts);
+}
 if (direction == "") direction = "right here";
 p.play_stationary(get_pack_sound("main/misc/*tracking*"), false);
 speak(direction + ", " + distance + " feet away.");
