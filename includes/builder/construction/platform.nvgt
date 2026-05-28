@@ -35,6 +35,7 @@ int top_platform_index(double x, double y, double z)
 array<int> stack;
 for(uint i = 0; i < platforms.length(); i++)
 {
+if(@platforms[i] == null) continue;
 if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
 {
 if(mapmode == "3d" && platforms[i].z != z) continue;
@@ -76,6 +77,7 @@ bool platform_supports(double x, double y, double z)
 {
 for(uint i=0; i<platforms.length(); i++)
 {
+if(@platforms[i] == null) continue;
 if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y && platforms[i].z == z)
 {
 if(platforms[i].tile == "air") continue;
@@ -88,6 +90,7 @@ bool user_platform_overhead(double apex)
 {
 for(uint i = 0; i < platforms.length(); i++)
 {
+if(@platforms[i] == null) continue;
 if(platforms[i].is_backing) continue;
 if(platforms[i].minx > me.x || platforms[i].maxx < me.x) continue;
 if(mapmode == "3d")
@@ -118,6 +121,7 @@ void get_all_platform_tiles(double x, double y, array<string>@ tiles, array<doub
 array<int> stack;
 for(uint i = 0; i < platforms.length(); i++)
 {
+if(@platforms[i] == null) continue;
 if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
 {
 if(mapmode == "3d" && platforms[i].z != z) continue;
@@ -159,13 +163,14 @@ void platcheck()
 {
 for(uint i=0; i<platforms.length(); i++)
 {
+if(@platforms[i] == null) continue;
 if(platforms[i].plathealth<=0)
 {
 p.destroy_sound(platforms[i].hurtsound);
 platforms[i].defsound=p.play_extended_3d(get_map_sound("builder/construction/platforms/"+platforms[i].tile+"/*death*"),me.x,me.y,me.z,platforms[i].minx,platforms[i].miny,platforms[i].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
 p.update_sound_3d(platforms[i].defsound,platforms[i].minx,platforms[i].miny,platforms[i].z);
 p.update_sound_range_3d(platforms[i].defsound,0,platforms[i].maxx-platforms[i].minx,0,platforms[i].maxy-platforms[i].miny, 0, 0);
-platforms.remove_at(i);
+@platforms[i] = null;
 return;
 }
 }
@@ -180,6 +185,7 @@ bool user_platform_at(double x, double y, double z)
 {
 for(uint i = 0; i < platforms.length(); i++)
 {
+if(@platforms[i] == null) continue;
 if(platforms[i].is_backing) continue;
 if(platforms[i].minx <= x && platforms[i].maxx >= x && platforms[i].miny <= y && platforms[i].maxy >= y)
 {
@@ -191,7 +197,7 @@ return false;
 }
 void update_platform(int id, double x1, double x2, double y1, double y2, double z=0)
 {
-if (id >= 0 && id < platforms.length())
+if (id >= 0 && id < platforms.length() && @platforms[id] != null)
 {
 platforms[id].minx = x1;
 platforms[id].maxx = x2;
@@ -202,9 +208,9 @@ if(mapmode == "3d") platforms[id].z = z;
 }
 void remove_platform(int id)
 {
-if (id >= 0 && id < platforms.length())
+if (id >= 0 && id < platforms.length() && @platforms[id] != null)
 {
-platforms.remove_at(id);
+@platforms[id] = null;
 }
 }
 void destroy_all_platforms()
