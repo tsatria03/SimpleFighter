@@ -1,133 +1,33 @@
-double tilevolume=0, tilepitch=100, wallvolume=0, wallpitch=100;
-double minx, maxx, miny, maxy, minz, maxz;
-double me_rotation=0;
+bool auto_check_updates=false, hrtf=false;
 
-bool sel_left_set = false, sel_right_set = false, sel_back_set = false, sel_front_set = false, sel_bottom_set = false, sel_top_set = false;
-double sel_left, sel_right, sel_back, sel_front, sel_bottom, sel_top;
+int autoslot, itemslot, painslot, prevslot, progslot, shieldloop, shieldslot, shieldremoveslot, shieldwearslot;
+int healthmode, comtime, stacktime;
 
-bool autorun=false;
-bool auto_check_updates = false;
-bool camdext=false;
-bool map_is_compiled = false;
-bool map_pack_loaded = false;
-bool sound_main_pack_loaded = false;
-bool sound_builder_pack_loaded = false;
-bool mapclear=true;
-bool freezgame=false;
-bool shieldcushion=false;
-bool shieldpassthrough=true;
-
-string[] contents;
-string filename;
-string foldername;
-string[] file_list;
-
-bool charblock_speak;
-bool[] scriptkey_speak;
-bool scriptmode=true;
-bool scriptkeys_loaded = false;
-bool exit_game = false;
-bool wall_hit_once = false;
-bool hrtf=false;
-
-bool atapex, ascending, falling;
-
-bool buildable=true, cammable=true, commable=true, drawable=true, drawnshield=false, fireable=true, healable=true, jumpchange=true, jumpable=true, mfc=false, moveable=true, pauseable=true, quittable=true, runnable=true, scriptable=true, spiable=true, speedable=true, stunned=false, turnable=true, useable=true, wallbump=true, wepref=true;
-
-double attack=0, bonehealth=0, maxbonehealth=100, defence=0, fallmod=21, health=100, maxhealth=100, kills=0, points=0, xp=0, xpmod=1, xprequiered=1, level=1, levmod=1, lifecard=1, shieldstrength=100, maxshieldstrength=100, shielddefence=0, shieldlevel=1, stamina=100, maxstamina=100, damage_melee=0;
-dictionary damage_by_type;
-dictionary ammo_reserves;
-dictionary ammo_types_bought;
-
-int stundir=0, wepdef=0;
-
-int autoslot, camslot, fallslot, itemslot, painslot, prevslot, progslot, refslot, shieldloop, shieldslot, shieldremoveslot, shieldwearslot, tileslot, wallslot;
-
-int[] ordered_scriptkeys ={KEY_GRAVE, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_EQUALS, KEY_BACK};
-int[] scriptkey_cooldown;
-int[] scriptkey_lastused;
-
-int echomode=1, gamxit=1, fademode=1, turnmode=1, keytime=200;
-
-int fallcounter, jumping, healthmode, comtime, movetime, stacktime, ty1, ty2;
-bool cloner_has_last = false;
-int cloner_last_x = 0, cloner_last_y = 0, cloner_last_z = 0;
-
-int maploadbeeps=1, maploadsounds=1;
+int echomode=1, fademode=1, keytime=200;
 int switchsound=1, togglesound=1, telsound=1;
-
 int spokenswitch=1, spokentoggle=1, spokenturns=1;
+int healthspeech=3, staminaspeech=3, shieldspeech=3;
 
-int autojump=0, jumpheight=5, locspeech=3, modspeed=5, paused=0, pausem=1, zonestatus=1;
-
-int hprestoration=0, healthspeech=3, staminaspeech=3, sprestoration=0, shieldmode=0, shieldon=0, shieldweight=1, shieldblockchance=100, shieldspeech=3, fallspeed=120, deffallspeed=120;
-int airtime=125, apextime=80, camtime=125, falltime=250, hprestoretime=2400, hookusetime=350, strestoretime=600, jumptime=120, jumptime2=80, runtime=500, sprestoretime=1200, stuntime=500, usetime=100, walktime=1000;
-int shield_launch_xrange=0, shield_launch_yrange=0, shield_launch_zrange=0, shield_launch_speed=30;
-
-string chartype="default";
-string defowner="noone";
-string keyboardtheme="keyboard";
-string menutype="default";
-string mactype="default";
-string mactype2="classic";
-string soundcard="Default";
-string shield_launch_type="", shield_launch_subtype="";
-
-string[] kombatlog;
 string[] comslist;
 string[] dock, dock2, dock3, dock4;
 string changesplit, comsplit, credsplit, redsplit, todosplit;
-string[] attacktype, bodypart;
-string randomattacktype, randombodypart;
-string[] scriptkeys;
 
-string mapdata;
-string mapname;
-string mapmode;
-string mapowner;
-string loc;
-string newloc;
-string newzone;
-
+string keyboardtheme="keyboard";
+string menutype="default";
+string soundcard="Default";
 string recordingsPath = DIRECTORY_APPDATA + "tsatria03/SimpleFighter/recordings/";
 string savePath = DIRECTORY_APPDATA + "tsatria03/SimpleFighter/saves/";
 
-string camdir="left";
-string facing="right";
-string shieldtype="none";
-string[] map_pack_files;
-string[] sound_main_pack_files;
-string[] sound_builder_pack_files;
-
-key_hold cleft(KEY_LEFT,200,modspeed);
-key_hold cright(KEY_RIGHT,200,modspeed);
-key_hold cup(KEY_UP,200,modspeed);
-key_hold cdown(KEY_DOWN,200,modspeed);
-key_hold cpgup(KEY_PAGEUP,200,modspeed);
-key_hold cpgdown(KEY_PAGEDOWN,200,modspeed);
-key_hold cw(KEY_W,200,modspeed);
-key_hold cs(KEY_S,200,modspeed);
-
-file f, coms, docks, dockfile, helpfile, info, logfile, mapper, tempfile;
-timer airtimer, bonetimer, camtimer, comtimer, falltimer, hprestoretimer, hookusetimer, strestoretimer, keytimer, jumptimer, movetimer, runtimer, sprestoretimer, stacktimer, stuntimer, usetimer, walktimer;
+file f, coms, docks, dockfile, helpfile, info, logfile, tempfile;
+timer bonetimer, comtimer, keytimer, stacktimer;
 
 audio_form form;
 form_menu m;
 instance gamstence("sf");
-inventory inv;
 kh keyhook;
-pack pfile, map_pack, sound_main_pack, sound_builder_pack;
-dictionary map_pack_folders;
-dictionary sound_main_pack_folders;
-dictionary sound_builder_pack_folders;
 savedata st(DIRECTORY_APPDATA+"tsatria03/SimpleFighter/saves/settings.spf", "mBlAGtFL8GUjFZDAaLkG6Zqv1KHKOimA3SGqT6wmdJWc5h6RdSB97916D9SIQfZMjdCZMSJmDByZHYuS2V22QCvHmSGMHIOSwIyHjD46zmjGcm3bgZRyImIAVLivGTgAHub0jpjORA2t3z1GJMcHu0VxMIbJrmSzXjU9wdgeZYdP8z7MVym8SBrGrb2X8r9ryXY03MhwzMgjdD6jo9q");
 sound dummy, progs;
-sound_pool t, p, invpool, mpool, pool, spool, temp, animalpool, beltpool, bikepool, bodypool, bombpool, bosspool, breakerpool, bulletpool, calpool, campool, clockpool, checkpool, doorpool, elvpool, exsourcepool, exsourceambpool, firepool, forcepool, hazardpool, healpool, hookpool, humanpool, itempool, liftpool, minepool, plainpool, platpool, passagepool, projpool, robpool, safepool, signpool, sonarpool, sourcepool, sourceambpool, specialpool, spikepool, sucampool, switchpool, telpool, ttsempool, timeambpool, timesourcepool, turbpool, urlpool, urlambpool, vehpool, vanpool, zombpool;
-hook hk;
-sonar son;
+sound_pool t, temp, spool;
 recording rec;
-time_elapsed timeelapsed;
 tone_synth sy;
-vector cam, me;
 virtual_dialogs vd;
-weapon wepchar;
