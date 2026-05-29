@@ -255,7 +255,7 @@ bool is_3d = mapmode == "3d";
 bool is_topdown = mapmode == "topdown";
 bool y_is_depth = mapmode != "2d";
 bool hazard_found = false;
-string tile_lookup = is_3d ? platform_tile_at(cam.x, cam.y, cam.z) : gct(cam.x, cam.y);
+string tile_lookup = platform_tile_at(cam.x, cam.y, cam.z);
 bool no_tile = tile_lookup == "";
 bool suppress_air = is_topdown && no_tile;
 string tiletype = no_tile ? "air" : tile_lookup;
@@ -692,7 +692,7 @@ jumptimer.restart();
 if(mapmode == "3d")
 {
 me.z -= 1;
-if (me.z <= ty1) { me.z = ty1; jumping = 0; playland(); }
+if (me.z <= ty1) { me.z = ty1; playland(); jumping = 0; }
 }
 else
 {
@@ -843,6 +843,15 @@ atapex = false;
 ty1 = me.y;
 return;
 }
+}
+if(user_platform_at(me.x, me.y, 0))
+{
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.y;
+return;
 }
 if (me.y>=ty2)
 {
@@ -1361,7 +1370,7 @@ speak("This weapon does not take any ammo.");
 else
 speak(wepchar.loaded_ammo+" out of "+wepchar.max_ammo+" "+wepchar.ammo_type+" ammo loaded, and "+wepchar.current_reserve()+" "+wepchar.ammo_type+" ammo in reserve");
 }
-if(controls.action_pressed("reload") and fireable==true)
+if(controls.action_pressed("reload") and fireable==true and key_up(KEY_G) and !camdext)
 {
 if(wepchar.melee)
 {
@@ -1378,7 +1387,7 @@ else if(wepchar.current_reserve() <= 0) { wepchar.start_reload(int(me.x), int(me
 else wepchar.start_reload(int(me.x), int(me.y), int(me.z));
 }
 }
-if(controls.action_pressed("weapon_reflection_toggle") and wepref==true and useable==true)
+if(controls.action_pressed("weapon_reflection_toggle") and wepref==true and useable==true and key_up(KEY_G) and !camdext)
 {
 if(!wepchar.reflection)
 {
@@ -1423,7 +1432,7 @@ son.cycle_speed();
 }
 if (son.follomode==0)
 {
-if (!shift_is_down() && controls.action_pressed("sonar_left") && son.enabled==true)
+if (!shift_is_down() && key_up(KEY_G) && !camdext && controls.action_pressed("sonar_left") && son.enabled==true)
 {
 string newdir = (mapmode == "2d") ? "left" : body_to_sonar_dir(2);
 if(son.facedir != newdir)
@@ -1432,7 +1441,7 @@ son.face(newdir);
 speak("left");
 }
 }
-if (!shift_is_down() && controls.action_pressed("sonar_right") && son.enabled==true)
+if (!shift_is_down() && key_up(KEY_G) && !camdext && controls.action_pressed("sonar_right") && son.enabled==true)
 {
 string newdir = (mapmode == "2d") ? "right" : body_to_sonar_dir(3);
 if(son.facedir != newdir)
@@ -1441,7 +1450,7 @@ son.face(newdir);
 speak("right");
 }
 }
-if (!shift_is_down() && controls.action_pressed("sonar_back") && son.enabled==true)
+if (!shift_is_down() && key_up(KEY_G) && !camdext && controls.action_pressed("sonar_back") && son.enabled==true)
 {
 string newdir = (mapmode == "2d") ? "down" : body_to_sonar_dir(1);
 if(son.facedir != newdir)
@@ -1450,7 +1459,7 @@ son.face(newdir);
 speak(mapmode != "2d" ? "back" : "down");
 }
 }
-if (!shift_is_down() && controls.action_pressed("sonar_front") && son.enabled==true)
+if (!shift_is_down() && key_up(KEY_G) && !camdext && controls.action_pressed("sonar_front") && son.enabled==true)
 {
 string newdir = (mapmode == "2d") ? "up" : body_to_sonar_dir(0);
 if(son.facedir != newdir)
@@ -1591,7 +1600,7 @@ if(healthspeech==4 and lifecard<=1)
 speak(round(health/maxhealth*100,2)+"percent,"+health+"of"+maxhealth+"health,"+lifecard+"life");
 }
 }
-if(controls.action_pressed("info_stamina"))
+if(controls.action_pressed("info_stamina") and key_up(KEY_G) and !camdext)
 {
 if(staminaspeech==1)
 {
@@ -1610,7 +1619,7 @@ if(staminaspeech==4)
 speak(round(stamina/maxstamina*100,2)+"percent,"+stamina+"of"+maxstamina+"stamina");
 }
 }
-if(controls.action_pressed("info_shield"))
+if(controls.action_pressed("info_shield") and key_up(KEY_G) and !camdext)
 {
 if(shieldon==0)
 {

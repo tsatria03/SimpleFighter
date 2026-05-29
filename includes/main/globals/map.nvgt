@@ -809,7 +809,7 @@ safezones[i].cam_in_zone=false;
 }
 {
 string camwallname = (mapmode == "3d") ? wall_tile_at(cam.x, cam.y, cam.z) : wall_tile_at(cam.x, cam.y);
-if (camwallname != "")
+if (camwallname != "" && wall_blocks(cam.x, cam.y, cam.z))
 {
 if((mapmode == "3d") ? is_transparent_wall(cam.x, cam.y, cam.z) : is_transparent_wall(cam.x, cam.y))
 {
@@ -861,8 +861,9 @@ if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construct
 void playstep()
 {
 if(blockage_check()) return;
-if (mapmode == "2d" && string_contains(gmt(me.x, me.y), "wall", 1) > -1)
+if (mapmode == "2d" && string_contains(platform_tile_at(me.x, me.y, me.z), "wall", 1) > -1)
 {
+string wname = platform_tile_at(me.x, me.y, me.z);
 if(glider_engine_on)
 {
 if(wallbump || !wall_hit_once)
@@ -873,13 +874,13 @@ if(!wallbump) wall_hit_once = true;
 }
 else if (wallbump)
 {
-wallslot = p.play_extended_3d(get_map_sound("builder/construction/walls/" + gmt(me.x, me.y) + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+wallslot = p.play_extended_3d(get_map_sound("builder/construction/walls/" + wname + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
 }
 else
 {
 if (!wall_hit_once)
 {
-wallslot = p.play_extended_3d(get_map_sound("builder/construction/walls/" + gmt(me.x, me.y) + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+wallslot = p.play_extended_3d(get_map_sound("builder/construction/walls/" + wname + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
 wall_hit_once = true;
 }
 }
@@ -936,11 +937,11 @@ if(blockage_check()) return;
 update_healzone();
 update_safezone();
 {
-string wname = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
+string wname = platform_tile_at(me.x, me.y, me.z);
 if(string_contains(wname,"wall",1)>-1)
 {
 wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+wname+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
-pbounce();
+if(jumping == 0 && !falling) pbounce();
 return;
 }
 }
@@ -976,11 +977,11 @@ if(blockage_check()) return;
 update_healzone();
 update_safezone();
 {
-string wname = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
+string wname = platform_tile_at(me.x, me.y, me.z);
 if(string_contains(wname,"wall",1)>-1)
 {
 wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+wname+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
-pbounce();
+if(jumping == 0 && !falling) pbounce();
 return;
 }
 }
