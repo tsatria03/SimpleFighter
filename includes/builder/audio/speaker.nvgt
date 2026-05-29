@@ -1,0 +1,262 @@
+sound_pool speakerpool;
+speaker@[] speakers(0);
+
+class speaker
+{
+double lx, ly, lz;
+double rx, ry, rz;
+int lsound, rsound;
+double volume;
+double pitch;
+string sourcetype;
+string sourcetype2;
+speaker(double lxi,double lyi,double rxi,double ryi,string srt,string srt2,double vol,double semitone,double lzi=0,double rzi=0)
+{
+lx=lxi;
+ly=lyi;
+lz=lzi;
+rx=rxi;
+ry=ryi;
+rz=rzi;
+sourcetype=srt;
+sourcetype2=srt2;
+volume=vol;
+pitch=semitone;
+string clip=get_map_sound("builder/audio/"+sourcetype+"/"+sourcetype2+"/*loop*");
+if(mapmode == "3d")
+{
+lsound=speakerpool.play_extended_3d(clip,me.x,me.y,me.z,lx,ly,lz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,volume,pitch,false);
+rsound=speakerpool.play_extended_3d(clip,me.x,me.y,me.z,rx,ry,rz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,volume,pitch,false);
+}
+else
+{
+lsound=speakerpool.play_extended_3d(clip,me.x,me.y,me.z,lx,ly,0,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,volume,pitch,false);
+rsound=speakerpool.play_extended_3d(clip,me.x,me.y,me.z,rx,ry,0,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,volume,pitch,false);
+}
+}
+}
+void spawn_speaker(double lx,double ly,double rx,double ry,string sourcetype,string sourcetype2,double soundvol,double soundpitch,double lz=0,double rz=0)
+{
+speaker speaker1(lx,ly,rx,ry,sourcetype,sourcetype2,soundvol,soundpitch,lz,rz);
+speakers.insert_last(speaker1);
+}
+void destroy_all_speakers()
+{
+for(uint i=0; i<speakers.length(); i++)
+{
+if(@speakers[i] == null) continue;
+speakerpool.destroy_sound(speakers[i].lsound);
+speakerpool.destroy_sound(speakers[i].rsound);
+}
+speakers.resize(0);
+}
+
+void build_speaker()
+{
+string[] musics_list = get_map_sound_folders("builder/audio/musics/*");
+string[] sources_list = get_map_sound_folders("builder/audio/sources/*");
+if(musics_list.length() == 0 && sources_list.length() == 0)
+{
+dlg("Error. There are no soundtracks available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+bool y_uses_back_front = mapmode != "2d";
+string saved_lx = sel_left_set ? sel_left : "";
+string saved_rx = sel_right_set ? sel_right : "";
+string saved_ly = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_ry = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+string saved_lz = sel_bottom_set ? sel_bottom : "";
+string saved_rz = sel_top_set ? sel_top : "";
+int saved_cat_pos = 0;
+int saved_sub_pos = 0;
+double saved_vol = 0;
+double saved_pit = 100;
+bool do_build = true;
+int last_cat_pos = -1;
+int lx_in, ly_in, lz_in, rx_in, ry_in, rz_in, cat_list, sub_list, vol_s, pit_s, ok, cn;
+lz_in = -1; rz_in = -1;
+bool preview_playing = false;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+if(last_cat_pos != -1)
+{
+saved_lx = form.get_text(lx_in);
+saved_ly = form.get_text(ly_in);
+if(lz_in != -1) saved_lz = form.get_text(lz_in);
+saved_rx = form.get_text(rx_in);
+saved_ry = form.get_text(ry_in);
+if(rz_in != -1) saved_rz = form.get_text(rz_in);
+saved_vol = form.get_slider(vol_s);
+saved_pit = form.get_slider(pit_s);
+}
+form.reset();
+form.create_window("speaker", false, true, last_cat_pos != -1);
+lx_in = form.create_input_box("left x", saved_lx);
+ly_in = form.create_input_box("left y", saved_ly);
+lz_in = -1; rz_in = -1;
+if(mapmode == "3d") lz_in = form.create_input_box("left z", saved_lz);
+rx_in = form.create_input_box("right x", saved_rx);
+ry_in = form.create_input_box("right y", saved_ry);
+if(mapmode == "3d") rz_in = form.create_input_box("right z", saved_rz);
+form.set_disallowed_chars(lx_in, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(ly_in, disallowed_nums, false, "This character is not allowed.");
+if(lz_in != -1) form.set_disallowed_chars(lz_in, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(rx_in, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(ry_in, disallowed_nums, false, "This character is not allowed.");
+if(rz_in != -1) form.set_disallowed_chars(rz_in, disallowed_nums, false, "This character is not allowed.");
+cat_list = form.create_list("category");
+form.add_list_item(cat_list, "musics", "musics");
+form.add_list_item(cat_list, "sources", "sources");
+form.set_list_position(cat_list, saved_cat_pos, false);
+string sub_label = (saved_cat_pos == 0) ? "music sound" : "source sound";
+sub_list = form.create_list(sub_label);
+form.add_list_item(sub_list, "none", "none");
+if(saved_cat_pos == 0)
+for(uint i = 0; i < musics_list.length(); i++) form.add_list_item(sub_list, musics_list[i], musics_list[i]);
+else
+for(uint i = 0; i < sources_list.length(); i++) form.add_list_item(sub_list, sources_list[i], sources_list[i]);
+form.set_list_position(sub_list, saved_sub_pos, false);
+vol_s = form.create_slider("volume", saved_vol, -100, 0, "", 5);
+pit_s = form.create_slider("pitch", saved_pit, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_cat_pos == -1) form.focus(lx_in);
+else form.focus_silently(cat_list);
+last_cat_pos = saved_cat_pos;
+}
+form.monitor();
+int cur_cat_pos = form.get_list_position(cat_list);
+if(cur_cat_pos != -1 && cur_cat_pos != last_cat_pos)
+{
+saved_cat_pos = cur_cat_pos;
+saved_sub_pos = 0;
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+do_build = true;
+continue;
+}
+int cur_focus = form.get_current_focus();
+bool in_group = (cur_focus == sub_list || cur_focus == vol_s || cur_focus == pit_s);
+int cur_sub_pos = form.get_list_position(sub_list);
+if(!in_group && preview_playing)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+}
+if(preview_playing && cur_sub_pos != saved_sub_pos)
+{
+saved_sub_pos = cur_sub_pos;
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(cur_sub_pos > 0)
+{
+string cat = (saved_cat_pos == 0) ? "musics" : "sources";
+string sub = (saved_cat_pos == 0) ? musics_list[cur_sub_pos-1] : sources_list[cur_sub_pos-1];
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+prevslot = t.play_stationary_extended(get_map_sound("builder/audio/"+cat+"/"+sub+"/*loop*"), true, 0, 0, v, pt, false);
+}
+else preview_playing = false;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && in_group)
+{
+if(preview_playing) { t.destroy_sound(prevslot); prevslot = -1; preview_playing = false; }
+else if(cur_sub_pos > 0)
+{
+string cat = (saved_cat_pos == 0) ? "musics" : "sources";
+string sub = (saved_cat_pos == 0) ? musics_list[cur_sub_pos-1] : sources_list[cur_sub_pos-1];
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+prevslot = t.play_stationary_extended(get_map_sound("builder/audio/"+cat+"/"+sub+"/*loop*"), true, 0, 0, v, pt, false);
+preview_playing = true;
+saved_sub_pos = cur_sub_pos;
+}
+keytimer.restart();
+}
+if(preview_playing && prevslot != -1 && in_group)
+{
+float v = form.get_slider(vol_s);
+float pt = form.get_slider(pit_s);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+if(key_pressed(KEY_ESCAPE)) { t.destroy_sound(prevslot); resume_pools(); speak("canceled"); return; }
+if(form.is_pressed(cn)) { t.destroy_sound(prevslot); resume_pools(); speak("canceled"); return; }
+if(form.is_pressed(ok))
+{
+if(form.get_text(lx_in)=="") { speak("Left x is required."); form.focus(lx_in); continue; }
+if(form.get_text(ly_in)=="") { speak("Left y is required."); form.focus(ly_in); continue; }
+if(lz_in != -1 && form.get_text(lz_in)=="") { speak("Left z is required."); form.focus(lz_in); continue; }
+if(form.get_text(rx_in)=="") { speak("Right x is required."); form.focus(rx_in); continue; }
+if(form.get_text(ry_in)=="") { speak("Right y is required."); form.focus(ry_in); continue; }
+if(rz_in != -1 && form.get_text(rz_in)=="") { speak("Right z is required."); form.focus(rz_in); continue; }
+double blx = string_to_number(form.get_text(lx_in));
+double bly = string_to_number(form.get_text(ly_in));
+double blz = (lz_in != -1) ? string_to_number(form.get_text(lz_in)) : 0;
+double brx = string_to_number(form.get_text(rx_in));
+double bry = string_to_number(form.get_text(ry_in));
+double brz = (rz_in != -1) ? string_to_number(form.get_text(rz_in)) : 0;
+string bcat = (saved_cat_pos == 0) ? "musics" : "sources";
+int p = form.get_list_position(sub_list);
+string bsub;
+if(p > 0) bsub = (saved_cat_pos == 0) ? musics_list[p-1] : sources_list[p-1];
+else bsub = "none";
+double bvol = form.get_slider(vol_s);
+double bpit = form.get_slider(pit_s);
+t.destroy_sound(prevslot);
+resume_pools();
+write_speaker(blx, bly, brx, bry, bcat, bsub, bvol, bpit, blz, brz);
+spawn_speaker(blx, bly, brx, bry, bcat, bsub, bvol, bpit, blz, brz);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
+
+void read_speaker(string[] sd)
+{
+double lx=stn(sd[1]);
+double ly=stn(sd[2]);
+double lz=0, rx=0, ry=0, rz=0;
+int o;
+if(mapmode == "3d")
+{
+lz=stn(sd[3]);
+rx=stn(sd[4]);
+ry=stn(sd[5]);
+rz=stn(sd[6]);
+o=7;
+}
+else
+{
+rx=stn(sd[3]);
+ry=stn(sd[4]);
+o=5;
+}
+string sorcetype=sd[o];
+string sorcetype2=sd[o+1];
+double soundvol=stn(sd[o+2]);
+double soundpitch=stn(sd[o+3]);
+spawn_speaker(lx, ly, rx, ry, sorcetype, sorcetype2, soundvol, soundpitch, lz, rz);
+}
+
+void write_speaker(double lx, double ly, double rx, double ry, string sourcetype, string sourcetype2, double vol, double pitch, double lz=0, double rz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords;
+if(mapmode == "3d") coords = lx+" "+ly+" "+lz+" "+rx+" "+ry+" "+rz;
+else coords = lx+" "+ly+" "+rx+" "+ry;
+mapper.write("\r\n"+"speaker "+coords+" "+sourcetype+" "+sourcetype2+" "+vol+" "+pitch);
+mapper.close();
+bump_map_modified();
+}
