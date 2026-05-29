@@ -1,0 +1,56 @@
+Sensors.
+
+A sensor is the contact-triggered variant of a switch. Instead of the player stepping onto a tile and pressing enter to activate it, a sensor fires automatically the moment the player steps into its area, and fires a second time the moment they step back out. Sensors are the right entity any time the activation should happen *because the player is there*, with no deliberate input — pressure plates that open a door while you stand on them, alarm tiles that trigger a fight when you cross a threshold, ambient cues that wake up only while you're in the room, and so on.
+
+Sensors come in two builder variants: the standard sensor (a single tile the player must stand on) and the ranged sensor (a rectangular area the player can be anywhere inside). Both variants share the same fields, command behavior, and audio model — only the coordinate footprint differs.
+
+Sensors versus switches.
+
+Switches are the canonical interactive entity in the game, and most of the design surface a sensor exposes is identical to switches — the on and off command fields use the same slash-command syntax, the same command stacking with optional millisecond delays, the same quoting rules, the same compatibility caveats, and the same ephemeral-construction recipes via /spawn. Read the switches help topic for the full description of how command fields work, what commands behave well in switch-like bindings, and the dozens of useful recipes that apply identically to sensors.
+
+The remainder of this topic only covers what sensors do *differently* from switches.
+
+How sensors activate.
+
+A switch fires whenever the player is inside its area and presses enter. A sensor fires whenever the player crosses into or out of its area, full stop — no key press, no facing requirement. There are exactly two activation events per sensor:
+
+Entry. The frame the player first steps into the sensor's area, the on command runs and the on sound plays. The sensor's internal state becomes on.
+Exit. The frame the player first steps out of the sensor's area, the off command runs and the off sound plays. The sensor's internal state becomes off, and it is armed to fire again on the next entry.
+
+While the player remains inside the area, the sensor does nothing — no repeated firing, no rapid-press behavior. While the player remains outside the area, the sensor does nothing. Activation is entirely about *transitions* in and out, not about continuous presence.
+
+Multiple overlapping sensors all respond independently in the same frame. Walking into a tile that two sensors share fires both on commands at once; walking out fires both off commands. There is no master/dependency relationship between overlapping sensors.
+
+Sound model.
+
+A sensor uses a sound theme from the sensors folder (not the switches folder). Each sensor sound theme provides three clips instead of the switch's two:
+
+On clip (named with on in the file name). Plays once when the player enters the sensor's area.
+Off clip (named with off in the file name). Plays once when the player exits the sensor's area.
+Loop clip (named with loop in the file name). The ambient sound used when looping is enabled, in the same role as a switch's loop.
+
+The on and off clips are the on/off equivalents of a switch's single press clip — distinct sounds for the two activation directions, since a sensor's entry and exit are semantically different events (a switch press is the same action both ways). The looping sound and destroying sound checkboxes work exactly as they do for switches; pair them according to which ambient model you want, and consult the switches help topic's audio behavior matrix for the four interesting combinations.
+
+What sensors don't have.
+
+Sensors deliberately omit the switch's auto activate checkbox. A switch can start in the on state at map load, as if the player had already pressed it once, which is useful for switches representing always-running hardware or for opening-of-map effects. The same idea doesn't translate to a sensor — a sensor that starts "as if the player is on it" without an actual contact is conceptually muddled, and the on-at-spawn use case is better served by other entities (story zones, the map's autoexec macro slot, and so on). If you want a command to fire at map load, use one of those instead.
+
+Single use.
+
+When single use is checked, a sensor still fires both halves of its first activation cycle before disappearing. Entry plays the on sound and runs the on command, the player walks inside, the player walks out, the off command runs and the off sound plays, and *then* the sensor is consumed. This differs slightly from a single-use switch, which disappears immediately after the one press — but it fits the sensor's natural mental model better, since a sensor's "one use" is the full press-and-release rather than a single instantaneous event. The use case is "stand here to break the seal, then walk away to trigger the consequence" — both halves matter and both should run before the sensor vanishes.
+
+A single-use sensor whose off command is empty still fires its off sound on exit before disappearing.
+
+The spier.
+
+The spier reports a sensor with the label sensor (and the size prefix for ranged sensors — for instance 3 x 2 tile sensor). The label is distinct from the switch label so you can tell at a glance which entity is at a coordinate when both kinds sit nearby. Obscurity zones treat sensors as a separate entity category from switches, so you can hide or show sensors independently of switches via the obscurity zone's entity picker.
+
+Authoring sensors by hand.
+
+If you prefer to edit info.sif directly, the on-disk format for a standard sensor line is: sensor x y <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
+For 3d maps insert z right after y: sensor x y z <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
+
+The ranged sensor follows the same line shape but replaces the single coordinates with min/max pairs: ranged_sensor <minx> <maxx> <miny> <maxy> <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
+For 3d maps insert min and max z right after max y: ranged_sensor <minx> <maxx> <miny> <maxy> <minz> <maxz> <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
+
+The three bool fields are written as the literal words true or false. Both command fields must be present, even if empty (write empty double quotes for an empty side). Sensor types must match a folder name under the sensors folder, or the literal word none for a silent sensor. There is no toggled field on disk for sensors — unlike switches, which carry one to support the auto activate option, sensors always start in the off state. Hand-authored lines load the same as builder-authored lines, and the builder will round-trip any line that follows this format.

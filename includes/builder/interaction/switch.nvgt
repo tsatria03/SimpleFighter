@@ -7,6 +7,9 @@ bool toggled;
 bool destroying_sound;
 bool looping;
 bool singleuse;
+bool contact_trigger;
+bool was_inside;
+sound_pool@ pool;
 int switchsound, pressound;
 int minx, maxx;
 int miny, maxy;
@@ -14,7 +17,7 @@ int minz, maxz;
 string switchtype;
 string on_command;
 string off_command;
-switcher(int mnx, int mxx, int mny, int mxy, string stp, string on_cmd, string off_cmd, bool tg, bool dst_snd, bool lp, bool sgl, int mnz=0, int mxz=0)
+switcher(int mnx, int mxx, int mny, int mxy, string stp, string on_cmd, string off_cmd, bool tg, bool dst_snd, bool lp, bool sgl, int mnz=0, int mxz=0, bool ctc=false)
 {
 minx=mnx;
 maxx=mxx;
@@ -29,12 +32,16 @@ toggled=tg;
 destroying_sound=dst_snd;
 looping=lp;
 singleuse=sgl;
+contact_trigger=ctc;
+was_inside=tg;
+@pool = contact_trigger ? @sensorpool : @switchpool;
+string folder = contact_trigger ? "builder/interaction/sensors/" : "builder/interaction/switches/";
 bool should_play_at_spawn = looping && (!destroying_sound || toggled);
 if(should_play_at_spawn)
 {
 double zr = (mapmode == "3d") ? (maxz-minz) : 0;
-switchsound=switchpool.play_extended_3d(get_map_sound("builder/interaction/switches/"+switchtype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
-switchpool.update_sound_range_3d(switchsound, 0, maxx-minx, 0, maxy-miny, 0, zr);
+switchsound=pool.play_extended_3d(get_map_sound(folder+switchtype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+pool.update_sound_range_3d(switchsound, 0, maxx-minx, 0, maxy-miny, 0, zr);
 }
 if(toggled && on_command != "") comstack(on_command);
 }
@@ -46,13 +53,45 @@ for(uint i=0; i<switchers.length(); i++)
 if(@switchers[i] == null) continue;
 bool sw_match = me.x>=switchers[i].minx && me.x<=switchers[i].maxx && me.y>=switchers[i].miny && me.y<=switchers[i].maxy;
 if(mapmode == "3d") sw_match = sw_match && me.z>=switchers[i].minz && me.z<=switchers[i].maxz;
+if(switchers[i].contact_trigger)
+{
+string folder = "builder/interaction/sensors/";
+if(sw_match && !switchers[i].was_inside)
+{
+switchers[i].was_inside = true;
+switchers[i].toggled = true;
+if(switchers[i].looping == true && switchers[i].destroying_sound == true)
+{
+switchers[i].pool.destroy_sound(switchers[i].switchsound);
+double zr = (mapmode == "3d") ? (switchers[i].maxz-switchers[i].minz) : 0;
+switchers[i].switchsound = switchers[i].pool.play_extended_3d(get_map_sound(folder+switchers[i].switchtype+"/*loop*"), me.x, me.y, me.z, switchers[i].minx, switchers[i].miny, switchers[i].minz, calculate_theta(me_rotation), 0,0,0,0,0,0, true, 0, 0, 0, 100, false);
+switchers[i].pool.update_sound_range_3d(switchers[i].switchsound, 0, switchers[i].maxx-switchers[i].minx, 0, switchers[i].maxy-switchers[i].miny, 0, zr);
+}
+switchers[i].pressound = switchers[i].pool.play_stationary(get_map_sound(folder+switchers[i].switchtype+"/*on*"), false);
+if(switchers[i].on_command != "") comstack(switchers[i].on_command);
+continue;
+}
+if(!sw_match && switchers[i].was_inside)
+{
+switchers[i].was_inside = false;
+switchers[i].toggled = false;
+if(switchers[i].looping == true && switchers[i].destroying_sound == true) switchers[i].pool.destroy_sound(switchers[i].switchsound);
+switchers[i].pressound = switchers[i].pool.play_stationary(get_map_sound(folder+switchers[i].switchtype+"/*off*"), false);
+string cmd_to_run = switchers[i].off_command;
+bool should_die = switchers[i].singleuse;
+if(should_die) @switchers[i] = null;
+if(cmd_to_run != "") comstack(cmd_to_run);
+continue;
+}
+continue;
+}
 if(sw_match and controls.action_repeating("interact"))
 {
 if(switchers[i].singleuse==true)
 {
 switchers[i].toggled=false;
-switchpool.destroy_sound(switchers[i].switchsound);
-switchers[i].pressound=switchpool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
+switchers[i].pool.destroy_sound(switchers[i].switchsound);
+switchers[i].pressound=switchers[i].pool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
 string cmd_to_run = switchers[i].on_command;
 @switchers[i] = null;
 if(cmd_to_run != "") comstack(cmd_to_run);
@@ -61,8 +100,8 @@ return;
 if(switchers[i].toggled==true)
 {
 switchers[i].toggled=false;
-if(switchers[i].looping==true && switchers[i].destroying_sound==true) switchpool.destroy_sound(switchers[i].switchsound);
-switchers[i].pressound=switchpool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
+if(switchers[i].looping==true && switchers[i].destroying_sound==true) switchers[i].pool.destroy_sound(switchers[i].switchsound);
+switchers[i].pressound=switchers[i].pool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
 if(switchers[i].off_command != "") comstack(switchers[i].off_command);
 return;
 }
@@ -71,21 +110,21 @@ else if(switchers[i].toggled==false)
 switchers[i].toggled=true;
 if(switchers[i].looping==true && switchers[i].destroying_sound==true)
 {
-switchpool.destroy_sound(switchers[i].switchsound);
+switchers[i].pool.destroy_sound(switchers[i].switchsound);
 double zr = (mapmode == "3d") ? (switchers[i].maxz-switchers[i].minz) : 0;
-switchers[i].switchsound=switchpool.play_extended_3d(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*loop*"),me.x,me.y,me.z,switchers[i].minx,switchers[i].miny,switchers[i].minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
-switchpool.update_sound_range_3d(switchers[i].switchsound, 0, switchers[i].maxx-switchers[i].minx, 0, switchers[i].maxy-switchers[i].miny, 0, zr);
+switchers[i].switchsound=switchers[i].pool.play_extended_3d(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*loop*"),me.x,me.y,me.z,switchers[i].minx,switchers[i].miny,switchers[i].minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+switchers[i].pool.update_sound_range_3d(switchers[i].switchsound, 0, switchers[i].maxx-switchers[i].minx, 0, switchers[i].maxy-switchers[i].miny, 0, zr);
 }
-switchers[i].pressound=switchpool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
+switchers[i].pressound=switchers[i].pool.play_stationary(get_map_sound("builder/interaction/switches/"+switchers[i].switchtype+"/*press*"),false);
 if(switchers[i].on_command != "") comstack(switchers[i].on_command);
 return;
 }
 }
 }
 }
-void spawn_switcher(int mnx, int mxx, int mny, int mxy, string switchtype, string on_command, string off_command, bool toggled, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0)
+void spawn_switcher(int mnx, int mxx, int mny, int mxy, string switchtype, string on_command, string off_command, bool toggled, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0, bool contact_trigger=false)
 {
-switcher sc1(mnx, mxx, mny, mxy, switchtype, on_command, off_command, toggled, destroying_sound, looping, singleuse, mnz, mxz);
+switcher sc1(mnx, mxx, mny, mxy, switchtype, on_command, off_command, toggled, destroying_sound, looping, singleuse, mnz, mxz, contact_trigger);
 switchers.insert_last(sc1);
 }
 void destroy_all_switchers()
@@ -93,7 +132,7 @@ void destroy_all_switchers()
 for(uint i=0; i<switchers.length(); i++)
 {
 if(@switchers[i] == null) continue;
-switchpool.destroy_sound(switchers[i].switchsound);
+switchers[i].pool.destroy_sound(switchers[i].switchsound);
 }
 switchers.resize(0);
 }
