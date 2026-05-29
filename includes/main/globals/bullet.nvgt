@@ -75,6 +75,7 @@ void bulletloop()
 {
 for(uint i=0; i<bullets.length(); i++)
 {
+if(@bullets[i] == null) continue;
 if(bullets[i].speedtimer.elapsed>=bullets[i].speed)
 {
 bulletpool.update_sound_3d(bullets[i].bullsound,bullets[i].bullx,bullets[i].bully, bullets[i].bullz);
@@ -112,6 +113,7 @@ else bullets[i].bully--;
 bool bull_hit_wall = false;
 for(uint w=0; w<walls.length(); w++)
 {
+if(@walls[w] == null) continue;
 if(walls[w].minx<=bullets[i].bullx and walls[w].maxx>=bullets[i].bullx and walls[w].miny<=bullets[i].bully and walls[w].maxy>=bullets[i].bully)
 {
 if(mapmode == "3d" and (bullets[i].bullz<walls[w].minz or bullets[i].bullz>walls[w].maxz)) continue;
@@ -135,7 +137,7 @@ if(roll < wepchar.refchance)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
 wepchar.sound_slot=p.play_stationary_extended(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*block*"),false,0,0,0,100,false);
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 else
@@ -149,7 +151,7 @@ kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took " + shieldtype + " 
 shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100,false);
 try_bullet_splash(i, "", -1, mapmode == "3d");
 if(bullets[i].firer_npc>=0 and uint(bullets[i].firer_npc)<npcs.length()) try_shield_launch(int(npcs[bullets[i].firer_npc].x), int(npcs[bullets[i].firer_npc].y), int(npcs[bullets[i].firer_npc].z), bullets[i].damage);
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 else
@@ -188,7 +190,7 @@ painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
 }
 if(bullets[i].stun > 0) stun_target("me", "", bullets[i].stun);
 try_bullet_splash(i, "", -1, mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
@@ -202,7 +204,7 @@ kombatlog.insert_last(bullets[i].bulltype2 + "'s attack took " + shieldtype + " 
 shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100,false);
 try_bullet_splash(i, "", -1, mapmode == "3d");
 if(bullets[i].firer_npc>=0 and uint(bullets[i].firer_npc)<npcs.length()) try_shield_launch(int(npcs[bullets[i].firer_npc].x), int(npcs[bullets[i].firer_npc].y), int(npcs[bullets[i].firer_npc].z), bullets[i].damage);
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 else
@@ -241,19 +243,20 @@ painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
 }
 if(bullets[i].stun > 0) stun_target("me", "", bullets[i].stun);
 try_bullet_splash(i, "", -1, mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 if(absolute(bullets[i].bullx-bullets[i].spawn_x)>bullets[i].range or absolute(bullets[i].bully-bullets[i].spawn_y)>bullets[i].range2 or (mapmode == "3d" and absolute(bullets[i].bullz-bullets[i].spawn_z)>bullets[i].range3))
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint j=0; j<npcs.length(); j++)
 {
+if(@npcs[j] == null) continue;
 if(int(j) == bullets[i].firer_npc) continue;
 if(npcs[j].x==bullets[i].bullx and npcs[j].y==bullets[i].bully and (mapmode != "3d" or npcs[j].z==bullets[i].bullz))
 {
@@ -271,7 +274,7 @@ npcs[j].hurtdelay=round(npool.get_sound_length(npcs[j].refsound),0);
 npcs[j].hurttimer.restart();
 npcs[j].hurting=true;
 try_bullet_splash(i, "npc", int(j), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -299,7 +302,7 @@ cloner_clone_position(npcs[j].x, npcs[j].y, npcs[j].z, cx, cy, cz);
 spawn_npc(cx, cy, npcs[j].orig_scale_level, npcs[j].path, npcs[j].category, npcs[j].subtype, cz);
 }
 try_bullet_splash(i, "npc", int(j), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -327,12 +330,13 @@ cloner_clone_position(npcs[j].x, npcs[j].y, npcs[j].z, cx, cy, cz);
 spawn_npc(cx, cy, npcs[j].orig_scale_level, npcs[j].path, npcs[j].category, npcs[j].subtype, cz);
 }
 try_bullet_splash(i, "npc", int(j), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint jt=0; jt<ttsenemies.length(); jt++)
 {
+if(@ttsenemies[jt] == null) continue;
 if(ttsenemies[jt].ttsemx==bullets[i].bullx and ttsenemies[jt].ttsemy==bullets[i].bully and (mapmode != "3d" or ttsenemies[jt].ttsemz==bullets[i].bullz))
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -357,12 +361,13 @@ cloner_clone_position(ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[j
 spawn_ttsenemie(cx, cy, ttsenemies[jt].ttsenemaxhealth, ttsenemies[jt].attack, ttsenemies[jt].defense, ttsenemies[jt].firetime, ttsenemies[jt].ttsenemietime, ttsenemies[jt].ttsemtext, ttsenemies[jt].ttsemhurt, ttsenemies[jt].ttsemdeath, ttsenemies[jt].voice, ttsenemies[jt].rate, ttsenemies[jt].volume, ttsenemies[jt].pitch, cz, ttsenemies[jt].weapontype, ttsenemies[jt].weapontype2);
 }
 try_bullet_splash(i, "tts", int(jt), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i2=0; i2<calendars.length(); i2++)
 {
+if(@calendars[i2] == null) continue;
 if(calendars[i2].calendarx==bullets[i].bullx and calendars[i2].calendary==bullets[i].bully and (mapmode != "3d" or calendars[i2].calendarz==bullets[i].bullz) and calendars[i2].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -378,15 +383,16 @@ if(!bullets[i].is_cloner || bullets[i].damage >= 1)
 {
 calpool.destroy_sound(calendars[i2].calendarsound);
 calendars[i2].hurtsound=calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[i2].calendartype+"/*break*"),me.x,me.y,me.z,calendars[i2].calendarx,calendars[i2].calendary,calendars[i2].calendarz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-calendars.remove_at(i2);
+@calendars[i2] = null;
 }
 try_bullet_splash(i, "", -1, mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i3=0; i3<clocks.length(); i3++)
 {
+if(@clocks[i3] == null) continue;
 if(clocks[i3].clockx==bullets[i].bullx and clocks[i3].clocky==bullets[i].bully and (mapmode != "3d" or clocks[i3].clockz==bullets[i].bullz) and clocks[i3].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -402,15 +408,16 @@ if(!bullets[i].is_cloner || bullets[i].damage >= 1)
 {
 clockpool.destroy_sound(clocks[i3].clocksound);
 clocks[i3].hurtsound=clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[i3].clocktype+"/*break*"),me.x,me.y,me.z,clocks[i3].clockx,clocks[i3].clocky,clocks[i3].clockz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-clocks.remove_at(i3);
+@clocks[i3] = null;
 }
 try_bullet_splash(i, "", -1, mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i4=0; i4<doors.length(); i4++)
 {
+if(@doors[i4] == null) continue;
 if(doors[i4].minx<=bullets[i].bullx and doors[i4].maxx>=bullets[i].bullx and doors[i4].miny<=bullets[i].bully and doors[i4].maxy>=bullets[i].bully and (mapmode != "3d" or (doors[i4].minz<=bullets[i].bullz and doors[i4].maxz>=bullets[i].bullz)) and doors[i4].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -430,12 +437,13 @@ int ddz = cz - doors[i4].minz;
 spawn_door(doors[i4].minx+ddx, doors[i4].maxx+ddx, doors[i4].miny+ddy, doors[i4].maxy+ddy, doors[i4].endx+ddx, doors[i4].endy+ddy, doors[i4].doorhealth, doors[i4].doormaxhealth, doors[i4].speed, doors[i4].looptype, doors[i4].movetype, doors[i4].opentype, doors[i4].closetype, doors[i4].desttype, doors[i4].lockmode, doors[i4].doorid, doors[i4].drpass, doors[i4].locktype, doors[i4].automatic, doors[i4].destroyable, doors[i4].is_ranged, doors[i4].minz+ddz, doors[i4].maxz+ddz, doors[i4].endz+ddz);
 }
 try_bullet_splash(i, "door", int(i4), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i6=0; i6<objs.length(); i6++)
 {
+if(@objs[i6] == null) continue;
 if(objs[i6].itx==bullets[i].bullx and objs[i6].ity==bullets[i].bully and (mapmode != "3d" or objs[i6].itz==bullets[i].bullz))
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -451,15 +459,16 @@ if(!bullets[i].is_cloner || bullets[i].damage >= 1)
 {
 itempool.destroy_sound(objs[i6].objsound);
 objs[i6].hurtsound=itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[i6].objtype+"/"+objs[i6].objtype2+"/*break*"),me.x,me.y,me.z,objs[i6].itx,objs[i6].ity,objs[i6].itz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-objs.remove_at(i6);
+@objs[i6] = null;
 }
 try_bullet_splash(i, "", -1, mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i9=0; i9<signs.length(); i9++)
 {
+if(@signs[i9] == null) continue;
 if(signs[i9].signx==bullets[i].bullx and signs[i9].signy==bullets[i].bully and (mapmode != "3d" or signs[i9].signz==bullets[i].bullz) and signs[i9].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -475,15 +484,16 @@ if(!bullets[i].is_cloner || bullets[i].damage >= 1)
 {
 signpool.destroy_sound(signs[i9].signsound);
 signs[i9].hurtsound=signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i9].signtype+"/*break*"),me.x,me.y,me.z,signs[i9].signx,signs[i9].signy,signs[i9].signz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-signs.remove_at(i9);
+@signs[i9] = null;
 }
 try_bullet_splash(i, "", -1, mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i10=0; i10<spikes.length(); i10++)
 {
+if(@spikes[i10] == null) continue;
 if(spikes[i10].minx<=bullets[i].bullx and spikes[i10].maxx>=bullets[i].bullx and spikes[i10].miny<=bullets[i].bully and spikes[i10].maxy>=bullets[i].bully and (mapmode != "3d" or (spikes[i10].minz<=bullets[i].bullz and spikes[i10].maxz>=bullets[i].bullz)) and spikes[i10].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -505,12 +515,13 @@ int spdz = cz - int(spikes[i10].minz);
 spawn_spike(spikes[i10].minx+spdx, spikes[i10].maxx+spdx, spikes[i10].miny+spdy, spikes[i10].maxy+spdy, spikes[i10].spikehealth, spikes[i10].spikemaxhealth, spikes[i10].damage, spikes[i10].spiketime, spikes[i10].spiketype, spikes[i10].destroyable, spikes[i10].minz+spdz, spikes[i10].maxz+spdz);
 }
 try_bullet_splash(i, "spike", int(i10), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i12=0; i12<vehicles.length(); i12++)
 {
+if(@vehicles[i12] == null) continue;
 if(vehicles[i12].vehx==bullets[i].bullx and vehicles[i12].vehy==bullets[i].bully and (mapmode != "3d" or vehicles[i12].vehz==bullets[i].bullz) and vehicles[i12].moveable==false)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -527,12 +538,13 @@ cloner_clone_position(vehicles[i12].vehx, vehicles[i12].vehy, vehicles[i12].vehz
 spawn_vehicle(cx, cy, vehicles[i12].vehhealth, vehicles[i12].vehmaxhealth, vehicles[i12].damage, vehicles[i12].vehspeed, vehicles[i12].accel_delay, vehicles[i12].brake_delay, vehicles[i12].vehtype, vehicles[i12].fireable, cz);
 }
 try_bullet_splash(i, "vehicle", int(i12), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i13=0; i13<walls.length(); i13++)
 {
+if(@walls[i13] == null) continue;
 if(walls[i13].minx<=bullets[i].bullx and walls[i13].maxx>=bullets[i].bullx and walls[i13].miny<=bullets[i].bully and walls[i13].maxy>=bullets[i].bully and (mapmode != "3d" or (walls[i13].minz<=bullets[i].bullz and walls[i13].maxz>=bullets[i].bullz)) and walls[i13].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -554,12 +566,13 @@ int wdz = cz - int(walls[i13].minz);
 spawn_wall(walls[i13].minx+wdx, walls[i13].maxx+wdx, walls[i13].miny+wdy, walls[i13].maxy+wdy, walls[i13].wallhealth, walls[i13].wallmaxhealth, walls[i13].wall, walls[i13].volume, walls[i13].pitch, walls[i13].destroyable, walls[i13].transparent, walls[i13].minz+wdz, walls[i13].maxz+wdz);
 }
 try_bullet_splash(i, "wall", int(i13), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i15=0; i15<doors.length(); i15++)
 {
+if(@doors[i15] == null) continue;
 if(doors[i15].minx<=bullets[i].bullx and doors[i15].maxx>=bullets[i].bullx and doors[i15].miny<=bullets[i].bully and doors[i15].maxy>=bullets[i].bully and (mapmode != "3d" or (doors[i15].minz<=bullets[i].bullz and doors[i15].maxz>=bullets[i].bullz)) and doors[i15].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -579,12 +592,13 @@ int ddz = cz - doors[i15].minz;
 spawn_door(doors[i15].minx+ddx, doors[i15].maxx+ddx, doors[i15].miny+ddy, doors[i15].maxy+ddy, doors[i15].endx+ddx, doors[i15].endy+ddy, doors[i15].doorhealth, doors[i15].doormaxhealth, doors[i15].speed, doors[i15].looptype, doors[i15].movetype, doors[i15].opentype, doors[i15].closetype, doors[i15].desttype, doors[i15].lockmode, doors[i15].doorid, doors[i15].drpass, doors[i15].locktype, doors[i15].automatic, doors[i15].destroyable, doors[i15].is_ranged, doors[i15].minz+ddz, doors[i15].maxz+ddz, doors[i15].endz+ddz);
 }
 try_bullet_splash(i, "door", int(i15), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i18=0; i18<sucams.length(); i18++)
 {
+if(@sucams[i18] == null) continue;
 if(sucams[i18].sucamx==bullets[i].bullx and sucams[i18].sucamy==bullets[i].bully and (mapmode != "3d" or sucams[i18].sucamz==bullets[i].bullz))
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -601,12 +615,13 @@ cloner_clone_position(sucams[i18].sucamx, sucams[i18].sucamy, sucams[i18].sucamz
 spawn_camera(cx, cy, sucams[i18].vision_x, sucams[i18].vision_y, sucams[i18].camdir, sucams[i18].turntime, sucams[i18].camhealth, sucams[i18].cammaxhealth, sucams[i18].camlevel, sucams[i18].camxp, sucams[i18].cameratype, cz, sucams[i18].vision_z);
 }
 try_bullet_splash(i, "sucam", int(i18), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i19=0; i19<bikes.length(); i19++)
 {
+if(@bikes[i19] == null) continue;
 if(bikes[i19].bikex==bullets[i].bullx and bikes[i19].bikey==bullets[i].bully and (mapmode != "3d" or bikes[i19].bikez==bullets[i].bullz) and bikes[i19].moveable==false)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -623,12 +638,13 @@ cloner_clone_position(bikes[i19].bikex, bikes[i19].bikey, bikes[i19].bikez, cx, 
 spawn_bike(cx, cy, bikes[i19].bikehealth, bikes[i19].bikemaxhealth, bikes[i19].bikespeed, bikes[i19].biketype, cz);
 }
 try_bullet_splash(i, "bike", int(i19), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i20=0; i20<staircases.length(); i20++)
 {
+if(@staircases[i20] == null) continue;
 if(staircases[i20].minx<=bullets[i].bullx and staircases[i20].maxx>=bullets[i].bullx and staircases[i20].miny<=bullets[i].bully and staircases[i20].maxy>=bullets[i].bully and (mapmode != "3d" or (staircases[i20].minz<=bullets[i].bullz and staircases[i20].maxz>=bullets[i].bullz)) and staircases[i20].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -650,7 +666,7 @@ int sdz = cz - int(staircases[i20].minz);
 spawn_staircase(staircases[i20].minx+sdx, staircases[i20].maxx+sdx, staircases[i20].miny+sdy, staircases[i20].maxy+sdy, staircases[i20].stairshealth, staircases[i20].stairsmaxhealth, staircases[i20].tile, staircases[i20].stairsvolume, staircases[i20].stairspitch, staircases[i20].destroyable, staircases[i20].overlap, staircases[i20].minz+sdz, staircases[i20].maxz+sdz);
 }
 try_bullet_splash(i, "staircase", int(i20), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
@@ -678,12 +694,13 @@ int pdz = cz - int(platforms[i21].z);
 spawn_platform(platforms[i21].minx+pdx, platforms[i21].maxx+pdx, platforms[i21].miny+pdy, platforms[i21].maxy+pdy, platforms[i21].plathealth, platforms[i21].platmaxhealth, platforms[i21].tile, platforms[i21].volume, platforms[i21].pitch, platforms[i21].destroyable, platforms[i21].overlap, false, platforms[i21].z+pdz);
 }
 try_bullet_splash(i, "platform", int(i21), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
 for(uint i22=0; i22<aircrafts.length(); i22++)
 {
+if(@aircrafts[i22] == null) continue;
 if(aircrafts[i22].plainx==bullets[i].bullx and aircrafts[i22].plainy==bullets[i].bully and (mapmode != "3d" or aircrafts[i22].plainz==bullets[i].bullz) and aircrafts[i22].moveable==false)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
@@ -700,7 +717,7 @@ cloner_clone_position(aircrafts[i22].plainx, aircrafts[i22].plainy, aircrafts[i2
 spawn_aircraft(cx, cy, aircrafts[i22].plainhealth, aircrafts[i22].plainmaxhealth, aircrafts[i22].plaintype, cz);
 }
 try_bullet_splash(i, "aircraft", int(i22), mapmode == "3d");
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
@@ -734,7 +751,7 @@ else
 {
 try_bullet_splash(i, "projectile", int(i23), mapmode == "3d");
 }
-bullets.remove_at(i);
+@bullets[i] = null;
 return;
 }
 }
@@ -776,36 +793,33 @@ void destroy_all_bullets()
 {
 for(uint i=0; i<bullets.length(); i++)
 {
+if(@bullets[i] == null) continue;
 bulletpool.destroy_sound(bullets[i].bullsound);
 }
 bullets.resize(0);
 }
 void clean_dead_npc_bullets(int dead_index)
 {
-for(uint b=0; b<bullets.length();)
+for(uint b=0; b<bullets.length(); b++)
 {
+if(@bullets[b] == null) continue;
 if(bullets[b].firer_npc==dead_index)
 {
 bulletpool.destroy_sound(bullets[b].bullsound);
-bullets.remove_at(b);
-}
-else
-{
-if(bullets[b].firer_npc>dead_index) bullets[b].firer_npc-=1;
-b++;
+@bullets[b] = null;
 }
 }
 }
 void destroy_npc_bullets()
 {
-for(uint b=0; b<bullets.length();)
+for(uint b=0; b<bullets.length(); b++)
 {
+if(@bullets[b] == null) continue;
 if(bullets[b].firer_npc!=-1)
 {
 bulletpool.destroy_sound(bullets[b].bullsound);
-bullets.remove_at(b);
+@bullets[b] = null;
 }
-else b++;
 }
 }
 
@@ -815,6 +829,7 @@ if(sr <= 0) return;
 int remaining = sc;
 for(uint j = 0; j < npcs.length(); j++)
 {
+if(@npcs[j] == null) continue;
 if(skip_kind == "npc" and int(j) == skip_idx) continue;
 if(int(j) == firer_npc) continue;
 if(npcs[j].targets.length() == 0) continue;
@@ -860,6 +875,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint jt = 0; jt < ttsenemies.length(); jt++)
 {
+if(@ttsenemies[jt] == null) continue;
 if(skip_kind == "tts" and int(jt) == skip_idx) continue;
 int dx = absolute(int(ttsenemies[jt].ttsemx) - bx);
 int dy = absolute(int(ttsenemies[jt].ttsemy) - by);
@@ -881,6 +897,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if(skip_kind == "wall" and int(i) == skip_idx) continue;
 if(!walls[i].destroyable) continue;
 int dx = max(0, max(int(walls[i].minx) - bx, bx - int(walls[i].maxx)));
@@ -901,6 +918,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < doors.length(); i++)
 {
+if(@doors[i] == null) continue;
 if(skip_kind == "door" and int(i) == skip_idx) continue;
 if(!doors[i].destroyable) continue;
 int dx = max(0, max(int(doors[i].minx) - bx, bx - int(doors[i].maxx)));
@@ -916,6 +934,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(int i = int(calendars.length()) - 1; i >= 0; i--)
 {
+if(@calendars[i] == null) continue;
 if(skip_kind == "calendar" and i == skip_idx) continue;
 if(!calendars[i].destroyable) continue;
 int dx = absolute(int(calendars[i].calendarx) - bx);
@@ -925,11 +944,12 @@ if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 calpool.destroy_sound(calendars[i].calendarsound);
 calendars[i].hurtsound = calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[i].calendartype+"/*break*"), me.x, me.y, me.z, calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-calendars.remove_at(uint(i));
+@calendars[i] = null;
 if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(int i = int(clocks.length()) - 1; i >= 0; i--)
 {
+if(@clocks[i] == null) continue;
 if(skip_kind == "clock" and i == skip_idx) continue;
 if(!clocks[i].destroyable) continue;
 int dx = absolute(int(clocks[i].clockx) - bx);
@@ -939,11 +959,12 @@ if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 clockpool.destroy_sound(clocks[i].clocksound);
 clocks[i].hurtsound = clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[i].clocktype+"/*break*"), me.x, me.y, me.z, clocks[i].clockx, clocks[i].clocky, clocks[i].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-clocks.remove_at(uint(i));
+@clocks[i] = null;
 if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(int i = int(signs.length()) - 1; i >= 0; i--)
 {
+if(@signs[i] == null) continue;
 if(skip_kind == "sign" and i == skip_idx) continue;
 if(!signs[i].destroyable) continue;
 int dx = absolute(int(signs[i].signx) - bx);
@@ -953,11 +974,12 @@ if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 signpool.destroy_sound(signs[i].signsound);
 signs[i].hurtsound = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i].signtype+"/*break*"), me.x, me.y, me.z, signs[i].signx, signs[i].signy, signs[i].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-signs.remove_at(uint(i));
+@signs[i] = null;
 if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(int i = int(objs.length()) - 1; i >= 0; i--)
 {
+if(@objs[i] == null) continue;
 if(skip_kind == "obj" and i == skip_idx) continue;
 int dx = absolute(int(objs[i].itx) - bx);
 int dy = absolute(int(objs[i].ity) - by);
@@ -966,11 +988,12 @@ if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 itempool.destroy_sound(objs[i].objsound);
 objs[i].hurtsound = itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*break*"), me.x, me.y, me.z, objs[i].itx, objs[i].ity, objs[i].itz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-objs.remove_at(uint(i));
+@objs[i] = null;
 if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < staircases.length(); i++)
 {
+if(@staircases[i] == null) continue;
 if(skip_kind == "staircase" and int(i) == skip_idx) continue;
 if(!staircases[i].destroyable) continue;
 int dx = max(0, max(int(staircases[i].minx) - bx, bx - int(staircases[i].maxx)));
@@ -1012,6 +1035,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < spikes.length(); i++)
 {
+if(@spikes[i] == null) continue;
 if(skip_kind == "spike" and int(i) == skip_idx) continue;
 if(!spikes[i].destroyable) continue;
 int dx = max(0, max(int(spikes[i].minx) - bx, bx - int(spikes[i].maxx)));
@@ -1032,6 +1056,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < sucams.length(); i++)
 {
+if(@sucams[i] == null) continue;
 if(skip_kind == "sucam" and int(i) == skip_idx) continue;
 int dx = absolute(int(sucams[i].sucamx) - bx);
 int dy = absolute(int(sucams[i].sucamy) - by);
@@ -1066,6 +1091,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < vehicles.length(); i++)
 {
+if(@vehicles[i] == null) continue;
 if(skip_kind == "vehicle" and int(i) == skip_idx) continue;
 if(vehicles[i].moveable) continue;
 int dx = absolute(int(vehicles[i].vehx) - bx);
@@ -1081,6 +1107,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < aircrafts.length(); i++)
 {
+if(@aircrafts[i] == null) continue;
 if(skip_kind == "aircraft" and int(i) == skip_idx) continue;
 if(aircrafts[i].moveable) continue;
 int dx = absolute(int(aircrafts[i].plainx) - bx);
@@ -1096,6 +1123,7 @@ if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }
 for(uint i = 0; i < bikes.length(); i++)
 {
+if(@bikes[i] == null) continue;
 if(skip_kind == "bike" and int(i) == skip_idx) continue;
 if(bikes[i].moveable) continue;
 int dx = absolute(int(bikes[i].bikex) - bx);

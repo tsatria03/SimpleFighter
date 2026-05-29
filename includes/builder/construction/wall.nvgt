@@ -55,6 +55,7 @@ void get_all_wall_tiles(double x, double y, array<string>@ walls_out, array<doub
 {
 for (uint i = 0; i < walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if (walls[i].minx <= x && walls[i].maxx >= x && walls[i].miny <= y && walls[i].maxy >= y)
 {
 walls_out.insert_last(walls[i].wall);
@@ -67,6 +68,7 @@ void wallcheck()
 {
 for(uint i=0; i<walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if(walls[i].wallhealth<=0)
 {
 p.destroy_sound(walls[i].hurtsound);
@@ -75,7 +77,7 @@ p.update_sound_3d(walls[i].defsound,walls[i].minx,walls[i].miny,walls[i].minz);
 p.update_sound_range_3d(walls[i].defsound,0,walls[i].maxx-walls[i].minx,0,walls[i].maxy-walls[i].miny, 0, walls[i].maxz-walls[i].minz);
 for(int j = int(walls[i].platform_ids.length()) - 1; j >= 0; j--)
 remove_platform(walls[i].platform_ids[j]);
-walls.remove_at(i);
+@walls[i] = null;
 return;
 }
 }
@@ -92,6 +94,7 @@ void bump_wall_at(double x, double y, double z)
 if(!wallbump && wall_hit_once) return;
 for(uint i = 0; i < walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if(x >= walls[i].minx && x <= walls[i].maxx
 && y >= walls[i].miny && y <= walls[i].maxy
 && z >= walls[i].minz && z <= walls[i].maxz)
@@ -109,6 +112,7 @@ string wall_tile_at(double x, double y)
 {
 for(uint i = 0; i < walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
 return walls[i].wall;
 }
@@ -118,6 +122,7 @@ string wall_tile_at(double x, double y, double z)
 {
 for(uint i = 0; i < walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
 {
 if(mapmode == "3d" && (z < walls[i].minz || z > walls[i].maxz)) continue;
@@ -130,6 +135,7 @@ bool is_transparent_wall(int x, int y)
 {
 for(uint i = 0; i < walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
 {
 return walls[i].transparent;
@@ -141,6 +147,7 @@ bool is_transparent_wall(int x, int y, int z)
 {
 for(uint i = 0; i < walls.length(); i++)
 {
+if(@walls[i] == null) continue;
 if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
 {
 if(mapmode == "3d" && (z < walls[i].minz || z > walls[i].maxz)) continue;
@@ -157,7 +164,7 @@ return walls.length() - 1;
 }
 void update_wall(int id, double x1, double x2, double y1, double y2)
 {
-if (id >= 0 && id < walls.length())
+if (id >= 0 && id < walls.length() && @walls[id] != null)
 {
 walls[id].minx = x1;
 walls[id].maxx = x2;
@@ -167,9 +174,9 @@ walls[id].maxy = y2;
 }
 void remove_wall(int id)
 {
-if (id >= 0 && id < walls.length())
+if (id >= 0 && id < walls.length() && @walls[id] != null)
 {
-walls.remove_at(id);
+@walls[id] = null;
 }
 }
 void destroy_all_walls()

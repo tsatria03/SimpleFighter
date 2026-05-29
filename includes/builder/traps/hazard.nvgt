@@ -47,6 +47,7 @@ void hazardcheck()
 {
 for (uint i=0; i<hazards.length(); i++)
 {
+if(@hazards[i] == null) continue;
 if(player_in_hazard(i) and !inplain and !glider_engine_on)
 {
 if(lifecard>=2)
@@ -71,7 +72,7 @@ hazardpool.destroy_sound(hazards[i].hazardsound);
 dlgplay(get_map_sound("builder/traps/hazards/"+hazards[i].hazardtype+"/*fall*"));
 remove_platform(hazards[i].platid);
 remove_platform(hazards[i].platid2);
-hazards.remove_at(i);
+@hazards[i] = null;
 clearmap(true);
 setupmenu();
 m.add_item("yes");
@@ -126,7 +127,7 @@ return hazards.length() - 1;
 }
 void update_hazard(int id, double minx, double maxx, double miny, double maxy, double minz=0, double maxz=0)
 {
-if (id >= 0 && id < hazards.length())
+if (id >= 0 && id < hazards.length() && @hazards[id] != null)
 {
 hazards[id].minx = minx;
 hazards[id].maxx = maxx;
@@ -147,16 +148,17 @@ hazardpool.update_sound_range_3d(hazards[id].hazardsound, 0, maxx - minx, 0, max
 }
 void remove_hazard(int id)
 {
-if (id >= 0 && id < hazards.length())
+if (id >= 0 && id < hazards.length() && @hazards[id] != null)
 {
 hazardpool.destroy_sound(hazards[id].hazardsound);
-hazards.remove_at(id);
+@hazards[id] = null;
 }
 }
 void destroy_all_hazards()
 {
 for(uint i=0; i<hazards.length(); i++)
 {
+if(@hazards[i] == null) continue;
 hazardpool.destroy_sound(hazards[i].hazardsound);
 }
 hazards.resize(0);
