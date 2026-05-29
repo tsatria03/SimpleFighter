@@ -1,0 +1,252 @@
+sound_pool trampolpool;
+trampoline@[] trampolines(0);
+
+class trampoline
+{
+double minx, maxx, miny, maxy;
+double minz, maxz;
+int power;
+string category;
+trampoline(double mx,double mx2,double my,double my2,int pw,string cat,double mnz=0,double mxz=0)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+minz=mnz;
+maxz=mxz;
+power=pw;
+category=cat;
+if(category == "none" || category == "") return;
+int spawn_id;
+if(mapmode == "3d")
+{
+spawn_id=trampolpool.play_extended_3d(get_map_sound("builder/transitions/trampolines/"+category+"/*spawn*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+trampolpool.update_sound_3d(spawn_id,minx,miny,minz);
+trampolpool.update_sound_range_3d(spawn_id,0,maxx-minx,0,maxy-miny,0,maxz-minz);
+}
+else
+{
+spawn_id=trampolpool.play_extended_3d(get_map_sound("builder/transitions/trampolines/"+category+"/*spawn*"),me.x,me.y,me.z,minx,miny,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+trampolpool.update_sound_3d(spawn_id,minx,miny,0);
+trampolpool.update_sound_range_3d(spawn_id,0,maxx-minx,0,maxy-miny,0,0);
+}
+}
+}
+
+void spawn_trampoline(double x1,double x2,double y1,double y2,int pw,string cat,double mnz=0,double mxz=0)
+{
+trampoline t(x1,x2,y1,y2,pw,cat,mnz,mxz);
+trampolines.insert_last(t);
+}
+
+void destroy_all_trampolines()
+{
+trampolines.resize(0);
+}
+
+bool tramp_bounced = false;
+
+void trampolcheck()
+{
+if(jumping != 0 || falling == true) return;
+trampoline@ on_pad = null;
+for(uint i=0; i<trampolines.length(); i++)
+{
+if(@trampolines[i] == null) continue;
+trampoline@ tr = trampolines[i];
+if(me.x < tr.minx || me.x > tr.maxx) continue;
+if(mapmode == "3d")
+{
+if(me.y < tr.miny || me.y > tr.maxy) continue;
+if(me.z != tr.minz) continue;
+}
+else
+{
+if(me.y != tr.miny) continue;
+}
+@on_pad = @tr;
+break;
+}
+if(@on_pad == null)
+{
+tramp_bounced = false;
+return;
+}
+if(on_pad.category != "none" && on_pad.category != "")
+{
+int sid;
+if(tramp_bounced)
+{
+if(mapmode == "3d")
+{
+sid=trampolpool.play_extended_3d(get_map_sound("builder/transitions/trampolines/"+on_pad.category+"/*down*"),me.x,me.y,me.z,on_pad.minx,on_pad.miny,on_pad.minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+trampolpool.update_sound_3d(sid,on_pad.minx,on_pad.miny,on_pad.minz);
+trampolpool.update_sound_range_3d(sid,0,on_pad.maxx-on_pad.minx,0,on_pad.maxy-on_pad.miny,0,on_pad.maxz-on_pad.minz);
+}
+else
+{
+sid=trampolpool.play_extended_3d(get_map_sound("builder/transitions/trampolines/"+on_pad.category+"/*down*"),me.x,me.y,me.z,on_pad.minx,on_pad.miny,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+trampolpool.update_sound_3d(sid,on_pad.minx,on_pad.miny,0);
+trampolpool.update_sound_range_3d(sid,0,on_pad.maxx-on_pad.minx,0,on_pad.maxy-on_pad.miny,0,0);
+}
+}
+if(mapmode == "3d")
+{
+sid=trampolpool.play_extended_3d(get_map_sound("builder/transitions/trampolines/"+on_pad.category+"/*up*"),me.x,me.y,me.z,on_pad.minx,on_pad.miny,on_pad.minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+trampolpool.update_sound_3d(sid,on_pad.minx,on_pad.miny,on_pad.minz);
+trampolpool.update_sound_range_3d(sid,0,on_pad.maxx-on_pad.minx,0,on_pad.maxy-on_pad.miny,0,on_pad.maxz-on_pad.minz);
+}
+else
+{
+sid=trampolpool.play_extended_3d(get_map_sound("builder/transitions/trampolines/"+on_pad.category+"/*up*"),me.x,me.y,me.z,on_pad.minx,on_pad.miny,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+trampolpool.update_sound_3d(sid,on_pad.minx,on_pad.miny,0);
+trampolpool.update_sound_range_3d(sid,0,on_pad.maxx-on_pad.minx,0,on_pad.maxy-on_pad.miny,0,0);
+}
+}
+if(mapmode == "3d") { ty1=me.z; ty2=me.z+on_pad.power; }
+else { ty1=me.y; ty2=me.y+on_pad.power; }
+jumping=1;
+ascending=true;
+tramp_bounced = true;
+}
+
+void build_trampoline()
+{
+string[] tramp_list = get_map_sound_folders("builder/transitions/trampolines/*");
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+bool y_uses_back_front = mapmode == "3d";
+form.reset();
+form.create_window("trampoline", false, true);
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my, my2 = -1, mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+my = form.create_input_box("minimum y", sel_back_set ? sel_back : "");
+my2 = form.create_input_box("maximum y", sel_front_set ? sel_front : "");
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+else
+{
+my = form.create_input_box("y", sel_bottom_set ? sel_bottom : "");
+}
+int pw_in = form.create_input_box("bounce power", "5");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(my2 != -1) form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(pw_in, disallowed_nums, false, "This character is not allowed.");
+int tramp_listid = form.create_list("trampoline sound");
+form.add_list_item(tramp_listid, "none", "none");
+for(uint i = 0; i < tramp_list.length(); i++)
+form.add_list_item(tramp_listid, tramp_list[i], tramp_list[i]);
+form.set_list_position(tramp_listid, 0, false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+int cur_pos = form.get_list_position(tramp_listid);
+if(cur_focus == tramp_listid && cur_pos > 0)
+{
+string cat = tramp_list[cur_pos-1];
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary_extended(get_map_sound("builder/transitions/trampolines/"+cat+"/*down*"), false, 0, 0, 0, 100, false);
+keytimer.restart();
+}
+if(control_is_down() && key_repeating(KEY_L))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary_extended(get_map_sound("builder/transitions/trampolines/"+cat+"/*up*"), false, 0, 0, 0, 100, false);
+}
+if(control_is_down() && key_repeating(KEY_H))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary_extended(get_map_sound("builder/transitions/trampolines/"+cat+"/*spawn*"), false, 0, 0, 0, 100, false);
+}
+}
+if(key_pressed(KEY_ESCAPE)) { t.destroy_sound(prevslot); resume_pools(); speak("canceled"); return; }
+if(form.is_pressed(cn)) { t.destroy_sound(prevslot); resume_pools(); speak("canceled"); return; }
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx).is_empty()) { speak("Minimum x is required."); form.focus(mx); continue; }
+if(form.get_text(mx2).is_empty()) { speak("Maximum x is required."); form.focus(mx2); continue; }
+if(form.get_text(my).is_empty()) { speak(mapmode == "3d" ? "Minimum y is required." : "Y is required."); form.focus(my); continue; }
+if(my2 != -1 && form.get_text(my2).is_empty()) { speak("Maximum y is required."); form.focus(my2); continue; }
+if(mnz != -1 && form.get_text(mnz).is_empty()) { speak("Minimum z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz).is_empty()) { speak("Maximum z is required."); form.focus(mxz); continue; }
+if(form.get_text(pw_in).is_empty()) { speak("Bounce power is required."); form.focus(pw_in); continue; }
+double bmx = string_to_number(form.get_text(mx));
+double bmx2 = string_to_number(form.get_text(mx2));
+double bmy = string_to_number(form.get_text(my));
+double bmy2 = (my2 != -1) ? string_to_number(form.get_text(my2)) : bmy;
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+int bpw = int(string_to_number(form.get_text(pw_in)));
+double height_cap = (mapmode == "3d") ? maxz : maxy;
+if(bpw > height_cap)
+{
+speak("Bounce power cannot exceed the map's maximum height of "+int(height_cap)+".");
+form.focus(pw_in);
+continue;
+}
+int p = form.get_list_position(tramp_listid);
+string bcat = (p > 0) ? tramp_list[p-1] : "none";
+t.destroy_sound(prevslot);
+resume_pools();
+write_trampoline(bmx, bmx2, bmy, bmy2, bpw, bcat, bmnz, bmxz);
+spawn_trampoline(bmx, bmx2, bmy, bmy2, bpw, bcat, bmnz, bmxz);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
+
+void read_trampoline(string[] sd)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=0, my2=0, mnz=0, mxz=0;
+int pw;
+string cat;
+if(mapmode == "3d")
+{
+my=stn(sd[3]);
+my2=stn(sd[4]);
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+pw=int(stn(sd[7]));
+cat=sd[8];
+}
+else
+{
+my=stn(sd[3]);
+my2=my;
+pw=int(stn(sd[4]));
+cat=sd[5];
+}
+spawn_trampoline(mx, mx2, my, my2, pw, cat, mnz, mxz);
+}
+
+void write_trampoline(double x1, double x2, double y1, double y2, int pw, string cat, double mnz=0, double mxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/data/main.sif","ab");
+mapdata=mapper.read();
+string coords;
+if(mapmode == "3d") coords = x1+" "+x2+" "+y1+" "+y2+" "+mnz+" "+mxz;
+else coords = x1+" "+x2+" "+y1;
+mapper.write("\r\n"+"trampoline "+coords+" "+pw+" "+cat);
+mapper.close();
+bump_map_modified();
+}
