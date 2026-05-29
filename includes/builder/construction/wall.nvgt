@@ -12,7 +12,8 @@ double wallmaxhealth;
 double volume;
 double pitch;
 string wall;
-wall(double mx,double mx2,double my,double my2,double hp,double maxhp,string wy,double vol,double semitone,bool dtb,bool trp,double mnz=0,double mxz=0)
+string destplat;
+wall(double mx,double mx2,double my,double my2,double hp,double maxhp,string wy,double vol,double semitone,string dp,bool dtb,bool trp,double mnz=0,double mxz=0)
 {
 minx=mx;
 maxx=mx2;
@@ -25,6 +26,7 @@ wallmaxhealth=maxhp;
 wall=wy;
 volume=vol;
 pitch=semitone;
+destplat=dp;
 destroyable=dtb;
 transparent=trp;
 if(mapmode == "3d")
@@ -82,6 +84,28 @@ p.update_sound_3d(walls[i].defsound,walls[i].minx,walls[i].miny,walls[i].minz);
 p.update_sound_range_3d(walls[i].defsound,0,walls[i].maxx-walls[i].minx,0,walls[i].maxy-walls[i].miny, 0, walls[i].maxz-walls[i].minz);
 for(int j = int(walls[i].platform_ids.length()) - 1; j >= 0; j--)
 remove_platform(walls[i].platform_ids[j]);
+string dp = walls[i].destplat;
+if(dp != "none" && dp != "")
+{
+string debris_tile = "";
+if(dp == "air")
+debris_tile = "air";
+else
+{
+string[] pool = get_map_sound_folders("builder/construction/platforms/*"+dp+"*");
+if(pool.length() != 0) debris_tile = random_string(pool);
+}
+if(debris_tile != "")
+{
+if(mapmode == "3d")
+{
+for(double z = walls[i].minz; z <= walls[i].maxz; z++)
+spawn_platform(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, 1, 1, debris_tile, 0, 100, false, false, false, z, false);
+}
+else
+spawn_platform(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, 1, 1, debris_tile, 0, 100, false, false, false, 0, false);
+}
+}
 @walls[i] = null;
 return;
 }
@@ -161,9 +185,9 @@ return walls[i].transparent;
 }
 return false;
 }
-int spawn_wall(double x1, double x2, double y1, double y2, double wallhealth, double wallmaxhealth, string wall, double wallvolume, double wallpitch, bool destroyable, bool transparent, double minz=0, double maxz=0)
+int spawn_wall(double x1, double x2, double y1, double y2, double wallhealth, double wallmaxhealth, string wall, double wallvolume, double wallpitch, string destplat, bool destroyable, bool transparent, double minz=0, double maxz=0)
 {
-wall wl1(x1, x2, y1, y2, wallhealth, wallmaxhealth, wall, wallvolume, wallpitch, destroyable, transparent, minz, maxz);
+wall wl1(x1, x2, y1, y2, wallhealth, wallmaxhealth, wall, wallvolume, wallpitch, destplat, destroyable, transparent, minz, maxz);
 walls.insert_last(wl1);
 return walls.length() - 1;
 }
@@ -230,6 +254,14 @@ form.set_list_position(wall_list, 0, false);
 form.set_first_letter_nav(wall_list, false);
 int wall_vol = form.create_slider("wall volume", 0, -100, 0, "", 5);
 int wall_pit = form.create_slider("wall pitch", 100, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
+int destplat_list = form.create_list("destruction platform");
+form.add_list_item(destplat_list, "none", "none");
+form.add_list_item(destplat_list, "air", "air");
+form.add_list_item(destplat_list, "brokenglass", "brokenglass");
+form.add_list_item(destplat_list, "debris", "debris");
+form.add_list_item(destplat_list, "fire", "fire");
+form.add_list_item(destplat_list, "woodpile", "woodpile");
+form.set_list_position(destplat_list, 0, false);
 int dest_cb = form.create_checkbox("destroyable", false);
 int trans_cb = form.create_checkbox("transparent", false);
 int ok = form.create_button("&okay", true);
@@ -366,10 +398,12 @@ double bvol = form.get_slider(wall_vol);
 double bpit = form.get_slider(wall_pit);
 bool bdest = form.is_checked(dest_cb);
 bool btrans = form.is_checked(trans_cb);
+int dp_pos = form.get_list_position(destplat_list);
+string bdestplat = (dp_pos >= 0) ? form.get_list_item(destplat_list, dp_pos) : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_wall(bx, bx2, by, by2, bhp, btype, bvol, bpit, bdest, btrans, bmnz, bmxz);
-spawn_wall(bx, bx2, by, by2, bhp, bhp, btype, bvol, bpit, bdest, btrans, bmnz, bmxz);
+write_wall(bx, bx2, by, by2, bhp, btype, bvol, bpit, bdestplat, bdest, btrans, bmnz, bmxz);
+spawn_wall(bx, bx2, by, by2, bhp, bhp, btype, bvol, bpit, bdestplat, bdest, btrans, bmnz, bmxz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -386,7 +420,7 @@ double my=stn(sd[3]);
 double my2=stn(sd[4]);
 double minz=0, maxz=0;
 int o=5;
-if(sd.length()==13)
+if(sd.length()==14)
 {
 minz=stn(sd[5]);
 maxz=stn(sd[6]);
@@ -396,18 +430,19 @@ double hp=stn(sd[o]);
 string walltype=sd[o+1];
 double wallvol=stn(sd[o+2]);
 double wallpitch=stn(sd[o+3]);
-bool dbl=string_to_bool(sd[o+4]);
-bool trp=string_to_bool(sd[o+5]);
-spawn_wall(mx, mx2, my, my2, hp, hp, walltype, wallvol, wallpitch, dbl, trp, minz, maxz);
+string destplat=sd[o+4];
+bool dbl=string_to_bool(sd[o+5]);
+bool trp=string_to_bool(sd[o+6]);
+spawn_wall(mx, mx2, my, my2, hp, hp, walltype, wallvol, wallpitch, destplat, dbl, trp, minz, maxz);
 }
 
-void write_wall(double x1, double x2, double y1, double y2, double hp, string walltype, double vol, double pitch, bool destroyable, bool transparent, double minz=0, double maxz=0)
+void write_wall(double x1, double x2, double y1, double y2, double hp, string walltype, double vol, double pitch, string destplat, bool destroyable, bool transparent, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode=="3d") coords+=" "+minz+" "+maxz;
-mapper.write("\r\n"+"wall "+coords+" "+hp+" "+walltype+" "+vol+" "+pitch+" "+destroyable+" "+transparent);
+mapper.write("\r\n"+"wall "+coords+" "+hp+" "+walltype+" "+vol+" "+pitch+" "+destplat+" "+destroyable+" "+transparent);
 mapper.close();
 bump_map_modified();
 }
