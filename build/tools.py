@@ -18,25 +18,18 @@ PASSWORD     = _cfg["game"]["password"]
 NVGT_FILE    = _cfg["game"]["nvgt_file"]
 NVGT_OUT     = os.path.splitext(NVGT_FILE)[0]
 
-INSTALLER_ISS = _cfg["installer"]["iss"]
-APP_ID       = _cfg["installer"]["app_id"]
-APP_URL      = _cfg["installer"]["app_url"]
-EXE_NAME     = _cfg["installer"]["exe_name"]
-
 SITE_HTML    = _cfg["site"]["html"]
 SITE_REPO    = _cfg["site"]["repo"]
 SITE_PATH    = _cfg["site"]["path"]
 
 NVGT    = _tools["tools"]["nvgt"]
 SEVENZIP = _tools["tools"]["sevenzip"]
-ISCC    = _tools["tools"]["iscc"]
 GH      = _tools["tools"]["gh"]
 
 WIN_SOURCE   = os.path.join(REPO_DIR, "releases", "windows", f"{GAME}_windows_portable_password_is_{PASSWORD}", NVGT_OUT)
 ARCHIVE_DIR  = os.path.join(REPO_DIR, "releases", "archives")
 ARCHIVE_NAME = f"{GAME}_windows_portable_password_is_{PASSWORD}.7z"
 ARCHIVE      = os.path.join(ARCHIVE_DIR, ARCHIVE_NAME)
-INSTALLER    = os.path.join(ARCHIVE_DIR, f"{GAME}_windows_installer_password_is_{PASSWORD}.exe")
 RELEASE_DIR  = os.path.join(REPO_DIR, "releases", "windows", f"{GAME}_windows_portable_password_is_{PASSWORD}")
 
 SKIP = 0
@@ -429,20 +422,6 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
             print("ERROR: 7z archive build failed.")
             return
         print("Archive built successfully.\n")
-        print("Building Windows installer...")
-        if os.path.exists(INSTALLER):
-            os.remove(INSTALLER)
-        if not run_cmd([ISCC, "/Q",
-                        f"/DMyAppId={APP_ID}",
-                        f"/DMyAppName={GAME}",
-                        f"/DMyAppURL={APP_URL}",
-                        f"/DMyAppExeName={EXE_NAME}",
-                        f"/DMyAppPassword={PASSWORD}",
-                        f"/DMySourcePath={WIN_SOURCE}",
-                        os.path.join(SCRIPT_DIR, INSTALLER_ISS)]):
-            print("ERROR: Installer build failed.")
-            return
-        print("Installer built successfully.\n")
     elif skip_package == SKIP:
         print("Skipping packaging.\n")
 
@@ -462,8 +441,6 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
     assets = []
     if os.path.exists(ARCHIVE):
         assets.append(ARCHIVE)
-    if os.path.exists(INSTALLER):
-        assets.append(INSTALLER)
 
     if not assets:
         print("WARNING: No assets found.\n")
