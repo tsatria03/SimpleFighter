@@ -372,13 +372,17 @@ z=stn(sd[3]);
 o=4;
 }
 int sp=stn(sd[o]);
-string txt=join_string_array(sd, o+1, sd.length()-6);
-string ellotype=sd[sd.length()-6];
-string elmotype=sd[sd.length()-5];
-string eloptype=sd[sd.length()-4];
-string elcotype=sd[sd.length()-3];
-string elbetype=sd[sd.length()-2];
-bool fsp=string_to_bool(sd[sd.length()-1]);
+string combined=join_string_array(sd, o+1, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+string ellotype=(tail.length() >= 1) ? tail[0] : "none";
+string elmotype=(tail.length() >= 2) ? tail[1] : "none";
+string eloptype=(tail.length() >= 3) ? tail[2] : "none";
+string elcotype=(tail.length() >= 4) ? tail[3] : "none";
+string elbetype=(tail.length() >= 5) ? tail[4] : "none";
+bool fsp=(tail.length() >= 6) ? string_to_bool(tail[5]) : false;
 spawn_elevator(x, y, sp, txt, ellotype, elmotype, eloptype, elcotype, elbetype, fsp, z);
 }
 
@@ -388,7 +392,8 @@ mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=""+x+" "+y;
 if(mapmode == "3d") coords += " "+z;
-mapper.write("\r\n"+"elevator "+coords+" "+speed+" "+txt+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+beeptype+" "+floorspeak);
+string clean_txt=string_replace(txt, "\"", "", true);
+mapper.write("\r\n"+"elevator "+coords+" "+speed+" \""+clean_txt+"\" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+beeptype+" "+floorspeak);
 mapper.close();
 bump_map_modified();
 }

@@ -163,9 +163,13 @@ int x=stn(sd[1]);
 int y=stn(sd[2]);
 int text_start = (mapmode == "3d") ? 4 : 3;
 int z = (mapmode == "3d") ? stn(sd[3]) : 0;
-string txt=join_string_array(sd, text_start, sd.length()-2);
-string clocktype=sd[sd.length()-2];
-bool dbl=string_to_bool(sd[sd.length()-1]);
+string combined=join_string_array(sd, text_start, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+string clocktype=(tail.length() >= 1) ? tail[0] : "none";
+bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
 spawn_clock(x, y, txt, clocktype, dbl, z);
 }
 
@@ -173,10 +177,11 @@ void write_clock(int x, int y, string txt, string clocktype, bool destroyable, i
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
+string clean_txt=string_replace(txt, "\"", "", true);
 if(mapmode == "3d")
-mapper.write("\r\n"+"clock "+x+" "+y+" "+z+" "+txt+" "+clocktype+" "+destroyable);
+mapper.write("\r\n"+"clock "+x+" "+y+" "+z+" \""+clean_txt+"\" "+clocktype+" "+destroyable);
 else
-mapper.write("\r\n"+"clock "+x+" "+y+" "+txt+" "+clocktype+" "+destroyable);
+mapper.write("\r\n"+"clock "+x+" "+y+" \""+clean_txt+"\" "+clocktype+" "+destroyable);
 mapper.close();
 bump_map_modified();
 }

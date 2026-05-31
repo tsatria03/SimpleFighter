@@ -238,10 +238,14 @@ mnz=stn(sd[5]);
 mxz=stn(sd[6]);
 o=7;
 }
-string txt=join_string_array(sd, o, sd.length()-3);
-string stztype=sd[sd.length()-3];
-string mode=sd[sd.length()-2];
-bool retrig=string_to_bool(sd[sd.length()-1]);
+string combined=join_string_array(sd, o, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+string stztype=(tail.length() >= 1) ? tail[0] : "none";
+string mode=(tail.length() >= 2) ? tail[1] : "step";
+bool retrig=(tail.length() >= 3) ? string_to_bool(tail[2]) : false;
 spawn_story_zone(mx, mx2, my, my2, txt, stztype, mode, retrig, mnz, mxz);
 }
 
@@ -251,7 +255,8 @@ mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode == "3d") coords += " "+minz+" "+maxz;
-mapper.write("\r\n"+"story_zone "+coords+" "+txt+" "+stztype+" "+mode+" "+retriggerable);
+string clean_txt=string_replace(txt, "\"", "", true);
+mapper.write("\r\n"+"story_zone "+coords+" \""+clean_txt+"\" "+stztype+" "+mode+" "+retriggerable);
 mapper.close();
 bump_map_modified();
 }
