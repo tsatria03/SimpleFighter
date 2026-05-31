@@ -807,11 +807,15 @@ string optype=sd[o+4];
 string cotype=sd[o+5];
 string dotype=sd[o+6];
 string lkmode=sd[o+7];
-string did=sd[o+8];
-string pass=sd[o+9];
-string lktype=sd[o+10];
-bool amt=string_to_bool(sd[o+11]);
-bool dbl=string_to_bool(sd[o+12]);
+string combined=join_string_array(sd, o+8, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string did=(quoted.length() >= 1) ? quoted[0] : "none";
+string pass=(quoted.length() >= 2) ? quoted[1] : "none";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+string lktype=(tail.length() >= 1) ? tail[0] : "none";
+bool amt=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
+bool dbl=(tail.length() >= 3) ? string_to_bool(tail[2]) : false;
 spawn_door(sx, sx, sy, sy, ex, ey, hp, hp, sp, lotype, motype, optype, cotype, dotype, lkmode, did, pass, lktype, amt, dbl, false, sz_v, sz_v, ez_v);
 }
 
@@ -840,11 +844,15 @@ string optype=sd[o+4];
 string cotype=sd[o+5];
 string dotype=sd[o+6];
 string lkmode=sd[o+7];
-string did=sd[o+8];
-string pass=sd[o+9];
-string lktype=sd[o+10];
-bool amt=string_to_bool(sd[o+11]);
-bool dbl=string_to_bool(sd[o+12]);
+string combined=join_string_array(sd, o+8, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string did=(quoted.length() >= 1) ? quoted[0] : "none";
+string pass=(quoted.length() >= 2) ? quoted[1] : "none";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+string lktype=(tail.length() >= 1) ? tail[0] : "none";
+bool amt=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
+bool dbl=(tail.length() >= 3) ? string_to_bool(tail[2]) : false;
 spawn_door(mnx, mxx, mny, mxy, ex, ey, hp, hp, sp, lotype, motype, optype, cotype, dotype, lkmode, did, pass, lktype, amt, dbl, true, mnz_v, mxz_v, ez_v);
 }
 
@@ -856,7 +864,9 @@ string src = x+" "+y;
 if(mapmode == "3d") src += " "+z;
 string dst = x2+" "+y2;
 if(mapmode == "3d") dst += " "+z2;
-mapper.write("\r\n"+"door "+src+" "+dst+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" "+doorid+" "+drpass+" "+locktype+" "+automatic+" "+destroyable);
+string clean_did=string_replace(doorid, "\"", "", true);
+string clean_pass=string_replace(drpass, "\"", "", true);
+mapper.write("\r\n"+"door "+src+" "+dst+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+locktype+" "+automatic+" "+destroyable);
 mapper.close();
 bump_map_modified();
 }
@@ -869,7 +879,9 @@ string zone = mnx+" "+mxx+" "+mny+" "+mxy;
 if(mapmode == "3d") zone += " "+mnz+" "+mxz;
 string dst = ex+" "+ey;
 if(mapmode == "3d") dst += " "+ez;
-mapper.write("\r\n"+"ranged_door "+zone+" "+dst+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" "+doorid+" "+drpass+" "+locktype+" "+automatic+" "+destroyable);
+string clean_did=string_replace(doorid, "\"", "", true);
+string clean_pass=string_replace(drpass, "\"", "", true);
+mapper.write("\r\n"+"ranged_door "+zone+" "+dst+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+locktype+" "+automatic+" "+destroyable);
 mapper.close();
 bump_map_modified();
 }
