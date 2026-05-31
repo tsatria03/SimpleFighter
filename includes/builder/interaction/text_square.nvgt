@@ -114,7 +114,10 @@ int x=stn(sd[1]);
 int y=stn(sd[2]);
 int text_start = (mapmode == "3d") ? 4 : 3;
 int z = (mapmode == "3d") ? stn(sd[3]) : 0;
-string txt=join_string_array(sd, text_start, sd.length());
+string combined=join_string_array(sd, text_start, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
 spawn_text_square(x, y, txt, z);
 }
 
@@ -122,10 +125,11 @@ void write_text_square(int x, int y, string txt, int z=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
+string clean_txt=string_replace(txt, "\"", "", true);
 if(mapmode == "3d")
-mapper.write("\r\n"+"text_square "+x+" "+y+" "+z+" "+txt);
+mapper.write("\r\n"+"text_square "+x+" "+y+" "+z+" \""+clean_txt+"\"");
 else
-mapper.write("\r\n"+"text_square "+x+" "+y+" "+txt);
+mapper.write("\r\n"+"text_square "+x+" "+y+" \""+clean_txt+"\"");
 mapper.close();
 bump_map_modified();
 }

@@ -165,7 +165,10 @@ mnz=stn(sd[5]);
 mxz=stn(sd[6]);
 o=7;
 }
-string txt=join_string_array(sd, o, sd.length());
+string combined=join_string_array(sd, o, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
 spawn_blockage(mx, mx2, my, my2, txt, mnz, mxz);
 }
 
@@ -175,7 +178,8 @@ mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode=="3d") coords+=" "+minz+" "+maxz;
-mapper.write("\r\n"+"blockage "+coords+" "+txt);
+string clean_txt=string_replace(txt, "\"", "", true);
+mapper.write("\r\n"+"blockage "+coords+" \""+clean_txt+"\"");
 mapper.close();
 bump_map_modified();
 }
