@@ -5,6 +5,7 @@ class spike
 {
 int defsound, hitsound, hurtsound, spikesound;
 bool destroyable;
+bool is_ranged;
 double minx, maxx, miny, maxy;
 double minz, maxz;
 double spikehealth;
@@ -13,7 +14,7 @@ int damage;
 int spiketime;
 string spiketype;
 timer spiketimer;
-spike(double mx,double mx2,double my,double my2,double hp,double maxhp,int dmg,int sp,string st,bool dtb,double mnz=0,double mxz=0)
+spike(double mx,double mx2,double my,double my2,double hp,double maxhp,int dmg,int sp,string st,bool dtb,double mnz=0,double mxz=0,bool rng=true)
 {
 minx=mx;
 maxx=mx2;
@@ -27,6 +28,7 @@ damage=dmg;
 spiketime=sp;
 spiketype=st;
 destroyable=dtb;
+is_ranged=rng;
 spikesound=spikepool.play_extended_3d(get_map_sound("builder/traps/spikes/"+spiketype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 spikepool.update_sound_3d(spikesound,minx,miny,minz);
 spikepool.update_sound_range_3d(spikesound, 0, maxx-minx, 0, maxy-miny, 0, maxz-minz);
@@ -94,9 +96,9 @@ return;
 }
 }
 }
-void spawn_spike(double x1,double x2,double y1,double y2,double hp,double maxhp,int dmg,int sp,string spiketype,bool destroyable,double minz=0,double maxz=0)
+void spawn_spike(double x1,double x2,double y1,double y2,double hp,double maxhp,int dmg,int sp,string spiketype,bool destroyable,double minz=0,double maxz=0,bool is_ranged=true)
 {
-spike sp1(x1,x2,y1,y2,hp,maxhp,dmg,sp,spiketype,destroyable,minz,maxz);
+spike sp1(x1,x2,y1,y2,hp,maxhp,dmg,sp,spiketype,destroyable,minz,maxz,is_ranged);
 spikes.insert_last(sp1);
 }
 void destroy_all_spikes()
@@ -109,7 +111,7 @@ spikepool.destroy_sound(spikes[i].spikesound);
 spikes.resize(0);
 }
 
-void build_spike()
+void build_spike(bool ranged = false)
 {
 string[] spikes_list = get_map_sound_folders("builder/traps/spikes/*");
 if(spikes_list.length() == 0)
@@ -120,29 +122,46 @@ return;
 }
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
-form.create_window("spike", false);
+form.create_window(ranged ? "ranged spike" : "spike", false);
 bool y_uses_back_front = mapmode != "2d";
-string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
-string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
-int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
-int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", saved_my);
-int my2 = form.create_input_box("maximum y", saved_my2);
-int mnz = -1, mxz = -1;
+int mx = -1, my = -1, mz = -1;
+int mnx = -1, mxx = -1, mny = -1, mxy = -1, mnz = -1, mxz = -1;
+if(ranged)
+{
+mnx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+mxx = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+mny = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+mxy = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
 if(mapmode == "3d")
 {
 mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
 mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
 }
+}
+else
+{
+mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+}
 int hp = form.create_input_box("health", "1");
 int dm = form.create_input_box("maximum attack");
 int sp = form.create_input_box("speed");
-form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(ranged)
+{
+form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
 if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
 if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+}
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(dm, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
@@ -154,7 +173,7 @@ form.set_list_position(spike_list, 0, false);
 int dest_cb = form.create_checkbox("destroyable", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
-form.focus(mx);
+form.focus(ranged ? mnx : mx);
 while(true)
 {
 wait(5);
@@ -204,41 +223,20 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx) == "")
+if(ranged)
 {
-speak("Minimum x is required.");
-form.focus(mx);
-continue;
+if(form.get_text(mnx) == "") { speak("Minimum x is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx) == "") { speak("Maximum x is required."); form.focus(mxx); continue; }
+if(form.get_text(mny) == "") { speak("Minimum y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy) == "") { speak("Maximum y is required."); form.focus(mxy); continue; }
+if(mnz != -1 && form.get_text(mnz) == "") { speak("Minimum z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz) == "") { speak("Maximum z is required."); form.focus(mxz); continue; }
 }
-if(form.get_text(mx2) == "")
+else
 {
-speak("Maximum x is required.");
-form.focus(mx2);
-continue;
-}
-if(form.get_text(my) == "")
-{
-speak("Minimum y is required.");
-form.focus(my);
-continue;
-}
-if(form.get_text(my2) == "")
-{
-speak("Maximum y is required.");
-form.focus(my2);
-continue;
-}
-if(mnz != -1 && form.get_text(mnz) == "")
-{
-speak("Minimum z is required.");
-form.focus(mnz);
-continue;
-}
-if(mxz != -1 && form.get_text(mxz) == "")
-{
-speak("Maximum z is required.");
-form.focus(mxz);
-continue;
+if(form.get_text(mx) == "") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
 }
 if(form.get_text(hp) == "")
 {
@@ -258,12 +256,6 @@ speak("Speed is required.");
 form.focus(sp);
 continue;
 }
-double bx = string_to_number(form.get_text(mx));
-double bx2 = string_to_number(form.get_text(mx2));
-double by = string_to_number(form.get_text(my));
-double by2 = string_to_number(form.get_text(my2));
-double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
-double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int bdmg = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
@@ -272,8 +264,25 @@ string btype = (p > 0) ? spikes_list[p-1] : "none";
 bool bdest = form.is_checked(dest_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_spike(bx, bx2, by, by2, bhp, bdmg, bsp, btype, bdest, bmnz, bmxz);
-spawn_spike(bx, bx2, by, by2, bhp, bhp, bdmg, bsp, btype, bdest, bmnz, bmxz);
+if(ranged)
+{
+double bmnx = string_to_number(form.get_text(mnx));
+double bmxx = string_to_number(form.get_text(mxx));
+double bmny = string_to_number(form.get_text(mny));
+double bmxy = string_to_number(form.get_text(mxy));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+write_ranged_spike(bmnx, bmxx, bmny, bmxy, bhp, bdmg, bsp, btype, bdest, bmnz, bmxz);
+spawn_spike(bmnx, bmxx, bmny, bmxy, bhp, bhp, bdmg, bsp, btype, bdest, bmnz, bmxz, true);
+}
+else
+{
+double bx = string_to_number(form.get_text(mx));
+double by = string_to_number(form.get_text(my));
+double bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+write_spike(bx, by, bhp, bdmg, bsp, btype, bdest, bz);
+spawn_spike(bx, bx, by, by, bhp, bhp, bdmg, bsp, btype, bdest, bz, bz, false);
+}
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -282,7 +291,38 @@ return;
 }
 }
 
+void build_ranged_spike()
+{
+build_spike(true);
+}
+
 void read_spike(string[] sd)
+{
+double x=stn(sd[1]);
+double y=stn(sd[2]);
+double z=0;
+int o=3;
+if(mapmode=="3d") { z=stn(sd[3]); o=4; }
+double hp=stn(sd[o]);
+int dmg=stn(sd[o+1]);
+int sp=stn(sd[o+2]);
+string spiketype=sd[o+3];
+bool dbl=string_to_bool(sd[o+4]);
+spawn_spike(x, x, y, y, hp, hp, dmg, sp, spiketype, dbl, z, z, false);
+}
+
+void write_spike(double x, double y, double hp, int damage, int speed, string spiketype, bool destroyable, double z=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x+" "+y;
+if(mapmode=="3d") coords+=" "+z;
+mapper.write("\r\n"+"spike "+coords+" "+hp+" "+damage+" "+speed+" "+spiketype+" "+destroyable);
+mapper.close();
+bump_map_modified();
+}
+
+void read_ranged_spike(string[] sd)
 {
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
@@ -290,27 +330,22 @@ double my=stn(sd[3]);
 double my2=stn(sd[4]);
 double mnz=0, mxz=0;
 int o=5;
-if(sd.length()==12)
-{
-mnz=stn(sd[5]);
-mxz=stn(sd[6]);
-o=7;
-}
+if(mapmode=="3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); o=7; }
 double hp=stn(sd[o]);
 int dmg=stn(sd[o+1]);
 int sp=stn(sd[o+2]);
 string spiketype=sd[o+3];
 bool dbl=string_to_bool(sd[o+4]);
-spawn_spike(mx, mx2, my, my2, hp, hp, dmg, sp, spiketype, dbl, mnz, mxz);
+spawn_spike(mx, mx2, my, my2, hp, hp, dmg, sp, spiketype, dbl, mnz, mxz, true);
 }
 
-void write_spike(double x1, double x2, double y1, double y2, double hp, int damage, int speed, string spiketype, bool destroyable, double minz=0, double maxz=0)
+void write_ranged_spike(double x1, double x2, double y1, double y2, double hp, int damage, int speed, string spiketype, bool destroyable, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode=="3d") coords+=" "+minz+" "+maxz;
-mapper.write("\r\n"+"spike "+coords+" "+hp+" "+damage+" "+speed+" "+spiketype+" "+destroyable);
+mapper.write("\r\n"+"ranged_spike "+coords+" "+hp+" "+damage+" "+speed+" "+spiketype+" "+destroyable);
 mapper.close();
 bump_map_modified();
 }
