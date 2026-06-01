@@ -1,15 +1,18 @@
 text_square@[]text_squares(0);
 class text_square
 {
-int textx;
-int texty;
-int textz;
+int minx, maxx;
+int miny, maxy;
+int minz, maxz;
 string text;
-text_square(int tx,int ty,string txt,int tz=0)
+text_square(int mnx, int mxx, int mny, int mxy, string txt, int mnz=0, int mxz=0)
 {
-textx=tx;
-texty=ty;
-textz=tz;
+minx=mnx;
+maxx=mxx;
+miny=mny;
+maxy=mxy;
+minz=mnz;
+maxz=mxz;
 text=txt;
 }
 }
@@ -17,17 +20,17 @@ void textcheck()
 {
 for(uint i=0; i<text_squares.length(); i++)
 {
-bool match = me.x==text_squares[i].textx and me.y==text_squares[i].texty;
-if(mapmode == "3d") match = match and me.z==text_squares[i].textz;
+bool match = me.x>=text_squares[i].minx and me.x<=text_squares[i].maxx and me.y>=text_squares[i].miny and me.y<=text_squares[i].maxy;
+if(mapmode == "3d") match = match and me.z>=text_squares[i].minz and me.z<=text_squares[i].maxz;
 if(match and controls.action_repeating("interact"))
 {
 speak(text_squares[i].text);
 }
 }
 }
-void spawn_text_square(int x,int y,string text,int z=0)
+void spawn_text_square(int mnx, int mxx, int mny, int mxy, string text, int mnz=0, int mxz=0)
 {
-text_square text1(x,y,text,z);
+text_square text1(mnx, mxx, mny, mxy, text, mnz, mxz);
 text_squares.insert_last(text1);
 }
 void destroy_all_text_squares()
@@ -35,31 +38,55 @@ void destroy_all_text_squares()
 text_squares.resize(0);
 }
 
-void build_text_square()
+void build_text_square(bool ranged = false)
 {
 form.reset();
-form.create_window("text square", false);
+form.create_window(ranged ? "ranged text square" : "text square", false);
 bool y_uses_back_front = mapmode != "2d";
-int mx=form.create_input_box("x", sel_left_set ? sel_left : "");
-int my=form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-int mz = -1;
-if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+int mx=-1, my=-1, mz=-1;
+int mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1;
+if(ranged)
+{
+mnx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+mxx=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+mny=form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+mxy=form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+if(mapmode == "3d")
+{
+mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+}
+else
+{
+mx=form.create_input_box("x", sel_left_set ? sel_left : "");
+my=form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+if(mapmode == "3d") mz=form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+}
 int tqtext=form.create_input_box("text");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+if(ranged)
+{
+form.set_disallowed_chars(mnx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
+}
+else
+{
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 if(mz != -1) form.set_disallowed_chars(mz, disallowed_chars, false, "This character is not allowed.");
+}
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
-form.focus(mx);
+form.focus(ranged ? mnx : mx);
 while (true)
 {
 wait(5);
 form.monitor();
-double x=string_to_number(form.get_text(mx));
-double y=string_to_number(form.get_text(my));
-double z = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
-string txt=form.get_text(tqtext);
 if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
@@ -74,31 +101,43 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx)=="")
+if(ranged)
 {
-speak("X is required.");
-form.focus(mx);
-}
-else if(form.get_text(my)=="")
-{
-speak("Y is required.");
-form.focus(my);
-}
-else if(mz != -1 && form.get_text(mz)=="")
-{
-speak("Z is required.");
-form.focus(mz);
-}
-else if(form.get_text(tqtext)=="")
-{
-speak("Text is required.");
-form.focus(tqtext);
+if(form.get_text(mnx)=="") { speak("Minimum x is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx)=="") { speak("Maximum x is required."); form.focus(mxx); continue; }
+if(form.get_text(mny)=="") { speak("Minimum y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy)=="") { speak("Maximum y is required."); form.focus(mxy); continue; }
+if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
 }
 else
 {
+if(form.get_text(mx)=="") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my)=="") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz)=="") { speak("Z is required."); form.focus(mz); continue; }
+}
+if(form.get_text(tqtext)=="") { speak("Text is required."); form.focus(tqtext); continue; }
+string txt=form.get_text(tqtext);
 resume_pools();
-write_text_square(x, y, txt, z);
-spawn_text_square(x, y, txt, z);
+if(ranged)
+{
+int bmnx=string_to_number(form.get_text(mnx));
+int bmxx=string_to_number(form.get_text(mxx));
+int bmny=string_to_number(form.get_text(mny));
+int bmxy=string_to_number(form.get_text(mxy));
+int bmnz=(mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+int bmxz=(mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+write_ranged_text_square(bmnx, bmxx, bmny, bmxy, txt, bmnz, bmxz);
+spawn_text_square(bmnx, bmxx, bmny, bmxy, txt, bmnz, bmxz);
+}
+else
+{
+int bx=string_to_number(form.get_text(mx));
+int by=string_to_number(form.get_text(my));
+int bz=(mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+write_text_square(bx, by, txt, bz);
+spawn_text_square(bx, bx, by, by, txt, bz, bz);
+}
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -106,6 +145,9 @@ return;
 }
 }
 }
+void build_ranged_text_square()
+{
+build_text_square(true);
 }
 
 void read_text_square(string[] sd)
@@ -118,7 +160,23 @@ string combined=join_string_array(sd, text_start, sd.length());
 string remainder;
 array<string> quoted=extract_quoted(combined, remainder);
 string txt=(quoted.length() >= 1) ? quoted[0] : "";
-spawn_text_square(x, y, txt, z);
+spawn_text_square(x, x, y, y, txt, z, z);
+}
+
+void read_ranged_text_square(string[] sd)
+{
+int mnx=stn(sd[1]);
+int mxx=stn(sd[2]);
+int mny=stn(sd[3]);
+int mxy=stn(sd[4]);
+int mnz=0, mxz=0;
+int text_start=5;
+if(mapmode == "3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); text_start=7; }
+string combined=join_string_array(sd, text_start, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
+spawn_text_square(mnx, mxx, mny, mxy, txt, mnz, mxz);
 }
 
 void write_text_square(int x, int y, string txt, int z=0)
@@ -130,6 +188,19 @@ if(mapmode == "3d")
 mapper.write("\r\n"+"text_square "+x+" "+y+" "+z+" \""+clean_txt+"\"");
 else
 mapper.write("\r\n"+"text_square "+x+" "+y+" \""+clean_txt+"\"");
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_text_square(int mnx, int mxx, int mny, int mxy, string txt, int mnz=0, int mxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string clean_txt=string_replace(txt, "\"", "", true);
+if(mapmode == "3d")
+mapper.write("\r\n"+"ranged_text_square "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" \""+clean_txt+"\"");
+else
+mapper.write("\r\n"+"ranged_text_square "+mnx+" "+mxx+" "+mny+" "+mxy+" \""+clean_txt+"\"");
 mapper.close();
 bump_map_modified();
 }
