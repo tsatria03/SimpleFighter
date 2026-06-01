@@ -14,10 +14,12 @@ int switchsound, pressound;
 int minx, maxx;
 int miny, maxy;
 int minz, maxz;
+int trigger_time;
+timer trigger_timer;
 string switchtype;
 string on_command;
 string off_command;
-switcher(int mnx, int mxx, int mny, int mxy, string stp, string on_cmd, string off_cmd, bool tg, bool dst_snd, bool lp, bool sgl, int mnz=0, int mxz=0, bool ctc=false)
+switcher(int mnx, int mxx, int mny, int mxy, string stp, string on_cmd, string off_cmd, bool tg, bool dst_snd, bool lp, bool sgl, int mnz=0, int mxz=0, bool ctc=false, int trg_time=0)
 {
 minx=mnx;
 maxx=mxx;
@@ -33,6 +35,7 @@ destroying_sound=dst_snd;
 looping=lp;
 singleuse=sgl;
 contact_trigger=ctc;
+trigger_time=trg_time;
 was_inside=tg;
 @pool = contact_trigger ? @sensorpool : @switchpool;
 string folder = contact_trigger ? "builder/interaction/sensors/" : "builder/interaction/switches/";
@@ -68,6 +71,13 @@ switchers[i].switchsound = switchers[i].pool.play_extended_3d(get_map_sound(fold
 switchers[i].pool.update_sound_range_3d(switchers[i].switchsound, 0, switchers[i].maxx-switchers[i].minx, 0, switchers[i].maxy-switchers[i].miny, 0, zr);
 }
 switchers[i].pressound = switchers[i].pool.play_stationary(get_map_sound(folder+switchers[i].switchtype+"/*on*"), false);
+if(switchers[i].on_command != "") comstack(switchers[i].on_command);
+if(switchers[i].trigger_time > 0) switchers[i].trigger_timer.restart();
+continue;
+}
+if(sw_match && switchers[i].was_inside && switchers[i].trigger_time > 0 && switchers[i].trigger_timer.elapsed >= switchers[i].trigger_time)
+{
+switchers[i].trigger_timer.restart();
 if(switchers[i].on_command != "") comstack(switchers[i].on_command);
 continue;
 }
@@ -122,9 +132,9 @@ return;
 }
 }
 }
-void spawn_switcher(int mnx, int mxx, int mny, int mxy, string switchtype, string on_command, string off_command, bool toggled, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0, bool contact_trigger=false)
+void spawn_switcher(int mnx, int mxx, int mny, int mxy, string switchtype, string on_command, string off_command, bool toggled, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0, bool contact_trigger=false, int trigger_time=0)
 {
-switcher sc1(mnx, mxx, mny, mxy, switchtype, on_command, off_command, toggled, destroying_sound, looping, singleuse, mnz, mxz, contact_trigger);
+switcher sc1(mnx, mxx, mny, mxy, switchtype, on_command, off_command, toggled, destroying_sound, looping, singleuse, mnz, mxz, contact_trigger, trigger_time);
 switchers.insert_last(sc1);
 }
 void destroy_all_switchers()

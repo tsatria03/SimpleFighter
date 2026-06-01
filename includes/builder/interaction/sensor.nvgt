@@ -35,6 +35,8 @@ if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom 
 }
 int on_cmd_box = form.create_input_box("on command: leave blank to skip", "");
 int off_cmd_box = form.create_input_box("off command: leave blank to skip", "");
+int trigger_box = form.create_input_box("trigger time: leave 0 to disable", "0");
+form.set_disallowed_chars(trigger_box, disallowed_nums, false, "This character is not allowed.");
 if(ranged)
 {
 form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
@@ -134,17 +136,18 @@ bool blp = form.is_checked(loop_cb);
 bool bsse = form.is_checked(single_cb);
 string b_on_cmd = form.get_text(on_cmd_box);
 string b_off_cmd = form.get_text(off_cmd_box);
+int b_trigger = (form.get_text(trigger_box) == "") ? 0 : string_to_number(form.get_text(trigger_box));
 t.destroy_sound(prevslot);
 resume_pools();
 if(ranged)
 {
-write_ranged_sensor(bmnx, bmxx, bmny, bmxy, btype, b_on_cmd, b_off_cmd, bdst, blp, bsse, bmnz, bmxz);
-spawn_switcher(bmnx, bmxx, bmny, bmxy, btype, b_on_cmd, b_off_cmd, false, bdst, blp, bsse, bmnz, bmxz, true);
+write_ranged_sensor(bmnx, bmxx, bmny, bmxy, btype, b_on_cmd, b_off_cmd, b_trigger, bdst, blp, bsse, bmnz, bmxz);
+spawn_switcher(bmnx, bmxx, bmny, bmxy, btype, b_on_cmd, b_off_cmd, false, bdst, blp, bsse, bmnz, bmxz, true, b_trigger);
 }
 else
 {
-write_sensor(bx, by, btype, b_on_cmd, b_off_cmd, bdst, blp, bsse, bz);
-spawn_switcher(bx, bx, by, by, btype, b_on_cmd, b_off_cmd, false, bdst, blp, bsse, bz, bz, true);
+write_sensor(bx, by, btype, b_on_cmd, b_off_cmd, b_trigger, bdst, blp, bsse, bz);
+spawn_switcher(bx, bx, by, by, btype, b_on_cmd, b_off_cmd, false, bdst, blp, bsse, bz, bz, true, b_trigger);
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
@@ -172,31 +175,39 @@ string off_cmd = "";
 bool dst = false;
 bool lp = false;
 bool scl = false;
+int trg = 0;
 string combined = join_string_array(sd, o+1, sd.length());
 string remainder;
 array<string> quoted = extract_quoted(combined, remainder);
 if(quoted.length() >= 1) on_cmd = quoted[0];
 if(quoted.length() >= 2) off_cmd = quoted[1];
 array<string> tail = string_split(string_trim_sides(remainder), " ");
-if(tail.length() >= 3)
+if(tail.length() >= 4)
+{
+trg = string_to_number(tail[0]);
+dst = string_to_bool(tail[1]);
+lp = string_to_bool(tail[2]);
+scl = string_to_bool(tail[3]);
+}
+else if(tail.length() >= 3)
 {
 dst = string_to_bool(tail[0]);
 lp = string_to_bool(tail[1]);
 scl = string_to_bool(tail[2]);
 }
-spawn_switcher(scx, scx, scy, scy, sct, on_cmd, off_cmd, false, dst, lp, scl, scz, scz, true);
+spawn_switcher(scx, scx, scy, scy, sct, on_cmd, off_cmd, false, dst, lp, scl, scz, scz, true, trg);
 }
 
-void write_sensor(int x, int y, string sensortype, string on_command, string off_command, bool destroying_sound, bool looping, bool singleuse, int z=0)
+void write_sensor(int x, int y, string sensortype, string on_command, string off_command, int trigger_time, bool destroying_sound, bool looping, bool singleuse, int z=0)
 {
 string clean_on = string_replace(on_command, "\"", "", true);
 string clean_off = string_replace(off_command, "\"", "", true);
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"sensor "+x+" "+y+" "+z+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+destroying_sound+" "+looping+" "+singleuse);
+mapper.write("\r\n"+"sensor "+x+" "+y+" "+z+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+trigger_time+" "+destroying_sound+" "+looping+" "+singleuse);
 else
-mapper.write("\r\n"+"sensor "+x+" "+y+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+destroying_sound+" "+looping+" "+singleuse);
+mapper.write("\r\n"+"sensor "+x+" "+y+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+trigger_time+" "+destroying_sound+" "+looping+" "+singleuse);
 mapper.close();
 bump_map_modified();
 }
@@ -217,31 +228,39 @@ string off_cmd = "";
 bool dst = false;
 bool lp = false;
 bool scl = false;
+int trg = 0;
 string combined = join_string_array(sd, o+1, sd.length());
 string remainder;
 array<string> quoted = extract_quoted(combined, remainder);
 if(quoted.length() >= 1) on_cmd = quoted[0];
 if(quoted.length() >= 2) off_cmd = quoted[1];
 array<string> tail = string_split(string_trim_sides(remainder), " ");
-if(tail.length() >= 3)
+if(tail.length() >= 4)
+{
+trg = string_to_number(tail[0]);
+dst = string_to_bool(tail[1]);
+lp = string_to_bool(tail[2]);
+scl = string_to_bool(tail[3]);
+}
+else if(tail.length() >= 3)
 {
 dst = string_to_bool(tail[0]);
 lp = string_to_bool(tail[1]);
 scl = string_to_bool(tail[2]);
 }
-spawn_switcher(mnx, mxx, mny, mxy, sct, on_cmd, off_cmd, false, dst, lp, scl, mnz, mxz, true);
+spawn_switcher(mnx, mxx, mny, mxy, sct, on_cmd, off_cmd, false, dst, lp, scl, mnz, mxz, true, trg);
 }
 
-void write_ranged_sensor(int mnx, int mxx, int mny, int mxy, string sensortype, string on_command, string off_command, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0)
+void write_ranged_sensor(int mnx, int mxx, int mny, int mxy, string sensortype, string on_command, string off_command, int trigger_time, bool destroying_sound, bool looping, bool singleuse, int mnz=0, int mxz=0)
 {
 string clean_on = string_replace(on_command, "\"", "", true);
 string clean_off = string_replace(off_command, "\"", "", true);
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"ranged_sensor "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+destroying_sound+" "+looping+" "+singleuse);
+mapper.write("\r\n"+"ranged_sensor "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+trigger_time+" "+destroying_sound+" "+looping+" "+singleuse);
 else
-mapper.write("\r\n"+"ranged_sensor "+mnx+" "+mxx+" "+mny+" "+mxy+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+destroying_sound+" "+looping+" "+singleuse);
+mapper.write("\r\n"+"ranged_sensor "+mnx+" "+mxx+" "+mny+" "+mxy+" "+sensortype+" \""+clean_on+"\" \""+clean_off+"\" "+trigger_time+" "+destroying_sound+" "+looping+" "+singleuse);
 mapper.close();
 bump_map_modified();
 }

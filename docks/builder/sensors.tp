@@ -21,6 +21,12 @@ While the player remains inside the area, the sensor does nothing — no repeate
 
 Multiple overlapping sensors all respond independently in the same frame. Walking into a tile that two sensors share fires both on commands at once; walking out fires both off commands. There is no master/dependency relationship between overlapping sensors.
 
+Trigger time.
+
+By default a sensor only fires its on command once, the moment you enter. The trigger time field, set in milliseconds and entered just after the off command, changes that. Leave it at 0 to keep the one-shot behavior. Set it above zero and the sensor re-fires its on command on a repeating beat for as long as you remain inside: you enter and the on command runs once, then after each trigger time interval it runs again, and again, until you step out. Stepping out fires the off command as usual and ends the repetition; stepping back in starts it over.
+
+The repeating beat reuses the on command exactly, there is no separate command for it, and the on sound only plays on the original entry, not on each repeat, so the pulses are silent unless the command itself makes noise. This is most useful on ranged sensors covering a wide area, where you want a command to keep firing the whole time the player is anywhere in the zone, such as draining health in a hazard room or nudging a fight along while the player lingers. A single-use sensor with a trigger time keeps pulsing while you stand on it and is only consumed when you finally walk out.
+
 Sound model.
 
 A sensor uses a sound theme from the sensors folder (not the switches folder). Each sensor sound theme provides three clips instead of the switch's two:
@@ -47,10 +53,10 @@ The spier reports a sensor with the label sensor (and the size prefix for ranged
 
 Authoring sensors by hand.
 
-If you prefer to edit info.sif directly, the on-disk format for a standard sensor line is: sensor x y <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
-For 3d maps insert z right after y: sensor x y z <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
+If you prefer to edit info.sif directly, the on-disk format for a standard sensor line is: sensor x y <sensortype> <on_command> <off_command> <trigger_time> <destroying_sound> <looping> <singleuse>
+For 3d maps insert z right after y: sensor x y z <sensortype> <on_command> <off_command> <trigger_time> <destroying_sound> <looping> <singleuse>
 
-The ranged sensor follows the same line shape but replaces the single coordinates with min/max pairs: ranged_sensor <minx> <maxx> <miny> <maxy> <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
-For 3d maps insert min and max z right after max y: ranged_sensor <minx> <maxx> <miny> <maxy> <minz> <maxz> <sensortype> <on_command> <off_command> <destroying_sound> <looping> <singleuse>
+The ranged sensor follows the same line shape but replaces the single coordinates with min/max pairs: ranged_sensor <minx> <maxx> <miny> <maxy> <sensortype> <on_command> <off_command> <trigger_time> <destroying_sound> <looping> <singleuse>
+For 3d maps insert min and max z right after max y: ranged_sensor <minx> <maxx> <miny> <maxy> <minz> <maxz> <sensortype> <on_command> <off_command> <trigger_time> <destroying_sound> <looping> <singleuse>
 
-The three bool fields are written as the literal words true or false. Both command fields must be present, even if empty (write empty double quotes for an empty side). Sensor types must match a folder name under the sensors folder, or the literal word none for a silent sensor. There is no toggled field on disk for sensors — unlike switches, which carry one to support the auto activate option, sensors always start in the off state. Hand-authored lines load the same as builder-authored lines, and the builder will round-trip any line that follows this format.
+The three bool fields are written as the literal words true or false, and trigger time is a whole number of milliseconds (0 to disable). Both command fields must be present, even if empty (write empty double quotes for an empty side). Sensor types must match a folder name under the sensors folder, or the literal word none for a silent sensor. There is no toggled field on disk for sensors — unlike switches, which carry one to support the auto activate option, sensors always start in the off state. Older sensor lines saved before trigger time existed leave it out entirely; those lines still load and behave as if trigger time were 0. Hand-authored lines load the same as builder-authored lines, and the builder will round-trip any line that follows this format.
