@@ -93,44 +93,86 @@ bump_map_modified();
 
 void build_obscurity_zone()
 {
-form.reset();
-form.create_window("obscurity zone", false);
+string[] menu_entities = {"aircraft", "bike", "door", "npc", "platform", "projectile", "security camera", "spike", "staircase", "tts enemie", "vehicle", "wall"};
+string[] spier_entities = {"aircraft", "bike", "blockage", "calendar", "checkpoint", "clock", "conveyor belt", "door", "elevator", "fire", "floor breaker", "force field", "hazard", "item", "lift", "mine", "npc", "passage", "platform", "projectile", "safe zone", "security camera", "sensor", "sign", "spike", "switch", "teleporter", "time bomb", "travelpoint", "tts enemie", "vehicle"};
+string[] alltargets = {"info menu", "spier"};
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 bool y_uses_back_front = mapmode != "2d";
+string saved_mx = sel_left_set ? sel_left : "";
+string saved_mx2 = sel_right_set ? sel_right : "";
 string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
 string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
-int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
-int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", saved_my);
-int my2 = form.create_input_box("maximum y", saved_my2);
-int mnz = -1, mxz = -1;
+string saved_mnz = sel_bottom_set ? sel_bottom : "";
+string saved_mxz = sel_top_set ? sel_top : "";
+int saved_target_pos = 0;
+string[] saved_entities;
+bool saved_wl = false;
+bool first = true;
+bool do_build = true;
+int last_target_pos = -1;
+int mx=-1, mx2=-1, my=-1, my2=-1, mnz=-1, mxz=-1, target_list=-1, entity_list=-1, wl=-1, ok=-1, cn=-1;
+while (true)
+{
+if(do_build)
+{
+do_build = false;
+if(!first)
+{
+saved_mx = form.get_text(mx);
+saved_mx2 = form.get_text(mx2);
+saved_my = form.get_text(my);
+saved_my2 = form.get_text(my2);
+if(mnz != -1) saved_mnz = form.get_text(mnz);
+if(mxz != -1) saved_mxz = form.get_text(mxz);
+saved_entities.resize(0);
+int[] ce = form.get_checked_list_items(entity_list);
+for(uint i=0; i<ce.length(); i++) saved_entities.insert_last(form.get_list_item(entity_list, ce[i]));
+saved_wl = form.is_checked(wl);
+}
+form.reset();
+form.create_window("obscurity zone", false, true, !first);
+mx = form.create_input_box("minimum x", saved_mx);
+mx2 = form.create_input_box("maximum x", saved_mx2);
+my = form.create_input_box("minimum y", saved_my);
+my2 = form.create_input_box("maximum y", saved_my2);
+mnz = -1; mxz = -1;
 if(mapmode == "3d")
 {
-mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
-mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+mnz = form.create_input_box("minimum z", saved_mnz);
+mxz = form.create_input_box("maximum z", saved_mxz);
 }
-string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
 form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
 if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
 if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
-int target_list = form.create_list("Select what this zone affects", 0, true);
-string[] alltargets = {"spier", "info menu"};
+target_list = form.create_list("Select what this zone affects");
 for (uint i = 0; i < alltargets.length(); i++)
-form.add_list_item(target_list, alltargets[i], "", -1, false);
-int entity_list = form.create_list("Select the things to show or hide", 0, true);
-string[] allentities = {"aircraft", "bike", "blockage", "calendar", "checkpoint", "clock", "conveyor belt", "door", "elevator", "fire", "floor breaker", "force field", "hazard", "item", "lift", "mine", "npc", "passage", "platform", "projectile", "safe zone", "security camera", "sensor", "sign", "spike", "staircase", "switch", "teleporter", "time bomb", "travelpoint", "tts enemie", "vehicle", "wall"};
-for (uint i = 0; i < allentities.length(); i++)
-form.add_list_item(entity_list, allentities[i], "", -1, false);
-int wl = form.create_checkbox("Enable whitelist", false);
-int ok = form.create_button("&okay", true);
-int cn = form.create_button("&cancel");
-form.focus(mx);
-while (true)
-{
+form.add_list_item(target_list, alltargets[i], alltargets[i]);
+form.set_list_position(target_list, saved_target_pos, false);
+string[]@ elist = menu_entities;
+if(saved_target_pos == 1) @elist = spier_entities;
+entity_list = form.create_list("Select the things to show or hide", 0, true);
+for (uint i = 0; i < elist.length(); i++)
+form.add_list_item(entity_list, elist[i], "", -1, array_contains(saved_entities, elist[i]));
+wl = form.create_checkbox("Enable whitelist", saved_wl);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(first) form.focus(mx);
+else form.focus_silently(target_list);
+last_target_pos = saved_target_pos;
+first = false;
+}
 wait(5);
 form.monitor();
+int cur_target_pos = form.get_list_position(target_list);
+if(cur_target_pos != -1 && cur_target_pos != last_target_pos)
+{
+saved_target_pos = cur_target_pos;
+do_build = true;
+continue;
+}
 if (key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
 {
 resume_pools();
@@ -145,13 +187,6 @@ if (form.get_text(my) == "") { speak("Minimum y is required."); form.focus(my); 
 if (form.get_text(my2) == "") { speak("Maximum y is required."); form.focus(my2); continue; }
 if (mnz != -1 && form.get_text(mnz) == "") { speak("Minimum z is required."); form.focus(mnz); continue; }
 if (mxz != -1 && form.get_text(mxz) == "") { speak("Maximum z is required."); form.focus(mxz); continue; }
-int[] selected_targets = form.get_checked_list_items(target_list);
-if (selected_targets.length() == 0)
-{
-speak("You must select at least one target.");
-form.focus(target_list);
-continue;
-}
 int[] selected_entities = form.get_checked_list_items(entity_list);
 if (selected_entities.length() == 0)
 {
@@ -159,13 +194,8 @@ speak("You must select at least one entity type.");
 form.focus(entity_list);
 continue;
 }
-bool aspier = false, amenu = false;
-for (uint i = 0; i < selected_targets.length(); i++)
-{
-string t = form.get_list_item(target_list, selected_targets[i]);
-if (t == "spier") aspier = true;
-else if (t == "info menu") amenu = true;
-}
+bool aspier = (saved_target_pos == 1);
+bool amenu = (saved_target_pos == 0);
 string[] etypes;
 for (uint i = 0; i < selected_entities.length(); i++)
 etypes.insert_last(form.get_list_item(entity_list, selected_entities[i]));
