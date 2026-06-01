@@ -86,13 +86,14 @@ return;
 for(uint j = 0; j < calendars.length(); j++)
 {
 if(@calendars[j] == null) continue;
-if(calendars[j].calendarx != hx || calendars[j].calendary != hy) continue;
-if(mapmode == "3d" && calendars[j].calendarz != hz) continue;
+if(hx < calendars[j].minx || hx > calendars[j].maxx || hy < calendars[j].miny || hy > calendars[j].maxy) continue;
+if(mapmode == "3d" && (hz < calendars[j].minz || hz > calendars[j].maxz)) continue;
 if(!calendars[j].destroyable) continue;
 gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
 gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
 calpool.destroy_sound(calendars[j].calendarsound);
-calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[j].calendartype+"/*break*"), me.x, me.y, me.z, calendars[j].calendarx, calendars[j].calendary, calendars[j].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+int gbreak = calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[j].calendartype+"/*break*"), me.x, me.y, me.z, calendars[j].calendarx, calendars[j].calendary, calendars[j].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+calpool.update_sound_range_3d(gbreak, 0, calendars[j].maxx-calendars[j].minx, 0, calendars[j].maxy-calendars[j].miny, 0, (mapmode=="3d")?(calendars[j].maxz-calendars[j].minz):0);
 @calendars[j] = null;
 return;
 }

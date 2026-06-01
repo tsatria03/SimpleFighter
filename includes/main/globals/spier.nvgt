@@ -226,10 +226,22 @@ labels.insert_last("clock");
 for (uint j = 0; j < calendars.length(); j++)
 {
 if(@calendars[j] == null) continue;
-bool cal_match = sx == calendars[j].calendarx && sy == calendars[j].calendary;
-if(mapmode == "3d") cal_match = cal_match && int(sz) == calendars[j].calendarz;
-if (cal_match && !is_obscured("calendar", "spier"))
+if(mapmode == "3d" && (sz < calendars[j].minz || sz > calendars[j].maxz)) continue;
+double closest_x = me.x < calendars[j].minx ? calendars[j].minx : (me.x > calendars[j].maxx ? calendars[j].maxx : me.x);
+double closest_y = me.y < calendars[j].miny ? calendars[j].miny : (me.y > calendars[j].maxy ? calendars[j].maxy : me.y);
+if (sx == closest_x && sy == closest_y && !is_obscured("calendar", "spier"))
+{
+if (calendars[j].is_ranged)
+{
+int w = calendars[j].maxx - calendars[j].minx + 1;
+int h = calendars[j].maxy - calendars[j].miny + 1;
+string dims = w + " x " + h;
+if(mapmode == "3d") dims += " x " + (calendars[j].maxz - calendars[j].minz + 1);
+labels.insert_last(dims + " tile ranged calendar");
+}
+else
 labels.insert_last("calendar");
+}
 }
 for (uint j = 0; j < npcs.length(); j++)
 {

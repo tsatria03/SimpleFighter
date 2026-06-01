@@ -368,7 +368,7 @@ return;
 for(uint i2=0; i2<calendars.length(); i2++)
 {
 if(@calendars[i2] == null) continue;
-if(calendars[i2].calendarx==bullets[i].bullx and calendars[i2].calendary==bullets[i].bully and (mapmode != "3d" or calendars[i2].calendarz==bullets[i].bullz) and calendars[i2].destroyable==true)
+if(bullets[i].bullx>=calendars[i2].minx and bullets[i].bullx<=calendars[i2].maxx and bullets[i].bully>=calendars[i2].miny and bullets[i].bully<=calendars[i2].maxy and (mapmode != "3d" or (bullets[i].bullz>=calendars[i2].minz and bullets[i].bullz<=calendars[i2].maxz)) and calendars[i2].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
@@ -377,12 +377,13 @@ if(bullets[i].is_cloner)
 {
 int cx, cy, cz;
 cloner_clone_position(calendars[i2].calendarx, calendars[i2].calendary, calendars[i2].calendarz, cx, cy, cz);
-spawn_calendar(cx, cy, calendars[i2].cdtext, calendars[i2].calendartype, calendars[i2].destroyable, cz);
+spawn_calendar(cx, cx, cy, cy, calendars[i2].cdtext, calendars[i2].calendartype, calendars[i2].destroyable, cz, cz, false);
 }
 if(!bullets[i].is_cloner || bullets[i].damage >= 1)
 {
 calpool.destroy_sound(calendars[i2].calendarsound);
 calendars[i2].hurtsound=calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[i2].calendartype+"/*break*"),me.x,me.y,me.z,calendars[i2].calendarx,calendars[i2].calendary,calendars[i2].calendarz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+calpool.update_sound_range_3d(calendars[i2].hurtsound, 0, calendars[i2].maxx-calendars[i2].minx, 0, calendars[i2].maxy-calendars[i2].miny, 0, (mapmode=="3d")?(calendars[i2].maxz-calendars[i2].minz):0);
 @calendars[i2] = null;
 }
 try_bullet_splash(i, "", -1, mapmode == "3d");
@@ -938,13 +939,17 @@ for(int i = int(calendars.length()) - 1; i >= 0; i--)
 if(@calendars[i] == null) continue;
 if(skip_kind == "calendar" and i == skip_idx) continue;
 if(!calendars[i].destroyable) continue;
-int dx = absolute(int(calendars[i].calendarx) - bx);
-int dy = absolute(int(calendars[i].calendary) - by);
-int dz = absolute(int(calendars[i].calendarz) - bz);
+int ccx = bx < calendars[i].minx ? calendars[i].minx : (bx > calendars[i].maxx ? calendars[i].maxx : bx);
+int ccy = by < calendars[i].miny ? calendars[i].miny : (by > calendars[i].maxy ? calendars[i].maxy : by);
+int ccz = bz < calendars[i].minz ? calendars[i].minz : (bz > calendars[i].maxz ? calendars[i].maxz : bz);
+int dx = absolute(ccx - bx);
+int dy = absolute(ccy - by);
+int dz = absolute(ccz - bz);
 if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 calpool.destroy_sound(calendars[i].calendarsound);
 calendars[i].hurtsound = calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[i].calendartype+"/*break*"), me.x, me.y, me.z, calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+calpool.update_sound_range_3d(calendars[i].hurtsound, 0, calendars[i].maxx-calendars[i].minx, 0, calendars[i].maxy-calendars[i].miny, 0, (mapmode=="3d")?(calendars[i].maxz-calendars[i].minz):0);
 @calendars[i] = null;
 if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }

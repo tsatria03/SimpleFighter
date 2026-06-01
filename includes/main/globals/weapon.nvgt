@@ -600,10 +600,13 @@ for(uint i = 0; i < calendars.length(); i++)
 {
 if(@calendars[i] == null) continue;
 if(!calendars[i].destroyable) continue;
-if(!target_in_facing(calendars[i].calendarx, calendars[i].calendarx, calendars[i].calendary, calendars[i].calendary, calendars[i].calendarz, calendars[i].calendarz, fx, fy, fz, facing, is_3d)) continue;
-int dx = absolute(int(calendars[i].calendarx) - fx);
-int dy = absolute(int(calendars[i].calendary) - fy);
-int dz = absolute(int(calendars[i].calendarz) - fz);
+if(!target_in_facing(calendars[i].minx, calendars[i].maxx, calendars[i].miny, calendars[i].maxy, calendars[i].minz, calendars[i].maxz, fx, fy, fz, facing, is_3d)) continue;
+int ccx = fx < calendars[i].minx ? calendars[i].minx : (fx > calendars[i].maxx ? calendars[i].maxx : fx);
+int ccy = fy < calendars[i].miny ? calendars[i].miny : (fy > calendars[i].maxy ? calendars[i].maxy : fy);
+int ccz = fz < calendars[i].minz ? calendars[i].minz : (fz > calendars[i].maxz ? calendars[i].maxz : fz);
+int dx = absolute(ccx - fx);
+int dy = absolute(ccy - fy);
+int dz = absolute(ccz - fz);
 if(dx > range or dy > range2) continue;
 if(is_3d and dz > range3) continue;
 int d = dx + dy + (is_3d ? dz : 0);
@@ -853,8 +856,9 @@ if(best_type == 3)
 {
 uint i = uint(best_idx);
 calpool.destroy_sound(calendars[i].calendarsound);
-play_melee_hit_at(calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz);
+play_melee_hit_at(calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz, calendars[i].maxx-calendars[i].minx, calendars[i].maxy-calendars[i].miny, (mapmode=="3d")?(calendars[i].maxz-calendars[i].minz):0);
 calendars[i].hurtsound = calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[i].calendartype+"/*break*"), me.x, me.y, me.z, calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+calpool.update_sound_range_3d(calendars[i].hurtsound, 0, calendars[i].maxx-calendars[i].minx, 0, calendars[i].maxy-calendars[i].miny, 0, (mapmode=="3d")?(calendars[i].maxz-calendars[i].minz):0);
 @calendars[i] = null;
 return;
 }
@@ -1131,17 +1135,21 @@ for(int i = int(calendars.length()) - 1; i >= 0; i--)
 {
 if(@calendars[i] == null) continue;
 if(!calendars[i].destroyable) continue;
-if(!target_in_facing(calendars[i].calendarx, calendars[i].calendarx, calendars[i].calendary, calendars[i].calendary, calendars[i].calendarz, calendars[i].calendarz, fx, fy, fz, facing, is_3d)) continue;
-int dx = absolute(int(calendars[i].calendarx) - fx);
-int dy = absolute(int(calendars[i].calendary) - fy);
-int dz = absolute(int(calendars[i].calendarz) - fz);
+if(!target_in_facing(calendars[i].minx, calendars[i].maxx, calendars[i].miny, calendars[i].maxy, calendars[i].minz, calendars[i].maxz, fx, fy, fz, facing, is_3d)) continue;
+int ccx = fx < calendars[i].minx ? calendars[i].minx : (fx > calendars[i].maxx ? calendars[i].maxx : fx);
+int ccy = fy < calendars[i].miny ? calendars[i].miny : (fy > calendars[i].maxy ? calendars[i].maxy : fy);
+int ccz = fz < calendars[i].minz ? calendars[i].minz : (fz > calendars[i].maxz ? calendars[i].maxz : fz);
+int dx = absolute(ccx - fx);
+int dy = absolute(ccy - fy);
+int dz = absolute(ccz - fz);
 if(dx > range or dy > range2) continue;
 if(is_3d and dz > range3) continue;
 if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 calpool.destroy_sound(calendars[i].calendarsound);
-play_melee_hit_at(calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz);
+play_melee_hit_at(calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz, calendars[i].maxx-calendars[i].minx, calendars[i].maxy-calendars[i].miny, (mapmode=="3d")?(calendars[i].maxz-calendars[i].minz):0);
 calendars[i].hurtsound = calpool.play_extended_3d(get_map_sound("builder/interaction/calendars/"+calendars[i].calendartype+"/*break*"), me.x, me.y, me.z, calendars[i].calendarx, calendars[i].calendary, calendars[i].calendarz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+calpool.update_sound_range_3d(calendars[i].hurtsound, 0, calendars[i].maxx-calendars[i].minx, 0, calendars[i].maxy-calendars[i].miny, 0, (mapmode=="3d")?(calendars[i].maxz-calendars[i].minz):0);
 @calendars[i] = null;
 if(sc > 0) { sc--; if(sc <= 0) return; }
 }
