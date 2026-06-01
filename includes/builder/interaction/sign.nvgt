@@ -4,22 +4,36 @@ sign@[]signs(0);
 class sign
 {
 bool destroyable, looping;
+bool is_ranged;
 int hurtsound, signsound, pressound;
-int signx;
-int signy;
-int signz;
+int minx, maxx;
+int miny, maxy;
+int minz, maxz;
+int signx, signy, signz;
 string text;
 string signtype;
-sign(int sx,int sy,string txt, string st,bool dbl,bool lps,int sz=0)
+sign(int mnx, int mxx, int mny, int mxy, string txt, string st, bool dbl, bool lps, int mnz=0, int mxz=0, bool rng=false)
 {
-signx=sx;
-signy=sy;
-signz=sz;
+minx=mnx;
+maxx=mxx;
+miny=mny;
+maxy=mxy;
+minz=mnz;
+maxz=mxz;
+signx=mnx;
+signy=mny;
+signz=mnz;
 text=txt;
 signtype=st;
 destroyable=dbl;
 looping=lps;
-if(looping==true) signsound=signpool.play_3d(get_map_sound("builder/interaction/signs/"+signtype+"/*loop*"),me.x,me.y,me.z,signx,signy,signz,calculate_theta(me_rotation),true);
+is_ranged=rng;
+if(looping==true)
+{
+double zr = (mapmode == "3d") ? (maxz-minz) : 0;
+signsound=signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signtype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+signpool.update_sound_range_3d(signsound, 0, maxx-minx, 0, maxy-miny, 0, zr);
+}
 }
 }
 void signcheck()
@@ -27,8 +41,8 @@ void signcheck()
 for(uint i=0; i<signs.length(); i++)
 {
 if(@signs[i] == null) continue;
-bool match = me.x==signs[i].signx and me.y==signs[i].signy;
-if(mapmode == "3d") match = match and me.z==signs[i].signz;
+bool match = me.x>=signs[i].minx and me.x<=signs[i].maxx and me.y>=signs[i].miny and me.y<=signs[i].maxy;
+if(mapmode == "3d") match = match and me.z>=signs[i].minz and me.z<=signs[i].maxz;
 if(match and controls.action_repeating("interact"))
 {
 signs[i].pressound=signpool.play_stationary(get_map_sound("builder/interaction/signs/"+signs[i].signtype+"/*press*"),false);
@@ -36,9 +50,9 @@ speak(signs[i].text);
 }
 }
 }
-void spawn_sign(int x,int y,string text,string signtype,bool destroyable,bool looping,int z=0)
+void spawn_sign(int mnx, int mxx, int mny, int mxy, string text, string signtype, bool destroyable, bool looping, int mnz=0, int mxz=0, bool ranged=false)
 {
-sign sg1(x,y,text,signtype,destroyable,looping,z);
+sign sg1(mnx, mxx, mny, mxy, text, signtype, destroyable, looping, mnz, mxz, ranged);
 signs.insert_last(sg1);
 }
 void destroy_all_signs()
@@ -51,7 +65,7 @@ signpool.destroy_sound(signs[i].signsound);
 signs.resize(0);
 }
 
-void build_sign()
+void build_sign(bool ranged = false)
 {
 string[] signs_list = get_map_sound_folders("builder/interaction/signs/*");
 if(signs_list.length() == 0)
@@ -62,16 +76,44 @@ return;
 }
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
-form.create_window("sign", false);
+form.create_window(ranged ? "ranged sign" : "sign", false);
 bool y_uses_back_front = mapmode != "2d";
-int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-int my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-int mz = -1;
+int mx = -1, my = -1, mz = -1;
+int mnx = -1, mxx = -1, mny = -1, mxy = -1, mnz = -1, mxz = -1;
+if(ranged)
+{
+mnx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+mxx = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+mny = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+mxy = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+}
+else
+{
+mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
 if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+}
 int txtbox = form.create_input_box("text");
+if(ranged)
+{
+form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+}
 int sign_list = form.create_list("sign sound");
 form.add_list_item(sign_list, "none", "none");
 for(uint i = 0; i < signs_list.length(); i++)
@@ -81,7 +123,7 @@ int dest_cb = form.create_checkbox("destroyable", false);
 int loop_cb = form.create_checkbox("looping sound", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
-form.focus(mx);
+form.focus(ranged ? mnx : mx);
 while(true)
 {
 wait(5);
@@ -131,23 +173,20 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx) == "")
+if(ranged)
 {
-speak("X is required.");
-form.focus(mx);
-continue;
+if(form.get_text(mnx) == "") { speak("Minimum X is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx) == "") { speak("Maximum X is required."); form.focus(mxx); continue; }
+if(form.get_text(mny) == "") { speak("Minimum Y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy) == "") { speak("Maximum Y is required."); form.focus(mxy); continue; }
+if(mnz != -1 && form.get_text(mnz) == "") { speak("Minimum Z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz) == "") { speak("Maximum Z is required."); form.focus(mxz); continue; }
 }
-if(form.get_text(my) == "")
+else
 {
-speak("Y is required.");
-form.focus(my);
-continue;
-}
-if(mz != -1 && form.get_text(mz) == "")
-{
-speak("Z is required.");
-form.focus(mz);
-continue;
+if(form.get_text(mx) == "") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
 }
 if(form.get_text(txtbox) == "")
 {
@@ -155,9 +194,6 @@ speak("Text is required.");
 form.focus(txtbox);
 continue;
 }
-int bx = string_to_number(form.get_text(mx));
-int by = string_to_number(form.get_text(my));
-int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 string btxt = form.get_text(txtbox);
 int p = form.get_list_position(sign_list);
 string btype = (p > 0) ? signs_list[p-1] : "none";
@@ -165,14 +201,35 @@ bool bdest = form.is_checked(dest_cb);
 bool bloop = form.is_checked(loop_cb);
 t.destroy_sound(prevslot);
 resume_pools();
+if(ranged)
+{
+int bmnx = string_to_number(form.get_text(mnx));
+int bmxx = string_to_number(form.get_text(mxx));
+int bmny = string_to_number(form.get_text(mny));
+int bmxy = string_to_number(form.get_text(mxy));
+int bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+int bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+write_ranged_sign(bmnx, bmxx, bmny, bmxy, btxt, btype, bdest, bloop, bmnz, bmxz);
+spawn_sign(bmnx, bmxx, bmny, bmxy, btxt, btype, bdest, bloop, bmnz, bmxz, true);
+}
+else
+{
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 write_sign(bx, by, btxt, btype, bdest, bloop, bz);
-spawn_sign(bx, by, btxt, btype, bdest, bloop, bz);
+spawn_sign(bx, bx, by, by, btxt, btype, bdest, bloop, bz, bz, false);
+}
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
 return;
 }
 }
+}
+void build_ranged_sign()
+{
+build_sign(true);
 }
 
 void read_sign(string[] sd)
@@ -189,7 +246,27 @@ array<string> tail=string_split(string_trim_sides(remainder), " ");
 string signtype=(tail.length() >= 1) ? tail[0] : "none";
 bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
 bool lps=(tail.length() >= 3) ? string_to_bool(tail[2]) : false;
-spawn_sign(x, y, txt, signtype, dbl, lps, z);
+spawn_sign(x, x, y, y, txt, signtype, dbl, lps, z, z, false);
+}
+
+void read_ranged_sign(string[] sd)
+{
+int mnx=stn(sd[1]);
+int mxx=stn(sd[2]);
+int mny=stn(sd[3]);
+int mxy=stn(sd[4]);
+int mnz=0, mxz=0;
+int text_start=5;
+if(mapmode == "3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); text_start=7; }
+string combined=join_string_array(sd, text_start, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+string signtype=(tail.length() >= 1) ? tail[0] : "none";
+bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
+bool lps=(tail.length() >= 3) ? string_to_bool(tail[2]) : false;
+spawn_sign(mnx, mxx, mny, mxy, txt, signtype, dbl, lps, mnz, mxz, true);
 }
 
 void write_sign(int x, int y, string txt, string signtype, bool destroyable, bool looping, int z=0)
@@ -201,6 +278,19 @@ if(mapmode == "3d")
 mapper.write("\r\n"+"sign "+x+" "+y+" "+z+" \""+clean_txt+"\" "+signtype+" "+destroyable+" "+looping);
 else
 mapper.write("\r\n"+"sign "+x+" "+y+" \""+clean_txt+"\" "+signtype+" "+destroyable+" "+looping);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_sign(int mnx, int mxx, int mny, int mxy, string txt, string signtype, bool destroyable, bool looping, int mnz=0, int mxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string clean_txt=string_replace(txt, "\"", "", true);
+if(mapmode == "3d")
+mapper.write("\r\n"+"ranged_sign "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" \""+clean_txt+"\" "+signtype+" "+destroyable+" "+looping);
+else
+mapper.write("\r\n"+"ranged_sign "+mnx+" "+mxx+" "+mny+" "+mxy+" \""+clean_txt+"\" "+signtype+" "+destroyable+" "+looping);
 mapper.close();
 bump_map_modified();
 }

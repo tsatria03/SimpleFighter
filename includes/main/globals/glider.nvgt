@@ -114,13 +114,14 @@ return;
 for(uint j = 0; j < signs.length(); j++)
 {
 if(@signs[j] == null) continue;
-if(signs[j].signx != hx || signs[j].signy != hy) continue;
-if(mapmode == "3d" && signs[j].signz != hz) continue;
+if(hx < signs[j].minx || hx > signs[j].maxx || hy < signs[j].miny || hy > signs[j].maxy) continue;
+if(mapmode == "3d" && (hz < signs[j].minz || hz > signs[j].maxz)) continue;
 if(!signs[j].destroyable) continue;
 gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
 gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
 signpool.destroy_sound(signs[j].signsound);
-signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, me.z, signs[j].signx, signs[j].signy, signs[j].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+int gbreak = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[j].signtype+"/*break*"), me.x, me.y, me.z, signs[j].signx, signs[j].signy, signs[j].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+signpool.update_sound_range_3d(gbreak, 0, signs[j].maxx-signs[j].minx, 0, signs[j].maxy-signs[j].miny, 0, (mapmode=="3d")?(signs[j].maxz-signs[j].minz):0);
 @signs[j] = null;
 return;
 }

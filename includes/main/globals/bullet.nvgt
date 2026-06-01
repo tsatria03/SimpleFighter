@@ -471,7 +471,7 @@ return;
 for(uint i9=0; i9<signs.length(); i9++)
 {
 if(@signs[i9] == null) continue;
-if(signs[i9].signx==bullets[i].bullx and signs[i9].signy==bullets[i].bully and (mapmode != "3d" or signs[i9].signz==bullets[i].bullz) and signs[i9].destroyable==true)
+if(bullets[i].bullx>=signs[i9].minx and bullets[i].bullx<=signs[i9].maxx and bullets[i].bully>=signs[i9].miny and bullets[i].bully<=signs[i9].maxy and (mapmode != "3d" or (bullets[i].bullz>=signs[i9].minz and bullets[i].bullz<=signs[i9].maxz)) and signs[i9].destroyable==true)
 {
 bulletpool.destroy_sound(bullets[i].bullsound);
 bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
@@ -480,12 +480,13 @@ if(bullets[i].is_cloner)
 {
 int cx, cy, cz;
 cloner_clone_position(signs[i9].signx, signs[i9].signy, signs[i9].signz, cx, cy, cz);
-spawn_sign(cx, cy, signs[i9].text, signs[i9].signtype, signs[i9].destroyable, signs[i9].looping, cz);
+spawn_sign(cx, cx, cy, cy, signs[i9].text, signs[i9].signtype, signs[i9].destroyable, signs[i9].looping, cz, cz, false);
 }
 if(!bullets[i].is_cloner || bullets[i].damage >= 1)
 {
 signpool.destroy_sound(signs[i9].signsound);
 signs[i9].hurtsound=signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i9].signtype+"/*break*"),me.x,me.y,me.z,signs[i9].signx,signs[i9].signy,signs[i9].signz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+signpool.update_sound_range_3d(signs[i9].hurtsound, 0, signs[i9].maxx-signs[i9].minx, 0, signs[i9].maxy-signs[i9].miny, 0, (mapmode=="3d")?(signs[i9].maxz-signs[i9].minz):0);
 @signs[i9] = null;
 }
 try_bullet_splash(i, "", -1, mapmode == "3d");
@@ -977,13 +978,17 @@ for(int i = int(signs.length()) - 1; i >= 0; i--)
 if(@signs[i] == null) continue;
 if(skip_kind == "sign" and i == skip_idx) continue;
 if(!signs[i].destroyable) continue;
-int dx = absolute(int(signs[i].signx) - bx);
-int dy = absolute(int(signs[i].signy) - by);
-int dz = absolute(int(signs[i].signz) - bz);
+int ccx = bx < signs[i].minx ? signs[i].minx : (bx > signs[i].maxx ? signs[i].maxx : bx);
+int ccy = by < signs[i].miny ? signs[i].miny : (by > signs[i].maxy ? signs[i].maxy : by);
+int ccz = bz < signs[i].minz ? signs[i].minz : (bz > signs[i].maxz ? signs[i].maxz : bz);
+int dx = absolute(ccx - bx);
+int dy = absolute(ccy - by);
+int dz = absolute(ccz - bz);
 if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 signpool.destroy_sound(signs[i].signsound);
 signs[i].hurtsound = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i].signtype+"/*break*"), me.x, me.y, me.z, signs[i].signx, signs[i].signy, signs[i].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+signpool.update_sound_range_3d(signs[i].hurtsound, 0, signs[i].maxx-signs[i].minx, 0, signs[i].maxy-signs[i].miny, 0, (mapmode=="3d")?(signs[i].maxz-signs[i].minz):0);
 @signs[i] = null;
 if(sc > 0) { remaining--; if(remaining <= 0) return; }
 }

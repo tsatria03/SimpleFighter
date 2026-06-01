@@ -657,10 +657,13 @@ for(uint i = 0; i < signs.length(); i++)
 {
 if(@signs[i] == null) continue;
 if(!signs[i].destroyable) continue;
-if(!target_in_facing(signs[i].signx, signs[i].signx, signs[i].signy, signs[i].signy, signs[i].signz, signs[i].signz, fx, fy, fz, facing, is_3d)) continue;
-int dx = absolute(int(signs[i].signx) - fx);
-int dy = absolute(int(signs[i].signy) - fy);
-int dz = absolute(int(signs[i].signz) - fz);
+if(!target_in_facing(signs[i].minx, signs[i].maxx, signs[i].miny, signs[i].maxy, signs[i].minz, signs[i].maxz, fx, fy, fz, facing, is_3d)) continue;
+int ccx = fx < signs[i].minx ? signs[i].minx : (fx > signs[i].maxx ? signs[i].maxx : fx);
+int ccy = fy < signs[i].miny ? signs[i].miny : (fy > signs[i].maxy ? signs[i].maxy : fy);
+int ccz = fz < signs[i].minz ? signs[i].minz : (fz > signs[i].maxz ? signs[i].maxz : fz);
+int dx = absolute(ccx - fx);
+int dy = absolute(ccy - fy);
+int dz = absolute(ccz - fz);
 if(dx > range or dy > range2) continue;
 if(is_3d and dz > range3) continue;
 int d = dx + dy + (is_3d ? dz : 0);
@@ -895,8 +898,9 @@ if(best_type == 7)
 {
 uint i = uint(best_idx);
 signpool.destroy_sound(signs[i].signsound);
-play_melee_hit_at(signs[i].signx, signs[i].signy, signs[i].signz);
+play_melee_hit_at(signs[i].signx, signs[i].signy, signs[i].signz, signs[i].maxx-signs[i].minx, signs[i].maxy-signs[i].miny, (mapmode=="3d")?(signs[i].maxz-signs[i].minz):0);
 signs[i].hurtsound = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i].signtype+"/*break*"), me.x, me.y, me.z, signs[i].signx, signs[i].signy, signs[i].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+signpool.update_sound_range_3d(signs[i].hurtsound, 0, signs[i].maxx-signs[i].minx, 0, signs[i].maxy-signs[i].miny, 0, (mapmode=="3d")?(signs[i].maxz-signs[i].minz):0);
 @signs[i] = null;
 return;
 }
@@ -1215,17 +1219,21 @@ for(int i = int(signs.length()) - 1; i >= 0; i--)
 {
 if(@signs[i] == null) continue;
 if(!signs[i].destroyable) continue;
-if(!target_in_facing(signs[i].signx, signs[i].signx, signs[i].signy, signs[i].signy, signs[i].signz, signs[i].signz, fx, fy, fz, facing, is_3d)) continue;
-int dx = absolute(int(signs[i].signx) - fx);
-int dy = absolute(int(signs[i].signy) - fy);
-int dz = absolute(int(signs[i].signz) - fz);
+if(!target_in_facing(signs[i].minx, signs[i].maxx, signs[i].miny, signs[i].maxy, signs[i].minz, signs[i].maxz, fx, fy, fz, facing, is_3d)) continue;
+int ccx = fx < signs[i].minx ? signs[i].minx : (fx > signs[i].maxx ? signs[i].maxx : fx);
+int ccy = fy < signs[i].miny ? signs[i].miny : (fy > signs[i].maxy ? signs[i].maxy : fy);
+int ccz = fz < signs[i].minz ? signs[i].minz : (fz > signs[i].maxz ? signs[i].maxz : fz);
+int dx = absolute(ccx - fx);
+int dy = absolute(ccy - fy);
+int dz = absolute(ccz - fz);
 if(dx > range or dy > range2) continue;
 if(is_3d and dz > range3) continue;
 if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 signpool.destroy_sound(signs[i].signsound);
-play_melee_hit_at(signs[i].signx, signs[i].signy, signs[i].signz);
+play_melee_hit_at(signs[i].signx, signs[i].signy, signs[i].signz, signs[i].maxx-signs[i].minx, signs[i].maxy-signs[i].miny, (mapmode=="3d")?(signs[i].maxz-signs[i].minz):0);
 signs[i].hurtsound = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i].signtype+"/*break*"), me.x, me.y, me.z, signs[i].signx, signs[i].signy, signs[i].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+signpool.update_sound_range_3d(signs[i].hurtsound, 0, signs[i].maxx-signs[i].minx, 0, signs[i].maxy-signs[i].miny, 0, (mapmode=="3d")?(signs[i].maxz-signs[i].minz):0);
 @signs[i] = null;
 if(sc > 0) { sc--; if(sc <= 0) return; }
 }

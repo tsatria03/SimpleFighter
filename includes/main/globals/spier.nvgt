@@ -171,10 +171,22 @@ found_object = true;
 for (uint j = 0; j < signs.length(); j++)
 {
 if(@signs[j] == null) continue;
-bool sign_match = sx == signs[j].signx && sy == signs[j].signy;
-if(mapmode == "3d") sign_match = sign_match && int(sz) == signs[j].signz;
-if (sign_match && !is_obscured("sign", "spier"))
+if(mapmode == "3d" && (sz < signs[j].minz || sz > signs[j].maxz)) continue;
+double closest_x = me.x < signs[j].minx ? signs[j].minx : (me.x > signs[j].maxx ? signs[j].maxx : me.x);
+double closest_y = me.y < signs[j].miny ? signs[j].miny : (me.y > signs[j].maxy ? signs[j].maxy : me.y);
+if (sx == closest_x && sy == closest_y && !is_obscured("sign", "spier"))
+{
+if (signs[j].is_ranged)
+{
+int w = signs[j].maxx - signs[j].minx + 1;
+int h = signs[j].maxy - signs[j].miny + 1;
+string dims = w + " x " + h;
+if(mapmode == "3d") dims += " x " + (signs[j].maxz - signs[j].minz + 1);
+labels.insert_last(dims + " tile ranged sign");
+}
+else
 labels.insert_last("sign");
+}
 }
 for (uint j = 0; j < spikes.length(); j++)
 {
