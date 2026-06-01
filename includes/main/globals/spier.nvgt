@@ -206,10 +206,22 @@ found_object = true;
 for (uint j = 0; j < clocks.length(); j++)
 {
 if(@clocks[j] == null) continue;
-bool clock_match = sx == clocks[j].clockx && sy == clocks[j].clocky;
-if(mapmode == "3d") clock_match = clock_match && int(sz) == clocks[j].clockz;
-if (clock_match && !is_obscured("clock", "spier"))
+if(mapmode == "3d" && (sz < clocks[j].minz || sz > clocks[j].maxz)) continue;
+double closest_x = me.x < clocks[j].minx ? clocks[j].minx : (me.x > clocks[j].maxx ? clocks[j].maxx : me.x);
+double closest_y = me.y < clocks[j].miny ? clocks[j].miny : (me.y > clocks[j].maxy ? clocks[j].maxy : me.y);
+if (sx == closest_x && sy == closest_y && !is_obscured("clock", "spier"))
+{
+if (clocks[j].is_ranged)
+{
+int w = clocks[j].maxx - clocks[j].minx + 1;
+int h = clocks[j].maxy - clocks[j].miny + 1;
+string dims = w + " x " + h;
+if(mapmode == "3d") dims += " x " + (clocks[j].maxz - clocks[j].minz + 1);
+labels.insert_last(dims + " tile ranged clock");
+}
+else
 labels.insert_last("clock");
+}
 }
 for (uint j = 0; j < calendars.length(); j++)
 {

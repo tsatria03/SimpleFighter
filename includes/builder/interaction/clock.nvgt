@@ -4,21 +4,32 @@ clock@[]clocks(0);
 class clock
 {
 bool destroyable;
+bool is_ranged;
 int hurtsound, clocksound, pressound;
-int clockx;
-int clocky;
-int clockz;
+int minx, maxx;
+int miny, maxy;
+int minz, maxz;
+int clockx, clocky, clockz;
 string cktext;
 string clocktype;
-clock(int clx,int cly,string cltext,string cltype,bool dbl,int clz=0)
+clock(int mnx, int mxx, int mny, int mxy, string cltext, string cltype, bool dbl, int mnz=0, int mxz=0, bool rng=false)
 {
-clockx=clx;
-clocky=cly;
-clockz=clz;
+minx=mnx;
+maxx=mxx;
+miny=mny;
+maxy=mxy;
+minz=mnz;
+maxz=mxz;
+clockx=mnx;
+clocky=mny;
+clockz=mnz;
 cktext=cltext;
 clocktype=cltype;
 destroyable=dbl;
-clocksound=clockpool.play_3d(get_map_sound("builder/interaction/clocks/"+clocktype+"/*loop*"),me.x,me.y,me.z,clockx,clocky,clockz,calculate_theta(me_rotation),true);
+is_ranged=rng;
+double zr = (mapmode == "3d") ? (maxz-minz) : 0;
+clocksound=clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocktype+"/*loop*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+clockpool.update_sound_range_3d(clocksound, 0, maxx-minx, 0, maxy-miny, 0, zr);
 }
 }
 void clockcheck()
@@ -26,8 +37,8 @@ void clockcheck()
 for(uint i=0; i<clocks.length(); i++)
 {
 if(@clocks[i] == null) continue;
-bool match = me.x==clocks[i].clockx and me.y==clocks[i].clocky;
-if(mapmode == "3d") match = match and me.z==clocks[i].clockz;
+bool match = me.x>=clocks[i].minx and me.x<=clocks[i].maxx and me.y>=clocks[i].miny and me.y<=clocks[i].maxy;
+if(mapmode == "3d") match = match and me.z>=clocks[i].minz and me.z<=clocks[i].maxz;
 if(match and controls.action_repeating("interact"))
 {
 clocks[i].pressound=clockpool.play_stationary(get_map_sound("builder/interaction/clocks/"+clocks[i].clocktype+"/*press*"),false);
@@ -35,9 +46,9 @@ speak(clocks[i].cktext+get_time(true, false));
 }
 }
 }
-void spawn_clock(int x,int y,string text,string clocktype,bool destroyable,int z=0)
+void spawn_clock(int mnx, int mxx, int mny, int mxy, string text, string clocktype, bool destroyable, int mnz=0, int mxz=0, bool ranged=false)
 {
-clock ck1(x,y,text,clocktype,destroyable,z);
+clock ck1(mnx, mxx, mny, mxy, text, clocktype, destroyable, mnz, mxz, ranged);
 clocks.insert_last(ck1);
 }
 void destroy_all_clocks()
@@ -50,7 +61,7 @@ clockpool.destroy_sound(clocks[i].clocksound);
 clocks.resize(0);
 }
 
-void build_clock()
+void build_clock(bool ranged = false)
 {
 string[] clks = get_map_sound_folders("builder/interaction/clocks/*");
 if(clks.length() == 0)
@@ -61,16 +72,44 @@ return;
 }
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
-form.create_window("clock", false);
+form.create_window(ranged ? "ranged clock" : "clock", false);
 bool y_uses_back_front = mapmode != "2d";
-int mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-int my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-int mz = -1;
+int mx = -1, my = -1, mz = -1;
+int mnx = -1, mxx = -1, mny = -1, mxy = -1, mnz = -1, mxz = -1;
+if(ranged)
+{
+mnx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+mxx = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+mny = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+mxy = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+}
+else
+{
+mx = form.create_input_box("x", sel_left_set ? sel_left : "");
+my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
 if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+}
 int text = form.create_input_box("text", "The time is ");
+if(ranged)
+{
+form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+}
 int clk_list = form.create_list("clock sound");
 form.add_list_item(clk_list, "none", "none");
 for(uint i = 0; i < clks.length(); i++)
@@ -79,7 +118,7 @@ form.set_list_position(clk_list, 0, false);
 int destroyable_cb = form.create_checkbox("destroyable", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
-form.focus(mx);
+form.focus(ranged ? mnx : mx);
 while(true)
 {
 wait(5);
@@ -120,41 +159,56 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx) == "")
+if(ranged)
 {
-speak("X is required.");
-form.focus(mx);
-continue;
+if(form.get_text(mnx) == "") { speak("Minimum X is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx) == "") { speak("Maximum X is required."); form.focus(mxx); continue; }
+if(form.get_text(mny) == "") { speak("Minimum Y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy) == "") { speak("Maximum Y is required."); form.focus(mxy); continue; }
+if(mnz != -1 && form.get_text(mnz) == "") { speak("Minimum Z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz) == "") { speak("Maximum Z is required."); form.focus(mxz); continue; }
 }
-if(form.get_text(my) == "")
+else
 {
-speak("Y is required.");
-form.focus(my);
-continue;
+if(form.get_text(mx) == "") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
 }
-if(mz != -1 && form.get_text(mz) == "")
-{
-speak("Z is required.");
-form.focus(mz);
-continue;
-}
-int bx = string_to_number(form.get_text(mx));
-int by = string_to_number(form.get_text(my));
-int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 string btxt = form.get_text(text) != "" ? form.get_text(text) : "The time is ";
 bool bdmd = form.is_checked(destroyable_cb);
 int p = form.get_list_position(clk_list);
 string btype = (p > 0) ? clks[p-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
+if(ranged)
+{
+int bmnx = string_to_number(form.get_text(mnx));
+int bmxx = string_to_number(form.get_text(mxx));
+int bmny = string_to_number(form.get_text(mny));
+int bmxy = string_to_number(form.get_text(mxy));
+int bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+int bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+write_ranged_clock(bmnx, bmxx, bmny, bmxy, btxt, btype, bdmd, bmnz, bmxz);
+spawn_clock(bmnx, bmxx, bmny, bmxy, btxt, btype, bdmd, bmnz, bmxz, true);
+}
+else
+{
+int bx = string_to_number(form.get_text(mx));
+int by = string_to_number(form.get_text(my));
+int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 write_clock(bx, by, btxt, btype, bdmd, bz);
-spawn_clock(bx, by, btxt, btype, bdmd, bz);
+spawn_clock(bx, bx, by, by, btxt, btype, bdmd, bz, bz, false);
+}
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
 return;
 }
 }
+}
+void build_ranged_clock()
+{
+build_clock(true);
 }
 
 void read_clock(string[] sd)
@@ -170,7 +224,26 @@ string txt=(quoted.length() >= 1) ? quoted[0] : "";
 array<string> tail=string_split(string_trim_sides(remainder), " ");
 string clocktype=(tail.length() >= 1) ? tail[0] : "none";
 bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
-spawn_clock(x, y, txt, clocktype, dbl, z);
+spawn_clock(x, x, y, y, txt, clocktype, dbl, z, z, false);
+}
+
+void read_ranged_clock(string[] sd)
+{
+int mnx=stn(sd[1]);
+int mxx=stn(sd[2]);
+int mny=stn(sd[3]);
+int mxy=stn(sd[4]);
+int mnz=0, mxz=0;
+int text_start=5;
+if(mapmode == "3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); text_start=7; }
+string combined=join_string_array(sd, text_start, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string txt=(quoted.length() >= 1) ? quoted[0] : "";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+string clocktype=(tail.length() >= 1) ? tail[0] : "none";
+bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
+spawn_clock(mnx, mxx, mny, mxy, txt, clocktype, dbl, mnz, mxz, true);
 }
 
 void write_clock(int x, int y, string txt, string clocktype, bool destroyable, int z=0)
@@ -182,6 +255,19 @@ if(mapmode == "3d")
 mapper.write("\r\n"+"clock "+x+" "+y+" "+z+" \""+clean_txt+"\" "+clocktype+" "+destroyable);
 else
 mapper.write("\r\n"+"clock "+x+" "+y+" \""+clean_txt+"\" "+clocktype+" "+destroyable);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_clock(int mnx, int mxx, int mny, int mxy, string txt, string clocktype, bool destroyable, int mnz=0, int mxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string clean_txt=string_replace(txt, "\"", "", true);
+if(mapmode == "3d")
+mapper.write("\r\n"+"ranged_clock "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" \""+clean_txt+"\" "+clocktype+" "+destroyable);
+else
+mapper.write("\r\n"+"ranged_clock "+mnx+" "+mxx+" "+mny+" "+mxy+" \""+clean_txt+"\" "+clocktype+" "+destroyable);
 mapper.close();
 bump_map_modified();
 }

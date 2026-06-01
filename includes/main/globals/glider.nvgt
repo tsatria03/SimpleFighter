@@ -99,13 +99,14 @@ return;
 for(uint j = 0; j < clocks.length(); j++)
 {
 if(@clocks[j] == null) continue;
-if(clocks[j].clockx != hx || clocks[j].clocky != hy) continue;
-if(mapmode == "3d" && clocks[j].clockz != hz) continue;
+if(hx < clocks[j].minx || hx > clocks[j].maxx || hy < clocks[j].miny || hy > clocks[j].maxy) continue;
+if(mapmode == "3d" && (hz < clocks[j].minz || hz > clocks[j].maxz)) continue;
 if(!clocks[j].destroyable) continue;
 gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*hit*"), false);
 gliderpool.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*death*"), false);
 clockpool.destroy_sound(clocks[j].clocksound);
-clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, me.z, clocks[j].clockx, clocks[j].clocky, clocks[j].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+int gbreak = clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[j].clocktype+"/*break*"), me.x, me.y, me.z, clocks[j].clockx, clocks[j].clocky, clocks[j].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+clockpool.update_sound_range_3d(gbreak, 0, clocks[j].maxx-clocks[j].minx, 0, clocks[j].maxy-clocks[j].miny, 0, (mapmode=="3d")?(clocks[j].maxz-clocks[j].minz):0);
 @clocks[j] = null;
 return;
 }

@@ -613,10 +613,13 @@ for(uint i = 0; i < clocks.length(); i++)
 {
 if(@clocks[i] == null) continue;
 if(!clocks[i].destroyable) continue;
-if(!target_in_facing(clocks[i].clockx, clocks[i].clockx, clocks[i].clocky, clocks[i].clocky, clocks[i].clockz, clocks[i].clockz, fx, fy, fz, facing, is_3d)) continue;
-int dx = absolute(int(clocks[i].clockx) - fx);
-int dy = absolute(int(clocks[i].clocky) - fy);
-int dz = absolute(int(clocks[i].clockz) - fz);
+if(!target_in_facing(clocks[i].minx, clocks[i].maxx, clocks[i].miny, clocks[i].maxy, clocks[i].minz, clocks[i].maxz, fx, fy, fz, facing, is_3d)) continue;
+int ccx = fx < clocks[i].minx ? clocks[i].minx : (fx > clocks[i].maxx ? clocks[i].maxx : fx);
+int ccy = fy < clocks[i].miny ? clocks[i].miny : (fy > clocks[i].maxy ? clocks[i].maxy : fy);
+int ccz = fz < clocks[i].minz ? clocks[i].minz : (fz > clocks[i].maxz ? clocks[i].maxz : fz);
+int dx = absolute(ccx - fx);
+int dy = absolute(ccy - fy);
+int dz = absolute(ccz - fz);
 if(dx > range or dy > range2) continue;
 if(is_3d and dz > range3) continue;
 int d = dx + dy + (is_3d ? dz : 0);
@@ -859,8 +862,9 @@ if(best_type == 4)
 {
 uint i = uint(best_idx);
 clockpool.destroy_sound(clocks[i].clocksound);
-play_melee_hit_at(clocks[i].clockx, clocks[i].clocky, clocks[i].clockz);
+play_melee_hit_at(clocks[i].clockx, clocks[i].clocky, clocks[i].clockz, clocks[i].maxx-clocks[i].minx, clocks[i].maxy-clocks[i].miny, (mapmode=="3d")?(clocks[i].maxz-clocks[i].minz):0);
 clocks[i].hurtsound = clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[i].clocktype+"/*break*"), me.x, me.y, me.z, clocks[i].clockx, clocks[i].clocky, clocks[i].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+clockpool.update_sound_range_3d(clocks[i].hurtsound, 0, clocks[i].maxx-clocks[i].minx, 0, clocks[i].maxy-clocks[i].miny, 0, (mapmode=="3d")?(clocks[i].maxz-clocks[i].minz):0);
 @clocks[i] = null;
 return;
 }
@@ -1026,9 +1030,10 @@ if(facing == "down") return is_3d ? tminz <= fz : tminy <= fy;
 return true;
 }
 
-void play_melee_hit_at(int tx, int ty, int tz)
+void play_melee_hit_at(int tx, int ty, int tz, int rx=0, int ry=0, int rz=0)
 {
-p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/general/*hit*"), me.x, me.y, me.z, tx, ty, tz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+int slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/general/*hit*"), me.x, me.y, me.z, tx, ty, tz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+if(rx > 0 || ry > 0 || rz > 0) p.update_sound_range_3d(slot, 0, rx, 0, ry, 0, rz);
 }
 
 void play_melee_rico_at(int tx, int ty, int tz)
@@ -1144,17 +1149,21 @@ for(int i = int(clocks.length()) - 1; i >= 0; i--)
 {
 if(@clocks[i] == null) continue;
 if(!clocks[i].destroyable) continue;
-if(!target_in_facing(clocks[i].clockx, clocks[i].clockx, clocks[i].clocky, clocks[i].clocky, clocks[i].clockz, clocks[i].clockz, fx, fy, fz, facing, is_3d)) continue;
-int dx = absolute(int(clocks[i].clockx) - fx);
-int dy = absolute(int(clocks[i].clocky) - fy);
-int dz = absolute(int(clocks[i].clockz) - fz);
+if(!target_in_facing(clocks[i].minx, clocks[i].maxx, clocks[i].miny, clocks[i].maxy, clocks[i].minz, clocks[i].maxz, fx, fy, fz, facing, is_3d)) continue;
+int ccx = fx < clocks[i].minx ? clocks[i].minx : (fx > clocks[i].maxx ? clocks[i].maxx : fx);
+int ccy = fy < clocks[i].miny ? clocks[i].miny : (fy > clocks[i].maxy ? clocks[i].maxy : fy);
+int ccz = fz < clocks[i].minz ? clocks[i].minz : (fz > clocks[i].maxz ? clocks[i].maxz : fz);
+int dx = absolute(ccx - fx);
+int dy = absolute(ccy - fy);
+int dz = absolute(ccz - fz);
 if(dx > range or dy > range2) continue;
 if(is_3d and dz > range3) continue;
 if(dx > sr or dy > sr) continue;
 if(is_3d and dz > sr) continue;
 clockpool.destroy_sound(clocks[i].clocksound);
-play_melee_hit_at(clocks[i].clockx, clocks[i].clocky, clocks[i].clockz);
+play_melee_hit_at(clocks[i].clockx, clocks[i].clocky, clocks[i].clockz, clocks[i].maxx-clocks[i].minx, clocks[i].maxy-clocks[i].miny, (mapmode=="3d")?(clocks[i].maxz-clocks[i].minz):0);
 clocks[i].hurtsound = clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[i].clocktype+"/*break*"), me.x, me.y, me.z, clocks[i].clockx, clocks[i].clocky, clocks[i].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+clockpool.update_sound_range_3d(clocks[i].hurtsound, 0, clocks[i].maxx-clocks[i].minx, 0, clocks[i].maxy-clocks[i].miny, 0, (mapmode=="3d")?(clocks[i].maxz-clocks[i].minz):0);
 @clocks[i] = null;
 if(sc > 0) { sc--; if(sc <= 0) return; }
 }
