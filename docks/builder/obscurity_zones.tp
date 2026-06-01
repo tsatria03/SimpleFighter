@@ -43,3 +43,19 @@ Obscurity zones are local. Their effect only applies while the player is standin
 Overlapping zones.
 
 If multiple obscurity zones overlap and the player is inside more than one at the same time, an entity is hidden if any of the active zones marks it as hidden. So overlapping zones combine their hide rules; an entity stays visible only when none of the active zones hide it.
+
+Authoring obscurity zones by hand.
+
+If you prefer to edit info.sif directly, the on-disk format for an obscurity zone line is: obscurity_zone <minx> <maxx> <miny> <maxy> <affects spier> <affects info menu> <entity types> <whitelist>
+For 3d maps insert min and max z right after max y: obscurity_zone <minx> <maxx> <miny> <maxy> <minz> <maxz> <affects spier> <affects info menu> <entity types> <whitelist>
+
+The two bool fields right before the entity list say which systems the zone touches, and they are written as the literal words true or false. The first is affects spier, the second is affects info menu. The entity types are a comma and space separated list, and the final field is the whitelist bool.
+
+The builder only ever writes one of these two bools as true, since each builder zone targets a single system, but a hand-authored line may set them freely:
+
+true false: affects the spier only.
+false true: affects the info menu only.
+true true: affects both systems at once with a single line. This is the only way to get a both-systems zone without overlapping two zones, and the builder will not produce it, but the game honors it.
+false false: affects nothing. The zone sits on the map doing nothing regardless of its entity list or whitelist, since neither system reads it.
+
+Hand-authored lines load the same as builder-authored lines. Note that a hand-authored zone may list entity types the builder would have filtered out for the chosen system, such as a spier-only entity listed on a both-systems line; the unsupported types simply have no effect on the system that cannot report them.
