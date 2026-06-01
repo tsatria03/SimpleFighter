@@ -4,12 +4,13 @@ travelpoint@[]travelpoints(0);
 class travelpoint
 {
 int travsound;
+bool is_ranged;
 double minx,maxx,miny,maxy;
 double minz,maxz;
 int destx,desty,destz;
 string destmap;
 string endtext;
-travelpoint(double mx,double mx2,double my,double my2,string dm,int dx,int dy,string et,double mnz=0,double mxz=0,int dz=0)
+travelpoint(double mx,double mx2,double my,double my2,string dm,int dx,int dy,string et,double mnz=0,double mxz=0,int dz=0,bool rng=false)
 {
 minx=mx;
 maxx=mx2;
@@ -22,6 +23,7 @@ destx=dx;
 desty=dy;
 destz=dz;
 endtext=et;
+is_ranged=rng;
 }
 }
 void travelcheck()
@@ -41,9 +43,9 @@ load_map(travelpoints[i].destmap,mapowner);
 }
 }
 }
-void spawn_travelpoint(double minx,double maxx,double miny,double maxy,string destmap,int destx,int desty,string endtext,double mnz=0,double mxz=0,int dz=0)
+void spawn_travelpoint(double minx,double maxx,double miny,double maxy,string destmap,int destx,int desty,string endtext,double mnz=0,double mxz=0,int dz=0,bool ranged=false)
 {
-travelpoint tp1(minx,maxx,miny,maxy,destmap,destx,desty,endtext,mnz,mxz,dz);
+travelpoint tp1(minx,maxx,miny,maxy,destmap,destx,desty,endtext,mnz,mxz,dz,ranged);
 travelpoints.insert_last(tp1);
 }
 void destroy_all_travelpoints()
@@ -51,22 +53,30 @@ void destroy_all_travelpoints()
 travelpoints.resize(0);
 }
 
-void build_travelpoint()
+void build_travelpoint(bool ranged = false)
 {
 form.reset();
-form.create_window("travelpoint", false);
+form.create_window(ranged ? "ranged travelpoint" : "travelpoint", false);
 bool y_uses_back_front = mapmode != "2d";
-string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
-string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
-int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
-int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my=form.create_input_box("minimum y", saved_my);
-int my2=form.create_input_box("maximum y", saved_my2);
-int mnz=-1, mxz=-1;
+int mx=-1, my=-1, mz=-1;
+int mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1;
+if(ranged)
+{
+mnx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+mxx=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+mny=form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+mxy=form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
 if(mapmode == "3d")
 {
 mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
 mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+}
+else
+{
+mx=form.create_input_box("x", sel_left_set ? sel_left : "");
+my=form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+if(mapmode == "3d") mz=form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
 }
 int dmap=form.create_input_box("destination map");
 int dx=form.create_input_box("destination x", sel_left_set ? sel_left : "");
@@ -75,30 +85,31 @@ int dz=-1;
 if(mapmode == "3d") dz=form.create_input_box("destination z", sel_bottom_set ? sel_bottom : "");
 int dtext=form.create_input_box("destination text");
 string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
-form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
-form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(ranged)
+{
+form.set_disallowed_chars(mnx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_chars, false, "This character is not allowed.");
 if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
 if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
+}
+else
+{
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_chars, false, "This character is not allowed.");
+}
 form.set_disallowed_chars(dx, disallowed_chars, false, "This character is not allowed.");
 form.set_disallowed_chars(dy, disallowed_chars, false, "This character is not allowed.");
 if(dz != -1) form.set_disallowed_chars(dz, disallowed_chars, false, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
-form.focus(mx);
+form.focus(ranged ? mnx : mx);
 while (true)
 {
 wait(5);
 form.monitor();
-double x=string_to_number(form.get_text(mx));
-double paxx=string_to_number(form.get_text(mx2));
-double y=string_to_number(form.get_text(my));
-double paxy=string_to_number(form.get_text(my2));
-string txt=form.get_text(dmap);
-double x2=string_to_number(form.get_text(dx));
-double y2=string_to_number(form.get_text(dy));
-string txt2=form.get_text(dtext);
 if(key_pressed(KEY_ESCAPE))
 {
 resume_pools();
@@ -113,69 +124,51 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx)=="")
+if(ranged)
 {
-speak("Minimum x is required.");
-form.focus(mx);
-}
-else if(form.get_text(mx2)=="")
-{
-speak("Maximum x is required.");
-form.focus(mx2);
-}
-else if(form.get_text(my)=="")
-{
-speak("Minimum y is required.");
-form.focus(my);
-}
-else if(form.get_text(my2)=="")
-{
-speak("Maximum y is required.");
-form.focus(my2);
-}
-else if(mnz != -1 && form.get_text(mnz)=="")
-{
-speak("Minimum z is required.");
-form.focus(mnz);
-}
-else if(mxz != -1 && form.get_text(mxz)=="")
-{
-speak("Maximum z is required.");
-form.focus(mxz);
-}
-else if(form.get_text(dmap)=="")
-{
-speak("Destenation map is required.");
-form.focus(dmap);
-}
-else if(form.get_text(dx)=="")
-{
-speak("Destenation x is required.");
-form.focus(dx);
-}
-else if(form.get_text(dy)=="")
-{
-speak("Destenation y is required.");
-form.focus(dy);
-}
-else if(dz != -1 && form.get_text(dz)=="")
-{
-speak("Destenation z is required.");
-form.focus(dz);
-}
-else if(form.get_text(dtext)=="")
-{
-speak("Destenation text is required.");
-form.focus(dtext);
+if(form.get_text(mnx)=="") { speak("Minimum x is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx)=="") { speak("Maximum x is required."); form.focus(mxx); continue; }
+if(form.get_text(mny)=="") { speak("Minimum y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy)=="") { speak("Maximum y is required."); form.focus(mxy); continue; }
+if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
 }
 else
 {
-double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
-double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+if(form.get_text(mx)=="") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my)=="") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz)=="") { speak("Z is required."); form.focus(mz); continue; }
+}
+if(form.get_text(dmap)=="") { speak("Destenation map is required."); form.focus(dmap); continue; }
+if(form.get_text(dx)=="") { speak("Destenation x is required."); form.focus(dx); continue; }
+if(form.get_text(dy)=="") { speak("Destenation y is required."); form.focus(dy); continue; }
+if(dz != -1 && form.get_text(dz)=="") { speak("Destenation z is required."); form.focus(dz); continue; }
+if(form.get_text(dtext)=="") { speak("Destenation text is required."); form.focus(dtext); continue; }
+string bmap = form.get_text(dmap);
+int bdx = int(string_to_number(form.get_text(dx)));
+int bdy = int(string_to_number(form.get_text(dy)));
 int bdz = (dz != -1) ? int(string_to_number(form.get_text(dz))) : 0;
+string btext = form.get_text(dtext);
 resume_pools();
-write_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2, bmnz, bmxz, bdz);
-spawn_travelpoint(x, paxx, y, paxy, txt, x2, y2, txt2, bmnz, bmxz, bdz);
+if(ranged)
+{
+double bmnx=string_to_number(form.get_text(mnx));
+double bmxx=string_to_number(form.get_text(mxx));
+double bmny=string_to_number(form.get_text(mny));
+double bmxy=string_to_number(form.get_text(mxy));
+double bmnz=(mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz=(mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+write_ranged_travelpoint(bmnx, bmxx, bmny, bmxy, bmap, bdx, bdy, btext, bmnz, bmxz, bdz);
+spawn_travelpoint(bmnx, bmxx, bmny, bmxy, bmap, bdx, bdy, btext, bmnz, bmxz, bdz, true);
+}
+else
+{
+double bx=string_to_number(form.get_text(mx));
+double by=string_to_number(form.get_text(my));
+double bz=(mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+write_travelpoint(bx, by, bmap, bdx, bdy, btext, bz, bdz);
+spawn_travelpoint(bx, bx, by, by, bmap, bdx, bdy, btext, bz, bz, bdz, false);
+}
 load_map(mapname, mapowner);
 travpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
 speak("Map updated.");
@@ -183,45 +176,77 @@ return;
 }
 }
 }
+void build_ranged_travelpoint()
+{
+build_travelpoint(true);
 }
 
 void read_travelpoint(string[] sd)
 {
-double mx=stn(sd[1]);
-double mx2=stn(sd[2]);
-double my=stn(sd[3]);
-double my2=stn(sd[4]);
-double mnz=0, mxz=0;
-int dz=0;
-int o=5;
-if(sd.length()==12)
-{
-mnz=stn(sd[5]);
-mxz=stn(sd[6]);
-o=7;
-}
-string destmap=sd[o];
-int destx=stn(sd[o+1]);
-int desty=stn(sd[o+2]);
-int extra = 0;
-if(sd.length()==12)
-{
-dz=stn(sd[o+3]);
-extra = 1;
-}
-string endtext=sd[o+3+extra];
-spawn_travelpoint(mx, mx2, my, my2, destmap, destx, desty, endtext, mnz, mxz, dz);
+double x=stn(sd[1]);
+double y=stn(sd[2]);
+double z=0;
+int o=3;
+if(mapmode == "3d") { z=stn(sd[3]); o=4; }
+string combined=join_string_array(sd, o, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string destmap=(quoted.length() >= 1) ? quoted[0] : "";
+string endtext=(quoted.length() >= 2) ? quoted[1] : "";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+int destx=(tail.length() >= 1) ? int(stn(tail[0])) : 0;
+int desty=(tail.length() >= 2) ? int(stn(tail[1])) : 0;
+int destz=(mapmode == "3d" && tail.length() >= 3) ? int(stn(tail[2])) : 0;
+spawn_travelpoint(x, x, y, y, destmap, destx, desty, endtext, z, z, destz, false);
 }
 
-void write_travelpoint(double x1, double x2, double y1, double y2, string destmap, int destx, int desty, string endtext, double minz=0, double maxz=0, int destz=0)
+void read_ranged_travelpoint(string[] sd)
+{
+double minx=stn(sd[1]);
+double maxx=stn(sd[2]);
+double miny=stn(sd[3]);
+double maxy=stn(sd[4]);
+double minz=0, maxz=0;
+int o=5;
+if(mapmode == "3d") { minz=stn(sd[5]); maxz=stn(sd[6]); o=7; }
+string combined=join_string_array(sd, o, sd.length());
+string remainder;
+array<string> quoted=extract_quoted(combined, remainder);
+string destmap=(quoted.length() >= 1) ? quoted[0] : "";
+string endtext=(quoted.length() >= 2) ? quoted[1] : "";
+array<string> tail=string_split(string_trim_sides(remainder), " ");
+int destx=(tail.length() >= 1) ? int(stn(tail[0])) : 0;
+int desty=(tail.length() >= 2) ? int(stn(tail[1])) : 0;
+int destz=(mapmode == "3d" && tail.length() >= 3) ? int(stn(tail[2])) : 0;
+spawn_travelpoint(minx, maxx, miny, maxy, destmap, destx, desty, endtext, minz, maxz, destz, true);
+}
+
+void write_travelpoint(double x, double y, string destmap, int destx, int desty, string endtext, double z=0, int destz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
-string trigger=x1+" "+x2+" "+y1+" "+y2;
-if(mapmode == "3d") trigger += " "+minz+" "+maxz;
-string dest=destmap+" "+destx+" "+desty;
+string clean_map=string_replace(destmap, "\"", "", true);
+string clean_text=string_replace(endtext, "\"", "", true);
+string trigger=""+x+" "+y;
+if(mapmode == "3d") trigger += " "+z;
+string dest=""+destx+" "+desty;
 if(mapmode == "3d") dest += " "+destz;
-mapper.write("\r\n"+"travelpoint "+trigger+" "+dest+" "+endtext);
+mapper.write("\r\n"+"travelpoint "+trigger+" \""+clean_map+"\" \""+clean_text+"\" "+dest);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_travelpoint(double x1, double x2, double y1, double y2, string destmap, int destx, int desty, string endtext, double minz=0, double maxz=0, int destz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string clean_map=string_replace(destmap, "\"", "", true);
+string clean_text=string_replace(endtext, "\"", "", true);
+string trigger=""+x1+" "+x2+" "+y1+" "+y2;
+if(mapmode == "3d") trigger += " "+minz+" "+maxz;
+string dest=""+destx+" "+desty;
+if(mapmode == "3d") dest += " "+destz;
+mapper.write("\r\n"+"ranged_travelpoint "+trigger+" \""+clean_map+"\" \""+clean_text+"\" "+dest);
 mapper.close();
 bump_map_modified();
 }
