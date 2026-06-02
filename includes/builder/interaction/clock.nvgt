@@ -61,7 +61,7 @@ clockpool.destroy_sound(clocks[i].clocksound);
 clocks.resize(0);
 }
 
-void build_clock(bool ranged = false)
+void build_clock()
 {
 string[] clks = get_map_sound_folders("builder/interaction/clocks/*");
 if(clks.length() == 0)
@@ -71,31 +71,76 @@ resume_pools();
 return;
 }
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
-form.reset();
-form.create_window(ranged ? "ranged clock" : "clock", false);
 bool y_uses_back_front = mapmode != "2d";
-int mx = -1, my = -1, mz = -1;
-int mnx = -1, mxx = -1, mny = -1, mxy = -1, mnz = -1, mxz = -1;
-if(ranged)
+string saved_x = sel_left_set ? sel_left : "";
+string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_z = sel_bottom_set ? sel_bottom : "";
+string saved_mnx = sel_left_set ? sel_left : "";
+string saved_mxx = sel_right_set ? sel_right : "";
+string saved_mny = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_mxy = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+string saved_mnz = sel_bottom_set ? sel_bottom : "";
+string saved_mxz = sel_top_set ? sel_top : "";
+string saved_text = "The time is ";
+int saved_list_pos = 0;
+bool saved_dest = false;
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+bool do_build = true;
+int mode_list=-1, mx=-1, my=-1, mz=-1, mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1, text=-1, clk_list=-1, destroyable_cb=-1, ok=-1, cn=-1;
+while(true)
 {
-mnx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
-mxx = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-mny = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-mxy = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+if(do_build)
+{
+do_build = false;
+if(last_mode_pos != -2)
+{
+saved_text = form.get_text(text);
+saved_list_pos = form.get_list_position(clk_list);
+saved_dest = form.is_checked(destroyable_cb);
+if(last_mode_pos == 1)
+{
+saved_mnx = form.get_text(mnx);
+saved_mxx = form.get_text(mxx);
+saved_mny = form.get_text(mny);
+saved_mxy = form.get_text(mxy);
+if(mnz != -1) saved_mnz = form.get_text(mnz);
+if(mxz != -1) saved_mxz = form.get_text(mxz);
+}
+else
+{
+saved_x = form.get_text(mx);
+saved_y = form.get_text(my);
+if(mz != -1) saved_z = form.get_text(mz);
+}
+}
+form.reset();
+form.create_window("clock", false, true, last_mode_pos != -2);
+mode_list = form.create_list("build mode");
+form.add_list_item(mode_list, "single", "single");
+form.add_list_item(mode_list, "ranged", "ranged");
+form.set_list_position(mode_list, saved_mode_pos, false);
+mx = -1; my = -1; mz = -1; mnx = -1; mxx = -1; mny = -1; mxy = -1; mnz = -1; mxz = -1;
+if(saved_mode_pos == 1)
+{
+mnx = form.create_input_box("minimum x", saved_mnx);
+mxx = form.create_input_box("maximum x", saved_mxx);
+mny = form.create_input_box("minimum y", saved_mny);
+mxy = form.create_input_box("maximum y", saved_mxy);
 if(mapmode == "3d")
 {
-mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
-mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+mnz = form.create_input_box("minimum z", saved_mnz);
+mxz = form.create_input_box("maximum z", saved_mxz);
 }
 }
 else
 {
-mx = form.create_input_box("x", sel_left_set ? sel_left : "");
-my = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-if(mapmode == "3d") mz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+mx = form.create_input_box("x", saved_x);
+my = form.create_input_box("y", saved_y);
+if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
 }
-int text = form.create_input_box("text", "The time is ");
-if(ranged)
+text = form.create_input_box("text", saved_text);
+if(saved_mode_pos == 1)
 {
 form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
@@ -110,19 +155,27 @@ form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not all
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
 }
-int clk_list = form.create_list("clock sound");
+clk_list = form.create_list("clock sound");
 form.add_list_item(clk_list, "none", "none");
 for(uint i = 0; i < clks.length(); i++)
 form.add_list_item(clk_list, clks[i], clks[i]);
-form.set_list_position(clk_list, 0, false);
-int destroyable_cb = form.create_checkbox("destroyable", false);
-int ok = form.create_button("&okay", true);
-int cn = form.create_button("&cancel");
-form.focus(ranged ? mnx : mx);
-while(true)
-{
+form.set_list_position(clk_list, saved_list_pos, false);
+destroyable_cb = form.create_checkbox("destroyable", saved_dest);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_mode_pos == -2) form.focus(mode_list);
+else form.focus_silently(mode_list);
+last_mode_pos = saved_mode_pos;
+}
 wait(5);
 form.monitor();
+int cur_mode_pos = form.get_list_position(mode_list);
+if(cur_mode_pos != -1 && cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+do_build = true;
+continue;
+}
 int cur_focus = form.get_current_focus();
 if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
 {
@@ -159,6 +212,7 @@ return;
 }
 if(form.is_pressed(ok))
 {
+bool ranged = (saved_mode_pos == 1);
 if(ranged)
 {
 if(form.get_text(mnx) == "") { speak("Minimum X is required."); form.focus(mnx); continue; }
@@ -205,10 +259,6 @@ speak("Map updated.");
 return;
 }
 }
-}
-void build_ranged_clock()
-{
-build_clock(true);
 }
 
 void read_clock(string[] sd)
