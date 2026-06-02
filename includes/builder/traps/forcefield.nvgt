@@ -4,6 +4,7 @@ forcefield@[]forcefields(0);
 class forcefield
 {
 bool forcefielded;
+bool is_ranged;
 int activesound,inactivesound,wepsound;
 double minx,maxx,miny,maxy;
 double minz,maxz;
@@ -12,7 +13,7 @@ int deactivetime;
 int damage;
 string forcetype;
 timer activetimer, deactivetimer;
-forcefield(double mx,double mx2,double my,double my2,int dmg,int sp,string ftype,double mnz=0,double mxz=0)
+forcefield(double mx,double mx2,double my,double my2,int dmg,int sp,string ftype,double mnz=0,double mxz=0,bool rng=true)
 {
 minx=mx;
 maxx=mx2;
@@ -24,6 +25,7 @@ damage=dmg;
 activetime=sp;
 deactivetime=sp;
 forcetype=ftype;
+is_ranged=rng;
 inactivesound=forcepool.play_extended_3d(get_map_sound("builder/traps/force fields/"+forcetype+"/*off*"),me.x,me.y,me.z,minx,miny,minz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 forcepool.update_sound_3d(inactivesound, minx, miny, minz);
 forcepool.update_sound_range_3d(inactivesound, 0, maxx-minx, 0, maxy-miny, 0, maxz-minz);
@@ -101,9 +103,9 @@ forcefields[i].deactivetimer.restart();
 if(forcefield_hit(i)) return;
 }
 }
-void spawn_forcefield(double x1,double x2,double y1,double y2,int dmg,int sp,string forcetype,double minz=0,double maxz=0)
+void spawn_forcefield(double x1,double x2,double y1,double y2,int dmg,int sp,string forcetype,double minz=0,double maxz=0,bool is_ranged=true)
 {
-forcefield force1(x1,x2,y1,y2,dmg,sp,forcetype,minz,maxz);
+forcefield force1(x1,x2,y1,y2,dmg,sp,forcetype,minz,maxz,is_ranged);
 forcefields.insert_last(force1);
 }
 void destroy_all_forcefields()
@@ -321,7 +323,7 @@ double bmxy = string_to_number(form.get_text(mxy));
 double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
 double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 write_ranged_forcefield(bmnx, bmxx, bmny, bmxy, bdm, bsp, btype, bmnz, bmxz);
-spawn_forcefield(bmnx, bmxx, bmny, bmxy, bdm, bsp, btype, bmnz, bmxz);
+spawn_forcefield(bmnx, bmxx, bmny, bmxy, bdm, bsp, btype, bmnz, bmxz, true);
 }
 else
 {
@@ -329,7 +331,7 @@ double bx = string_to_number(form.get_text(mx));
 double by = string_to_number(form.get_text(my));
 double bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 write_forcefield(bx, by, bdm, bsp, btype, bz);
-spawn_forcefield(bx, bx, by, by, bdm, bsp, btype, bz, bz);
+spawn_forcefield(bx, bx, by, by, bdm, bsp, btype, bz, bz, false);
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
@@ -349,7 +351,7 @@ if(mapmode=="3d") { z=stn(sd[3]); o=4; }
 int dmg=stn(sd[o]);
 int sp=stn(sd[o+1]);
 string forcetype=sd[o+2];
-spawn_forcefield(x, x, y, y, dmg, sp, forcetype, z, z);
+spawn_forcefield(x, x, y, y, dmg, sp, forcetype, z, z, false);
 }
 
 void write_forcefield(double x, double y, int damage, int speed, string forcetype, double z=0)
@@ -380,7 +382,7 @@ o=7;
 int dmg=stn(sd[o]);
 int sp=stn(sd[o+1]);
 string forcetype=sd[o+2];
-spawn_forcefield(mx, mx2, my, my2, dmg, sp, forcetype, mnz, mxz);
+spawn_forcefield(mx, mx2, my, my2, dmg, sp, forcetype, mnz, mxz, true);
 }
 
 void write_ranged_forcefield(double x1, double x2, double y1, double y2, int damage, int speed, string forcetype, double minz=0, double maxz=0)
