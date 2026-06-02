@@ -76,37 +76,111 @@ void build_url_ambience()
 {
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 bool y_uses_back_front = mapmode != "2d";
+string saved_x = sel_left_set ? sel_left : "";
+string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_z = sel_bottom_set ? sel_bottom : "";
+string saved_mnx = sel_left_set ? sel_left : "";
+string saved_mxx = sel_right_set ? sel_right : "";
+string saved_mny = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_mxy = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+string saved_mnz = sel_bottom_set ? sel_bottom : "";
+string saved_mxz = sel_top_set ? sel_top : "";
 string saved_url = "";
-form.reset();
-form.create_window("url ambience", false);
-int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
-int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
-int my = form.create_input_box("minimum y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-int my2 = form.create_input_box("maximum y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
-int mnz = -1, mxz = -1;
-if(mapmode == "3d")
-{
-mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
-mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
-}
-form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
-if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
-if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
-int url_box = form.create_input_box("url", saved_url);
-form.set_disallowed_chars(url_box, " ", false, "Spaces are not allowed in a url.");
-int vol_s = form.create_slider("volume", 0, -100, 0, "", 5);
-int pit_s = form.create_slider("pitch", 100, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
-int ok = form.create_button("&okay", true);
-int cn = form.create_button("&cancel");
-form.focus(mx);
+double saved_vol = 0;
+double saved_pit = 100;
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+bool do_build = true;
 bool preview_playing = false;
+int mode_list=-1, mx=-1, my=-1, mz=-1, mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1, url_box=-1, vol_s=-1, pit_s=-1, ok=-1, cn=-1;
 while(true)
 {
+if(do_build)
+{
+do_build = false;
+if(last_mode_pos != -2)
+{
+saved_url = form.get_text(url_box);
+saved_vol = form.get_slider(vol_s);
+saved_pit = form.get_slider(pit_s);
+if(last_mode_pos == 1)
+{
+saved_mnx = form.get_text(mnx);
+saved_mxx = form.get_text(mxx);
+saved_mny = form.get_text(mny);
+saved_mxy = form.get_text(mxy);
+if(mnz != -1) saved_mnz = form.get_text(mnz);
+if(mxz != -1) saved_mxz = form.get_text(mxz);
+}
+else
+{
+saved_x = form.get_text(mx);
+saved_y = form.get_text(my);
+if(mz != -1) saved_z = form.get_text(mz);
+}
+}
+form.reset();
+form.create_window("url ambience", false, true, last_mode_pos != -2);
+mode_list = form.create_list("build mode");
+form.add_list_item(mode_list, "single - one tile at a single position", "single");
+form.add_list_item(mode_list, "ranged - a rectangular area between a minimum and maximum axes", "ranged");
+form.set_list_position(mode_list, saved_mode_pos, false);
+mx = -1; my = -1; mz = -1; mnx = -1; mxx = -1; mny = -1; mxy = -1; mnz = -1; mxz = -1;
+if(saved_mode_pos == 1)
+{
+mnx = form.create_input_box("minimum x", saved_mnx);
+mxx = form.create_input_box("maximum x", saved_mxx);
+mny = form.create_input_box("minimum y", saved_mny);
+mxy = form.create_input_box("maximum y", saved_mxy);
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", saved_mnz);
+mxz = form.create_input_box("maximum z", saved_mxz);
+}
+}
+else
+{
+mx = form.create_input_box("x", saved_x);
+my = form.create_input_box("y", saved_y);
+if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
+}
+if(saved_mode_pos == 1)
+{
+form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+}
+url_box = form.create_input_box("url", saved_url);
+form.set_disallowed_chars(url_box, " ", false, "Spaces are not allowed in a url.");
+vol_s = form.create_slider("volume", saved_vol, -100, 0, "", 5);
+pit_s = form.create_slider("pitch", saved_pit, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_mode_pos == -2) form.focus(mode_list);
+else form.focus_silently(mode_list);
+last_mode_pos = saved_mode_pos;
+}
 wait(5);
 form.monitor();
+int cur_mode_pos = form.get_list_position(mode_list);
+if(cur_mode_pos != -1 && cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+do_build = true;
+continue;
+}
 int cur_focus = form.get_current_focus();
 bool in_group = (cur_focus == url_box || cur_focus == vol_s || cur_focus == pit_s);
 if(!in_group && preview_playing)
@@ -154,26 +228,47 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(mx)=="") { speak("Minimum x is required."); form.focus(mx); continue; }
-if(form.get_text(mx2)=="") { speak("Maximum x is required."); form.focus(mx2); continue; }
-if(form.get_text(my)=="") { speak("Minimum y is required."); form.focus(my); continue; }
-if(form.get_text(my2)=="") { speak("Maximum y is required."); form.focus(my2); continue; }
+bool ranged = (saved_mode_pos == 1);
+if(ranged)
+{
+if(form.get_text(mnx)=="") { speak("Minimum x is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx)=="") { speak("Maximum x is required."); form.focus(mxx); continue; }
+if(form.get_text(mny)=="") { speak("Minimum y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy)=="") { speak("Maximum y is required."); form.focus(mxy); continue; }
 if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
 if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
+}
+else
+{
+if(form.get_text(mx)=="") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my)=="") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz)=="") { speak("Z is required."); form.focus(mz); continue; }
+}
 if(form.get_text(url_box)=="") { speak("Url is required."); form.focus(url_box); continue; }
-double bx = string_to_number(form.get_text(mx));
-double bx2 = string_to_number(form.get_text(mx2));
-double by = string_to_number(form.get_text(my));
-double by2 = string_to_number(form.get_text(my2));
-double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
-double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 string burl = form.get_text(url_box);
 double bvol = form.get_slider(vol_s);
 double bpit = form.get_slider(pit_s);
 t.destroy_sound(prevslot);
 resume_pools();
-write_url_ambience(bx, bx2, by, by2, burl, bvol, bpit, bmnz, bmxz);
-spawn_url_ambience(bx, bx2, by, by2, burl, bvol, bpit, bmnz, bmxz);
+if(ranged)
+{
+double bmnx = string_to_number(form.get_text(mnx));
+double bmxx = string_to_number(form.get_text(mxx));
+double bmny = string_to_number(form.get_text(mny));
+double bmxy = string_to_number(form.get_text(mxy));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+write_ranged_url_ambience(bmnx, bmxx, bmny, bmxy, burl, bvol, bpit, bmnz, bmxz);
+spawn_url_ambience(bmnx, bmxx, bmny, bmxy, burl, bvol, bpit, bmnz, bmxz);
+}
+else
+{
+double bx = string_to_number(form.get_text(mx));
+double by = string_to_number(form.get_text(my));
+double bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+write_url_ambience(bx, by, burl, bvol, bpit, bz);
+spawn_url_ambience(bx, bx, by, by, burl, bvol, bpit, bz, bz);
+}
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -183,6 +278,19 @@ return;
 }
 
 void read_url_ambience(string[] sd)
+{
+double x=stn(sd[1]);
+double y=stn(sd[2]);
+double z=0;
+int o=3;
+if(mapmode == "3d") { z=stn(sd[3]); o=4; }
+string url=sd[o];
+double soundvol=stn(sd[o+1]);
+double soundpitch=stn(sd[o+2]);
+spawn_url_ambience(x, x, y, y, url, soundvol, soundpitch, z, z);
+}
+
+void read_ranged_url_ambience(string[] sd)
 {
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
@@ -202,13 +310,24 @@ double soundpitch=stn(sd[o+2]);
 spawn_url_ambience(mx, mx2, my, my2, url, soundvol, soundpitch, mnz, mxz);
 }
 
-void write_url_ambience(double x1, double x2, double y1, double y2, string url, double vol, double pitch, double minz=0, double maxz=0)
+void write_url_ambience(double x, double y, string url, double vol, double pitch, double z=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x+" "+y;
+if(mapmode == "3d") coords += " "+z;
+mapper.write("\r\n"+"url_ambience "+coords+" "+url+" "+vol+" "+pitch);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_url_ambience(double x1, double x2, double y1, double y2, string url, double vol, double pitch, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode == "3d") coords += " "+minz+" "+maxz;
-mapper.write("\r\n"+"url_ambience "+coords+" "+url+" "+vol+" "+pitch);
+mapper.write("\r\n"+"ranged_url_ambience "+coords+" "+url+" "+vol+" "+pitch);
 mapper.close();
 bump_map_modified();
 }

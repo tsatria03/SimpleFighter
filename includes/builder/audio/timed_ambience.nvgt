@@ -95,18 +95,30 @@ int saved_cat_pos = 0;
 int saved_sub_pos = 0;
 double saved_vol = 0;
 double saved_pit = 100;
+string saved_sx = sel_left_set ? sel_left : "";
+string saved_sy = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_sz = sel_bottom_set ? sel_bottom : "";
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+int rebuild_focus = 0;
+bool ranged = false;
 bool do_build = true;
 int last_cat_pos = -1;
-int mx, mx2, my, my2, mnz, mxz, sp, cat_list, sub_list, vol_s, pit_s, ok, cn;
-mnz = -1; mxz = -1;
+int mode_list, mx, mx2, my, my2, mnz, mxz, sx, sy, sz, sp, cat_list, sub_list, vol_s, pit_s, ok, cn;
+mnz = -1; mxz = -1; sz = -1;
 bool preview_playing = false;
 while(true)
 {
-wait(5);
 if(do_build)
 {
 do_build = false;
+ranged = (saved_mode_pos == 1);
 if(last_cat_pos != -1)
+{
+saved_sp = form.get_text(sp);
+saved_vol = form.get_slider(vol_s);
+saved_pit = form.get_slider(pit_s);
+if(last_mode_pos == 1)
 {
 saved_x = form.get_text(mx);
 saved_x2 = form.get_text(mx2);
@@ -114,29 +126,49 @@ saved_y = form.get_text(my);
 saved_y2 = form.get_text(my2);
 if(mnz != -1) saved_z = form.get_text(mnz);
 if(mxz != -1) saved_z2 = form.get_text(mxz);
-saved_sp = form.get_text(sp);
-saved_vol = form.get_slider(vol_s);
-saved_pit = form.get_slider(pit_s);
+}
+else
+{
+saved_sx = form.get_text(sx);
+saved_sy = form.get_text(sy);
+if(sz != -1) saved_sz = form.get_text(sz);
+}
 }
 form.reset();
 form.create_window("timed ambience", false, true, last_cat_pos != -1);
+mode_list = form.create_list("build mode");
+form.add_list_item(mode_list, "single - one tile at a single position", "single");
+form.add_list_item(mode_list, "ranged - a rectangular area between a minimum and maximum axes", "ranged");
+form.set_list_position(mode_list, saved_mode_pos, false);
+mx = -1; mx2 = -1; my = -1; my2 = -1; mnz = -1; mxz = -1; sx = -1; sy = -1; sz = -1;
+if(ranged)
+{
 mx = form.create_input_box("minimum x", saved_x);
 mx2 = form.create_input_box("maximum x", saved_x2);
 my = form.create_input_box("minimum y", saved_y);
 my2 = form.create_input_box("maximum y", saved_y2);
-mnz = -1; mxz = -1;
 if(mapmode == "3d")
 {
 mnz = form.create_input_box("minimum z", saved_z);
 mxz = form.create_input_box("maximum z", saved_z2);
 }
-sp = form.create_input_box("speed", saved_sp);
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
 if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
 if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
+sx = form.create_input_box("x", saved_sx);
+sy = form.create_input_box("y", saved_sy);
+if(mapmode == "3d") sz = form.create_input_box("z", saved_sz);
+form.set_disallowed_chars(sx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sy, disallowed_nums, false, "This character is not allowed.");
+if(sz != -1) form.set_disallowed_chars(sz, disallowed_nums, false, "This character is not allowed.");
+}
+sp = form.create_input_box("speed", saved_sp);
 form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
 cat_list = form.create_list("category");
 form.add_list_item(cat_list, "musics", "musics");
@@ -154,15 +186,27 @@ vol_s = form.create_slider("volume", saved_vol, -100, 0, "", 5);
 pit_s = form.create_slider("pitch", saved_pit, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
 ok = form.create_button("&okay", true);
 cn = form.create_button("&cancel");
-if(last_cat_pos == -1)
-{
-form.focus(mx);
-}
-else
-form.focus_silently(cat_list);
+if(last_cat_pos == -1) form.focus(mode_list);
+else if(rebuild_focus == 2) form.focus_silently(mode_list);
+else form.focus_silently(cat_list);
 last_cat_pos = saved_cat_pos;
+last_mode_pos = saved_mode_pos;
 }
+wait(5);
 form.monitor();
+int cur_mode_pos = form.get_list_position(mode_list);
+if(cur_mode_pos != -1 && cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+saved_cat_pos = max(0, form.get_list_position(cat_list));
+saved_sub_pos = max(0, form.get_list_position(sub_list));
+t.destroy_sound(prevslot);
+prevslot = -1;
+preview_playing = false;
+rebuild_focus = 2;
+do_build = true;
+continue;
+}
 int cur_cat_pos = form.get_list_position(cat_list);
 if(cur_cat_pos != -1 && cur_cat_pos != last_cat_pos)
 {
@@ -171,6 +215,7 @@ saved_sub_pos = 0;
 t.destroy_sound(prevslot);
 prevslot = -1;
 preview_playing = false;
+rebuild_focus = 1;
 do_build = true;
 continue;
 }
@@ -240,19 +285,22 @@ return;
 }
 if(form.is_pressed(ok))
 {
+if(ranged)
+{
 if(form.get_text(mx)=="") { speak("Minimum x is required."); form.focus(mx); continue; }
 if(form.get_text(mx2)=="") { speak("Maximum x is required."); form.focus(mx2); continue; }
 if(form.get_text(my)=="") { speak("Minimum y is required."); form.focus(my); continue; }
 if(form.get_text(my2)=="") { speak("Maximum y is required."); form.focus(my2); continue; }
 if(mnz != -1 && form.get_text(mnz)=="") { speak("Minimum z is required."); form.focus(mnz); continue; }
 if(mxz != -1 && form.get_text(mxz)=="") { speak("Maximum z is required."); form.focus(mxz); continue; }
+}
+else
+{
+if(form.get_text(sx)=="") { speak("X is required."); form.focus(sx); continue; }
+if(form.get_text(sy)=="") { speak("Y is required."); form.focus(sy); continue; }
+if(sz != -1 && form.get_text(sz)=="") { speak("Z is required."); form.focus(sz); continue; }
+}
 if(form.get_text(sp)=="") { speak("Speed is required."); form.focus(sp); continue; }
-double bx = string_to_number(form.get_text(mx));
-double bx2 = string_to_number(form.get_text(mx2));
-double by = string_to_number(form.get_text(my));
-double by2 = string_to_number(form.get_text(my2));
-double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
-double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 string bcat = (saved_cat_pos == 0) ? "musics" : "sources";
 int p = form.get_list_position(sub_list);
@@ -265,8 +313,25 @@ double bvol = form.get_slider(vol_s);
 double bpit = form.get_slider(pit_s);
 t.destroy_sound(prevslot);
 resume_pools();
-write_timed_ambience(bx, bx2, by, by2, bcat, bsub, bvol, bpit, bsp, bmnz, bmxz);
+if(ranged)
+{
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+write_ranged_timed_ambience(bx, bx2, by, by2, bcat, bsub, bvol, bpit, bsp, bmnz, bmxz);
 spawn_timedamb(bx, bx2, by, by2, bvol, bpit, bsp, bcat, bsub, bmnz, bmxz);
+}
+else
+{
+double bsx = string_to_number(form.get_text(sx));
+double bsy = string_to_number(form.get_text(sy));
+double bsz = (sz != -1) ? string_to_number(form.get_text(sz)) : 0;
+write_timed_ambience(bsx, bsy, bcat, bsub, bvol, bpit, bsp, bsz);
+spawn_timedamb(bsx, bsx, bsy, bsy, bvol, bpit, bsp, bcat, bsub, bsz, bsz);
+}
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -276,6 +341,21 @@ return;
 }
 
 void read_timed_ambience(string[] sd)
+{
+double x=stn(sd[1]);
+double y=stn(sd[2]);
+double z=0;
+int o=3;
+if(mapmode == "3d") { z=stn(sd[3]); o=4; }
+string sorcetype=sd[o];
+string sorcetype2=sd[o+1];
+double soundvol=stn(sd[o+2]);
+double soundpitch=stn(sd[o+3]);
+int sourcetime=stn(sd[o+4]);
+spawn_timedamb(x, x, y, y, soundvol, soundpitch, sourcetime, sorcetype, sorcetype2, z, z);
+}
+
+void read_ranged_timed_ambience(string[] sd)
 {
 double mx=stn(sd[1]);
 double mx2=stn(sd[2]);
@@ -297,13 +377,24 @@ int sourcetime=stn(sd[o+4]);
 spawn_timedamb(mx, mx2, my, my2, soundvol, soundpitch, sourcetime, sorcetype, sorcetype2, mnz, mxz);
 }
 
-void write_timed_ambience(double x1, double x2, double y1, double y2, string sourcetype, string sourcetype2, double vol, double pitch, int sourcetime, double minz=0, double maxz=0)
+void write_timed_ambience(double x, double y, string sourcetype, string sourcetype2, double vol, double pitch, int sourcetime, double z=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x+" "+y;
+if(mapmode == "3d") coords += " "+z;
+mapper.write("\r\n"+"timed_ambience "+coords+" "+sourcetype+" "+sourcetype2+" "+vol+" "+pitch+" "+sourcetime);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_timed_ambience(double x1, double x2, double y1, double y2, string sourcetype, string sourcetype2, double vol, double pitch, int sourcetime, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode == "3d") coords += " "+minz+" "+maxz;
-mapper.write("\r\n"+"timed_ambience "+coords+" "+sourcetype+" "+sourcetype2+" "+vol+" "+pitch+" "+sourcetime);
+mapper.write("\r\n"+"ranged_timed_ambience "+coords+" "+sourcetype+" "+sourcetype2+" "+vol+" "+pitch+" "+sourcetime);
 mapper.close();
 bump_map_modified();
 }
