@@ -798,6 +798,17 @@ return;
 
 void read_door(string[] sd)
 {
+int qidx = -1;
+for(uint i=1; i<sd.length(); i++)
+{
+if(sd[i].length() > 0 && sd[i].substr(0,1) == "\"") { qidx = i; break; }
+}
+if(qidx != -1)
+{
+int numcount = qidx - 1;
+bool ranged_shape = (mapmode == "3d") ? (numcount >= 15) : (numcount >= 13);
+if(ranged_shape) { read_ranged_door(sd); return; }
+}
 int sx=stn(sd[1]);
 int sy=stn(sd[2]);
 int sz_v=0, ez_v=0;
@@ -892,7 +903,7 @@ string dst = ex+" "+ey;
 if(mapmode == "3d") dst += " "+ez;
 string clean_did=string_replace(doorid, "\"", "", true);
 string clean_pass=string_replace(drpass, "\"", "", true);
-mapper.write("\r\n"+"ranged_door "+zone+" "+dst+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+locktype+" "+automatic+" "+destroyable);
+mapper.write("\r\n"+"door "+zone+" "+dst+" "+hp+" "+speed+" "+looptype+" "+movetype+" "+opentype+" "+closetype+" "+desttype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+locktype+" "+automatic+" "+destroyable);
 mapper.close();
 bump_map_modified();
 }

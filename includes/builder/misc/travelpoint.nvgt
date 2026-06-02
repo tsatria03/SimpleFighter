@@ -237,6 +237,14 @@ return;
 
 void read_travelpoint(string[] sd)
 {
+int qidx = -1;
+for(uint i=1; i<sd.length(); i++)
+{
+if(sd[i].length() > 0 && sd[i].substr(0,1) == "\"") { qidx = i; break; }
+}
+int numcount = (qidx == -1) ? (int(sd.length()) - 1) : (qidx - 1);
+bool ranged_shape = (mapmode == "3d") ? (numcount >= 5) : (numcount >= 4);
+if(ranged_shape) { read_ranged_travelpoint(sd); return; }
 double x=stn(sd[1]);
 double y=stn(sd[2]);
 double z=0;
@@ -300,7 +308,7 @@ string trigger=""+x1+" "+x2+" "+y1+" "+y2;
 if(mapmode == "3d") trigger += " "+minz+" "+maxz;
 string dest=""+destx+" "+desty;
 if(mapmode == "3d") dest += " "+destz;
-mapper.write("\r\n"+"ranged_travelpoint "+trigger+" \""+clean_map+"\" \""+clean_text+"\" "+dest);
+mapper.write("\r\n"+"travelpoint "+trigger+" \""+clean_map+"\" \""+clean_text+"\" "+dest);
 mapper.close();
 bump_map_modified();
 }

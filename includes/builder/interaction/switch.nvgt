@@ -373,6 +373,17 @@ return;
 
 void read_switch(string[] sd)
 {
+int qidx = -1;
+for(uint i=1; i<sd.length(); i++)
+{
+if(sd[i].length() > 0 && sd[i].substr(0,1) == "\"") { qidx = i; break; }
+}
+if(qidx != -1)
+{
+int numcount = qidx - 1;
+bool ranged_shape = (mapmode == "3d") ? (numcount >= 5) : (numcount >= 4);
+if(ranged_shape) { read_ranged_switch(sd); return; }
+}
 int scx=stn(sd[1]);
 int scy=stn(sd[2]);
 int scz=0;
@@ -475,9 +486,9 @@ string clean_off = string_replace(off_command, "\"", "", true);
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"ranged_switch "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
+mapper.write("\r\n"+"switch "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
 else
-mapper.write("\r\n"+"ranged_switch "+mnx+" "+mxx+" "+mny+" "+mxy+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
+mapper.write("\r\n"+"switch "+mnx+" "+mxx+" "+mny+" "+mxy+" "+switchtype+" \""+clean_on+"\" \""+clean_off+"\" "+toggled+" "+destroying_sound+" "+looping+" "+singleuse);
 mapper.close();
 bump_map_modified();
 }
