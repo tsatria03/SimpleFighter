@@ -330,18 +330,15 @@ doormove=false;
 
 void build_item_door()
 {
-build_door(true, false);
+build_door(true);
 }
-void build_ranged_door()
+void build_door(bool item_mode = false)
 {
-build_door(false, true);
-}
-void build_ranged_item_door()
-{
-build_door(true, true);
-}
-void build_door(bool item_mode = false, bool ranged = false)
-{
+bool ranged = false;
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+int rebuild_focus = 0;
+int mode_list;
 bool y_uses_back_front = mapmode != "2d";
 string saved_sx = sel_left_set ? sel_left : "";
 string saved_sy = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
@@ -396,6 +393,7 @@ while(true)
 if(do_build)
 {
 do_build = false;
+ranged = (saved_mode_pos == 1);
 if(last_lockmode_pos != -1)
 {
 saved_ex = form.get_text(fex);
@@ -403,7 +401,7 @@ saved_ey = form.get_text(fey);
 if(fez != -1) saved_ez = form.get_text(fez);
 saved_hp = form.get_text(fhp);
 saved_sp = form.get_text(fsp);
-if(ranged)
+if(last_mode_pos == 1)
 {
 saved_mnx = form.get_text(fmnx);
 saved_mxx = form.get_text(fmxx);
@@ -446,8 +444,11 @@ saved_opposite = form.is_checked(opposite_cb);
 }
 form.reset();
 string title = item_mode ? "item door" : "door";
-if(ranged) title = "ranged " + title;
 form.create_window(title, false, true, last_lockmode_pos != -1);
+mode_list = form.create_list("build mode");
+form.add_list_item(mode_list, "single", "single");
+form.add_list_item(mode_list, "ranged", "ranged");
+form.set_list_position(mode_list, saved_mode_pos, false);
 fsz = -1; fez = -1; fmnz = -1; fmxz = -1;
 if(ranged)
 {
@@ -573,12 +574,13 @@ opposite_cb = form.create_checkbox("build opposite side", saved_opposite);
 fok = form.create_button("okay", true);
 fcn = form.create_button("cancel");
 if(last_lockmode_pos == -1)
-{
-form.focus(ranged ? fmnx : fsx);
-}
+form.focus(mode_list);
+else if(rebuild_focus == 2)
+form.focus_silently(mode_list);
 else
 form.focus_silently(lockmode_list);
 last_lockmode_pos = saved_lockmode_pos;
+last_mode_pos = saved_mode_pos;
 }
 wait(5);
 form.monitor();
@@ -586,6 +588,15 @@ int cur_lockmode_pos = form.get_list_position(lockmode_list);
 if(cur_lockmode_pos != -1 && cur_lockmode_pos != last_lockmode_pos)
 {
 saved_lockmode_pos = cur_lockmode_pos;
+rebuild_focus = 1;
+do_build = true;
+continue;
+}
+int cur_mode_pos = form.get_list_position(mode_list);
+if(cur_mode_pos != -1 && cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+rebuild_focus = 2;
 do_build = true;
 continue;
 }
