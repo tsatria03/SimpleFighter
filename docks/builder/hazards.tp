@@ -1,0 +1,57 @@
+Hazards.
+
+A hazard is a region of the map that hurts the player who walks into it — a pit, a fire, a pool of acid, a spike bed, anything that should cost a life on contact. A hazard plays a continuous danger sound so the player can hear it coming, and the moment the player steps inside it, the hazard takes a life. Hazards come in three builder forms that share the same contact rule and the same sound set: the plain hazard (a fixed area), the moving hazard (a hazard that travels back and forth), and the vanishing hazard (a hazard that blinks on and off on a timer).
+
+What contact does.
+
+When the player steps into any hazard, what happens depends on how many lives they have left:
+
+If the player has more than one life, the hazard takes one life, refills the player's health to full, and bounces them back out of the hazard. They keep playing from where they were, one life poorer. This is the recoverable case — a hazard is a steady drain, not always an instant end.
+If the player is on their last life, the hazard kills them. If the map has a checkpoint the player has reached, they're restored to it. Otherwise the player gets a death prompt asking whether to try again, which reloads the map fresh, or to give up and return to the main menu.
+
+A hazard only catches the player while they're on foot inside it. Gliding over a hazard with the glider's engine running passes harmlessly above it, so a hazard placed beneath a glide path is a threat only to someone who lands or walks in.
+
+Every hazard plays a looping danger sound anchored across its whole area, at full volume anywhere inside and fading past the edges, and plays a separate fall sound at the moment of a fatal contact. Both come from the hazard's chosen sound theme; pick none for a silent (but still deadly) hazard.
+
+The plain hazard.
+
+The plain hazard is a fixed danger zone. It's built in two variants chosen from the build mode list: single (one tile) and ranged (a rectangular area). The single form takes an x and y (and z on 3d maps); the ranged form takes minimum and maximum x and y (and min and max z on 3d maps) for the rectangle.
+
+It has one option of its own: auto spawn ledges on both sides. When checked, the builder places a short stretch of ledge tiles just past the left and right edges of the hazard, giving the player an audible lip framing the danger so they can hear where it begins and ends as they approach. Leave it unchecked for a hazard with no built-in border.
+
+While the hazard sound list is focused in the plain hazard form, press space to hear the fall clip of the highlighted theme and hold control and press L to hear its looping danger clip.
+
+The moving hazard.
+
+A moving hazard is a hazard that slides through a bounding area on a fixed path, so the danger sweeps across the map and the player has to time their crossing. Its form takes the bounding box the hazard travels inside — a left x and right x, a back and front y (called bottom and top y on 2d maps), and on 3d maps a bottom z and top z — followed by the size of the hazard itself: an x length and y length (and a z length on 3d maps). The hazard is that many tiles big and moves within the box.
+
+Speed sets how many milliseconds pass between each step of its travel, so a smaller number is a faster sweep. Two lists shape the path:
+
+Direction chooses the line the hazard runs along — right and left, up and down, the four diagonals, and their reverses, plus bottom-to-top and top-to-bottom on the z axis for 3d maps.
+Snap mode chooses what happens when the hazard reaches the end of its run. No snapping makes it reverse and travel back the way it came, bouncing endlessly between the two ends. The other modes — forward to snap, backward to snap, and snap at ends — make it jump instantly back to a starting end instead of easing back, so the danger reappears at the far side rather than retracing its path.
+
+A moving hazard carries its looping danger sound with it as it travels, so the player can track where it is by ear. It has no ledge option. While the hazard sound list is focused in the moving hazard form, press space to hear the fall clip and hold control and press L to hear the loop.
+
+The vanishing hazard.
+
+A vanishing hazard blinks: it's present and deadly for a while, then disappears and is safe to cross, then comes back, over and over. It's the timing-puzzle hazard — the player waits for the gap and dashes through. It's built in single and ranged variants exactly like the plain hazard, with the same coordinate fields.
+
+Its one extra field is speed, the interval in milliseconds. The hazard stays present for that long, then vanishes for that same length of time, then returns, repeating for as long as the map is loaded — so a larger number makes a slower, more forgiving blink and a smaller number a frantic one. While present it behaves like any hazard and takes a life on contact; while vanished its tiles are gone and the player can walk through safely.
+
+While the hazard sound list is focused in the vanishing hazard form, press space to hear the fall clip and hold control and press L to hear the loop.
+
+Hazard sounds.
+
+All three hazard forms draw from the same set of hazard sound themes, each a folder supplying a loop clip (the continuous danger bed) and a fall clip (played on a fatal contact). There are no other clips — a hazard's whole audio identity is its loop and its fall. Picking none gives a hazard that makes no sound at all, which is still fully deadly, so use it sparingly; an inaudible hazard is one the player can't learn to avoid.
+
+Authoring hazards by hand.
+
+If you edit main.sif directly:
+
+A single plain hazard is: hazard x y hazardtype ledges, where ledges is the literal word true or false. On 3d maps a z follows y: hazard x y z hazardtype ledges. The ranged form replaces the single tile with min and max pairs: hazard minx maxx miny maxy hazardtype ledges, inserting min and max z after the y pair on 3d maps. Both forms share the one hazard name; the game reads the longer line as ranged.
+
+A vanishing hazard mirrors that shape with a speed in place of the ledge flag: vanishing_hazard x y speed hazardtype for a single one (a z after y on 3d maps) and vanishing_hazard minx maxx miny maxy speed hazardtype for the ranged form (min and max z after the y pair on 3d maps).
+
+A moving hazard is: mhazard leftx rightx backy fronty xlength ylength direction snap speed hazardtype, with the bounding z pair inserted after the y pair and the hazard's z length inserted after its y length on 3d maps. Direction and snap are written as numbers — the order they appear in the builder's direction and snap mode lists, counting from zero.
+
+In every form the hazard sound must match a hazard theme folder name, or the literal word none.
