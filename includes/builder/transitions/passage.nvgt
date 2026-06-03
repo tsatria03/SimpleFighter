@@ -21,16 +21,13 @@ int passageheight;
 int opentime;
 int closetime;
 string tile;
-string closetype;
 string doorid;
 string last_pspass;
 string lockmode;
-string locktype;
-string looptype;
-string opentype;
 string pspass;
+string passagetype;
 timer action_timer;
-passage(int sx, int sy, int dr, int psl, int psw, string ty, string lsound, string osound, string clsound, string lkmode, string did, string pass, string lktype, int ot, int ct, int zv=0, int psh=1)
+passage(int sx, int sy, int dr, int psl, int psw, string ty, string ptype, string lkmode, string did, string pass, int ot, int ct, int zv=0, int psh=1)
 {
 startx = sx;
 starty = sy;
@@ -40,13 +37,10 @@ passagelength = psl;
 passagewidth = psw;
 passageheight = psh;
 tile = ty;
-looptype = lsound;
-opentype = osound;
-closetype = clsound;
+passagetype = ptype;
 lockmode = lkmode;
 doorid = did;
 pspass = pass;
-locktype = lktype;
 opentime = ot;
 closetime = ct;
 is_open = false;
@@ -57,7 +51,7 @@ opensound = -1;
 closesound = -1;
 last_pspass = "";
 double sz = (mapmode == "3d") ? z : 0;
-passagesound = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/loop/" + looptype + "/*loop*"), me.x, me.y, me.z, startx, starty, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+passagesound = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/" + passagetype + "/*loop*"), me.x, me.y, me.z, startx, starty, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
 update_passage_sound();
 }
 bool check_password(string input)
@@ -129,7 +123,7 @@ int rw = get_xend() - sx;
 int rh = get_yend() - sy;
 double opz = (mapmode == "3d") ? get_zstart() : 0;
 int orz = (mapmode == "3d") ? (get_zend() - get_zstart()) : 0;
-opensound = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/open/" + opentype + "/*open*"), me.x, me.y, me.z, sx, sy, opz, calculate_theta(me_rotation), 0, rw, 0, rh, 0, orz, false, 0, 0, 0, 100, false);
+opensound = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/" + passagetype + "/*open*"), me.x, me.y, me.z, sx, sy, opz, calculate_theta(me_rotation), 0, rw, 0, rh, 0, orz, false, 0, 0, 0, 100, false);
 }
 }
 void finish_open()
@@ -175,7 +169,7 @@ int rw = get_xend() - sx;
 int rh = get_yend() - sy;
 double clz = (mapmode == "3d") ? get_zstart() : 0;
 int crz = (mapmode == "3d") ? (get_zend() - get_zstart()) : 0;
-closesound = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/close/" + closetype + "/*close*"), me.x, me.y, me.z, sx, sy, clz, calculate_theta(me_rotation), 0, rw, 0, rh, 0, crz, false, 0, 0, 0, 100, false);
+closesound = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/" + passagetype + "/*close*"), me.x, me.y, me.z, sx, sy, clz, calculate_theta(me_rotation), 0, rw, 0, rh, 0, crz, false, 0, 0, 0, 100, false);
 }
 }
 void finish_close()
@@ -290,13 +284,13 @@ string matched = inv.find(doorid);
 if(matched != "")
 {
 inv.give(matched, -1);
-locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/lock/"+locktype+"/*grant*"),false,0,0,0,100,false);
+locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+passagetype+"/*grant*"),false,0,0,0,100,false);
 speak("Access granted. Your "+matched+" was consumed.");
 begin_open();
 }
 else
 {
-locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/lock/"+locktype+"/*deny*"),false,0,0,0,100,false);
+locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+passagetype+"/*deny*"),false,0,0,0,100,false);
 speak("This passage is locked. It requires an item matching "+doorid+" in your inventory.");
 }
 }
@@ -361,7 +355,7 @@ int count;
 parse_item_spec(doorid, item_id, count);
 if(lockmode == "takepass" and inv.count(item_id) < count)
 {
-locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/lock/"+locktype+"/*deny*"),false,0,0,0,100,false);
+locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+passagetype+"/*deny*"),false,0,0,0,100,false);
 if(passagesound != -1 && is_sound_paused)
 {
 passagepool.resume_sound(passagesound);
@@ -374,7 +368,7 @@ else
 {
 if(lockmode == "givepass") inv.give(item_id, count);
 else inv.give(item_id, -count);
-locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/lock/"+locktype+"/*grant*"),false,0,0,0,100,false);
+locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+passagetype+"/*grant*"),false,0,0,0,100,false);
 if(lockmode == "givepass")
 {
 if(count==1) speak("Access granted. You receive a "+item_id+".");
@@ -395,7 +389,7 @@ begin_open();
 }
 else
 {
-locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/lock/"+locktype+"/*deny*"),false,0,0,0,100,false);
+locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+passagetype+"/*deny*"),false,0,0,0,100,false);
 speak("Invalid password. Please try again.");
 if(passagesound != -1 && is_sound_paused)
 {
@@ -433,7 +427,7 @@ else
 last_pspass = pass;
 if(check_password(pass))
 {
-locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/lock/"+locktype+"/*grant*"),false,0,0,0,100,false);
+locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+passagetype+"/*grant*"),false,0,0,0,100,false);
 speak("Access granted.");
 if(passagesound != -1 && is_sound_paused)
 {
@@ -444,7 +438,7 @@ begin_open();
 }
 else
 {
-locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/lock/"+locktype+"/*deny*"),false,0,0,0,100,false);
+locksound = passagepool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+passagetype+"/*deny*"),false,0,0,0,100,false);
 speak("Invalid password. Please try again.");
 if(passagesound != -1 && is_sound_paused)
 {
@@ -487,9 +481,9 @@ return true;
 return false;
 }
 
-void spawn_passage(int x, int y, int dir, int plength, int pwidth, string tile, string looptype, string opentype, string closetype, string lockmode, string doorid, string pspass, string locktype, int opentime, int closetime, int z=0, int pheight=1)
+void spawn_passage(int x, int y, int dir, int plength, int pwidth, string tile, string passagetype, string lockmode, string doorid, string pspass, int opentime, int closetime, int z=0, int pheight=1)
 {
-passage pg1(x, y, dir, plength, pwidth, tile, looptype, opentype, closetype, lockmode, doorid, pspass, locktype, opentime, closetime, z, pheight);
+passage pg1(x, y, dir, plength, pwidth, tile, passagetype, lockmode, doorid, pspass, opentime, closetime, z, pheight);
 passages.insert_last(pg1);
 }
 
@@ -529,23 +523,20 @@ o+=4;
 }
 else o+=3;
 string tiletype=sd[o];
-string lotype=sd[o+1];
-string optype=sd[o+2];
-string cotype=sd[o+3];
-string lkmode=sd[o+4];
-string combined=join_string_array(sd, o+5, sd.length());
+string ptype=sd[o+1];
+string lkmode=sd[o+2];
+string combined=join_string_array(sd, o+3, sd.length());
 string remainder;
 array<string> quoted=extract_quoted(combined, remainder);
 string did=(quoted.length() >= 1) ? quoted[0] : "none";
 string pass=(quoted.length() >= 2) ? quoted[1] : "none";
 array<string> tail=string_split(string_trim_sides(remainder), " ");
-string lktype=(tail.length() >= 1) ? tail[0] : "none";
-int sp=(tail.length() >= 2) ? int(stn(tail[1])) : 0;
-int sp2=(tail.length() >= 3) ? int(stn(tail[2])) : 0;
-spawn_passage(sx, sy, dir, lt, wd, tiletype, lotype, optype, cotype, lkmode, did, pass, lktype, sp, sp2, z, ph);
+int sp=(tail.length() >= 1) ? int(stn(tail[0])) : 0;
+int sp2=(tail.length() >= 2) ? int(stn(tail[1])) : 0;
+spawn_passage(sx, sy, dir, lt, wd, tiletype, ptype, lkmode, did, pass, sp, sp2, z, ph);
 }
 
-void write_passage(int x, int y, int direction, int length, int width, string tile, string looptype, string opentype, string closetype, string lockmode, string doorid, string pspass, string locktype, int opentime, int closetime, int z=0, int height=1)
+void write_passage(int x, int y, int direction, int length, int width, string tile, string passagetype, string lockmode, string doorid, string pspass, int opentime, int closetime, int z=0, int height=1)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
@@ -555,7 +546,7 @@ string dims = direction+" "+length+" "+width;
 if(mapmode == "3d") dims += " "+height;
 string clean_did=string_replace(doorid, "\"", "", true);
 string clean_pass=string_replace(pspass, "\"", "", true);
-mapper.write("\r\n"+"passage "+src+" "+dims+" "+tile+" "+looptype+" "+opentype+" "+closetype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+locktype+" "+opentime+" "+closetime);
+mapper.write("\r\n"+"passage "+src+" "+dims+" "+tile+" "+passagetype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+opentime+" "+closetime);
 mapper.close();
 bump_map_modified();
 }
@@ -580,25 +571,19 @@ string saved_pass = "";
 int saved_lockmode_pos = 0;
 int saved_dir_pos = 0;
 int saved_tile_pos = 0;
-int saved_loop_pos = 0;
-int saved_open_pos = 0;
-int saved_close_pos = 0;
-int saved_lock_pos = 0;
+int saved_passage_pos = 0;
 bool do_build = true;
 int last_lockmode_pos = -1;
 int fsx, fsy, fsz, flength, fwidth, fheight, fopentime, fclosetime;
 fsz = -1; fheight = -1;
 int fdid, fpass;
-int dir_list, tile_list, lockmode_list, loop_list, open_list, close_list, lock_list;
+int dir_list, tile_list, lockmode_list, passage_list;
 int fok, fcn;
 string[] ptiles = get_map_sound_folders("builder/construction/platforms/*");
-string[] ploop = get_map_sound_folders("builder/transitions/doors/loop/*");
-string[] popen = get_map_sound_folders("builder/transitions/doors/open/*");
-string[] pclose = get_map_sound_folders("builder/transitions/doors/close/*");
-string[] plock = get_map_sound_folders("builder/transitions/doors/lock/*");
-if(ptiles.length() == 0 || popen.length() == 0 || pclose.length() == 0)
+string[] pdoor = get_map_sound_folders("builder/transitions/doors/*");
+if(ptiles.length() == 0 || pdoor.length() == 0)
 {
-dlg("Error. One or more required passage sound folders are missing. Press enter to continue.");
+dlg("Error. There are no passages available to view. Press enter to continue.");
 resume_pools();
 return;
 }
@@ -620,9 +605,7 @@ saved_opentime = form.get_text(fopentime);
 saved_closetime = form.get_text(fclosetime);
 saved_dir_pos = max(0, form.get_list_position(dir_list));
 saved_tile_pos = max(0, form.get_list_position(tile_list));
-saved_loop_pos = max(0, form.get_list_position(loop_list));
-saved_open_pos = max(0, form.get_list_position(open_list));
-saved_close_pos = max(0, form.get_list_position(close_list));
+saved_passage_pos = max(0, form.get_list_position(passage_list));
 bool show_item_field = item_mode || last_lockmode_pos == 1;
 bool show_pass_field = (!item_mode && last_lockmode_pos == 2) || (item_mode && (last_lockmode_pos == 2 || last_lockmode_pos == 3));
 if(show_item_field)
@@ -632,13 +615,6 @@ saved_did = form.get_text(fdid);
 if(show_pass_field)
 {
 saved_pass = form.get_text(fpass);
-}
-bool show_lock_list_save = false;
-if(!item_mode && last_lockmode_pos != 0) show_lock_list_save = true;
-if(item_mode && (last_lockmode_pos == 2 || last_lockmode_pos == 3)) show_lock_list_save = true;
-if(show_lock_list_save && plock.length() > 0)
-{
-saved_lock_pos = max(0, form.get_list_position(lock_list));
 }
 }
 form.reset();
@@ -712,33 +688,11 @@ else if(saved_lockmode_pos == 2)
 fpass = form.create_input_box("password required", saved_pass);
 }
 }
-loop_list = form.create_list("loop sound");
-form.add_list_item(loop_list, "none", "none");
-for(uint i = 0; i < ploop.length(); i++)
-form.add_list_item(loop_list, ploop[i], ploop[i]);
-form.set_list_position(loop_list, saved_loop_pos, false);
-open_list = form.create_list("open sound");
-form.add_list_item(open_list, "none", "none");
-for(uint i = 0; i < popen.length(); i++)
-form.add_list_item(open_list, popen[i], popen[i]);
-form.set_list_position(open_list, saved_open_pos, false);
-close_list = form.create_list("close sound");
-form.add_list_item(close_list, "none", "none");
-for(uint i = 0; i < pclose.length(); i++)
-form.add_list_item(close_list, pclose[i], pclose[i]);
-form.set_list_position(close_list, saved_close_pos, false);
-lock_list = -1;
-bool need_lock_list = false;
-if(!item_mode && saved_lockmode_pos != 0) need_lock_list = true;
-if(item_mode && (saved_lockmode_pos == 2 || saved_lockmode_pos == 3)) need_lock_list = true;
-if(need_lock_list && plock.length() > 0)
-{
-lock_list = form.create_list("lock sound");
-form.add_list_item(lock_list, "none", "none");
-for(uint i = 0; i < plock.length(); i++)
-form.add_list_item(lock_list, plock[i], plock[i]);
-form.set_list_position(lock_list, saved_lock_pos, false);
-}
+passage_list = form.create_list("passage sound");
+form.add_list_item(passage_list, "none", "none");
+for(uint i = 0; i < pdoor.length(); i++)
+form.add_list_item(passage_list, pdoor[i], pdoor[i]);
+form.set_list_position(passage_list, saved_passage_pos, false);
 fok = form.create_button("okay", true);
 fcn = form.create_button("cancel");
 if(last_lockmode_pos == -1)
@@ -762,27 +716,7 @@ int cur_focus = form.get_current_focus();
 if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
 {
 t.destroy_sound(prevslot);
-if(cur_focus == loop_list)
-{
-int p = form.get_list_position(loop_list);
-if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/loop/"+ploop[p-1]+"/*loop*"), false);
-}
-else if(cur_focus == open_list)
-{
-int p = form.get_list_position(open_list);
-if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/open/"+popen[p-1]+"/*open*"), false);
-}
-else if(cur_focus == close_list)
-{
-int p = form.get_list_position(close_list);
-if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/close/"+pclose[p-1]+"/*close*"), false);
-}
-else if(lock_list != -1 && cur_focus == lock_list)
-{
-int p = form.get_list_position(lock_list);
-if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/lock/"+plock[p-1]+"/*deny*"), false);
-}
-else if(cur_focus == tile_list)
+if(cur_focus == tile_list)
 {
 int p = form.get_list_position(tile_list);
 if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/construction/platforms/"+ptiles[p-1]+"/*step*"), false);
@@ -803,6 +737,48 @@ if(control_is_down() && key_repeating(KEY_H))
 {
 t.destroy_sound(prevslot);
 prevslot = t.play_stationary(get_map_sound("builder/construction/platforms/"+ptiles[p-1]+"/*fall*"), false);
+}
+}
+}
+if(cur_focus == passage_list && control_is_down())
+{
+int p = form.get_list_position(passage_list);
+if(p > 0)
+{
+if(key_repeating(KEY_L))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/"+pdoor[p-1]+"/*loop*"), false);
+}
+if(key_repeating(KEY_C))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/"+pdoor[p-1]+"/*close*"), false);
+}
+if(key_repeating(KEY_O))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/"+pdoor[p-1]+"/*open*"), false);
+}
+if(key_repeating(KEY_D))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/"+pdoor[p-1]+"/*death*"), false);
+}
+if(key_repeating(KEY_H))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/"+pdoor[p-1]+"/*hurt*"), false);
+}
+if(key_repeating(KEY_N))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/"+pdoor[p-1]+"/*deny*"), false);
+}
+if(key_repeating(KEY_R))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound("builder/transitions/doors/"+pdoor[p-1]+"/*grant*"), false);
 }
 }
 }
@@ -945,22 +921,12 @@ else if(saved_lockmode_pos == 2) lkmode = "password";
 if(saved_lockmode_pos == 1) did = form.get_text(fdid);
 if(saved_lockmode_pos == 2) pass = form.get_text(fpass);
 }
-int lp = form.get_list_position(loop_list);
-int op = form.get_list_position(open_list);
-int cp = form.get_list_position(close_list);
-string blooptyp = (lp > 0) ? ploop[lp-1] : "none";
-string bopentyp = (op > 0) ? popen[op-1] : "none";
-string bclostyp = (cp > 0) ? pclose[cp-1] : "none";
-string lktype = "none";
-if(lock_list != -1)
-{
-int lkp = form.get_list_position(lock_list);
-lktype = (lkp > 0) ? plock[lkp-1] : "none";
-}
+int ppos = form.get_list_position(passage_list);
+string bpassagetyp = (ppos > 0) ? pdoor[ppos-1] : "none";
 t.destroy_sound(prevslot);
 resume_pools();
-write_passage(bx, by, bdir, blen, bwd, btile, blooptyp, bopentyp, bclostyp, lkmode, did, pass, lktype, bot, bct, bz, bhgt);
-spawn_passage(bx, by, bdir, blen, bwd, btile, blooptyp, bopentyp, bclostyp, lkmode, did, pass, lktype, bot, bct, bz, bhgt);
+write_passage(bx, by, bdir, blen, bwd, btile, bpassagetyp, lkmode, did, pass, bot, bct, bz, bhgt);
+spawn_passage(bx, by, bdir, blen, bwd, btile, bpassagetyp, lkmode, did, pass, bot, bct, bz, bhgt);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
