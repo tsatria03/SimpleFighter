@@ -389,7 +389,7 @@ safe zones (builder/zones/safe zones/): in, out.
 signs (builder/interaction/signs/): break, loop, press, step.
 spikes (builder/traps/spikes/): death, loop.
 switches (builder/interaction/switches/): loop, press.
-teleporters (builder/transitions/teleporters/): hit, loop.
+teleporters (builder/transitions/teleporters/): loop, move.
 time bombs (builder/traps/time bombs/): land, tick.
 vanishing platforms (builder/construction/vanishing platforms/): loop.
 vehicles (builder/transportation/vehicles/): beacon, death, hit, horn, hurt, motor, turn.
