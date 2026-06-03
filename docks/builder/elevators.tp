@@ -1,0 +1,48 @@
+Elevators.
+
+An elevator is a call point the player rides between named floors. Standing on the elevator's tile and pressing the interact key opens a menu of every floor defined on the map; picking one carries the player to that floor, announcing floors and beeping along the way if you've enabled those sounds. Elevators are the right entity for multi-level buildings, towers, and any map where the player should move between stacked areas through a single controlled lift rather than walking a ramp.
+
+An elevator never works alone — it needs elevator floors to travel to. The two entities are placed separately in the builder and described together here, because neither is useful without the other.
+
+Elevator floors.
+
+An elevator floor is a named region of the map that the lift can stop at. It carries no sound of its own; it exists purely to label a height (on 2d and topdown maps) or a level (on 3d maps) so the elevator menu has somewhere to go and the player can be told which floor they're on.
+
+The elevator floor form takes a minimum x and a maximum x to mark how wide the floor region is, the floor's y (on 2d and topdown maps this is the floor height; on 3d maps you give a minimum y, a maximum y, and a z for the level), and a text field naming the floor — this is the name shown in the elevator's menu and spoken when the player arrives. Place one elevator floor per level you want the lift to reach, each with a distinct name like floor 1, lobby, or rooftop.
+
+A player is considered to be on a floor whenever they're standing inside that floor's region. The elevator uses this both to label the current floor in its menu and to know which floors it passes while traveling.
+
+The elevator call point.
+
+The elevator itself is a single tile. Its form takes the following:
+
+Coordinates. The x and y (and z on 3d maps) of the call point tile — the tile the player stands on to summon the floor menu.
+
+Speed. Milliseconds between each step of travel. The lift moves the player one tile at a time toward the chosen floor, waiting this long between steps, so a smaller number is a faster lift.
+
+Menu text. The prompt shown at the top of the floor menu, for example choose the floor you'd like to go to. The player's current floor is appended to this automatically when the menu opens.
+
+Elevator sound (a folder name from the elevator sounds list, or none). The audio theme the lift uses; every clip is pulled from this one bundle. Pick none for a silent elevator. The bundle supplies a loop clip (ambient hum at the call point), a move clip (while traveling), an open clip (on departure), a close clip (on arrival), and a beep clip (played as each floor is passed and again on arrival).
+
+Beeping sound (checkbox). When checked, the beep clip plays each time the lift passes or reaches a floor, the way a real elevator chimes at each level. When unchecked, the lift travels and arrives without chiming. Defaults to off.
+
+Looping sound (checkbox). When checked, the loop clip plays continuously as an ambient bed at the call point for as long as the elevator exists, pausing while the floor menu is open and resuming when it closes. When unchecked, there is no ambient loop. Defaults to off.
+Moving sound (checkbox). When checked, the move clip plays while the lift carries the player between floors. When unchecked, the trip is silent between the open and close clips. Defaults to off.
+
+Speak floors (checkbox). When checked, the name of each floor the lift passes is spoken as it crosses that floor's region, so the player hears the floors tick by. When unchecked, floors pass silently and only the destination matters. Defaults to off.
+
+Beeping, looping, and moving are the three continuous or repetitive sounds, which is why each has its own off switch — a player who finds the chime or the travel hum tiresome can silence just that one. For a completely silent lift, set the elevator sound to none.
+
+Riding the elevator.
+
+When the player stands on the call point and presses interact, the floor menu opens listing every elevator floor on the map by name, prefixed with the menu text and the floor the player is currently on. Choosing a floor starts the lift moving toward that floor's region; choosing the floor the player is already on does nothing but say so. As the lift travels it announces and chimes at floors according to the speak floors and beeping checkboxes, and on arrival it plays the arrival beep (if beeping) and the close clip. If the map has no elevator floors at all, the elevator tells the player there are no floors available and does nothing.
+
+Auditioning sounds in the builder.
+
+While the elevator sound list is focused in the builder form, hold control and press a letter key to preview a clip from the highlighted bundle: L for the loop, M for move, C for close, O for open, and B for beep. The previews always play so you can audition them, regardless of the beeping, looping, and moving checkboxes.
+
+Authoring elevators by hand.
+
+If you edit main.sif directly, an elevator line is: elevator x y speed "menu text" elevatortype beeping looping moving floorspeak. On 3d maps a z is inserted after y: elevator x y z speed "menu text" elevatortype beeping looping moving floorspeak. The menu text is double-quoted so it may contain spaces, the four bool fields are the literal words true or false, and the elevator sound must match a folder name in the elevator sounds set or the literal word none.
+
+An elevator floor line is: el_floor minx maxx y "floor text" on 2d and topdown maps, and el_floor minx maxx miny maxy z "floor text" on 3d maps. The floor text is double-quoted. Place the elevator floors and the elevator that serves them in the same map; the lift reads whatever floors exist when the map loads.

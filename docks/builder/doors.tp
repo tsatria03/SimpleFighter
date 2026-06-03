@@ -1,0 +1,67 @@
+Doors.
+
+A door is a transition entity that moves the player from one place on the map to another. Despite the name it isn't a physical barrier you bump into — it's a trigger area that, when activated, carries the player from where they're standing to a destination coordinate, with open, travel, and close audio dressing the trip. Doors are the right entity for room-to-room transitions, ladders and hatches, gates that demand a key or password, and breakable barriers the player can smash through with a weapon.
+
+Doors come in two builder variants, chosen from the build mode list at the top of the form: a single door (one tile the player triggers from) and a ranged door (a rectangular area the player can trigger from anywhere inside). Both variants share every field, lock behavior, and audio model — only the trigger footprint differs. The single form is the default. Each door lives as one line in the map's main.sif.
+
+How a door activates.
+
+A door has a trigger area and a destination. When the player is inside the trigger area and the door fires, the player is moved from the area to the destination coordinate. There are two ways a door fires:
+
+Automatic doors fire the moment the player steps into the trigger area — no key press needed. Check the automatic box for transitions that should happen just by walking onto them, like a seamless room boundary or a fall-through hatch.
+Manual doors fire only when the player is inside the trigger area and presses the interact key. Leave automatic unchecked for doors the player should choose to use — most keyed, password, and deliberate-transition doors are manual.
+
+The movement itself is governed by the speed field. With a positive speed, the player is walked one tile at a time toward the destination, waiting that many milliseconds between each step, so the transition has a travel feel and the moving sound plays across it. A speed of -1 jumps the player to the destination instantly with no step-by-step travel.
+
+Door fields.
+
+A door is placed through the builder form, which exposes the following:
+
+Coordinates. A single door takes a starting x and y (and z on 3d maps) for the trigger tile, plus a finishing x and y (and z) for the destination. A ranged door takes minimum and maximum x and y instead (and min and max z on 3d maps) for the trigger rectangle, plus a destination x and y (and z). The ranged form is selected by picking ranged in the build mode list.
+
+Health. The amount of damage the door can absorb before it's destroyed, relevant only when destroyable is checked. A destroyed door stops working and plays its death sound.
+Speed. Milliseconds between each step of the player's travel to the destination, or -1 for an instant jump.
+
+Lock mode (none, key, or password). Controls what the player must satisfy before the door opens:
+
+none: the door opens freely on trigger.
+key: the door requires an item in the player's inventory whose id matches the door's item id. On success the matching item is consumed and access is granted; otherwise access is denied and the door stays shut.
+password: the door prompts the player to type a password. A correct entry grants access; a wrong entry is denied and can be retried. The last password the player typed is remembered for the session, so they can press enter to resubmit it at the next locked door.
+
+Item id / password required. The extra text field that appears when lock mode is key (the required item id) or password (the required password). The item id may include a count, written as the item name followed by a number, to require more than one.
+
+Door sound (a folder name from the door sounds list, or none). The audio theme the door uses; every clip the door plays is pulled from this one bundle. Pick none for a completely silent door. The bundle supplies an open clip (on trigger), a close clip (on arrival), a move clip (during travel), a loop clip (ambient hum while the door exists), a death clip (when destroyed), a hurt clip (when damaged), a grant clip (lock satisfied), and a deny clip (lock refused).
+
+Automatic (checkbox). Fire on contact instead of on a key press, as described above.
+Destroyable (checkbox). When checked, the door can be damaged by weapons, bombs, and other attacks; once its health reaches zero it's destroyed, plays its death clip, and no longer transports anyone. Leave it unchecked for an indestructible transition.
+
+Looping sound (checkbox). When checked, the door's loop clip plays continuously as an ambient bed for as long as the door exists, anchored at the door's position (and across the whole rectangle for a ranged door). When unchecked, there is no ambient loop and the door is silent between activations. Defaults to off.
+Moving sound (checkbox). When checked, the move clip plays while the player is being walked to the destination. When unchecked, the trip is silent between the open and close clips. Defaults to off. A door with speed -1 jumps instantly, so the move sound has little time to be heard regardless.
+
+Build opposite side (checkbox). When checked, the builder also creates a second door at the destination that leads back to the starting tile, using the same settings, so the doorway works in both directions from a single placement. Leave it unchecked for a one-way transition.
+
+The two continuous sounds — looping and moving — are the ones a player is most likely to find repetitive, which is why they have their own off switches. The one-shot clips (open, close, grant, deny, death, hurt) always play when their moment arrives; if you want a fully silent door, set the door sound to none rather than hunting for individual toggles.
+
+Item doors.
+
+The item door is a sibling builder entry that places the same entity with an inventory-trading lock instead of the plain key/password lock. Its use mode list offers four options:
+
+give: opens and hands the player the named item (or items, with a count) every time it's used.
+take: requires the player to hand over the named item (or count of items); the items are removed and the door opens, or the player is told what's missing.
+
+givepass: the player must enter the correct password, and on success the door opens and gives them the item.
+takepass: the player must enter the correct password and have the item; on success the item is taken and the door opens.
+
+Everything else about an item door — coordinates, speed, health, the sound bundle, and all the checkboxes — works exactly as it does for a standard door.
+
+Auditioning sounds in the builder.
+
+While the door sound list is focused in the builder form, hold control and press a letter key to preview a clip from the highlighted bundle: L for the loop, M for move, C for close, O for open, D for death, H for hurt, N for deny, and R for grant. This lets you hear what each theme sounds like before committing it, and the previews are unaffected by the looping and moving checkboxes — they always play so you can audition them.
+
+Authoring doors by hand.
+
+If you edit main.sif directly, a single door line is: door x y x2 y2 health speed doortype lockmode "itemid" "password" automatic destroyable looping moving — where x y is the trigger tile and x2 y2 the destination. On 3d maps a z is inserted after each coordinate pair: door x y z x2 y2 z2 health speed doortype lockmode "itemid" "password" automatic destroyable looping moving.
+
+A ranged door replaces the single trigger tile with min and max pairs: door minx maxx miny maxy x2 y2 health speed doortype lockmode "itemid" "password" automatic destroyable looping moving, and on 3d maps inserts min and max z after the y pair and a single z after the destination y. Both forms share the one door name; the game reads a line as ranged when there are more coordinate values before the door sound than a single door would have.
+
+The item id and password are always double-quoted so they may contain spaces; write "none" when a field is unused. The four bool fields are the literal words true or false. The door sound must match a folder name in the door sounds set, or the literal word none. Doors and passages draw their sound bundles from the same set of folders, so a theme placed there is available to both; only doors use the move clip from it.

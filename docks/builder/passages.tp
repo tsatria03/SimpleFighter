@@ -1,0 +1,51 @@
+Passages.
+
+A passage is an openable corridor — a stretch of map that is sealed until the player opens it, then becomes a walkable path, and can be closed again to seal it back up. Unlike a door, which carries the player to a destination, a passage doesn't move the player at all: it physically lays down a run of floor tiles between two endpoints when opened and removes them when closed. Passages are the right entity for drawbridges, sliding gates, collapsing tunnels, secret corridors, and any path that should only exist while the player has unlocked it.
+
+A passage has two endpoints separated by its length. Standing on either endpoint and pressing the interact key opens a closed passage or closes an open one. Each passage is one line in the map's main.sif.
+
+How a passage works.
+
+When closed, the run of tiles between the two endpoints does not exist, so the player can't cross. Standing on an endpoint and pressing interact begins opening it: the open clip plays, the passage waits its open time, and then the corridor fills in with the chosen tile and becomes walkable. Standing on an endpoint of an open passage and pressing interact begins closing it: the close clip plays, the passage waits its close time, and then the corridor tiles are removed and the path is sealed again. The open time and close time are how long each transition takes, in milliseconds, so a longer time makes a slower, more deliberate door.
+
+Passage fields.
+
+The passage form exposes the following:
+
+Starting position. The starting x and y (and z on 3d maps) — the origin endpoint of the corridor.
+
+Length. How many tiles long the corridor runs along its direction. This is the distance between the two endpoints.
+Width. How many tiles wide the corridor is across its direction (on 3d maps a separate height field sets its vertical extent).
+
+Open time. Milliseconds the passage takes to finish opening after the player triggers it — the gap between the open clip starting and the corridor becoming walkable.
+Close time. Milliseconds the passage takes to finish closing after the player triggers it — the gap between the close clip starting and the corridor sealing back up.
+
+Direction. The axis the corridor runs along — left to right, back to front (or bottom to top on 2d maps), and on 3d maps an additional bottom to top option for vertical shafts. The length extends along this axis.
+
+Tile. The floor tile that fills the corridor when it's open, chosen from the platform tiles list. Pick air for an open gap the player can walk through with no surface underfoot, or a solid tile for a floor that appears.
+
+Lock mode (none, key, or password). Controls what the player must satisfy before the passage opens, working exactly as it does on a door:
+
+none: opens freely.
+key: requires a matching item in the player's inventory, which is consumed on success.
+password: prompts for a password, remembering the last one entered for the session.
+
+Item id / password required. The extra field that appears for key or password mode — the required item id (which may include a count) or the required password.
+
+Passage sound (a folder name from the passage sounds list, or none). The audio theme the passage uses; pick none for silence. Passages draw from the same sound bundles as doors, so the list is the door themes. From that bundle a passage uses the open clip (while opening), the close clip (while closing), the loop clip (ambient bed while it exists), and the grant and deny clips (for lock interactions). A passage has no travel of its own, so it never uses a move clip, and it can't be destroyed, so it has no death or hurt clip.
+
+Looping sound (checkbox). When checked, the loop clip plays continuously as an ambient bed for as long as the passage exists, anchored across the corridor, and pauses while the passage is open so the open space is quiet. When unchecked, there is no ambient loop. Defaults to off. This is the only continuous sound a passage has, which is why it's the only sound toggle it offers; the open, close, grant, and deny clips are one-shots that always play when their moment arrives.
+
+Item passages.
+
+The item passage is a sibling builder entry that places the same entity with an inventory-trading lock instead of the plain key/password lock, exactly mirroring the item door. Its use mode list offers give, take, givepass, and takepass, which give the player an item on open, take an item to open, or combine a password with giving or taking an item. Every other field works the same as a standard passage.
+
+Auditioning sounds in the builder.
+
+The passage form has two preview groups. While the tile list is focused, hold control and press L to hear the tile's land sound or H to hear its fall sound, and press space to hear its step sound, so you can pick the corridor's floor by ear. While the passage sound list is focused, hold control and press a letter to preview a clip from the highlighted bundle: L for the loop, C for close, O for open, D for death, H for hurt, N for deny, and R for grant. The previews always play for auditioning even though a real passage never uses the death or hurt clips and ignores the loop when looping is off.
+
+Authoring passages by hand.
+
+If you edit main.sif directly, a passage line is: passage x y direction length width tile passagetype lockmode "itemid" "password" opentime closetime looping. On 3d maps a z is inserted after y and a height after width: passage x y z direction length width height tile passagetype lockmode "itemid" "password" opentime closetime looping. The direction is written as a number — 1 for left to right, 2 for back to front (or bottom to top on 2d maps), and 3 for the vertical bottom to top on 3d maps.
+
+The item id and password are double-quoted so they may contain spaces; write "none" when unused. Open time and close time are whole milliseconds, and looping is the literal word true or false. The tile must match a platform tile folder name or the word air, and the passage sound must match a folder name in the door sounds set or the word none.
