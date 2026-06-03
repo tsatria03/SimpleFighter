@@ -6,7 +6,7 @@ elevator@[] elevators(0);
 class elevator
 {
 bool is_moving = false;
-bool floorspeak, beeping;
+bool floorspeak, beeping, looping;
 int beepsound, closesound, loopsound, movesound, opensound;
 int startx, starty, startz;
 int endx, endy, endz;
@@ -15,7 +15,7 @@ string elvtext;
 string elvtype;
 timer elevatortimer;
 int last_floor_index = -1;
-elevator(int sx, int sy, int sp, string eltxt, string eltype, bool bp, bool fls, int sz=0)
+elevator(int sx, int sy, int sp, string eltxt, string eltype, bool bp, bool lp, bool fls, int sz=0)
 {
 startx = sx;
 starty = sy;
@@ -24,12 +24,15 @@ speed = sp;
 elvtext=eltxt;
 elvtype = eltype;
 beeping = bp;
+looping = lp;
 floorspeak = fls;
 endx = sx;
 endy = sy;
 endz = sz;
 beepsound = -1;
 double soundz = (mapmode == "3d") ? startz : 0;
+loopsound = -1;
+if(looping)
 loopsound = elvpool.play_extended_3d(get_map_sound("builder/transitions/elevators/" + elvtype + "/*loop*"), me.x, me.y, me.z, startx, starty, soundz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
 }
 }
@@ -153,9 +156,9 @@ elv.last_floor_index = -1;
 }
 }
 }
-void spawn_elevator(int x, int y, int speed, string elvtext, string elvtype, bool beeping, bool floorspeak, int z=0)
+void spawn_elevator(int x, int y, int speed, string elvtext, string elvtype, bool beeping, bool looping, bool floorspeak, int z=0)
 {
-elevator elv1(x, y, speed, elvtext, elvtype, beeping, floorspeak, z);
+elevator elv1(x, y, speed, elvtext, elvtype, beeping, looping, floorspeak, z);
 elevators.insert_last(elv1);
 }
 void destroy_all_elevators()
@@ -198,6 +201,7 @@ form.add_list_item(elv_list, "none", "none");
 for(uint i = 0; i < elvs_list.length(); i++) form.add_list_item(elv_list, elvs_list[i], elvs_list[i]);
 form.set_list_position(elv_list, 0, false);
 int beep_cb = form.create_checkbox("beeping sound", false);
+int loop_cb = form.create_checkbox("looping sound", false);
 int speak_cb = form.create_checkbox("speak floors", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
@@ -293,11 +297,12 @@ string btxt = form.get_text(txtbox);
 int pe = form.get_list_position(elv_list);
 string belv = (pe > 0) ? elvs_list[pe-1] : "none";
 bool bbeep = form.is_checked(beep_cb);
+bool bloop = form.is_checked(loop_cb);
 bool bspk = form.is_checked(speak_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_elevator(bx, by, bsp, btxt, belv, bbeep, bspk, bz);
-spawn_elevator(bx, by, bsp, btxt, belv, bbeep, bspk, bz);
+write_elevator(bx, by, bsp, btxt, belv, bbeep, bloop, bspk, bz);
+spawn_elevator(bx, by, bsp, btxt, belv, bbeep, bloop, bspk, bz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -325,18 +330,19 @@ string txt=(quoted.length() >= 1) ? quoted[0] : "";
 array<string> tail=string_split(string_trim_sides(remainder), " ");
 string elvtype=(tail.length() >= 1) ? tail[0] : "none";
 bool bp=(tail.length() >= 2) ? string_to_bool(tail[1]) : true;
-bool fsp=(tail.length() >= 3) ? string_to_bool(tail[2]) : false;
-spawn_elevator(x, y, sp, txt, elvtype, bp, fsp, z);
+bool lp=(tail.length() >= 3) ? string_to_bool(tail[2]) : true;
+bool fsp=(tail.length() >= 4) ? string_to_bool(tail[3]) : false;
+spawn_elevator(x, y, sp, txt, elvtype, bp, lp, fsp, z);
 }
 
-void write_elevator(int x, int y, int speed, string txt, string elvtype, bool beeping, bool floorspeak, int z=0)
+void write_elevator(int x, int y, int speed, string txt, string elvtype, bool beeping, bool looping, bool floorspeak, int z=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=""+x+" "+y;
 if(mapmode == "3d") coords += " "+z;
 string clean_txt=string_replace(txt, "\"", "", true);
-mapper.write("\r\n"+"elevator "+coords+" "+speed+" \""+clean_txt+"\" "+elvtype+" "+beeping+" "+floorspeak);
+mapper.write("\r\n"+"elevator "+coords+" "+speed+" \""+clean_txt+"\" "+elvtype+" "+beeping+" "+looping+" "+floorspeak);
 mapper.close();
 bump_map_modified();
 }
