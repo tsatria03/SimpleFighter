@@ -7,6 +7,7 @@ bool is_open;
 bool is_opening;
 bool is_closing;
 bool is_sound_paused;
+bool looping;
 int passagesound;
 int opensound;
 int closesound;
@@ -27,7 +28,7 @@ string lockmode;
 string pspass;
 string passagetype;
 timer action_timer;
-passage(int sx, int sy, int dr, int psl, int psw, string ty, string ptype, string lkmode, string did, string pass, int ot, int ct, int zv=0, int psh=1)
+passage(int sx, int sy, int dr, int psl, int psw, string ty, string ptype, string lkmode, string did, string pass, int ot, int ct, bool lp, int zv=0, int psh=1)
 {
 startx = sx;
 starty = sy;
@@ -43,6 +44,7 @@ doorid = did;
 pspass = pass;
 opentime = ot;
 closetime = ct;
+looping = lp;
 is_open = false;
 is_opening = false;
 is_closing = false;
@@ -51,6 +53,8 @@ opensound = -1;
 closesound = -1;
 last_pspass = "";
 double sz = (mapmode == "3d") ? z : 0;
+passagesound = -1;
+if(looping)
 passagesound = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/" + passagetype + "/*loop*"), me.x, me.y, me.z, startx, starty, sz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
 update_passage_sound();
 }
@@ -481,9 +485,9 @@ return true;
 return false;
 }
 
-void spawn_passage(int x, int y, int dir, int plength, int pwidth, string tile, string passagetype, string lockmode, string doorid, string pspass, int opentime, int closetime, int z=0, int pheight=1)
+void spawn_passage(int x, int y, int dir, int plength, int pwidth, string tile, string passagetype, string lockmode, string doorid, string pspass, int opentime, int closetime, bool looping, int z=0, int pheight=1)
 {
-passage pg1(x, y, dir, plength, pwidth, tile, passagetype, lockmode, doorid, pspass, opentime, closetime, z, pheight);
+passage pg1(x, y, dir, plength, pwidth, tile, passagetype, lockmode, doorid, pspass, opentime, closetime, looping, z, pheight);
 passages.insert_last(pg1);
 }
 
@@ -533,10 +537,11 @@ string pass=(quoted.length() >= 2) ? quoted[1] : "none";
 array<string> tail=string_split(string_trim_sides(remainder), " ");
 int sp=(tail.length() >= 1) ? int(stn(tail[0])) : 0;
 int sp2=(tail.length() >= 2) ? int(stn(tail[1])) : 0;
-spawn_passage(sx, sy, dir, lt, wd, tiletype, ptype, lkmode, did, pass, sp, sp2, z, ph);
+bool lp=(tail.length() >= 3) ? string_to_bool(tail[2]) : true;
+spawn_passage(sx, sy, dir, lt, wd, tiletype, ptype, lkmode, did, pass, sp, sp2, lp, z, ph);
 }
 
-void write_passage(int x, int y, int direction, int length, int width, string tile, string passagetype, string lockmode, string doorid, string pspass, int opentime, int closetime, int z=0, int height=1)
+void write_passage(int x, int y, int direction, int length, int width, string tile, string passagetype, string lockmode, string doorid, string pspass, int opentime, int closetime, bool looping, int z=0, int height=1)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
@@ -546,7 +551,7 @@ string dims = direction+" "+length+" "+width;
 if(mapmode == "3d") dims += " "+height;
 string clean_did=string_replace(doorid, "\"", "", true);
 string clean_pass=string_replace(pspass, "\"", "", true);
-mapper.write("\r\n"+"passage "+src+" "+dims+" "+tile+" "+passagetype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+opentime+" "+closetime);
+mapper.write("\r\n"+"passage "+src+" "+dims+" "+tile+" "+passagetype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+opentime+" "+closetime+" "+looping);
 mapper.close();
 bump_map_modified();
 }
@@ -572,12 +577,13 @@ int saved_lockmode_pos = 0;
 int saved_dir_pos = 0;
 int saved_tile_pos = 0;
 int saved_passage_pos = 0;
+bool saved_looping = false;
 bool do_build = true;
 int last_lockmode_pos = -1;
 int fsx, fsy, fsz, flength, fwidth, fheight, fopentime, fclosetime;
 fsz = -1; fheight = -1;
 int fdid, fpass;
-int dir_list, tile_list, lockmode_list, passage_list;
+int dir_list, tile_list, lockmode_list, passage_list, looping_cb;
 int fok, fcn;
 string[] ptiles = get_map_sound_folders("builder/construction/platforms/*");
 string[] pdoor = get_map_sound_folders("builder/transitions/doors/*");
@@ -606,6 +612,7 @@ saved_closetime = form.get_text(fclosetime);
 saved_dir_pos = max(0, form.get_list_position(dir_list));
 saved_tile_pos = max(0, form.get_list_position(tile_list));
 saved_passage_pos = max(0, form.get_list_position(passage_list));
+saved_looping = form.is_checked(looping_cb);
 bool show_item_field = item_mode || last_lockmode_pos == 1;
 bool show_pass_field = (!item_mode && last_lockmode_pos == 2) || (item_mode && (last_lockmode_pos == 2 || last_lockmode_pos == 3));
 if(show_item_field)
@@ -693,6 +700,7 @@ form.add_list_item(passage_list, "none", "none");
 for(uint i = 0; i < pdoor.length(); i++)
 form.add_list_item(passage_list, pdoor[i], pdoor[i]);
 form.set_list_position(passage_list, saved_passage_pos, false);
+looping_cb = form.create_checkbox("looping sound", saved_looping);
 fok = form.create_button("okay", true);
 fcn = form.create_button("cancel");
 if(last_lockmode_pos == -1)
@@ -923,10 +931,11 @@ if(saved_lockmode_pos == 2) pass = form.get_text(fpass);
 }
 int ppos = form.get_list_position(passage_list);
 string bpassagetyp = (ppos > 0) ? pdoor[ppos-1] : "none";
+bool blooping = form.is_checked(looping_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_passage(bx, by, bdir, blen, bwd, btile, bpassagetyp, lkmode, did, pass, bot, bct, bz, bhgt);
-spawn_passage(bx, by, bdir, blen, bwd, btile, bpassagetyp, lkmode, did, pass, bot, bct, bz, bhgt);
+write_passage(bx, by, bdir, blen, bwd, btile, bpassagetyp, lkmode, did, pass, bot, bct, blooping, bz, bhgt);
+spawn_passage(bx, by, bdir, blen, bwd, btile, bpassagetyp, lkmode, did, pass, bot, bct, blooping, bz, bhgt);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");

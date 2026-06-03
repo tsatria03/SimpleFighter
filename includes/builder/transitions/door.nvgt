@@ -5,7 +5,7 @@ door@[]doors(0);
 
 class door
 {
-bool automatic, destroyable, is_moving, is_ranged;
+bool automatic, destroyable, is_moving, is_ranged, looping, moving;
 int locksound, closesound, defsound, destsound, doorsound, hurtsound, movesound, opensound;
 int minx, maxx, miny, maxy;
 int minz, maxz;
@@ -19,7 +19,7 @@ string last_drpass;
 string lockmode;
 string doortype;
 timer doortimer;
-door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, double maxhp, int sp, string dtype, string lkmode, string did, string pass, bool dcl, bool dtb, bool rng, int mnz=0, int mxz=0, int ez=0)
+door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, double maxhp, int sp, string dtype, string lkmode, string did, string pass, bool dcl, bool dtb, bool lp, bool mv, bool rng, int mnz=0, int mxz=0, int ez=0)
 {
 minx=mnx;
 maxx=mxx;
@@ -39,13 +39,20 @@ doorid=did;
 drpass=pass;
 automatic=dcl;
 destroyable=dtb;
+looping=lp;
+moving=mv;
 is_ranged=rng;
 last_drpass="";
 is_moving=false;
+movesound=-1;
 double sz = (mapmode == "3d") ? minz : 0;
 double zr = (mapmode == "3d") ? (maxz-minz) : 0;
+doorsound=-1;
+if(looping)
+{
 doorsound=doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/"+doortype+"/*loop*"),me.x,me.y,me.z,minx,miny,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 doorpool.update_sound_range_3d(doorsound, 0, maxx-minx, 0, maxy-miny, 0, zr);
+}
 }
 bool check_password(string input)
 {
@@ -63,7 +70,7 @@ if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
-doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
+if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
 if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and (mapmode != "3d" or (me.z>=doors[i].minz and me.z<=doors[i].maxz)) and doors[i].automatic==false and controls.action_repeating("interact"))
 {
@@ -72,7 +79,7 @@ if(doors[i].lockmode=="none")
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
-doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
+if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
 else if(doors[i].lockmode=="key")
 {
@@ -85,7 +92,7 @@ speak("Access granted. Your "+matched+" was consumed.");
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
-doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
+if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
 else
 {
@@ -104,7 +111,7 @@ else speak("You receive "+count+" "+item_id+"s.");
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
-doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
+if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
 else if(doors[i].lockmode=="take")
 {
@@ -119,7 +126,7 @@ else speak("You hand over "+count+" "+item_id+"s.");
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
-doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
+if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
 else
 {
@@ -186,7 +193,7 @@ doorpool.resume_sound(doors[i].doorsound);
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
-doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
+if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
 }
 else
@@ -227,7 +234,7 @@ doorpool.resume_sound(doors[i].doorsound);
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
-doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
+if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
 else
 {
@@ -300,9 +307,9 @@ doors[i].is_moving=false;
 }
 }
 
-void spawn_door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, double maxhp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool ranged=false, int mnz=0, int mxz=0, int ez=0)
+void spawn_door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, double maxhp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, bool ranged=false, int mnz=0, int mxz=0, int ez=0)
 {
-door dr1(mnx, mxx, mny, mxy, ex, ey, hp, maxhp, speed, doortype, lockmode, doorid, drpass, automatic, destroyable, ranged, mnz, mxz, ez);
+door dr1(mnx, mxx, mny, mxy, ex, ey, hp, maxhp, speed, doortype, lockmode, doorid, drpass, automatic, destroyable, looping, moving, ranged, mnz, mxz, ez);
 doors.insert_last(dr1);
 }
 
@@ -350,6 +357,8 @@ int saved_lockmode_pos = 0;
 int saved_door_pos = 0;
 bool saved_automatic = false;
 bool saved_destroyable = false;
+bool saved_looping = false;
+bool saved_moving = false;
 bool saved_opposite = false;
 bool do_build = true;
 int last_lockmode_pos = -1;
@@ -358,7 +367,7 @@ int fmnx, fmxx, fmny, fmxy, fmnz, fmxz;
 fsz = -1; fez = -1; fmnz = -1; fmxz = -1;
 int fdid, fpass;
 int lockmode_list, door_list;
-int automatic_cb, destroyable_cb, opposite_cb;
+int automatic_cb, destroyable_cb, looping_cb, moving_cb, opposite_cb;
 int fok, fcn;
 string[] ddoor = get_map_sound_folders("builder/transitions/doors/*");
 if(ddoor.length()==0)
@@ -409,6 +418,8 @@ saved_pass = form.get_text(fpass);
 }
 saved_automatic = form.is_checked(automatic_cb);
 saved_destroyable = form.is_checked(destroyable_cb);
+saved_looping = form.is_checked(looping_cb);
+saved_moving = form.is_checked(moving_cb);
 saved_opposite = form.is_checked(opposite_cb);
 }
 form.reset();
@@ -507,6 +518,8 @@ form.add_list_item(door_list, ddoor[i], ddoor[i]);
 form.set_list_position(door_list, saved_door_pos, false);
 automatic_cb = form.create_checkbox("automatic", saved_automatic);
 destroyable_cb = form.create_checkbox("destroyable", saved_destroyable);
+looping_cb = form.create_checkbox("looping sound", saved_looping);
+moving_cb = form.create_checkbox("moving sound", saved_moving);
 opposite_cb = form.create_checkbox("build opposite side", saved_opposite);
 fok = form.create_button("okay", true);
 fcn = form.create_button("cancel");
@@ -700,27 +713,29 @@ int dpos = form.get_list_position(door_list);
 string bdoortyp = (dpos > 0) ? ddoor[dpos-1] : "none";
 bool bdmt = form.is_checked(automatic_cb);
 bool bdmd = form.is_checked(destroyable_cb);
+bool blooping = form.is_checked(looping_cb);
+bool bmoving = form.is_checked(moving_cb);
 bool opposite = form.is_checked(opposite_cb);
 t.destroy_sound(prevslot);
 resume_pools();
 if(ranged)
 {
-write_ranged_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, bmnz, bmxz, bez);
-spawn_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, true, bmnz, bmxz, bez);
+write_ranged_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bmnz, bmxz, bez);
+spawn_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, true, bmnz, bmxz, bez);
 if(opposite)
 {
-write_ranged_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, bmnz, bmxz, bsz);
-spawn_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, true, bmnz, bmxz, bsz);
+write_ranged_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bmnz, bmxz, bsz);
+spawn_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, true, bmnz, bmxz, bsz);
 }
 }
 else
 {
-write_door(bsx, bsy, bex, bey, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, bsz, bez);
-spawn_door(bsx, bsx, bsy, bsy, bex, bey, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, false, bsz, bsz, bez);
+write_door(bsx, bsy, bex, bey, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bsz, bez);
+spawn_door(bsx, bsx, bsy, bsy, bex, bey, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, false, bsz, bsz, bez);
 if(opposite)
 {
-write_door(bex, bey, bsx, bsy, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, bez, bsz);
-spawn_door(bex, bex, bey, bey, bsx, bsy, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, false, bez, bez, bsz);
+write_door(bex, bey, bsx, bsy, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bez, bsz);
+spawn_door(bex, bex, bey, bey, bsx, bsy, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, false, bez, bez, bsz);
 }
 }
 load_map(mapname, mapowner);
@@ -768,7 +783,9 @@ string pass=(quoted.length() >= 2) ? quoted[1] : "none";
 array<string> tail=string_split(string_trim_sides(remainder), " ");
 bool amt=(tail.length() >= 1) ? string_to_bool(tail[0]) : false;
 bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
-spawn_door(sx, sx, sy, sy, ex, ey, hp, hp, sp, dtype, lkmode, did, pass, amt, dbl, false, sz_v, sz_v, ez_v);
+bool lp=(tail.length() >= 3) ? string_to_bool(tail[2]) : true;
+bool mv=(tail.length() >= 4) ? string_to_bool(tail[3]) : true;
+spawn_door(sx, sx, sy, sy, ex, ey, hp, hp, sp, dtype, lkmode, did, pass, amt, dbl, lp, mv, false, sz_v, sz_v, ez_v);
 }
 
 void read_ranged_door(string[] sd)
@@ -800,10 +817,12 @@ string pass=(quoted.length() >= 2) ? quoted[1] : "none";
 array<string> tail=string_split(string_trim_sides(remainder), " ");
 bool amt=(tail.length() >= 1) ? string_to_bool(tail[0]) : false;
 bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
-spawn_door(mnx, mxx, mny, mxy, ex, ey, hp, hp, sp, dtype, lkmode, did, pass, amt, dbl, true, mnz_v, mxz_v, ez_v);
+bool lp=(tail.length() >= 3) ? string_to_bool(tail[2]) : true;
+bool mv=(tail.length() >= 4) ? string_to_bool(tail[3]) : true;
+spawn_door(mnx, mxx, mny, mxy, ex, ey, hp, hp, sp, dtype, lkmode, did, pass, amt, dbl, lp, mv, true, mnz_v, mxz_v, ez_v);
 }
 
-void write_door(int x, int y, int x2, int y2, double hp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, int z=0, int z2=0)
+void write_door(int x, int y, int x2, int y2, double hp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, int z=0, int z2=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
@@ -813,12 +832,12 @@ string dst = x2+" "+y2;
 if(mapmode == "3d") dst += " "+z2;
 string clean_did=string_replace(doorid, "\"", "", true);
 string clean_pass=string_replace(drpass, "\"", "", true);
-mapper.write("\r\n"+"door "+src+" "+dst+" "+hp+" "+speed+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable);
+mapper.write("\r\n"+"door "+src+" "+dst+" "+hp+" "+speed+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable+" "+looping+" "+moving);
 mapper.close();
 bump_map_modified();
 }
 
-void write_ranged_door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, int mnz=0, int mxz=0, int ez=0)
+void write_ranged_door(int mnx, int mxx, int mny, int mxy, int ex, int ey, double hp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, int mnz=0, int mxz=0, int ez=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
@@ -828,7 +847,7 @@ string dst = ex+" "+ey;
 if(mapmode == "3d") dst += " "+ez;
 string clean_did=string_replace(doorid, "\"", "", true);
 string clean_pass=string_replace(drpass, "\"", "", true);
-mapper.write("\r\n"+"door "+zone+" "+dst+" "+hp+" "+speed+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable);
+mapper.write("\r\n"+"door "+zone+" "+dst+" "+hp+" "+speed+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable+" "+looping+" "+moving);
 mapper.close();
 bump_map_modified();
 }
