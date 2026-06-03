@@ -371,7 +371,7 @@ bikes (builder/transportation/bikes/): per-bike misc and platform clips.
 bombs (builder/traps/bombs/): fall, plus per-bomb explosion clips.
 calendars (builder/interaction/calendars/): break, loop, press.
 cameras (builder/traps/security cameras/): alarm, alert, death, hurt, turn.
-checkpoints (builder/misc/checkpoints/): get, loop.
+checkpoints (builder/construction/checkpoints/): get, loop.
 clocks (builder/interaction/clocks/): break, loop, press.
 dialogs (builder/interaction/dialogs/): close, copy, open, scroll.
 doors (builder/transitions/doors/): per-door close, dest, lock clips named by the door variant.

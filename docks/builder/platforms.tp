@@ -1,6 +1,6 @@
 Platforms.
 
-A platform is the ground the player walks on — the most fundamental building block in the game. Every floor, ledge, walkway, and surface is a platform: a rectangular region painted with a tile that gives it a footstep, landing, and fall sound. Without platforms a map is empty space the player falls through, so building a map is mostly placing platforms. They come in three forms: the plain platform (a fixed surface), the moving platform (a surface that travels and carries the player along), and the vanishing platform (a surface that appears and disappears on a timer).
+A platform is the ground the player walks on — the most fundamental building block in the game. Every floor, ledge, walkway, and surface is a platform: a rectangular region painted with a tile that gives it a footstep, landing, and fall sound. Without platforms a map is empty space the player falls through, so building a map is mostly placing platforms. They come in four forms: the plain platform (a fixed surface), the staircase (a platform spanning a range of tiles the player climbs through), the moving platform (a surface that travels and carries the player along), and the vanishing platform (a surface that appears and disappears on a timer).
 
 Tiles and the air tile.
 
@@ -20,6 +20,14 @@ Destroyable. When checked, the platform can be damaged by weapons, bombs, and ot
 Overlap. When checked, the platform layers with any other platforms occupying the same spot instead of replacing them, so the player hears every overlapping tile sound together — useful for blending surfaces, like a thin rug sound over a stone floor. When unchecked, the platform replaces whatever shares its spot for footstep purposes, so only the topmost tile is heard. Leave it unchecked for ordinary single-surface ground.
 
 While the tile list is focused in any platform form, press space to hear the tile's step clip, hold control and press L to hear its land clip, and hold control and press H to hear its fall clip — all played at the volume and pitch the sliders are currently set to.
+
+The staircase.
+
+A staircase is a platform that always spans a range of tiles and is climbed through rather than simply stood on — it's how you connect a lower area to a higher one without making the player jump. Where a plain platform sits at a single height, a staircase covers a stretch the player walks up: crossing it carries them smoothly up (or down, coming the other way) as a slope instead of a flat floor.
+
+Everything about a staircase's surface works exactly like a plain platform — it takes the same tile, tile volume, and tile pitch, the same health, and the same destroyable and overlap checkboxes, and the tile list previews its step, land, and fall clips on space, control-L, and control-H the same way. The only difference is the shape. A staircase always takes a minimum and maximum x and a minimum and maximum y, even on 2d maps, because the range it spans is the whole point — that span is the run of the stairs the player climbs across. On 3d maps it also takes a minimum and maximum z, and it fills every height level between them so the staircase becomes a solid ramp the player ascends as they cross its depth, carrying them from the bottom z up to the top z.
+
+Use a staircase wherever the player needs to change height as part of walking — between floors of a building, up a hillside, onto a raised platform — and reach for a plain platform when the ground is flat. Because a staircase shares the plain platform's tile and audio model, it sounds like whatever surface you paint it with; a stone staircase steps like stone, a wooden one like wood.
 
 The moving platform.
 
@@ -42,6 +50,8 @@ Like the moving platform it has two sound groups: the tile group for the surface
 Authoring platforms by hand.
 
 If you edit main.sif directly, a plain platform is: platform minx maxx y health tile volume pitch destroyable overlap on a 2d map. On topdown maps a maxy is inserted after y so the platform can span depth: platform minx maxx miny maxy health tile volume pitch destroyable overlap. On 3d maps a z follows that: platform minx maxx miny maxy z health tile volume pitch destroyable overlap. Volume is a number from zero down to minus one hundred, pitch is a percentage around one hundred, and destroyable and overlap are the literal words true or false.
+
+A staircase is: staircase minx maxx miny maxy health tile volume pitch destroyable overlap — note that, unlike a plain platform, it always carries both a min and max y even on 2d maps. On 3d maps a min and max z follow the y pair: staircase minx maxx miny maxy minz maxz health tile volume pitch destroyable overlap. The fields after the coordinates match a plain platform's exactly.
 
 A moving platform is: mplatform leftx rightx backy fronty xlength direction snap speed tile tilevolume tilepitch movingtype movingvolume movingpitch offset, with the bounding z pair inserted after the y pair and the platform's y length inserted after its x length on 3d maps. Direction and snap are written as the numbers of their list positions counting from zero.
 
