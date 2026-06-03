@@ -1,0 +1,63 @@
+Projectiles.
+
+A projectile is a moving hazard that travels in a line and hurts whatever it runs into. It shuttles back and forth inside a bounding box (or flies once and dies at the edge), dealing damage to the player, to enemies, and to destroyable map objects it crosses. Projectiles are the entity for patrolling energy bolts, a swinging blade, a bouncing ball of fire, a sentry turret's stream of fire — any moving threat the player has to dodge or time their way past. Projectile zones, covered at the end of this topic, spray projectiles at the player from across an area.
+
+How a projectile works.
+
+A projectile starts on a tile and is confined to a bounding box. It steps one tile at a time, every speed interval, in the direction you give it. When its next step would carry it out of the box — or into a wall or a safe zone — one of two things happens:
+
+If bounce at edge is on, it reverses and keeps going, patrolling its box endlessly.
+If bounce at edge is off, it plays its death cue and vanishes the instant it reaches a boundary, so it flies once and is gone.
+
+What the projectile does on contact depends on its settings:
+
+If it's fireable, it damages what it lands on — the player (reduced by defence, and a shield or a reflecting weapon can block it), enemies, and destroyable map objects. A projectile that isn't fireable still travels and makes sound, but passes through everything harmlessly.
+
+If single use is on, the projectile is spent on its first hit and destroyed; if off, it keeps going and can strike again and again.
+If destroyable is on, the player's own attacks can shoot the projectile down before it reaches them.
+
+Projectile fields.
+
+The projectile form takes the following:
+
+Coordinates. A starting x and y (and z on 3d maps) — where the projectile begins.
+Bounding box. A left x and right x, a back and front y (called bottom and top y on 2d maps), and on 3d maps a bottom z and top z — the rectangle the projectile is confined to and bounces within.
+
+Health. How much damage the projectile can absorb before it's destroyed, relevant only when destroyable is on.
+Damage. How much the projectile deals to what it hits, reduced by the target's defence.
+
+Speed. Milliseconds between each step of travel, so a smaller number is a faster projectile.
+
+Direction. The line the projectile travels — right and left, up and down, the four diagonals and their reverses, and bottom-to-top or top-to-bottom on the z axis for 3d maps.
+
+Projectile sound (a folder name from the projectile sounds list, or none). The audio theme; the bundle supplies a loop clip (the projectile in flight), a hit clip (striking something), and a death clip (dying at a boundary). Pick none for a silent projectile.
+
+Bounce at edge (checkbox). When checked, the projectile reverses at a boundary and keeps patrolling; when unchecked, it dies at the boundary. Checked by default.
+
+Destroyable (checkbox). When checked, the player's attacks can destroy the projectile.
+Fireable (checkbox). When checked, the projectile deals damage on contact; when unchecked, it's harmless.
+
+Single use (checkbox). When checked, the projectile is destroyed after its first hit; when unchecked, it keeps traveling and can hit again.
+
+Auditioning sounds in the builder.
+
+While the projectile sound list is focused in the form, press space to hear the hit clip of the highlighted theme, hold control and press L to hear its in-flight loop, and hold control and press H to hear its death clip.
+
+Projectile zones.
+
+A projectile zone is a rectangular area that fires projectiles at the player the whole time they stand inside it. Every spawn time, it launches a projectile from a random tile in the zone, travelling in a random direction, with its damage and health scaling to the player's experience and a short random speed. It's a crossfire trap — a stretch the player has to push through while shots fly at them.
+
+The projectile zone form takes the following:
+
+Coordinates. A minimum and maximum x, and a y (a minimum and maximum y on topdown and 3d maps), and a z on 3d maps — the area projectiles spawn in, which is also the area the player must be standing in for the zone to fire.
+Spawn time. Milliseconds between launches while the player is inside.
+
+Projectile sound (a folder name from the projectile sounds list, none, or random). The theme to fire; choose random to launch a different projectile type on each shot.
+
+While the projectile sound list is focused in the projectile zone form, press space, then hold control and press L or H, to preview the highlighted theme's clips.
+
+Authoring projectiles by hand.
+
+If you edit main.sif directly, a projectile is: projectile x y leftx rightx backy fronty direction health damage speed projtype bounce destroyable fireable singleuse. On 3d maps a starting z follows the starting y, and a bottom z and top z follow the front y: projectile x y z leftx rightx backy fronty botz topz direction health damage speed projtype bounce destroyable fireable singleuse. Direction is written as a number — the position of the chosen entry in the direction list, counting from zero — and the four flags are the literal words true or false.
+
+A projectile zone is: projectile_zone minx maxx y spawntime projtype on 2d maps, projectile_zone minx maxx miny maxy spawntime projtype on topdown maps, and projectile_zone minx maxx miny maxy z spawntime projtype on 3d maps. The projectile sound must match a projectile sounds folder name, the word random, or the word none.

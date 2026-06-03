@@ -10,14 +10,21 @@ One choice in the tile list is special: air. An air platform is a region with no
 
 Tile volume and tile pitch.
 
-Each platform carries its own volume and pitch for its tile sounds, set with two sliders. Volume runs from full at the top down to silent at the bottom, letting a distant or soft surface sit quieter than one underfoot. Pitch runs as a percentage with one hundred being the tile's natural pitch — lower values deepen it, higher values raise it — so the same stone tile can be a heavy slab or a light pebble path depending on where you set it. In the builder these sliders adjust the preview live, so you can hear the change as you drag them.
+Each platform carries its own volume and pitch for its tile sounds, set with two sliders that adjust the preview live in the builder so you can hear the change as you drag them.
+
+Tile volume. How loud the tile's sounds play, running from full at the top down to silent at the bottom, so a distant or soft surface can sit quieter than one underfoot.
+Tile pitch. The pitch of the tile's sounds, as a percentage with one hundred being the tile's natural pitch — lower values deepen it, higher raise it, so the same stone tile can be a heavy slab or a light pebble path.
 
 The plain platform.
 
-A plain platform is a fixed surface. Its form takes a minimum and maximum x to set its width, a y for its position (a minimum and maximum y on topdown and 3d maps, where y is a depth axis you can span across), and a z on 3d maps for its height. It then takes a health value and the tile, volume, and pitch described above, plus two checkboxes:
+A plain platform is a fixed surface. It uses the tile, tile volume, and tile pitch covered above for its surface, and its form adds these fields:
 
-Destroyable. When checked, the platform can be damaged by weapons, bombs, and other attacks; once its health runs out it's destroyed, plays its tile's death clip, and is removed from the map so the player can fall through where it was. Leave it unchecked for indestructible ground.
-Overlap. When checked, the platform layers with any other platforms occupying the same spot instead of replacing them, so the player hears every overlapping tile sound together — useful for blending surfaces, like a thin rug sound over a stone floor. When unchecked, the platform replaces whatever shares its spot for footstep purposes, so only the topmost tile is heard. Leave it unchecked for ordinary single-surface ground.
+Coordinates. A minimum and maximum x to set its width, a y for its position (a minimum and maximum y on topdown and 3d maps, where y is a depth axis you can span across), and a z on 3d maps for its height.
+
+Health. How much damage the platform can absorb before it's destroyed, relevant only when the destroyable box is checked.
+
+Destroyable (checkbox). When checked, the platform can be damaged by weapons, bombs, and other attacks; once its health runs out it's destroyed, plays its tile's death clip, and is removed from the map so the player can fall through where it was. Leave it unchecked for indestructible ground.
+Overlap (checkbox). When checked, the platform layers with any other platforms occupying the same spot instead of replacing them, so the player hears every overlapping tile sound together — useful for blending surfaces, like a thin rug sound over a stone floor. When unchecked, the platform replaces whatever shares its spot for footstep purposes, so only the topmost tile is heard. Leave it unchecked for ordinary single-surface ground.
 
 While the tile list is focused in any platform form, press space to hear the tile's step clip, hold control and press L to hear its land clip, and hold control and press H to hear its fall clip — all played at the volume and pitch the sliders are currently set to.
 
@@ -31,11 +38,24 @@ Use a staircase wherever the player needs to change height as part of walking �
 
 The moving platform.
 
-A moving platform is a surface that travels through a bounding area on a fixed path and carries the player with it when they're standing on it. It's the entity for lifts, conveyors, drifting barges, and ferrying the player across a gap. Its form takes the bounding box the platform travels inside — a left x and right x, a back and front y (called bottom and top y on 2d maps), and on 3d maps a bottom z and top z — followed by the platform's own size: an x length (and a y length on 3d maps). The platform is that big and slides within the box.
+A moving platform is a surface that travels through a bounding area on a fixed path and carries the player with it when they're standing on it. It's the entity for lifts, conveyors, drifting barges, and ferrying the player across a gap. Its form takes:
 
-Speed sets the milliseconds between each step of travel, so smaller is faster. A direction list and a snap mode list shape the path exactly as they do for a moving hazard: direction picks the line it runs along (right and left, up and down, the diagonals and their reverses, and the z directions on 3d maps), and snap mode decides what happens at the end of a run — no snapping reverses and travels back, while the snap modes jump it instantly back to a starting end.
+Bounding box. A left x and right x, a back and front y (called bottom and top y on 2d maps), and on 3d maps a bottom z and top z — the rectangle the platform travels inside.
+Platform size. An x length (and a y length on 3d maps) — how many tiles big the platform itself is.
 
-A moving platform has two sound groups. The tile group — tile, tile volume, tile pitch — is the surface the player stands on, exactly like a plain platform. The moving platform group — a moving platform sound plus its own volume and pitch — is the machinery or motion loop that travels with the platform so the player can hear it move. The extra stationary volume offset field changes that motion loop's volume while the player is actually riding the platform, so it can swell or duck once they step aboard; leave it at zero for a loop that sounds the same whether or not the player is on it.
+Speed. The milliseconds between each step of travel, so smaller is faster.
+
+Direction. The line it runs along — right and left, up and down, the diagonals and their reverses, and the z directions on 3d maps.
+Snap mode. What happens at the end of a run — no snapping reverses and travels back the way it came, while the snap modes (forward to snap, backward to snap, snap at ends) jump it instantly back to a starting end.
+
+A moving platform uses the same tile, tile volume, and tile pitch as a plain platform for the surface the player stands on, plus its own motion-sound fields:
+
+Moving platform sound. The machinery or motion loop that travels with the platform so the player can hear it move. Pick none for a silent mover.
+
+Moving platform volume. How loud that motion loop plays.
+Moving platform pitch. The pitch of the motion loop, as a percentage around one hundred.
+
+Stationary volume offset. A change applied to the motion loop's volume while the player is actually riding the platform, so it can swell or duck once they step aboard; leave it at zero for a loop that sounds the same whether or not the player is on it.
 
 In the moving platform form, focus the tile list to preview its step, land, and fall clips with space, control-L, and control-H as above. Focus the moving platform sound list and press space to start or stop a looping preview of the motion sound; the volume and pitch sliders for whichever group you're in adjust the preview live.
 
@@ -45,7 +65,14 @@ A vanishing platform blinks: it's a solid surface for a while, then disappears a
 
 Speed is the blink interval in milliseconds: the platform stays solid for that long, then vanishes for that same length of time, then comes back, repeating while the map is loaded. While it's solid the player can stand on it; while it's gone the spot becomes empty footing they'll fall through, so timing the crossing is the challenge. A larger number is a slow, forgiving blink and a smaller one a tight window.
 
-Like the moving platform it has two sound groups: the tile group for the surface underfoot, and a vanishing platform sound with its own volume and pitch for the continuous loop that plays while the platform is present, letting the player hear the rhythm and anticipate the gap. The same previews apply — the tile list's step, land, and fall on space, control-L, and control-H, and a space-toggled looping preview while the vanishing platform sound list is focused, with the sliders adjusting live.
+Like the moving platform it uses the tile, tile volume, and tile pitch for the surface underfoot, plus its own sound fields:
+
+Vanishing platform sound. The continuous loop that plays while the platform is present, letting the player hear the rhythm and anticipate the gap. Pick none for a silent blinker.
+
+Vanishing platform volume. How loud that loop plays.
+Vanishing platform pitch. The pitch of the loop, as a percentage around one hundred.
+
+The same previews apply — the tile list's step, land, and fall on space, control-L, and control-H, and a space-toggled looping preview while the vanishing platform sound list is focused, with the sliders adjusting live.
 
 Authoring platforms by hand.
 
