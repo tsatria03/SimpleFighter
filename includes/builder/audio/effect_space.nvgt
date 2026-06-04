@@ -157,6 +157,141 @@ void destroy_all_effect_spaces()
 effect_spaces.resize(0);
 }
 
+string effect_keyword(int pos)
+{
+if (pos == 0) return "echo";
+if (pos == 1) return "reverb";
+if (pos == 2) return "lowpass";
+if (pos == 3) return "highpass";
+if (pos == 4) return "chorus";
+if (pos == 5) return "distortion";
+if (pos == 6) return "phaser";
+if (pos == 7) return "flanger";
+return "";
+}
+
+string[] effect_keys(int pos)
+{
+string[] k;
+if (pos == 0) { k.insert_last("dry mix"); k.insert_last("wet mix"); k.insert_last("feedback"); k.insert_last("delay"); }
+else if (pos == 1) { k.insert_last("dry mix"); k.insert_last("wet mix"); k.insert_last("room size"); k.insert_last("damping"); k.insert_last("width"); }
+else if (pos == 2 || pos == 3) { k.insert_last("frequency"); k.insert_last("bandwidth"); k.insert_last("quality"); }
+else if (pos == 4) { k.insert_last("dry mix"); k.insert_last("wet mix"); k.insert_last("feedback"); k.insert_last("min sweep"); k.insert_last("max sweep"); k.insert_last("rate"); }
+else if (pos == 5) { k.insert_last("drive"); k.insert_last("dry mix"); k.insert_last("wet mix"); k.insert_last("feedback"); k.insert_last("volume"); }
+else if (pos == 6) { k.insert_last("dry mix"); k.insert_last("wet mix"); k.insert_last("rate"); k.insert_last("depth"); k.insert_last("feedback"); k.insert_last("phase"); }
+else if (pos == 7) { k.insert_last("dry mix"); k.insert_last("wet mix"); k.insert_last("feedback"); k.insert_last("min delay"); k.insert_last("max delay"); k.insert_last("rate"); }
+return k;
+}
+
+string[] list_effect_presets(int pos)
+{
+string[] names;
+string kw = effect_keyword(pos);
+if (kw == "") return names;
+string[] files = find_files("data/main/effects/" + kw + "/*.sif");
+for (uint i = 0; i < files.length(); i++)
+{
+string n = string_replace(files[i], ".sif", "", true);
+if (n != "") names.insert_last(n);
+}
+return names;
+}
+
+bool load_effect_preset(int pos, string name, float[]@ values)
+{
+string kw = effect_keyword(pos);
+if (kw == "") return false;
+file f;
+if (!f.open("data/main/effects/" + kw + "/" + name + ".sif", "rb")) return false;
+string content = f.read();
+f.close();
+string[] lines = split_lines(content);
+string[] keys = effect_keys(pos);
+for (uint i = 0; i < keys.length() && i < values.length(); i++)
+{
+for (uint j = 0; j < lines.length(); j++)
+{
+string[] kvp = string_split(lines[j], "=", true);
+if (kvp.length() < 2) continue;
+if (string_trim_sides(kvp[0]) == keys[i])
+{
+values[i] = float(string_to_number(string_trim_sides(kvp[1])));
+break;
+}
+}
+}
+return true;
+}
+
+bool save_effect_preset(int pos, string name, float[]@ values)
+{
+string kw = effect_keyword(pos);
+if (kw == "") return false;
+string[] keys = effect_keys(pos);
+string dir = "data/main/effects/" + kw;
+if (!directory_exists(dir)) directory_create(dir);
+string body = "";
+for (uint i = 0; i < keys.length() && i < values.length(); i++)
+{
+body += keys[i] + "=" + round(values[i], 2);
+if (i < keys.length() - 1) body += "\r\n";
+}
+file f;
+if (!f.open(dir + "/" + name + ".sif", "wb")) return false;
+f.write(body);
+f.close();
+return true;
+}
+
+bool rename_effect_preset(int pos, string oldname, string newname)
+{
+string kw = effect_keyword(pos);
+if (kw == "") return false;
+string dir = "data/main/effects/" + kw + "/";
+if (!file_exists(dir + oldname + ".sif")) return false;
+file f;
+if (!f.open(dir + oldname + ".sif", "rb")) return false;
+string content = f.read();
+f.close();
+file g;
+if (!g.open(dir + newname + ".sif", "wb")) return false;
+g.write(content);
+g.close();
+file_delete(dir + oldname + ".sif");
+return true;
+}
+
+bool delete_effect_preset(int pos, string name)
+{
+string kw = effect_keyword(pos);
+if (kw == "") return false;
+string p = "data/main/effects/" + kw + "/" + name + ".sif";
+if (!file_exists(p)) return false;
+file_delete(p);
+return true;
+}
+
+string sanitize_preset_name(string n)
+{
+n = string_trim_sides(n);
+string bad = "/\\:*?\"<>|";
+for (uint i = 0; i < bad.length(); i++)
+n = string_replace(n, bad.substr(i, 1), "", true);
+return string_trim_sides(n);
+}
+
+void read_effect_sliders(int pos, float[]@ vals, int s1, int s2, int s3, int s4, int s5, int s6)
+{
+vals.resize(0);
+if (pos == 0) { vals.insert_last(form.get_slider(s1)); vals.insert_last(form.get_slider(s2)); vals.insert_last(form.get_slider(s3)); vals.insert_last(form.get_slider(s4)); }
+else if (pos == 1) { vals.insert_last(form.get_slider(s1)); vals.insert_last(form.get_slider(s2)); vals.insert_last(form.get_slider(s3)); vals.insert_last(form.get_slider(s4)); vals.insert_last(form.get_slider(s5)); }
+else if (pos == 2 || pos == 3) { vals.insert_last(form.get_slider(s1)); vals.insert_last(form.get_slider(s2)); vals.insert_last(form.get_slider(s3)); }
+else if (pos == 4) { vals.insert_last(form.get_slider(s1)); vals.insert_last(form.get_slider(s2)); vals.insert_last(form.get_slider(s3)); vals.insert_last(form.get_slider(s4)); vals.insert_last(form.get_slider(s5)); vals.insert_last(form.get_slider(s6)); }
+else if (pos == 5) { vals.insert_last(form.get_slider(s1)); vals.insert_last(form.get_slider(s2)); vals.insert_last(form.get_slider(s3)); vals.insert_last(form.get_slider(s4)); vals.insert_last(form.get_slider(s5)); }
+else if (pos == 6) { vals.insert_last(form.get_slider(s1)); vals.insert_last(form.get_slider(s2)); vals.insert_last(form.get_slider(s3)); vals.insert_last(form.get_slider(s4)); vals.insert_last(form.get_slider(s5)); vals.insert_last(form.get_slider(s6)); }
+else if (pos == 7) { vals.insert_last(form.get_slider(s1)); vals.insert_last(form.get_slider(s2)); vals.insert_last(form.get_slider(s3)); vals.insert_last(form.get_slider(s4)); vals.insert_last(form.get_slider(s5)); vals.insert_last(form.get_slider(s6)); }
+}
+
 void build_effect_space()
 {
 double x, paxx, y, paxy;
@@ -185,6 +320,13 @@ int mx, mx2, my, my2, mnz, mxz, rd, effect_list;
 mnz = -1; mxz = -1;
 int s1, s2, s3, s4, s5, s6;
 int platile, efok, efcn;
+int preset_list, efsave, efren, efdel;
+int saved_preset_pos = 0;
+int last_preset_pos = -1;
+string[] cur_presets;
+bool refresh_presets = true;
+string pending_select_preset = "";
+int focus_after_build = 0;
 while (true)
 {
 wait(5);
@@ -265,6 +407,37 @@ flanger_s[4] = form.get_slider(s5);
 flanger_s[5] = form.get_slider(s6);
 }
 }
+if (refresh_presets)
+{
+string[] raw = list_effect_presets(saved_effect_pos);
+cur_presets.resize(0);
+for (uint i = 0; i < raw.length(); i++)
+if (raw[i] == "default") cur_presets.insert_last("default");
+for (uint i = 0; i < raw.length(); i++)
+if (raw[i] != "default") cur_presets.insert_last(raw[i]);
+cur_presets.insert_last("custom");
+refresh_presets = false;
+if (pending_select_preset != "")
+{
+saved_preset_pos = 0;
+for (uint i = 0; i < cur_presets.length(); i++)
+if (cur_presets[i] == pending_select_preset) { saved_preset_pos = int(i); break; }
+pending_select_preset = "";
+}
+if (saved_preset_pos < 0 || saved_preset_pos >= int(cur_presets.length())) saved_preset_pos = 0;
+}
+if (saved_preset_pos >= 0 && saved_preset_pos < int(cur_presets.length()) && cur_presets[saved_preset_pos] != "custom" && saved_preset_pos != last_preset_pos)
+{
+string pname = cur_presets[saved_preset_pos];
+if (saved_effect_pos == 0) load_effect_preset(0, pname, echo_s);
+else if (saved_effect_pos == 1) load_effect_preset(1, pname, rev_s);
+else if (saved_effect_pos == 2) load_effect_preset(2, pname, low_s);
+else if (saved_effect_pos == 3) load_effect_preset(3, pname, highpass_s);
+else if (saved_effect_pos == 4) load_effect_preset(4, pname, chorus_s);
+else if (saved_effect_pos == 5) load_effect_preset(5, pname, dist_s);
+else if (saved_effect_pos == 6) load_effect_preset(6, pname, phaser_s);
+else if (saved_effect_pos == 7) load_effect_preset(7, pname, flanger_s);
+}
 form.reset();
 form.create_window("effect space", false, true, last_effect_pos != -1);
 mx = form.create_input_box("minimum x", saved_x1);
@@ -295,6 +468,11 @@ form.add_list_item(effect_list, "distortion", "distortion");
 form.add_list_item(effect_list, "phaser", "phaser");
 form.add_list_item(effect_list, "flanger", "flanger");
 form.set_list_position(effect_list, saved_effect_pos, false);
+preset_list = form.create_list("&preset type");
+for (uint i = 0; i < cur_presets.length(); i++)
+form.add_list_item(preset_list, cur_presets[i], cur_presets[i]);
+if (saved_preset_pos < 0 || saved_preset_pos >= int(cur_presets.length())) saved_preset_pos = 0;
+form.set_list_position(preset_list, saved_preset_pos, false);
 s4 = -1;
 s5 = -1;
 s6 = -1;
@@ -378,15 +556,26 @@ form.add_list_item(platile, plats[i], plats[i]);
 }
 form.set_list_position(platile, saved_plat_pos);
 if (plats.length() != 0) tiletype = plats[saved_plat_pos];
+efsave = form.create_button("&save preset");
+efren = -1;
+efdel = -1;
+if (saved_preset_pos >= 0 && saved_preset_pos < int(cur_presets.length()) && cur_presets[saved_preset_pos] != "custom")
+{
+efren = form.create_button("&rename preset");
+efdel = form.create_button("dele&te preset");
+}
 efok = form.create_button("&okay", true);
 efcn = form.create_button("&cancel");
 if (last_effect_pos == -1)
 {
 form.focus(mx);
 }
+else if (focus_after_build == 1)
+form.focus_silently(preset_list);
 else
 form.focus_silently(effect_list);
 last_effect_pos = saved_effect_pos;
+last_preset_pos = saved_preset_pos;
 }
 wait(5);
 form.monitor();
@@ -399,6 +588,18 @@ int cur_effect_pos = form.get_list_position(effect_list);
 if (cur_effect_pos != -1 && cur_effect_pos != last_effect_pos)
 {
 saved_effect_pos = cur_effect_pos;
+saved_preset_pos = 0;
+last_preset_pos = -1;
+refresh_presets = true;
+focus_after_build = 0;
+do_build = true;
+continue;
+}
+int cur_preset_pos = form.get_list_position(preset_list);
+if (cur_preset_pos != -1 && cur_preset_pos != last_preset_pos)
+{
+saved_preset_pos = cur_preset_pos;
+focus_after_build = 1;
 do_build = true;
 continue;
 }
@@ -416,6 +617,90 @@ if (form.is_pressed(efcn))
 resume_pools();
 speak("canceled");
 return;
+}
+if (form.is_pressed(efsave))
+{
+focus_after_build = 1;
+float[] vals;
+read_effect_sliders(saved_effect_pos, vals, s1, s2, s3, s4, s5, s6);
+string defname = (saved_preset_pos >= 0 && saved_preset_pos < int(cur_presets.length()) && cur_presets[saved_preset_pos] != "custom") ? cur_presets[saved_preset_pos] : "";
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string pname = sanitize_preset_name(vd.input_box("Save preset", "Enter a name for this preset.", defname));
+if (pname == "")
+{
+speak("A preset name is required.");
+continue;
+}
+if (file_exists("data/main/effects/" + effect_keyword(saved_effect_pos) + "/" + pname + ".sif"))
+{
+if (question("Overwrite preset", "A preset named " + pname + " already exists. Overwrite it?") != 1)
+{
+speak("canceled");
+do_build = true;
+continue;
+}
+}
+if (save_effect_preset(saved_effect_pos, pname, vals))
+{
+refresh_presets = true;
+pending_select_preset = pname;
+last_preset_pos = -1;
+speak("Preset saved.");
+}
+else
+speak("Failed to save the preset.");
+do_build = true;
+continue;
+}
+if (efren != -1 && form.is_pressed(efren))
+{
+focus_after_build = 1;
+string oldname = cur_presets[saved_preset_pos];
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string newname = sanitize_preset_name(vd.input_box("Rename preset", "Enter a new name for " + oldname + ".", oldname));
+if (newname == "" || newname == oldname)
+{
+speak("canceled");
+continue;
+}
+if (file_exists("data/main/effects/" + effect_keyword(saved_effect_pos) + "/" + newname + ".sif"))
+{
+speak("A preset with that name already exists.");
+continue;
+}
+if (rename_effect_preset(saved_effect_pos, oldname, newname))
+{
+refresh_presets = true;
+pending_select_preset = newname;
+last_preset_pos = -1;
+speak("Preset renamed.");
+}
+else
+speak("Failed to rename the preset.");
+do_build = true;
+continue;
+}
+if (efdel != -1 && form.is_pressed(efdel))
+{
+focus_after_build = 1;
+string delname = cur_presets[saved_preset_pos];
+if (question("Delete preset", "Delete the preset " + delname + "?") != 1)
+{
+speak("canceled");
+do_build = true;
+continue;
+}
+if (delete_effect_preset(saved_effect_pos, delname))
+{
+refresh_presets = true;
+saved_preset_pos = 0;
+last_preset_pos = -1;
+speak("Preset deleted.");
+}
+else
+speak("Failed to delete the preset.");
+do_build = true;
+continue;
 }
 if (form.get_current_focus() == platile)
 {
