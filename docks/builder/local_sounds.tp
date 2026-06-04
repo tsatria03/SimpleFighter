@@ -1,0 +1,37 @@
+Local sound sources and ambiences.
+
+A sound source and a sound ambience both play a looping clip from the map's audio libraries over a spot or an area, filling it with continuous sound. Pick a music track or a source sound, place it where you want, and it plays on a loop for as long as the map is loaded. The two are built and configured exactly alike; the one thing that sets them apart is when the loop plays, which is covered below. They're the local-clip counterpart to the url objects, which stream the same kind of sound from a web address instead.
+
+How a sound object works.
+
+Both take one looping clip and play it as a positioned sound somewhere on the map, at a volume and pitch you choose. The clip comes from one of two libraries: the musics library for soundtrack-style pieces, and the sources library for general source sounds. You pick the library first, then the specific clip within it.
+
+Either can be built as a single point or a ranged area. A single one emits from one exact tile with normal distance falloff, so it grows louder as the player approaches and quieter as they walk away. A ranged one fills its whole rectangle at full volume and fades only once the player passes beyond the edges. On 3d maps the area spans height as well, between its minimum and maximum z.
+
+Source versus ambience.
+
+The difference is whether the loop is always running or only runs while the player is present:
+
+A sound source plays continuously. It runs the whole time the map is loaded, whether or not the player is anywhere near, and the player simply hears it by proximity — louder up close, fainter at a distance. From outside a ranged source the player still hears the fading edge of it.
+A sound ambience plays only while the player is inside its area. The moment the player leaves its bounds the loop pauses, and it resumes from where it left off when they step back in. From outside an ambience there is nothing to hear at all — it's silent until entered.
+
+Reach for a source when the sound should live in the world continuously, like a fountain or a machine the player should hear as they approach. Reach for an ambience when the audio is background for a place and should only run while the player is actually there.
+
+Sound fields.
+
+Both forms take the following:
+
+Build mode. Single for one exact tile, or ranged for a rectangular area. Single is the default.
+Coordinates. For a single sound object, an x and a y (and a z on 3d maps) — the one tile it plays from. For a ranged sound object, a minimum and maximum x and a minimum and maximum y (and a minimum and maximum z on 3d maps), marking the rectangle it fills.
+Category. Which library the clip comes from: musics for soundtrack pieces, or sources for general source sounds.
+Sound (a folder name from the chosen library's list, or none). The looping clip the object plays. Pick none for a silent object.
+Volume. How loud the loop plays, from -100 at the quietest up to 0 at full volume.
+Pitch. The playback pitch as a flat value, defaulting to 100 for the clip's natural pitch and ranging from 5 to 1000 — lower values play deeper and slower, higher values brighter and faster.
+
+Auditioning sounds in the builder.
+
+While the sound list, the volume slider, or the pitch slider is focused in the form, press space to start a looping preview of the highlighted clip, and press space again to stop it. Adjusting the volume or pitch slider while the preview is playing updates it live, so you can set the level and pitch by ear before placing the object.
+
+Authoring sound objects by hand.
+
+If you edit main.sif directly, a sound source is written under the name sound_source and a sound ambience under the name sound_ambience; everything else about the two lines is identical. A single one is sound_source x y category sound volume pitch, and on 3d maps a z follows the y: sound_source x y z category sound volume pitch. A ranged one is sound_source minx maxx miny maxy category sound volume pitch, and on 3d maps a minimum and maximum z follow the y pair: sound_source minx maxx miny maxy minz maxz category sound volume pitch. Each name covers both its single and ranged form — the line is read as ranged when it carries the extra coordinates. The category is the literal word musics or sources, the sound must match a folder name in that library or the word none, and the volume and pitch are numbers.

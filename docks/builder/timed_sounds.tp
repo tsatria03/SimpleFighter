@@ -1,0 +1,36 @@
+Timed sources and ambiences.
+
+A timed source and a timed ambience play a clip over and over on a timer, instead of as a continuous loop. Where a plain sound object holds one unbroken loop, a timed object plays its clip once, waits a set interval, plays it again, and so on — a repeating one-shot. That makes them the way to place sounds that should recur with a gap between them, like a bell that tolls every minute, a drip that falls every few seconds, or a distant call that comes around now and then. The two are built and configured alike; the one difference is when the clip fires, covered below.
+
+How a timed object works.
+
+Both take a clip — chosen from the musics or sources library, the library first and then the clip — and play it from a spot or an area at a volume and pitch you set, replaying it once every interval. Either can be built as a single point or a ranged area. A single one emits from one exact tile with normal distance falloff, so it's louder up close and fainter at a distance. A ranged one fills its whole rectangle at full volume and fades past the edges. On 3d maps the area spans height as well, between its minimum and maximum z. Each time the interval elapses, the clip plays through once from that position; a smaller interval makes it recur more often.
+
+Source versus ambience.
+
+The difference is whether the clip keeps firing when the player isn't around:
+
+A timed source fires on its interval no matter where the player is. The clip plays every interval whether or not the player is near, and they hear each playing by proximity — so a timed source left running across the map keeps sounding on schedule even while the player is elsewhere.
+A timed ambience fires only while the player is inside its area. The interval advances and the clip plays while the player is within the bounds; the moment they leave, a playing clip pauses and no new ones start, and it picks back up when they return.
+
+Reach for a source when the recurring sound belongs to the world at large and should keep its schedule everywhere, and an ambience when it belongs to one place and should only sound while the player is there.
+
+Timed fields.
+
+Both forms take the following:
+
+Build mode. Single for one exact tile, or ranged for a rectangular area. Single is the default.
+Coordinates. For a single timed object, an x and a y (and a z on 3d maps) — the one tile it plays from. For a ranged timed object, a minimum and maximum x and a minimum and maximum y (and a minimum and maximum z on 3d maps), marking the rectangle it fills.
+Speed. The number of milliseconds between each playing of the clip, so a smaller number makes it recur more often.
+Category. Which library the clip comes from: musics for soundtrack pieces, or sources for general source sounds.
+Sound (a folder name from the chosen library's list, or none). The clip the object plays on each interval. Pick none for a silent object.
+Volume. How loud the clip plays, from -100 at the quietest up to 0 at full volume.
+Pitch. The playback pitch as a flat value, defaulting to 100 for the clip's natural pitch and ranging from 5 to 1000 — lower values play deeper and slower, higher values brighter and faster.
+
+Auditioning sounds in the builder.
+
+While the sound list, the volume slider, or the pitch slider is focused in the form, press space to start a looping preview of the highlighted clip, and press space again to stop it. Adjusting the volume or pitch slider while the preview is playing updates it live, so you can set the level and pitch by ear before placing the object. The preview plays the clip continuously so you can hear it clearly; the interval gap only applies once the object is placed.
+
+Authoring timed objects by hand.
+
+If you edit main.sif directly, a timed source is written under the name timed_source and a timed ambience under the name timed_ambience; everything else about the two lines is identical. A single one is timed_source x y category sound volume pitch speed, and on 3d maps a z follows the y: timed_source x y z category sound volume pitch speed. A ranged one is timed_source minx maxx miny maxy category sound volume pitch speed, and on 3d maps a minimum and maximum z follow the y pair: timed_source minx maxx miny maxy minz maxz category sound volume pitch speed. Each name covers both its single and ranged form — the line is read as ranged when it carries the extra coordinates. The category is the literal word musics or sources, the sound must match a folder name in that library or the word none, and the volume, pitch, and speed are numbers.
