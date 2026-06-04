@@ -1164,6 +1164,7 @@ dlg("Error. The clipboard data is invalid.");
 resume_pools();
 return;
 }
+push_map_undo();
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
 mapper.write(clipboard_data);
 mapper.close();
@@ -1194,6 +1195,7 @@ if (!is_valid)
 speak("The clipboard data is invalid.");
 return;
 }
+push_map_undo();
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
 mapper.write(clipboard_data);
 mapper.close();
@@ -1201,6 +1203,44 @@ bump_map_modified();
 load_map(mapname, mapowner, force_spawned:true);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
+}
+}
+else if (base_command == "ud"  && !map_is_compiled || base_command == "undomap" && !map_is_compiled)
+{
+if (parsed.length() != 1)
+{
+speak("Invalid command syntax. Usage: /undomap, or /ud.");
+return;
+}
+if (map_undo())
+{
+bump_map_modified();
+load_map(mapname, mapowner, force_spawned:true);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Undid last map change.");
+}
+else
+{
+speak("Nothing to undo.");
+}
+}
+else if (base_command == "ro"  && !map_is_compiled || base_command == "redomap" && !map_is_compiled)
+{
+if (parsed.length() != 1)
+{
+speak("Invalid command syntax. Usage: /redomap, or /ro.");
+return;
+}
+if (map_redo())
+{
+bump_map_modified();
+load_map(mapname, mapowner, force_spawned:true);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Redid last map change.");
+}
+else
+{
+speak("Nothing to redo.");
 }
 }
 else if (base_command == "dm"  && !map_is_compiled || base_command == "delmap" && !map_is_compiled)

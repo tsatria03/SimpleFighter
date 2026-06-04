@@ -34,6 +34,66 @@ bool string_to_bool(string str)
 {
 return str.trim_whitespace().lower()=="true"? true:false;
 }
+// Map line-edit undo/redo. The stacks hold whole-file snapshots of main.sif and
+// are tagged with the map they belong to, so switching maps auto-clears history
+// without depending on clearmap() (which load_map calls on every reload/edit).
+string[] map_undo_stack;
+string[] map_redo_stack;
+string map_undo_owner = "";
+const uint MAP_UNDO_MAX = 50;
+void map_undo_sync()
+{
+if(map_undo_owner != mapname)
+{
+map_undo_stack.resize(0);
+map_redo_stack.resize(0);
+map_undo_owner = mapname;
+}
+}
+string read_map_main_sif()
+{
+file f;
+f.open("data/builder/maps/decompiled/"+mapname+"/data/main.sif", "rb");
+string data = f.read();
+f.close();
+return data;
+}
+void write_map_main_sif(string data)
+{
+file f;
+f.open("data/builder/maps/decompiled/"+mapname+"/data/main.sif", "wb");
+f.write(data);
+f.close();
+}
+void push_map_undo()
+{
+map_undo_sync();
+map_undo_stack.insert_last(read_map_main_sif());
+if(map_undo_stack.length() > MAP_UNDO_MAX) map_undo_stack.remove_at(0);
+map_redo_stack.resize(0);
+}
+bool map_undo()
+{
+map_undo_sync();
+if(map_undo_stack.length() == 0) return false;
+map_redo_stack.insert_last(read_map_main_sif());
+uint last = map_undo_stack.length()-1;
+string prev = map_undo_stack[last];
+map_undo_stack.remove_at(last);
+write_map_main_sif(prev);
+return true;
+}
+bool map_redo()
+{
+map_undo_sync();
+if(map_redo_stack.length() == 0) return false;
+map_undo_stack.insert_last(read_map_main_sif());
+uint last = map_redo_stack.length()-1;
+string next = map_redo_stack[last];
+map_redo_stack.remove_at(last);
+write_map_main_sif(next);
+return true;
+}
 bool validate_map_data(string[] raw_lines)
 {
 string[] lines;
