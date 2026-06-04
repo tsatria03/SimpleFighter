@@ -167,7 +167,7 @@ Sound assets are looked up via get_pack_sound("...") / get_map_sound("...") with
 ## Player-facing docs (docks/)
 
 - **docks/main/** — `changelog.txt`, `readme.txt`, `todo_list.txt`, `credits.txt`. Opened by `docksmenu()` / `dockread()` in sf.nvgt. `changelog.txt` is the source of truth for what shipped — trust it over readme/todo. Format: each version starts with a New in X.Y. header, followed by one paragraph per change in reverse-chronological order (newest at the top of the file). Entries describe the symptom, the root cause when it was a bug, and the resulting behavior, so the file doubles as a postmortem log.
-- **docks/builder/** — per-feature `.tp` reference topics served by `helpread()` from the map builder's help menu. Filenames stay flat (no nested folders); helpread strips `docks/builder/` and `.tp` for the window title. New topics need wiring into the help menu in `menu.nvgt`.
+- **docks/builder/** — per-feature `.tp` reference topics served by `helpread()` from the map builder's help menu. Filenames stay flat (no nested folders); helpread strips `docks/builder/` and `.tp` for the window title. New topics are picked up automatically — the `hp`/`help` command in `command_parser.nvgt` scans `docks/builder/*.tp` at runtime via `find_files`, so no `menu.nvgt` wiring is needed.
 
 Rules for writing/editing these files live in memory, not here: changelog entry format and per-version caps, .tp prose constraints, readme/todo quirks.
 
