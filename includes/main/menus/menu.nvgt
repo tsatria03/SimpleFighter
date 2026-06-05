@@ -813,11 +813,15 @@ int tabs = form.create_tab_panel("Category");
 if (!ingame) form.add_list_item(tabs, "General");
 form.add_list_item(tabs, "Game");
 if (!ingame) form.add_list_item(tabs, "Keyboard");
+form.add_list_item(tabs, "Menu");
+if (!ingame) form.add_list_item(tabs, "Sound");
 form.add_list_item(tabs, "Speech");
 int tab_general = ingame ? -1 : 0;
 int tab_game = ingame ? 0 : 1;
 int tab_keyboard = ingame ? -1 : 2;
-int tab_speech = ingame ? 1 : 3;
+int tab_menu = ingame ? 1 : 3;
+int tab_sound = ingame ? -1 : 4;
+int tab_speech = ingame ? 2 : 5;
 int slt=-1, slk=-1, sln=-1, sdm=-1, defmap=-1;
 if (!ingame)
 {
@@ -836,8 +840,6 @@ sln = form.create_button("Select &menu theme. Currently set to nothing");
 else
 sln = form.create_button("Select &menu theme. Currently set to " + menutype);
 form.assign_to_tab(sln, tabs, tab_general);
-sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
-form.assign_to_tab(sdm, tabs, tab_general);
 defmap = form.create_button("Set default &owner for new maps. Currently set to " + defowner);
 form.assign_to_tab(defmap, tabs, tab_general);
 }
@@ -847,30 +849,36 @@ int runmode = form.create_checkbox("Enable auto running in maps", autorun);
 form.assign_to_tab(runmode, tabs, tab_game);
 int sjn = form.create_checkbox("Enable auto jumping in maps", int_to_bool(autojump));
 form.assign_to_tab(sjn, tabs, tab_game);
-int fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
-form.assign_to_tab(fdv, tabs, tab_game);
 int bml = form.create_checkbox("Enable bumping into walls repeatedly", wallbump);
 form.assign_to_tab(bml, tabs, tab_game);
 int trm = form.create_checkbox("Enable turning on the spot for 2d maps", int_to_bool(turnmode));
 form.assign_to_tab(trm, tabs, tab_game);
-int mlb = form.create_checkbox("Enable auditory beeps when loading maps", int_to_bool(maploadbeeps));
-form.assign_to_tab(mlb, tabs, tab_game);
-int mls = form.create_checkbox("Enable indicator sounds when loading maps", int_to_bool(maploadsounds));
-form.assign_to_tab(mls, tabs, tab_game);
 int mcl = form.create_checkbox("Enable clearing entities after dying on a map", mapclear);
 form.assign_to_tab(mcl, tabs, tab_game);
-int glh = form.create_checkbox("Enable global HRTF support", hrtf);
-form.assign_to_tab(glh, tabs, tab_game);
-int mrp = form.create_checkbox("Enable wrapping in menus", menuwrap);
-form.assign_to_tab(mrp, tabs, tab_game);
-int flt = form.create_checkbox("Enable first letter navigation in menus", first_letter);
-form.assign_to_tab(flt, tabs, tab_game);
-int spn = form.create_checkbox("Enable position information in menus", speak_menu_position);
-form.assign_to_tab(spn, tabs, tab_game);
-int scr = form.create_checkbox("Enable side scrolling in menus", side_scrolling);
-form.assign_to_tab(scr, tabs, tab_game);
 int esc = form.create_checkbox("Ask to exit when pressing escape", int_to_bool(gamxit));
 form.assign_to_tab(esc, tabs, tab_game);
+int fdv=-1, glh=-1, mlb=-1, mls=-1;
+if (!ingame)
+{
+fdv = form.create_checkbox("Enable global volume fading", int_to_bool(fademode));
+form.assign_to_tab(fdv, tabs, tab_sound);
+glh = form.create_checkbox("Enable global HRTF support", hrtf);
+form.assign_to_tab(glh, tabs, tab_sound);
+mlb = form.create_checkbox("Enable auditory beeps when loading maps", int_to_bool(maploadbeeps));
+form.assign_to_tab(mlb, tabs, tab_sound);
+mls = form.create_checkbox("Enable indicator sounds when loading maps", int_to_bool(maploadsounds));
+form.assign_to_tab(mls, tabs, tab_sound);
+sdm = form.create_button("Select sound &device. Currently set to " + soundcard);
+form.assign_to_tab(sdm, tabs, tab_sound);
+}
+int mrp = form.create_checkbox("Enable wrapping in menus", menuwrap);
+form.assign_to_tab(mrp, tabs, tab_menu);
+int flt = form.create_checkbox("Enable first letter navigation in menus", first_letter);
+form.assign_to_tab(flt, tabs, tab_menu);
+int spn = form.create_checkbox("Enable position information in menus", speak_menu_position);
+form.assign_to_tab(spn, tabs, tab_menu);
+int scr = form.create_checkbox("Enable side scrolling in menus", side_scrolling);
+form.assign_to_tab(scr, tabs, tab_menu);
 int rest = -1;
 if (!ingame)
 {
@@ -901,14 +909,13 @@ form.monitor();
 auto_check_updates = form.is_checked(autup);
 autorun = form.is_checked(runmode);
 autojump = bool_to_int(form.is_checked(sjn));
-fademode = bool_to_int(form.is_checked(fdv));
+if (fdv != -1) fademode = bool_to_int(form.is_checked(fdv));
 wallbump = form.is_checked(bml);
 turnmode = bool_to_int(form.is_checked(trm));
-maploadbeeps = bool_to_int(form.is_checked(mlb));
-maploadsounds = bool_to_int(form.is_checked(mls));
+if (mlb != -1) maploadbeeps = bool_to_int(form.is_checked(mlb));
+if (mls != -1) maploadsounds = bool_to_int(form.is_checked(mls));
 mapclear = form.is_checked(mcl);
-hrtf = form.is_checked(glh);
-sound_global_hrtf = form.is_checked(glh);
+if (glh != -1) { hrtf = form.is_checked(glh); sound_global_hrtf = form.is_checked(glh); }
 menuwrap = form.is_checked(mrp);
 first_letter = form.is_checked(flt);
 speak_menu_position = form.is_checked(spn);
