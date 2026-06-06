@@ -7,8 +7,8 @@ bool bounce_at_edge, destroyable, fireable, single_use;
 bool first_tick, check_spawn_contact;
 int projsound, wepsound;
 int prox, proy, proz;
-int minx, maxx, miny, maxy;
-int minz, maxz;
+double minx, maxx, miny, maxy;
+double minz, maxz;
 int direction;
 int cur_x_step, cur_y_step, cur_z_step;
 double projhealth, maxprojhealth;
@@ -17,7 +17,7 @@ int speed;
 int stun;
 string projtype;
 timer projtimer;
-projectile(int px, int py, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, int mnz=0, int mxz=0, bool csc=false)
+projectile(int px, int py, double mnx, double mxx, double mny, double mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, double mnz=0, double mxz=0, bool csc=false)
 {
 prox = px;
 proy = py;
@@ -367,7 +367,7 @@ break;
 }
 }
 
-void spawn_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, int mnz=0, int mxz=0, bool csc=false)
+void spawn_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, double mnz=0, double mxz=0, bool csc=false)
 {
 projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz, csc);
 projectiles.insert_last(p1);
@@ -399,11 +399,11 @@ int mx = form.create_input_box("starting x", sel_left_set ? sel_left : "");
 int my = form.create_input_box("starting y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
 int mz = -1;
 if(mapmode == "3d") mz = form.create_input_box("starting z", sel_bottom_set ? sel_bottom : "");
-int mnx = form.create_input_box("left x", sel_left_set ? sel_left : "");
-int mxx = form.create_input_box("right x", sel_right_set ? sel_right : "");
-int mny = form.create_input_box(y_uses_back_front ? "back y" : "bottom y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
-int mxy = form.create_input_box(y_uses_back_front ? "front y" : "top y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
-int mnz = -1, mxz = -1;
+double mnx = form.create_input_box("left x", sel_left_set ? sel_left : "");
+double mxx = form.create_input_box("right x", sel_right_set ? sel_right : "");
+double mny = form.create_input_box(y_uses_back_front ? "back y" : "bottom y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+double mxy = form.create_input_box(y_uses_back_front ? "front y" : "top y", y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : ""));
+double mnz = -1, mxz = -1;
 if(mapmode == "3d")
 {
 mnz = form.create_input_box("bottom z", sel_bottom_set ? sel_bottom : "");
@@ -513,12 +513,12 @@ if(mxz != -1 && form.get_text(mxz) == "") { speak("Top z is required."); form.fo
 int bx = string_to_number(form.get_text(mx));
 int by = string_to_number(form.get_text(my));
 int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
-int bmnx = string_to_number(form.get_text(mnx));
-int bmxx = string_to_number(form.get_text(mxx));
-int bmny = string_to_number(form.get_text(mny));
-int bmxy = string_to_number(form.get_text(mxy));
-int bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
-int bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+double bmnx = string_to_number(form.get_text(mnx));
+double bmxx = string_to_number(form.get_text(mxx));
+double bmny = string_to_number(form.get_text(mny));
+double bmxy = string_to_number(form.get_text(mxy));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int bdmg = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
@@ -548,11 +548,11 @@ int y = stn(sd[2]);
 int z = 0;
 int o = 3;
 if(mapmode == "3d") { z = stn(sd[3]); o = 4; }
-int mnx = stn(sd[o]);
-int mxx = stn(sd[o+1]);
-int mny = stn(sd[o+2]);
-int mxy = stn(sd[o+3]);
-int mnz = 0, mxz = 0;
+double mnx = stn(sd[o]);
+double mxx = stn(sd[o+1]);
+double mny = stn(sd[o+2]);
+double mxy = stn(sd[o+3]);
+double mnz = 0, mxz = 0;
 if(mapmode == "3d") { mnz = stn(sd[o+4]); mxz = stn(sd[o+5]); o += 6; } else o += 4;
 int dir = stn(sd[o]);
 double hp = stn(sd[o+1]);
@@ -566,7 +566,7 @@ bool su = string_to_bool(sd[o+8]);
 spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, 0, z, mnz, mxz);
 }
 
-void write_projectile(int x, int y, int mnx, int mxx, int mny, int mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int z=0, int mnz=0, int mxz=0)
+void write_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int z=0, double mnz=0, double mxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "ab");
 mapdata = mapper.read();

@@ -1,0 +1,193 @@
+// game_menu.nvgt - arcade arena front door.
+// main menu -> game menu -> new game -> mode -> category -> (custom: creature)
+// -> setup form -> launch. Normal fights a random enemy of the chosen category;
+// custom fights one specific creature you pick.
+
+void gamemenu()
+{
+setupmenu(true);
+m.add_item("new game", "ng");
+m.add_item("back", "back");
+m.intro_text="Game menu. Start a new arena, or go back.";
+int mres=m.run();
+string sel=mres<0?"":m.selected_item_id;
+if(mres<0 or sel=="back") { mainmenu(); return; }
+if(sel=="ng") { m.fade_music(); arena_new_game(); }
+}
+
+// pick the game mode: normal (random enemy) or custom (one specific creature).
+void arena_new_game()
+{
+setupmenu();
+m.add_item("normal", "normal");
+m.add_item("custom", "custom");
+m.add_item("back", "back");
+m.intro_text="Choose a mode. Normal fights a random enemy of the type you pick. Custom fights one specific enemy you choose.";
+int mres=m.run();
+string mode=mres<0?"":m.selected_item_id;
+if(mres<0 or mode=="back") { gamemenu(); return; }
+arena_target_menu(mode);
+}
+
+// pick the enemy category; in custom mode, then pick a specific creature.
+void arena_target_menu(string mode)
+{
+setupmenu();
+m.add_item("animals", "animals");
+m.add_item("humans", "humans");
+m.add_item("robots", "robots");
+m.add_item("zombies", "zombies");
+m.add_item("back", "back");
+m.intro_text="Choose what you want to fight.";
+int tres=m.run();
+string target=tres<0?"":m.selected_item_id;
+if(tres<0 or target=="back") { arena_new_game(); return; }
+string subtype="random";
+if(mode=="custom")
+{
+subtype=arena_creature_menu(target);
+if(subtype=="") { arena_target_menu(mode); return; }   // backed out of the creature list
+}
+arena_setup_form(target, subtype);
+gamemenu();
+}
+
+// custom mode: choose one specific creature from the chosen category. "" = back.
+string arena_creature_menu(string category)
+{
+string[] found=find_directories("sounds/decompiled/builder/kombat/npc/"+category+"/*");
+string[] creatures;
+for(uint i=0; i<found.length(); i++)
+{
+if(file_exists("sounds/decompiled/builder/kombat/npc/"+category+"/"+found[i]+"/data/info.sif"))
+creatures.insert_last(found[i]);
+}
+if(creatures.length()==0)
+{
+dlg("Error. There are no "+category+" available to fight. Press enter to continue.");
+return "";
+}
+sort_naturally(creatures);
+setupmenu();
+for(uint i=0; i<creatures.length(); i++) m.add_item(creatures[i], creatures[i]);
+m.add_item("back", "back");
+m.intro_text="Choose which "+category+" to fight.";
+int cres=m.run();
+string sel=cres<0?"":m.selected_item_id;
+if(cres<0 or sel=="back") return "";
+return sel;
+}
+
+// the setup screen: map mode, an optional ambient sound, an optional music track
+// (each with its own volume), and the floor tile. spacebar previews the focused
+// ambience/music (looping toggle, volume tracks live) or tile (one-shot step).
+void arena_setup_form(string category, string subtype)
+{
+string[] plats=get_map_sound_folders("builder/construction/platforms/*");
+string[] musics=get_map_sound_folders("builder/audio/musics/*");
+string[] sources=get_map_sound_folders("builder/audio/sources/*");
+form.reset();
+form.create_window("arena setup", false, true, false);
+int mode_list=form.create_list("map mode");
+form.add_list_item(mode_list, "2d - side view with jumping and falling", "2d");
+form.add_list_item(mode_list, "topdown - bird's-eye on a flat plane", "topdown");
+form.add_list_item(mode_list, "3d - full volumetric world", "3d");
+form.set_list_position(mode_list, 0, false);
+int amb_list=form.create_list("ambience TYPE");
+form.add_list_item(amb_list, "none", "none");
+for(uint i=0; i<sources.length(); i++) form.add_list_item(amb_list, sources[i], sources[i]);
+form.set_list_position(amb_list, 0, false);
+int amb_vol_s=form.create_slider("ambience volume", 0, -100, 0, "", 5);
+int music_list=form.create_list("music TYPE");
+form.add_list_item(music_list, "none", "none");
+for(uint i=0; i<musics.length(); i++) form.add_list_item(music_list, musics[i], musics[i]);
+form.set_list_position(music_list, 0, false);
+int music_vol_s=form.create_slider("music volume", 0, -100, 0, "", 5);
+int plat_list=form.create_list("tile type");
+form.add_list_item(plat_list, "none", "none");
+for(uint i=0; i<plats.length(); i++) { if(plats[i]=="air") continue; form.add_list_item(plat_list, plats[i], plats[i]); }
+form.set_list_position(plat_list, 0, false);
+int ok=form.create_button("&okay", true);
+int cn=form.create_button("&cancel");
+form.focus(mode_list);
+bool preview_playing=false;
+int preview_group=0;   // 0 none, 1 ambience, 2 music
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus=form.get_current_focus();
+bool amb_group=(cur_focus==amb_list or cur_focus==amb_vol_s);
+bool music_group=(cur_focus==music_list or cur_focus==music_vol_s);
+// stop the looping preview when you tab past its group
+if(preview_playing and !((preview_group==1 and amb_group) or (preview_group==2 and music_group)))
+{
+t.destroy_sound(prevslot); prevslot=-1; preview_playing=false; preview_group=0;
+}
+if(key_down(KEY_SPACE) and keytimer.elapsed >= keytime)
+{
+if(cur_focus==plat_list)
+{
+t.destroy_sound(prevslot); prevslot=-1; preview_playing=false; preview_group=0;
+string id=form.get_list_item_id(plat_list, form.get_list_position(plat_list));
+if(id!="none") prevslot=t.play_stationary(get_map_sound("builder/construction/platforms/"+id+"/*step*"), false);
+}
+else if(amb_group)
+{
+if(preview_playing and preview_group==1) { t.destroy_sound(prevslot); prevslot=-1; preview_playing=false; preview_group=0; }
+else
+{
+int p=form.get_list_position(amb_list);
+if(p>0)
+{
+string sub=form.get_list_item_id(amb_list, p);
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary_extended(get_map_sound("builder/audio/sources/"+sub+"/*loop*"), true, 0, 0, form.get_slider(amb_vol_s), 100, false);
+preview_playing=true; preview_group=1;
+}
+}
+}
+else if(music_group)
+{
+if(preview_playing and preview_group==2) { t.destroy_sound(prevslot); prevslot=-1; preview_playing=false; preview_group=0; }
+else
+{
+int p=form.get_list_position(music_list);
+if(p>0)
+{
+string sub=form.get_list_item_id(music_list, p);
+t.destroy_sound(prevslot);
+prevslot=t.play_stationary_extended(get_map_sound("builder/audio/musics/"+sub+"/*loop*"), true, 0, 0, form.get_slider(music_vol_s), 100, false);
+preview_playing=true; preview_group=2;
+}
+}
+}
+keytimer.restart();
+}
+// keep the live preview in sync with its volume slider
+if(preview_playing and prevslot!=-1)
+{
+if(preview_group==1 and amb_group) t.update_sound_start_values(prevslot, 0, form.get_slider(amb_vol_s), 100);
+else if(preview_group==2 and music_group) t.update_sound_start_values(prevslot, 0, form.get_slider(music_vol_s), 100);
+}
+if(key_pressed(KEY_ESCAPE) or form.is_pressed(cn))
+{
+t.destroy_sound(prevslot); speak("canceled"); return;
+}
+if(form.is_pressed(ok))
+{
+string mode=form.get_list_item_id(mode_list, form.get_list_position(mode_list));
+string ambience=form.get_list_item_id(amb_list, form.get_list_position(amb_list));
+double amb_vol=form.get_slider(amb_vol_s);
+string music=form.get_list_item_id(music_list, form.get_list_position(music_list));
+double music_vol=form.get_slider(music_vol_s);
+string platform=form.get_list_item_id(plat_list, form.get_list_position(plat_list));
+t.destroy_sound(prevslot);
+m.fade_music();
+spawn_arena(mode, platform, category, subtype, music, music_vol, ambience, amb_vol);
+game();
+clearmap();
+return;
+}
+}
+}

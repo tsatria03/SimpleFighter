@@ -362,9 +362,17 @@ dlg("Error. There are no weapon categories available to view. Press enter to con
 resume_pools();
 return;
 }
+// arena mode hides the all, misc, and special tabs (special holds glider/cloner = cheats)
+if(arena_active)
+{
+string[] arena_cats;
+for(uint i = 0; i < cats.length(); i++) if(cats[i] != "misc" and cats[i] != "special") arena_cats.insert_last(cats[i]);
+cats = arena_cats;
+}
 string[] tab_cats;
-tab_cats.insert_last("all");
+if(!arena_active) tab_cats.insert_last("all");
 for(uint i = 0; i < cats.length(); i++) tab_cats.insert_last(cats[i]);
+int cat_off = arena_active ? 0 : 1;
 string[][] weapon_labels(tab_cats.length());
 string[][] weapon_ids(tab_cats.length());
 bool[][] weapon_unlocked(tab_cats.length());
@@ -383,16 +391,21 @@ bool is_unlocked = level >= unlock_level;
 string label = weps[j];
 if(!is_unlocked) label += " (Unlocked at level " + int_to_string(int(unlock_level)) + ")";
 weapon_unlock_levels.set(weps[j], unlock_level);
-weapon_labels[i+1].insert_last(label);
-weapon_ids[i+1].insert_last(weps[j]);
-weapon_unlocked[i+1].insert_last(is_unlocked);
-weapon_source_cat[i+1].insert_last(cats[i]);
+weapon_labels[i+cat_off].insert_last(label);
+weapon_ids[i+cat_off].insert_last(weps[j]);
+weapon_unlocked[i+cat_off].insert_last(is_unlocked);
+weapon_source_cat[i+cat_off].insert_last(cats[i]);
+if(!arena_active)
+{
 weapon_labels[0].insert_last(label);
 weapon_ids[0].insert_last(weps[j]);
 weapon_unlocked[0].insert_last(is_unlocked);
 weapon_source_cat[0].insert_last(cats[i]);
 }
 }
+}
+if(!arena_active)
+{
 int[] order(weapon_labels[0].length());
 for(uint i = 0; i < order.length(); i++) order[i] = int(i);
 for(uint i = 1; i < order.length(); i++)
@@ -421,6 +434,7 @@ weapon_labels[0] = sorted_labels;
 weapon_ids[0] = sorted_ids;
 weapon_unlocked[0] = sorted_unlocked;
 weapon_source_cat[0] = sorted_sources;
+}
 
 setupmenu();
 @m.background_callback = @weapons_callback;

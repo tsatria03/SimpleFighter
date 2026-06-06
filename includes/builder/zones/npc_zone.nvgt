@@ -2,7 +2,7 @@ npc_zone@[] npc_zones(0);
 class npc_zone
 {
 double minx, maxx;
-int y, y2;
+double y, y2;
 int z;
 int spawntime;
 int scale_level;
@@ -10,7 +10,9 @@ string path;
 string category;
 string subtype;
 timer spawntimer;
-npc_zone(double mx, double mx2, int sy, int sy2, int sp, int sl, string p, string cat, string sub, int sz=0)
+int cap;
+bool auto_spawn;
+npc_zone(double mx, double mx2, double sy, double sy2, int sp, int sl, string p, string cat, string sub, int sz=0, int cp=0, bool au=false)
 {
 minx = mx;
 maxx = mx2;
@@ -22,6 +24,8 @@ scale_level = sl;
 path = p;
 category = cat;
 subtype = sub;
+cap = cp;
+auto_spawn = au;
 }
 }
 
@@ -31,7 +35,7 @@ for(uint i = 0; i < npc_zones.length(); i++)
 {
 bool trigger = npc_zones[i].minx <= me.x and npc_zones[i].maxx >= me.x and npc_zones[i].y <= me.y and npc_zones[i].y2 >= me.y;
 if(mapmode == "3d") trigger = trigger and npc_zones[i].z == me.z;
-if(trigger and npc_zones[i].spawntimer.elapsed >= npc_zones[i].spawntime)
+if((npc_zones[i].auto_spawn or trigger) and npc_zones[i].spawntimer.elapsed >= npc_zones[i].spawntime and (npc_zones[i].cap <= 0 or npc_live_count() < uint(npc_zones[i].cap)))
 {
 string sub = npc_zones[i].subtype;
 if(sub == "random")
@@ -51,15 +55,27 @@ for(uint k=0; k<gd.length(); k++) { if(!seen.exists(gd[k])) { seen[gd[k]] = true
 if(folders.length() > 0) sub = random_string(folders);
 }
 if(sub != "" && sub != "none")
-spawn_npc(random(npc_zones[i].minx, npc_zones[i].maxx), random(npc_zones[i].y, npc_zones[i].y2), npc_zones[i].scale_level, npc_zones[i].path, npc_zones[i].category, sub, npc_zones[i].z);
+{
+// pick a spot that isn't inside a safe zone (retry a few times, then skip this tick).
+double sx, sy;
+bool clear = false;
+for(int a = 0; a < 10; a++)
+{
+sx = random(npc_zones[i].minx, npc_zones[i].maxx);
+sy = random(npc_zones[i].y, npc_zones[i].y2);
+if(!is_in_safe(sx, sy, npc_zones[i].z)) { clear = true; break; }
+}
+if(clear)
+spawn_npc(sx, sy, npc_zones[i].scale_level, npc_zones[i].path, npc_zones[i].category, sub, npc_zones[i].z);
+}
 npc_zones[i].spawntimer.restart();
 }
 }
 }
 
-void spawn_npc_zone(double x1, double x2, int y, int y2, int sp, int sl, string path, string category, string subtype, int z=0)
+void spawn_npc_zone(double x1, double x2, double y, double y2, int sp, int sl, string path, string category, string subtype, int z=0, int cap=0, bool auto_spawn=false)
 {
-npc_zone nz(x1, x2, y, y2, sp, sl, path, category, subtype, z);
+npc_zone nz(x1, x2, y, y2, sp, sl, path, category, subtype, z, cap, auto_spawn);
 npc_zones.insert_last(nz);
 }
 
@@ -72,8 +88,8 @@ void read_npc_zone(string[] sd)
 {
 double mx = stn(sd[1]);
 double mx2 = stn(sd[2]);
-int y = stn(sd[3]);
-int y2 = y;
+double y = stn(sd[3]);
+double y2 = y;
 int z = 0;
 int o = 4;
 if(mapmode == "topdown" && sd.length() == 10)
@@ -100,7 +116,7 @@ string subtype = sd[o+4];
 spawn_npc_zone(mx, mx2, y, y2, sp, sl, path, category, subtype, z);
 }
 
-void write_npc_zone(double x1, double x2, int y, int y2, int sp, int sl, string path, string category, string subtype, int z=0)
+void write_npc_zone(double x1, double x2, double y, double y2, int sp, int sl, string path, string category, string subtype, int z=0)
 {
 mapper.open("data/builder/maps/decompiled/" + mapname + "/" + "data/main.sif", "ab");
 mapdata = mapper.read();

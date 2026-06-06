@@ -616,7 +616,22 @@ void spawn_npc(int x, int y, int scale_level, string path, string category, stri
 {
 if(subtype == "" || subtype == "none") return;
 npc n(x, y, scale_level, path, category, subtype, z);
+// in the arena, reuse a freed (defeated) slot so the npc list stays bounded
+// instead of piling up dead entries over a long survival run (count + perf).
+if(arena_active)
+{
+for(uint k=0; k<npcs.length(); k++) { if(@npcs[k]==null) { @npcs[k]=n; return; } }
+}
 npcs.insert_last(n);
+}
+
+// count only live npcs - dead ones are sentinel-null, not removed, so
+// npcs.length() would over-count them (breaks population caps).
+uint npc_live_count()
+{
+uint live=0;
+for(uint i=0; i<npcs.length(); i++) if(@npcs[i] != null) live++;
+return live;
 }
 
 void destroy_all_npcs()
@@ -1021,7 +1036,7 @@ if(npcs[i].health > npcs[i].maxhealth) npcs[i].health = npcs[i].maxhealth;
 npcs[i].ambient_heal_timer.restart();
 }
 
-if(npcs[i].launching && !in_healing && npcs[i].launch_time > 0 && npcs[i].launch_timer.elapsed >= npcs[i].launch_time)
+if(!arena_active && npcs[i].launching && !in_healing && npcs[i].launch_time > 0 && npcs[i].launch_timer.elapsed >= npcs[i].launch_time)
 {
 int dx;
 if(combat_found) dx = (combat_tx < npcs[i].x) ? -1 : 1;

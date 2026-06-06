@@ -1,0 +1,218 @@
+// arena.nvgt - arcade survival arena.
+// Wraps ONE capped, auto-spawning npc_zone (started past the safe corner) plus a
+// spawn-safe corner at the origin. The zone does the spawning/scaling; the arena
+// only lays the floor, ramps difficulty with the player's level, handles in-game
+// resizing, and tears itself down. Stage 1: subsystem skeleton.
+
+bool arena_active=false;
+double arena_step=5;       // F-key max-bound expansion step, in tiles
+double arena_min_max=25;   // smallest a max edge can be shrunk to via the F-keys
+double arena_max_size=1000; // largest a max edge can be grown to via the F-keys
+double arena_default_max=50; // the starting max edge each axis resets to
+int arena_max_cap=50;      // hard ceiling on live enemies, regardless of level
+
+class arena_state
+{
+double minx, maxx, miny, maxy, minz, maxz;
+string mode, platform_tile, path, category, subtype;
+string music_clip, source_clip;
+double music_vol, source_vol;
+int base_cap, spawntime, zone_index;
+int safe_far_index;   // the max-edge safe corner; repositioned on resize
+}
+arena_state arena;
+
+// the live cap: starts at base_cap, +1 per level, hard-capped at arena_max_cap.
+int arena_cap()
+{
+int c=arena.base_cap+int(level)-1;
+if(c>arena_max_cap) c=arena_max_cap;
+if(c<1) c=1;
+return c;
+}
+
+// lay (or re-lay) the floor across the whole arena, shaped by map mode.
+// platform_tile "none" = no floor (falling is disabled in arena mode).
+void arena_lay_floor()
+{
+if(arena.platform_tile=="none" or arena.platform_tile=="") return;
+if(mapmode=="2d")
+spawn_platform(arena.minx, arena.maxx, arena.miny, arena.miny, 1, 1, arena.platform_tile, 0, 100, false, false);
+else
+spawn_platform(arena.minx, arena.maxx, arena.miny, arena.maxy, 1, 1, arena.platform_tile, 0, 100, false, false, false, arena.minz);
+}
+
+// spawn the capped, auto-spawning npc_zone over x 11..maxx (past the safe corner).
+void arena_spawn_zone()
+{
+double zminx=11;
+if(zminx>arena.maxx) zminx=arena.maxx;
+double zy2=(mapmode=="2d") ? arena.miny : arena.maxy;   // 2d spawns on the floor
+int cap=arena_cap();
+spawn_npc_zone(zminx, arena.maxx, arena.miny, zy2, arena.spawntime, int(level), arena.path, arena.category, arena.subtype, int(arena.minz), cap, true);
+arena.zone_index=int(npc_zones.length())-1;
+}
+
+// spawn the safe corner at the origin (dims per mode; height axis 0-5, the rest 0-10).
+void arena_spawn_safe()
+{
+string[] safes=get_map_sound_folders("builder/zones/safe zones/*");
+if(safes.length()==0) return;
+string type=safes[0];
+// origin corner (min edge), fixed.
+if(mapmode=="2d") spawn_safezone(0, 10, 0, 5, type);
+else if(mapmode=="topdown") spawn_safezone(0, 10, 0, 10, type);
+else spawn_safezone(0, 10, 0, 10, type, 0, 5);
+// far corner (max edge), tracks the arena's maximum x/y as it resizes.
+if(mapmode=="2d") spawn_safezone(arena.maxx-10, arena.maxx, 0, 5, type);
+else if(mapmode=="topdown") spawn_safezone(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, type);
+else spawn_safezone(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, type, 0, 5);
+arena.safe_far_index=int(safezones.length())-1;
+}
+
+// build a fresh arena. mode = 2d|topdown|3d; platform_tile "none" for no floor.
+void spawn_arena(string mode, string platform_tile, string category, string subtype, string music_clip="none", double music_vol=0, string source_clip="none", double source_vol=0, int base_cap=1, int spawntime=500)
+{
+clearmap();   // tear down whatever map is loaded (e.g. the title/hub map) first
+mapmode=mode;
+arena.mode=mode;
+arena.platform_tile=platform_tile;
+arena.path="global";   // arcade always pulls NPCs from the global pack
+arena.category=category;
+arena.subtype=subtype;
+arena.music_clip=music_clip;
+arena.music_vol=music_vol;
+arena.source_clip=source_clip;
+arena.source_vol=source_vol;
+arena.base_cap=base_cap;
+arena.spawntime=spawntime;
+// fixed starting bounds: 50x50 (2d/topdown), 50x50x50 (3d); min is always 0.
+arena.minx=0; arena.maxx=50;
+arena.miny=0; arena.maxy=50;
+arena.minz=0; arena.maxz=(mode=="3d") ? 50 : 0;
+minx=arena.minx; maxx=arena.maxx;
+miny=arena.miny; maxy=arena.maxy;
+minz=arena.minz; maxz=arena.maxz;
+arena_lay_floor();
+arena_spawn_zone();
+arena_spawn_safe();
+// optional music + ambient source, spawned as two independent soundsources so you
+// can have both ("none" = skip). path = builder/audio/<category>/<clip>/*loop*
+double sy2=(mode=="2d") ? arena.miny : arena.maxy;
+if(music_clip!="none" and music_clip!="")
+spawn_soundsource(arena.minx, arena.maxx, arena.miny, sy2, "musics", music_clip, music_vol, 100, arena.minz, arena.maxz);
+if(source_clip!="none" and source_clip!="")
+spawn_soundsource(arena.minx, arena.maxx, arena.miny, sy2, "sources", source_clip, source_vol, 100, arena.minz, arena.maxz);
+me.x=0; me.y=0; me.z=0;
+arena_active=true;
+}
+
+// rebuild the same arena from scratch (death retry -> fresh run, player at origin).
+void respawn_arena()
+{
+spawn_arena(arena.mode, arena.platform_tile, arena.category, arena.subtype, arena.music_clip, arena.music_vol, arena.source_clip, arena.source_vol, arena.base_cap, arena.spawntime);
+}
+
+// per frame (from the game loop): keep the live zone's difficulty synced to level.
+void arenaloop()
+{
+if(!arena_active) return;
+if(arena.zone_index<0 or arena.zone_index>=int(npc_zones.length())) return;
+if(@npc_zones[arena.zone_index]==null) return;
+npc_zones[arena.zone_index].scale_level=int(level);
+npc_zones[arena.zone_index].cap=arena_cap();
+}
+
+// re-lay the floor and resize the live zone after an F-key max-bound change.
+void resize_arena()
+{
+if(!arena_active) return;
+minx=arena.minx; maxx=arena.maxx;
+miny=arena.miny; maxy=arena.maxy;
+minz=arena.minz; maxz=arena.maxz;
+destroy_all_platforms();
+arena_lay_floor();
+if(arena.zone_index>=0 and arena.zone_index<int(npc_zones.length()) and @npc_zones[arena.zone_index]!=null)
+{
+npc_zones[arena.zone_index].maxx=arena.maxx;   // zone minx stays 11
+if(mapmode!="2d") npc_zones[arena.zone_index].y2=arena.maxy;
+}
+// keep the far safe corner glued to the new max edge.
+if(arena.safe_far_index>=0 and arena.safe_far_index<int(safezones.length()) and @safezones[arena.safe_far_index]!=null)
+{
+safezones[arena.safe_far_index].minx=arena.maxx-10;
+safezones[arena.safe_far_index].maxx=arena.maxx;
+if(mapmode!="2d")
+{
+safezones[arena.safe_far_index].miny=arena.maxy-10;
+safezones[arena.safe_far_index].maxy=arena.maxy;
+}
+}
+// pull the player back in if a shrink left them outside the new edge.
+if(me.x>maxx) me.x=maxx;
+if(me.y>maxy) me.y=maxy;
+if(mapmode=="3d" and me.z>maxz) me.z=maxz;
+}
+
+// grow/shrink one max edge by delta (tiles), shrink-clamped at arena_min_max, then
+// re-lay the floor and resize the live zone. z is 3d-only.
+void arena_resize_axis(string axis, double delta)
+{
+if(axis=="z" and mapmode!="3d") { speak("This arena has no z axis."); return; }
+double cur=(axis=="x") ? arena.maxx : ((axis=="y") ? arena.maxy : arena.maxz);
+double nv=cur+delta;
+if(nv<arena_min_max) nv=arena_min_max;
+if(nv>arena_max_size) nv=arena_max_size;
+if(nv==cur) return;   // already at a clamp edge (min or max); stay silent
+if(axis=="x") arena.maxx=nv;
+else if(axis=="y") arena.maxy=nv;
+else arena.maxz=nv;
+resize_arena();
+speak("Maximum "+axis+" is now "+int(nv)+" tiles.");
+}
+
+// reset one max edge back to the default (50). z is 3d-only.
+void arena_reset_axis(string axis)
+{
+if(axis=="z" and mapmode!="3d") { speak("This arena has no z axis."); return; }
+double cur=(axis=="x") ? arena.maxx : ((axis=="y") ? arena.maxy : arena.maxz);
+if(cur==arena_default_max) { speak("Maximum "+axis+" is already reset to "+int(arena_default_max)+" tiles."); return; }
+if(axis=="x") arena.maxx=arena_default_max;
+else if(axis=="y") arena.maxy=arena_default_max;
+else arena.maxz=arena_default_max;
+resize_arena();
+speak("Maximum "+axis+" reset to "+int(arena_default_max)+" tiles.");
+}
+
+// reset arena state. The entities (floor, zone, safe corner, music/source) are
+// freed by clearmap()'s destroy_all_* run, which calls this.
+void end_arena()
+{
+arena_active=false;
+arena.zone_index=-1;
+arena.safe_far_index=-1;
+}
+
+// arena-only keys: comma/period/slash speak the current max x / y / z.
+void handle_arena_keys()
+{
+if(!arena_active) return;
+if(controls.action_pressed("arena_max_x")) speak("Your maximum x position is "+int(arena.maxx)+" tiles.");
+if(controls.action_pressed("arena_max_y")) speak("Your maximum y position is "+int(arena.maxy)+" tiles.");
+if(controls.action_pressed("arena_max_z"))
+{
+if(mapmode=="3d") speak("Your maximum z position is "+int(arena.maxz)+" tiles.");
+else speak("This arena has no z axis.");
+}
+// F1-F6 resize the arena: shrink/grow max x, y, z by arena_step tiles.
+if(controls.action_repeating("arena_shrink_x")) arena_resize_axis("x", -arena_step);
+if(controls.action_repeating("arena_grow_x")) arena_resize_axis("x", arena_step);
+if(controls.action_repeating("arena_shrink_y")) arena_resize_axis("y", -arena_step);
+if(controls.action_repeating("arena_grow_y")) arena_resize_axis("y", arena_step);
+if(controls.action_repeating("arena_shrink_z")) arena_resize_axis("z", -arena_step);
+if(controls.action_repeating("arena_grow_z")) arena_resize_axis("z", arena_step);
+// F7-F9 reset max x, y, z back to the default.
+if(controls.action_pressed("arena_reset_x")) arena_reset_axis("x");
+if(controls.action_pressed("arena_reset_y")) arena_reset_axis("y");
+if(controls.action_pressed("arena_reset_z")) arena_reset_axis("z");
+}
