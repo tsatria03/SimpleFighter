@@ -1,19 +1,34 @@
 Welcome to simple fighter.
 
-Simple fighter is an audio only, blind accessible game built around a map builder. You design audio maps, populate them with characters, weapons, shields, NPCs, doors, hazards, vehicles, zones, and various other entities, and then walk around your maps and use what you've placed. All output is screen reader speech plus HRTF spatial audio, so the game can be played with the screen turned off.
+Simple fighter is an audio only, blind accessible action game. You fight, explore, and build, with all output delivered as screen reader speech plus HRTF spatial audio, so the game can be played with the screen turned off. Everything you fight with and against already ships with the game - over two hundred and seventy weapons, more than forty shields, and nearly two hundred enemy types, all ready made - so you can launch the game and play without creating a single thing first.
+
+Jumping straight in: the arcade arena.
+
+The fastest way to play is the game menu on the main menu, home of the arcade arena - the game's original flagship mode, brought back and modernized. Choose new game, pick normal to fight endless random enemies of a type you choose (animals, humans, robots, or zombies) or custom to fight one specific creature, set up the arena's floor, music, and ambience on a single screen (every field has a working default, so you can just press okay), and you're dropped into a flat arena where enemies spawn endlessly and scale with your level. Two safe corners give you somewhere to catch your breath, the arena can be grown, shrunk, and reset live with the F keys, and dying simply offers a fresh run. No map building, no setup, no files - launch and fight.
+
+Maps and the map builder.
+
+The second half of the game is maps. The map menu lets you play the stock maps that ship with the game and build your own. Start with old_main - a guided showcase map where dozens of objects each sit in their own labeled exhibit with a sign explaining what they do and a live example you can walk up to and try. Do note that old_main is a historical piece: it was written toward the end of the game's sixth version, when the game was still an arcade shooter with a young builder attached. It has since been remodernized to load under the current map format and NPC system, but its exhibits reflect the game as it was then, and roughly half of today's entities - elevators, trampolines, bikes and aircraft, mines, security cameras, sensors, and many more - were added after it was written and aren't shown in it. You're more than welcome to explore it, both as a tour of the basics and as a piece of the game's history, and a fully modern showcase map may come in the future.
+The other stock maps (the 2d, topdown, and 3d test maps, a house, and an elevator demo) show off whole builds. When you're ready to create, the builder lets you design maps in any of the three modes and populate them with characters, weapons, shields, NPCs, doors, hazards, vehicles, zones, and dozens of other entities, then walk around your maps and use what you've placed. And if you want to go deeper still, every character, weapon, shield, NPC, and item is authored as a plain text info file with sounds resolved by name, so you can create entirely new content with nothing but a text editor and some audio clips.
 
 Game features.
 
-The ability to build maps in three different modes (2d, topdown, and 3d), each with its own spatial rules.
+The arcade arena: a launch and play survival mode with endless, level-scaled waves, normal and custom modes, two safe corners, and a live-resizable field.
+
 The ability to level up, gain experience, and upgrade stats with level up points.
-The ability to author your own characters, shields, weapons, NPCs, doors, items, zones, and more by editing plain text info files.
-The ability to add environmental effects like HRTF, reverb, echo, lowpass, highpass, phaser, flanger, chorus, and distortion to your maps through effect space zones.
+The ability to play stock maps, including a guided showcase map that demonstrates nearly every object in the game.
+The ability to build maps in three different modes (2d, topdown, and 3d), each with its own spatial rules.
+The ability to author your own characters, shields, weapons, NPCs, doors, items, zones, and more by editing plain text info files, or through the data manager's in-game editing forms so you never have to open a file at all.
+The ability to add environmental effects like HRTF, reverb, echo, lowpass, highpass, phaser, flanger, chorus, and distortion to your maps through effect space zones, with custom effect presets you can save under a name and reuse on any map.
 The ability to drop in your own sounds for any entity. Anything that's not in the data folder lives in the sounds folder, and the engine resolves clips by glob, so adding a sound is the wiring.
 The ability to bind up to 42 in game slash commands to keyboard slots through the macro system.
 The ability to compile maps into encrypted packs that the game falls back to when the decompiled folder is missing.
 The ability to rebind any control from inside the game, or edit the key config file by hand.
+The ability to configure the text to speech voice the game reads with - voice, rate, pitch, and volume - and to speak through your screen reader whenever one is running.
+The ability to place url sources and ambiences on maps that stream their audio from a web link instead of a bundled sound file.
 The ability to record the game's audio and save it as an mp3 file.
 The ability to use special equipment such as gliders that let you fly and cloners that duplicate the entities you strike.
+The ability to show or hide the main menu's documentation, game, map, and miscellaneous entries from the preferences screen, so the menu can be slimmed to just what you use.
 
 Map modes.
 
@@ -26,12 +41,13 @@ Topdown. The x axis is left and right; the y axis is north and south. There's no
 Map bounds and negative coordinates.
 
 Every map sets a minimum and maximum value for each of its axes when it's first created (minx/maxx, miny/maxy, and on 3d maps minz/maxz). The minimum and maximum can be any whole number including negatives, so a 3d map could span from minz minus 5 up to maxz 10 to give you five basement floors below ground level zero plus ten floors above. Type a leading minus sign followed by the number in any of the bound input boxes when creating a new map, and any platform, wall, zone, or other entity you build afterward can also be placed at the negative coordinates - the builder accepts the same minus syntax in its own bound inputs.
+
 Useful patterns. Set minz to a negative value to model basements, sewers, mines, or anything else underground that an elevator could descend to. Set minx or miny to a negative value if you want the spawn point in the middle of a region that extends in both directions instead of starting from a corner. The default fallback spawn point clamps zero into the map's bounds on each axis when the map has no spawnpoint, so a map whose bounds don't include zero will land you at the nearest in-bounds corner instead of dropping you outside the map.
 
 The folder structure.
 
 Data folder.
-Split into two siblings: data/main/ holds macro packs and other shared engine config, and data/builder/ holds authored maps (each map's decompiled folder lives at data/builder/maps/decompiled/<name>/ with its main.sif and meta.sif inside data/, plus an assets/ folder for per-map audio overrides).
+Split into two siblings: data/main/ holds macro packs and other shared engine config, including config/keyboard.ini where your key bindings live, and data/builder/ holds authored maps and effects. Each map's decompiled folder lives at data/builder/maps/decompiled/<name>/ with its main.sif and meta.sif inside data/, plus an assets/ folder for per-map audio overrides, and data/builder/effects/ holds your saved effect space presets, one folder per effect type.
 
 Docks folder.
 Split into two siblings that mirror the data layout: docks/main/ holds the documents the in-game docs menu opens (this readme, the changelog, the todo list, and the credits) and docks/builder/ holds the per-feature reference topics the map builder's help menu serves (one .tp file per topic — around sixty of them, like characters.tp, npcs.tp, and weapons.tp).
@@ -42,6 +58,7 @@ Holds the game's audio in two forms: a decompiled/ folder you can browse and edi
 Keyboard commands.
 
 These are the default keys the game ships with, not fixed assignments. Every action listed below can be rebound to a different key or key combination from the settings menu, so if your layout doesn't match what's printed here, that's why. The descriptions explain what each action does; the keys are just the out of the box bindings.
+
 Some keys behave differently depending on the map mode. Where a key has a mode dependent meaning, the mode is called out. On topdown and 3d maps, movement, sonar, spier, and camera arrow keys are body relative, meaning the same key always moves in the same direction relative to your character regardless of which way you've rotated.
 
 Movement.
@@ -86,6 +103,19 @@ Jump height.
 F1. Decrease maximum jump height. Disabled on topdown.
 F2. Increase maximum jump height. Disabled on topdown.
 F3. Reset jump height to default. Disabled on topdown.
+
+Arcade arena.
+
+These keys work only inside the arcade arena, where they take over from their normal meanings. While you're in an arena the command console, macros, the grappling hook, the sonar, and the jump height keys are all disabled.
+
+Comma. Speak the arena's maximum x reach in tiles.
+Period. Speak the arena's maximum y reach in tiles.
+Slash. Speak the arena's maximum z reach in tiles (3d arenas only; otherwise it reports there's no z axis).
+F1. Shrink the arena's maximum x by five tiles.
+F2. Grow the arena's maximum x by five tiles.
+F3. Reset the arena's maximum x to fifty tiles.
+F4, F5, F6. The same three actions for the y axis.
+F7, F8, F9. The same three actions for the z axis (3d arenas only).
 
 Hooking.
 
@@ -165,6 +195,7 @@ Tab. Cycle forward through inventory items.
 Shift plus tab. Cycle backward.
 Shift plus enter. Use the currently focused inventory item.
 Alt plus letter I. Open the inventory menu.
+Shift plus left bracket. Drop the inventory item currently in focus.
 
 Healing and shields.
 
@@ -181,7 +212,6 @@ Letter, M. Speak your shield strength.
 Letter, N. Speak the direction and distance to the object you're tracking. Tracking is started from the object viewer.
 Shift plus letter N. Stop tracking the current object.
 Left bracket. Speak your total kills.
-Shift plus left bracket. Drop the inventory item currently in focus.
 Letter, Z. Toggle zone announcements on or off.
 Alt plus letter Q. Speak the text zone you're currently standing in.
 
@@ -366,7 +396,7 @@ loop.ogg: Played in a loop while the item is active.
 
 Map objects (sounds/decompiled/builder/<group>/<entity>/<name>/).
 
-The builder folder holds clips for every entity type that can be placed on a map. Each entity type lives in a group folder by purpose (construction, interaction, transitions, transportation, traps, zones, audio, misc), and inside it the per-instance clips are organized by name. Below is the typical clip set for each entity type, each shown with its folder beneath sounds/decompiled/ — an entry written as builder/... is found at sounds/decompiled/builder/.... As with the rest of the pack the lookup is glob based, so adding extra clips with the same base name is fine.
+The builder folder holds clips for every entity type that can be placed on a map. Each entity type lives in a group folder by purpose (audio, construction, interaction, kombat, transitions, transportation, traps, zones), and inside it the per-instance clips are organized by name. Below is the typical clip set for each entity type, each shown with its folder beneath sounds/decompiled/ — an entry written as builder/... is found at sounds/decompiled/builder/.... As with the rest of the pack the lookup is glob based, so adding extra clips with the same base name is fine.
 
 aircrafts (builder/transportation/aircrafts/): alarm, appear, beacon, change, crash, death, enter, flight, gear, hurt, land, loop, pass, start, turn.
 belts (builder/construction/belts/): loop.
@@ -376,8 +406,8 @@ calendars (builder/interaction/calendars/): break, loop, press.
 cameras (builder/traps/security cameras/): alarm, alert, death, hurt, turn.
 checkpoints (builder/construction/checkpoints/): get, loop.
 clocks (builder/interaction/clocks/): break, loop, press.
-doors (builder/transitions/doors/): per-door close, dest, lock clips named by the door variant.
-elevators (builder/transitions/elevators/): per-elevator beep, close, loop clips.
+doors (builder/transitions/doors/): one bundle folder per door sound holding close, death, deny, grant, hurt, jam, loop, move, open, and step clips. Passages draw their clips from these same door bundles.
+elevators (builder/transitions/elevators/): per-elevator beep, close, loop, move, open clips.
 fires (builder/traps/fires/): hit, loop.
 floor breakers (builder/traps/floor breakers/): remove, spawn.
 force fields (builder/traps/force fields/): hit, off, on.
@@ -395,6 +425,7 @@ story zones (builder/zones/story zones/): close, copy, open, scroll.
 switches (builder/interaction/switches/): loop, press.
 teleporters (builder/transitions/teleporters/): loop, move.
 time bombs (builder/traps/time bombs/): land, tick.
+trampolines (builder/transitions/trampolines/): land, rise, spawn.
 vanishing platforms (builder/construction/vanishing platforms/): loop.
 vehicles (builder/transportation/vehicles/): beacon, death, hit, horn, hurt, motor, turn.
 walls (builder/construction/walls/): bump, death, hurt.

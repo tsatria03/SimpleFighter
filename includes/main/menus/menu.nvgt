@@ -1,4 +1,4 @@
-bool hidegames=false, hidemaps=false;   // main-menu items hidden via the preferences show/hide screen
+bool hidedocks=false, hidegames=false, hidemaps=false, hidemisc=false;   // main-menu items hidden via the preferences show/hide screen
 void mainmenu_callback(form_menu@ menu, string data)
 {
 if(is_recording && controls.action_pressed("recording_menu")) speak("Recording is still running. Open a map to manage it.");
@@ -7,10 +7,10 @@ void mainmenu()
 {
 setupmenu(true);
 @m.background_callback=@mainmenu_callback;
-m.add_item("documentation menu", "help");
+if(hidedocks==false) m.add_item("documentation menu", "help");
 if(hidegames==false) m.add_item("game menu", "game");
 if(hidemaps==false) m.add_item("map menu", "map");
-m.add_item("miscellaneous menu", "misc");
+if(hidemisc==false) m.add_item("miscellaneous menu", "misc");
 m.add_item("preferences menu", "settings");
 m.add_item("Change game version. Currently set to "+version, "cgv");
 m.add_item("check for updates", "chup");
@@ -818,13 +818,20 @@ void hidemenu()
 while(true)
 {
 setupmenu();
+m.add_item("Documentation menu. Status, "+(hidedocks ? "hidden" : "unhidden"), "docks");
 m.add_item("Game menu. Status, "+(hidegames ? "hidden" : "unhidden"), "games");
 m.add_item("Map menu. Status, "+(hidemaps ? "hidden" : "unhidden"), "maps");
+m.add_item("Miscellaneous menu. Status, "+(hidemisc ? "hidden" : "unhidden"), "misc");
 m.add_item("back", "back");
 m.intro_text="Choose the main menu items you'd like to show or hide.";
 int mres=m.run();
 string sel=mres<0?"":m.selected_item_id;
 if(mres<0 or sel=="back") return;
+if(sel=="docks")
+{
+hidedocks=!hidedocks;
+dlg("Documentation menu "+(hidedocks ? "hidden" : "unhidden")+". Press enter to continue.");
+}
 if(sel=="games")
 {
 hidegames=!hidegames;
@@ -834,6 +841,11 @@ if(sel=="maps")
 {
 hidemaps=!hidemaps;
 dlg("Map menu "+(hidemaps ? "hidden" : "unhidden")+". Press enter to continue.");
+}
+if(sel=="misc")
+{
+hidemisc=!hidemisc;
+dlg("Miscellaneous menu "+(hidemisc ? "hidden" : "unhidden")+". Press enter to continue.");
 }
 }
 }
