@@ -1,3 +1,4 @@
+bool hidegames=false, hidemaps=false;   // main-menu items hidden via the preferences show/hide screen
 void mainmenu_callback(form_menu@ menu, string data)
 {
 if(is_recording && controls.action_pressed("recording_menu")) speak("Recording is still running. Open a map to manage it.");
@@ -7,8 +8,8 @@ void mainmenu()
 setupmenu(true);
 @m.background_callback=@mainmenu_callback;
 m.add_item("documentation menu", "help");
-m.add_item("game menu", "game");
-m.add_item("map menu", "map");
+if(hidegames==false) m.add_item("game menu", "game");
+if(hidemaps==false) m.add_item("map menu", "map");
 m.add_item("miscellaneous menu", "misc");
 m.add_item("preferences menu", "settings");
 m.add_item("Change game version. Currently set to "+version, "cgv");
@@ -810,6 +811,32 @@ if (exit_now) return;
 }
 }
 
+// show or hide main menu items (game and map menus only). Reached from the
+// general tab of the preferences screen; persists with save settings.
+void hidemenu()
+{
+while(true)
+{
+setupmenu();
+m.add_item("Game menu. Status, "+(hidegames ? "hidden" : "unhidden"), "games");
+m.add_item("Map menu. Status, "+(hidemaps ? "hidden" : "unhidden"), "maps");
+m.add_item("back", "back");
+m.intro_text="Choose the main menu items you'd like to show or hide.";
+int mres=m.run();
+string sel=mres<0?"":m.selected_item_id;
+if(mres<0 or sel=="back") return;
+if(sel=="games")
+{
+hidegames=!hidegames;
+dlg("Game menu "+(hidegames ? "hidden" : "unhidden")+". Press enter to continue.");
+}
+if(sel=="maps")
+{
+hidemaps=!hidemaps;
+dlg("Map menu "+(hidemaps ? "hidden" : "unhidden")+". Press enter to continue.");
+}
+}
+}
 void settingsmenu(bool ingame=false)
 {
 form.reset();
@@ -827,7 +854,7 @@ int tab_keyboard = ingame ? -1 : 2;
 int tab_menu = ingame ? 1 : 3;
 int tab_sound = ingame ? -1 : 4;
 int tab_speech = ingame ? 2 : 5;
-int slt=-1, slk=-1, sln=-1, sdm=-1, defmap=-1;
+int slt=-1, slk=-1, sln=-1, sdm=-1, defmap=-1, hid=-1;
 if (!ingame)
 {
 if (chartype == "")
@@ -847,6 +874,8 @@ sln = form.create_button("Select &menu theme. Currently set to " + menutype);
 form.assign_to_tab(sln, tabs, tab_general);
 defmap = form.create_button("Set default &owner for new maps. Currently set to " + defowner);
 form.assign_to_tab(defmap, tabs, tab_general);
+hid = form.create_button("Sho&w or hide main menu items");
+form.assign_to_tab(hid, tabs, tab_general);
 }
 int autup = form.create_checkbox("Enable checking for game updates at startup", auto_check_updates);
 form.assign_to_tab(autup, tabs, tab_game);
@@ -944,6 +973,13 @@ defowner = mowner;
 dlg("Map owner set. Press enter to continue.");
 form.reset();
 settingsmenu();
+}
+if (!ingame && form.is_pressed(hid))
+{
+hidemenu();
+form.reset();
+settingsmenu();
+return;
 }
 if (!ingame && form.is_pressed(slt))
 {
