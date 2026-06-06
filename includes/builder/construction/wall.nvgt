@@ -29,14 +29,15 @@ pitch=semitone;
 destplat=dp;
 destroyable=dtb;
 transparent=trp;
+bool blk = (wall != "air");   // an air wall carves a walk-through gap instead of blocking
 if(mapmode == "3d")
 {
 for(double z = minz; z <= maxz; z++)
-platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, z, true));
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, z, blk));
 }
 else
 {
-platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, 0, true));
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, 0, blk));
 }
 }
 }
@@ -222,6 +223,7 @@ dlg("Error. There are no walls available to view. Press enter to continue.");
 resume_pools();
 return;
 }
+walls_list.insert_at(0, "wall");   // the generic type; "air" is added as the list's first item below
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("wall", false);
@@ -247,7 +249,7 @@ if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This chara
 if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
 int wall_list = form.create_list("wall sound");
-form.add_list_item(wall_list, "wall", "wall");
+form.add_list_item(wall_list, "air", "air");
 for(uint i = 0; i < walls_list.length(); i++)
 form.add_list_item(wall_list, walls_list[i], walls_list[i]);
 form.set_list_position(wall_list, 0, false);
@@ -397,7 +399,7 @@ double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
 double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
 double bhp = string_to_number(form.get_text(hp));
 int p = form.get_list_position(wall_list);
-string btype = (p > 0) ? walls_list[p-1] : "wall";
+string btype = (p > 0) ? walls_list[p-1] : "air";
 double bvol = form.get_slider(wall_vol);
 double bpit = form.get_slider(wall_pit);
 bool bdest = form.is_checked(dest_cb);
