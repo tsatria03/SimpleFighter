@@ -273,6 +273,16 @@ refchance = 80;
 refcushion = false;
 life_drain = 0;
 }
+// arena mode: re-apply this run's bought upgrades on top of the file values, so
+// switching weapons keeps every purchase (builder mode persists them in the file).
+if(arena_active && is_player_weapon)
+{
+string wkey = cad + "/" + sub;
+max_ammo += arena_upgrade_get(arena_wep_upgrades, wkey+"_maxammo");
+range += int(arena_upgrade_get(arena_wep_upgrades, wkey+"_x"));
+range2 += int(arena_upgrade_get(arena_wep_upgrades, wkey+"_y"));
+range3 += int(arena_upgrade_get(arena_wep_upgrades, wkey+"_z"));
+}
 }
 
 void play_draw(int x, int y, int z=0)
@@ -1487,6 +1497,7 @@ melee_strike(fx, fy, fz, pending_dmg, firer_npc, facing);
 
 void update_max_ammo(double new_max)
 {
+if(arena_active) return;   // arena purchases never touch the weapon files
 string path = "sounds/decompiled/main/equipments/weapons/" + cad + "/" + sub + "/data/info.sif";
 if(!info.open(path, "r")) { speak("Failed to open file for reading."); return; }
 string content = info.read();
@@ -1507,6 +1518,7 @@ else speak("Failed to write updated max ammo to file.");
 
 void update_range_axis(string axis, int new_range)
 {
+if(arena_active) return;   // arena purchases never touch the weapon files
 string key = axis + " range";
 string path = "sounds/decompiled/main/equipments/weapons/" + cad + "/" + sub + "/data/info.sif";
 if(!info.open(path, "r")) { speak("Failed to open file for reading."); return; }

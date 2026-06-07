@@ -9,6 +9,30 @@ double arena_step=5;       // F-key max-bound expansion step, in tiles
 double arena_min_max=25;   // smallest a max edge can be shrunk to via the F-keys
 double arena_max_size=1000; // largest a max edge can be grown to via the F-keys
 double arena_default_max=50; // the starting max edge each axis resets to
+
+// arena-only upgrade ledger: shop purchases made in the arena live here (and in the
+// save slot) instead of being written into the weapon/shield files like builder mode.
+// keys: "<weapon category>/<weapon name>_<field>" and "<shield name>_<field>".
+dictionary arena_wep_upgrades;
+dictionary arena_shield_upgrades;
+
+void arena_upgrade_add(dictionary@ d, string key, double v)
+{
+double cur=0;
+d.get(key, cur);
+d.set(key, cur+v);
+}
+double arena_upgrade_get(dictionary@ d, string key)
+{
+double cur=0;
+d.get(key, cur);
+return cur;
+}
+void arena_clear_upgrades()
+{
+arena_wep_upgrades.delete_all();
+arena_shield_upgrades.delete_all();
+}
 int arena_max_cap=50;      // hard ceiling on live enemies, regardless of level
 
 class arena_state
@@ -98,11 +122,13 @@ arena_spawn_zone();
 arena_spawn_safe();
 // optional music + ambient source, spawned as two independent soundsources so you
 // can have both ("none" = skip). path = builder/audio/<category>/<clip>/*loop*
-double sy2=(mode=="2d") ? arena.miny : arena.maxy;
+// the height axis (y on 2d, z on 3d) gets a 0-5 band so jumping stays inside the sound.
+double sy2=(mode=="2d") ? arena.miny+5 : arena.maxy;
+double szmax=(mode=="3d") ? arena.minz+5 : arena.maxz;
 if(music_clip!="none" and music_clip!="")
-spawn_soundsource(arena.minx, arena.maxx, arena.miny, sy2, "musics", music_clip, music_vol, 100, arena.minz, arena.maxz);
+spawn_soundsource(arena.minx, arena.maxx, arena.miny, sy2, "musics", music_clip, music_vol, 100, arena.minz, szmax);
 if(source_clip!="none" and source_clip!="")
-spawn_soundsource(arena.minx, arena.maxx, arena.miny, sy2, "sources", source_clip, source_vol, 100, arena.minz, arena.maxz);
+spawn_soundsource(arena.minx, arena.maxx, arena.miny, sy2, "sources", source_clip, source_vol, 100, arena.minz, szmax);
 me.x=0; me.y=0; me.z=0;
 arena_active=true;
 }

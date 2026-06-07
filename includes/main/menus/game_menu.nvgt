@@ -1,53 +1,3 @@
-void gamemenu()
-{
-setupmenu(true);
-m.add_item("new game", "ng");
-m.add_item("back", "back");
-m.intro_text="Game menu";
-int mres=m.run();
-string sel=mres<0?"":m.selected_item_id;
-if(mres<0 or sel=="back") { mainmenu(); return; }
-if(sel=="ng") { m.fade_music(); arena_new_game(); }
-}
-
-// pick the game mode: normal (random enemy) or custom (one specific creature).
-void arena_new_game()
-{
-setupmenu();
-m.add_item("normal", "normal");
-m.add_item("custom", "custom");
-m.add_item("back", "back");
-m.intro_text="Choose a mode. Normal fights a random enemy of the type you pick. Custom fights one specific enemy you choose.";
-int mres=m.run();
-string mode=mres<0?"":m.selected_item_id;
-if(mres<0 or mode=="back") { gamemenu(); return; }
-arena_target_menu(mode);
-}
-
-// pick the enemy category; in custom mode, then pick a specific creature.
-void arena_target_menu(string mode)
-{
-setupmenu();
-m.add_item("animals", "animals");
-m.add_item("humans", "humans");
-m.add_item("robots", "robots");
-m.add_item("zombies", "zombies");
-m.add_item("back", "back");
-m.intro_text="Choose what you want to fight.";
-int tres=m.run();
-string target=tres<0?"":m.selected_item_id;
-if(tres<0 or target=="back") { arena_new_game(); return; }
-string subtype="random";
-if(mode=="custom")
-{
-subtype=arena_creature_menu(target);
-if(subtype=="") { arena_target_menu(mode); return; }   // backed out of the creature list
-}
-arena_setup_form(target, subtype);
-gamemenu();
-}
-
-// custom mode: choose one specific creature from the chosen category. "" = back.
 string arena_creature_menu(string category)
 {
 string[] found=find_directories("sounds/decompiled/builder/kombat/npc/"+category+"/*");
@@ -73,9 +23,189 @@ if(cres<0 or sel=="back") return "";
 return sel;
 }
 
-// the setup screen: map mode, an optional ambient sound, an optional music track
-// (each with its own volume), and the floor tile. spacebar previews the focused
-// ambience/music (looping toggle, volume tracks live) or tile (one-shot step).
+void gamemenu()
+{
+setupmenu(true);
+m.add_item("load game", "lg");
+m.add_item("new game", "ng");
+m.add_item("back", "back");
+m.intro_text="Game menu";
+int mres=m.run();
+string sel=mres<0?"":m.selected_item_id;
+if(mres<0 or sel=="back") { mainmenu(); return; }
+if(sel=="lg") { loadgamemenu(); }
+if(sel=="ng") { newgamemenu(); }
+}
+void loadgamemenu()
+{
+setupmenu(true);
+for (uint i = 1; i <= 20; i++)
+{
+string saveFile = savesPath + "game" + i + ".spf";
+        double kills = get_save_kills(saveFile);
+        if (kills == -1)
+        {
+            m.add_item("Slot " + i + ". Empty.", "sl" + i);
+        }
+        else
+        {
+            m.add_item("Slot " + i + ". Total kills: " + int(kills), "sl" + i);
+        }
+    }
+m.add_item("Back", "back");
+m.intro_text = "Select the save slot to load the game from.";
+int mres = m.run();
+string slotem = mres<0?"":m.selected_item_id;
+if (mres<0 or slotem == "back")
+{
+gamemenu();
+return;
+}
+int slotNumber = string_to_int(slotem.substr(2));
+set_save_slot(slotNumber);
+if (file_exists(currentSaveSlot))
+{
+speak("Loading slot " + slotNumber);
+m.fade_music();
+charparse();   // fresh character base first (full health and stamina)...
+readdata();    // ...then overlay the saved progression on top of it
+if(sd.d.exists("arenamode"))
+{
+// rebuild the saved arena and drop straight back into the fight.
+spawn_arena(arena.mode, arena.platform_tile, arena.category, arena.subtype, arena.music_clip, arena.music_vol, arena.source_clip, arena.source_vol);
+// restore the saved field size (spawn_arena resets the bounds to their defaults).
+if(sd.d.exists("arenamaxx"))
+{
+arena.maxx=sd.read_double("arenamaxx");
+arena.maxy=sd.read_double("arenamaxy");
+arena.maxz=sd.read_double("arenamaxz");
+resize_arena();
+}
+// put the player back where they were (spawn_arena drops them at the origin).
+if(sd.d.exists("playerx"))
+{
+me.x=sd.read_double("playerx");
+me.y=sd.read_double("playery");
+me.z=sd.read_double("playerz");
+}
+// re-parse the saved weapon and shield now that the arena is live, so the run's
+// bought upgrades from the save land on the equipment in hand.
+wepchar.parse(wepchar.cad, wepchar.sub);
+shieldparse();
+// restore the worn shield state, with its sounds. Hold-mode shields (wear mode 1)
+// stay lowered, since they're only worn while the key is physically held.
+p.destroy_sound(shieldloop);
+shieldon=0;
+if(sd.d.exists("shieldon") and sd.read_int("shieldon")==1 and drawnshield and shieldtype!="none" and shieldmode==0)
+{
+p.destroy_sound(shieldwearslot);
+shieldwearslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/" + shieldtype + "/general/*wear*"), false, 0, 0, 0, 100, false);
+shieldloop = p.play_stationary_extended(get_pack_sound("main/equipments/shields/" + shieldtype + "/general/*loop*"), true, 0, 0, 0, 100, false);
+shieldon = 1;
+}
+game();
+clearmap();
+gamemenu();
+}
+else
+{
+// the slot has no arena setup stored; set the game up fresh instead.
+modemenu();
+}
+}
+else
+{
+m.fade_music();
+dlg("Error! The data assosiated with this save slot does not exist!", dlgsound:false);
+gamemenu();
+}
+}
+void newgamemenu()
+{
+setupmenu(true);
+for (uint i = 1; i <= 20; i++)
+{
+string saveFile = savesPath + "game" + i + ".spf";
+        double kills = get_save_kills(saveFile);
+        if (kills == -1)
+        {
+            m.add_item("Slot " + i + ". Empty.", "sl" + i);
+        }
+        else
+        {
+            m.add_item("Slot " + i + ". Total kills: " + int(kills), "sl" + i);
+        }
+    }
+m.add_item("Back", "back");
+m.intro_text = "Select the save slot to start the game from.";
+int mres = m.run();
+string slotem2 = mres<0?"":m.selected_item_id;
+if (mres<0 or slotem2 == "back")
+{
+gamemenu();
+return;
+}
+int slotNumber = string_to_int(slotem2.substr(2));
+set_save_slot(slotNumber);
+if (file_exists(currentSaveSlot))
+{
+setupmenu(true);
+m.add_item("yes", "yes");
+m.add_item("no", "no");
+m.intro_text = "Are you sure you want to start over from the beginning? This will erase all progress on the selected save slot.";
+int mres2=m.run();
+string ans = mres2<0?"":m.selected_item_id;
+if (ans != "yes")
+{
+newgamemenu();
+return;
+}
+speak("Loading slot " + slotNumber);
+m.fade_music();
+modemenu();
+}
+else
+{
+speak("Loading slot " + slotNumber);
+m.fade_music();
+modemenu();
+}
+}
+
+void modemenu()
+{
+setupmenu();
+m.add_item("normal", "normal");
+m.add_item("custom", "custom");
+m.add_item("back", "back");
+m.intro_text="Choose a mode. Normal fights a random enemy of the type you pick. Custom fights one specific enemy you choose.";
+int mres=m.run();
+string mode=mres<0?"":m.selected_item_id;
+if(mres<0 or mode=="back") { gamemenu(); return; }
+arena_target_menu(mode);
+}
+
+void arena_target_menu(string mode)
+{
+setupmenu();
+m.add_item("animals", "animals");
+m.add_item("humans", "humans");
+m.add_item("robots", "robots");
+m.add_item("zombies", "zombies");
+m.add_item("back", "back");
+m.intro_text="Choose what you want to fight.";
+int tres=m.run();
+string target=tres<0?"":m.selected_item_id;
+if(tres<0 or target=="back") { modemenu(); return; }
+string subtype="random";
+if(mode=="custom")
+{
+subtype=arena_creature_menu(target);
+if(subtype=="") { arena_target_menu(mode); return; }   // backed out of the creature list
+}
+arena_setup_form(target, subtype);
+gamemenu();
+}
 void arena_setup_form(string category, string subtype)
 {
 string[] plats=get_map_sound_folders("builder/construction/platforms/*");
@@ -107,6 +237,7 @@ int cn=form.create_button("&cancel");
 form.focus(mode_list);
 bool preview_playing=false;
 int preview_group=0;   // 0 none, 1 ambience, 2 music
+int last_amb_pos=0, last_music_pos=0;
 while(true)
 {
 wait(5);
@@ -159,6 +290,31 @@ preview_playing=true; preview_group=2;
 }
 keytimer.restart();
 }
+// while a preview is looping, arrowing through its list switches the preview to the new sound
+int cur_amb_pos=form.get_list_position(amb_list);
+if(preview_playing and preview_group==1 and cur_amb_pos!=last_amb_pos)
+{
+t.destroy_sound(prevslot); prevslot=-1;
+if(cur_amb_pos>0)
+{
+string sub=form.get_list_item_id(amb_list, cur_amb_pos);
+prevslot=t.play_stationary_extended(get_map_sound("builder/audio/sources/"+sub+"/*loop*"), true, 0, 0, form.get_slider(amb_vol_s), 100, false);
+}
+else { preview_playing=false; preview_group=0; }
+}
+last_amb_pos=cur_amb_pos;
+int cur_music_pos=form.get_list_position(music_list);
+if(preview_playing and preview_group==2 and cur_music_pos!=last_music_pos)
+{
+t.destroy_sound(prevslot); prevslot=-1;
+if(cur_music_pos>0)
+{
+string sub=form.get_list_item_id(music_list, cur_music_pos);
+prevslot=t.play_stationary_extended(get_map_sound("builder/audio/musics/"+sub+"/*loop*"), true, 0, 0, form.get_slider(music_vol_s), 100, false);
+}
+else { preview_playing=false; preview_group=0; }
+}
+last_music_pos=cur_music_pos;
 // keep the live preview in sync with its volume slider
 if(preview_playing and prevslot!=-1)
 {
@@ -178,8 +334,8 @@ string music=form.get_list_item_id(music_list, form.get_list_position(music_list
 double music_vol=form.get_slider(music_vol_s);
 string platform=form.get_list_item_id(plat_list, form.get_list_position(plat_list));
 t.destroy_sound(prevslot);
-m.fade_music();
 spawn_arena(mode, platform, category, subtype, music, music_vol, ambience, amb_vol);
+resetgame();
 game();
 clearmap();
 return;

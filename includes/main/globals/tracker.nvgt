@@ -28,7 +28,7 @@ x = doors[tracking_index].minx; y = doors[tracking_index].miny; z = doors[tracki
 }
 if (tracking_type == "npc")
 {
-if (tracking_index >= int(npcs.length())) return false;
+if (tracking_index >= int(npcs.length()) || @npcs[tracking_index] == null) return false;
 x = npcs[tracking_index].x; y = npcs[tracking_index].y; z = npcs[tracking_index].z; return true;
 }
 if (tracking_type == "tts enemie")
@@ -43,7 +43,7 @@ x = platforms[tracking_index].minx; y = platforms[tracking_index].miny; z = plat
 }
 if (tracking_type == "projectile")
 {
-if (tracking_index >= int(projectiles.length())) return false;
+if (tracking_index >= int(projectiles.length()) || @projectiles[tracking_index] == null) return false;
 x = projectiles[tracking_index].prox; y = projectiles[tracking_index].proy; z = projectiles[tracking_index].proz; return true;
 }
 if (tracking_type == "spike")
@@ -153,6 +153,17 @@ tracking_index = -1;
 tracking_label = "";
 p.play_stationary(get_pack_sound("main/misc/*trackoff*"), false);
 speak("tracking stopped");
+}
+
+// entity death sites call this: if the tracker is pointed at the dying entity,
+// drop it immediately so a reused slot can't silently retarget the tracker.
+void tracking_target_died(string type, int index)
+{
+if (tracking_type != type || tracking_index != index) return;
+tracking_type = "";
+tracking_index = -1;
+tracking_label = "";
+p.play_stationary(get_pack_sound("main/misc/*trackoff*"), false);
 }
 
 void auto_stop_tracking_on_reach()

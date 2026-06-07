@@ -112,6 +112,14 @@ shield_launch_speed=v;
 }
 }
 }
+// arena mode: re-apply this run's bought shield upgrades on top of the file values,
+// so switching shields keeps every purchase (builder mode persists them in the file).
+if(arena_active && shieldtype != "none")
+{
+maxshieldstrength += arena_upgrade_get(arena_shield_upgrades, shieldtype+"_strength");
+shieldstrength = maxshieldstrength;
+shielddefence += arena_upgrade_get(arena_shield_upgrades, shieldtype+"_defence");
+}
 }
 
 bool shield_blocks()
@@ -187,6 +195,7 @@ spawn_bomb(bx, by, dmg, spd, shield_launch_subtype, bz);
 
 void update_shield_max_strength(double new_max_strength)
 {
+if(arena_active) return;   // arena purchases never touch the shield files
 if (info.open("sounds/decompiled/main/equipments/shields/"+shieldtype+"/data/info.sif", "r")) {
 string content = info.read();
 info.close();
@@ -229,6 +238,7 @@ speak("Failed to open file for reading.");
 }
 void update_shield_defence(double new_shield_defence)
 {
+if(arena_active) return;   // arena purchases never touch the shield files
 if (info.open("sounds/decompiled/main/equipments/shields/"+shieldtype+"/data/info.sif", "r")) {
 string content = info.read();
 info.close();

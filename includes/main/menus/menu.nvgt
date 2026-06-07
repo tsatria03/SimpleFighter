@@ -549,7 +549,8 @@ return;
 void shopmenu()
 {
 if(glider_engine_on) glider_engine_stop();
-if(sound_main_pack_loaded && !directory_exists("sounds/decompiled/main"))
+// arena purchases are memory-only, so the writable-files requirement is builder-only.
+if(!arena_active && sound_main_pack_loaded && !directory_exists("sounds/decompiled/main"))
 {
 speak("You cannot upgrade your stats on this compiled sound pack.");
 return;
@@ -639,18 +640,19 @@ else if(ptmem=="umd") { double v=buy_stat("Defence","How much defence would you 
 else if(ptmem=="umh") { double v=buy_stat("Health","How much health would you like to buy?","health points"); if(v>0) { maxhealth+=v; update_char_maxhealth(maxhealth); } }
 else if(ptmem=="umt") { double v=buy_stat("Stamina","How much stamina would you like to buy?","stamina points"); if(v>0) { maxstamina+=v; update_char_maxstamina(maxstamina); } }
 else if(ptmem=="umlf") { double v=buy_stat("Lives","How many lives would you like to buy?","life points"); if(v>0) { lifecard+=v; update_char_lives(lifecard); } }
-else if(ptmem=="umst") { double v=buy_stat("Shield strength","How much shield strength would you like to buy?","endurance points"); if(v>0) { maxshieldstrength+=v; update_shield_max_strength(maxshieldstrength); } }
-else if(ptmem=="umsd") { double v=buy_stat("Shield defence","How much shield defence would you like to buy?","endurance points"); if(v>0) { shielddefence+=v; update_shield_defence(shielddefence); } }
-else if(ptmem=="umma") { double v=buy_stat("Max ammo","How much max ammo would you like to buy?","max ammo points"); if(v>0) { wepchar.max_ammo+=v; wepchar.update_max_ammo(wepchar.max_ammo); } }
-else if(ptmem=="umra1") { double v=buy_stat("X weapon range","How much x weapon range would you like to buy?","range points"); if(v>0) { wepchar.range+=v; wepchar.update_x_range(wepchar.range); } }
-else if(ptmem=="umra2") { double v=buy_stat("Y weapon range","How much y weapon range would you like to buy?","range points"); if(v>0) { wepchar.range2+=v; wepchar.update_y_range(wepchar.range2); } }
-else if(ptmem=="umra3") { double v=buy_stat("Z weapon range","How much z weapon range would you like to buy?","range points"); if(v>0) { wepchar.range3+=v; wepchar.update_z_range(wepchar.range3); } }
+else if(ptmem=="umst") { double v=buy_stat("Shield strength","How much shield strength would you like to buy?","endurance points"); if(v>0) { maxshieldstrength+=v; update_shield_max_strength(maxshieldstrength); if(arena_active) arena_upgrade_add(arena_shield_upgrades, shieldtype+"_strength", v); } }
+else if(ptmem=="umsd") { double v=buy_stat("Shield defence","How much shield defence would you like to buy?","endurance points"); if(v>0) { shielddefence+=v; update_shield_defence(shielddefence); if(arena_active) arena_upgrade_add(arena_shield_upgrades, shieldtype+"_defence", v); } }
+else if(ptmem=="umma") { double v=buy_stat("Max ammo","How much max ammo would you like to buy?","max ammo points"); if(v>0) { wepchar.max_ammo+=v; wepchar.update_max_ammo(wepchar.max_ammo); if(arena_active) arena_upgrade_add(arena_wep_upgrades, wepchar.cad+"/"+wepchar.sub+"_maxammo", v); } }
+else if(ptmem=="umra1") { double v=buy_stat("X weapon range","How much x weapon range would you like to buy?","range points"); if(v>0) { wepchar.range+=v; wepchar.update_x_range(wepchar.range); if(arena_active) arena_upgrade_add(arena_wep_upgrades, wepchar.cad+"/"+wepchar.sub+"_x", v); } }
+else if(ptmem=="umra2") { double v=buy_stat("Y weapon range","How much y weapon range would you like to buy?","range points"); if(v>0) { wepchar.range2+=v; wepchar.update_y_range(wepchar.range2); if(arena_active) arena_upgrade_add(arena_wep_upgrades, wepchar.cad+"/"+wepchar.sub+"_y", v); } }
+else if(ptmem=="umra3") { double v=buy_stat("Z weapon range","How much z weapon range would you like to buy?","range points"); if(v>0) { wepchar.range3+=v; wepchar.update_z_range(wepchar.range3); if(arena_active) arena_upgrade_add(arena_wep_upgrades, wepchar.cad+"/"+wepchar.sub+"_z", v); } }
 }
 }
 void pausemenu()
 {
 setupmenu();
 m.add_item("resume game", "rmg");
+if(arena_active) m.add_item("save game", "svg");
 m.add_item("view statistics", "vs");
 m.intro_text="Pause menu. ";
 int mres=m.run();
@@ -663,6 +665,14 @@ return;
 }
 if(psmem=="rmg")
 {
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*resume*"),false);
+resume_game();
+return;
+}
+if(psmem=="svg")
+{
+writedata();
+speak("Game saved.");
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*resume*"),false);
 resume_game();
 return;

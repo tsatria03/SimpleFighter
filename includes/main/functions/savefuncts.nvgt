@@ -1,10 +1,126 @@
+double get_save_kills(string saveFile)
+{
+    if (!file_exists(saveFile))
+    {
+        return -1;
+    }
+    savedata tempSave(saveFile, savekey);
+    tempSave.load();
+    if (tempSave.d.exists("kills"))
+    {
+        return tempSave.read_double("kills");
+    }
+    return 0;
+}
+
 void readdata()
 {
-//fill in stuff here to read game variables.
+sd.load();
+if(sd.d.exists("kills"))
+{
+kills=sd.read_double("kills");
+}
+if(sd.d.exists("level")) level=sd.read_double("level");
+if(sd.d.exists("xp")) xp=sd.read_double("xp");
+if(sd.d.exists("xprequiered")) xprequiered=sd.read_double("xprequiered");
+if(sd.d.exists("points")) points=sd.read_double("points");
+if(sd.d.exists("lifecard")) lifecard=sd.read_double("lifecard");
+// stats bought in the arena shop (memory-only there, so the slot carries them).
+if(sd.d.exists("attack")) attack=sd.read_double("attack");
+if(sd.d.exists("defence")) defence=sd.read_double("defence");
+if(sd.d.exists("maxhealth")) { maxhealth=sd.read_double("maxhealth"); health=maxhealth; }
+if(sd.d.exists("maxstamina")) { maxstamina=sd.read_double("maxstamina"); stamina=maxstamina; }
+if(sd.d.exists("damagemelee")) damage_melee=sd.read_double("damagemelee");
+string[] save_ammo_types = {"normal","gas","air","battery","powder","arrow","rocket","water","knife","needle","dart","ball","mana","fuel","rock","grenade"};
+for(uint i=0; i<save_ammo_types.length(); i++)
+{
+if(sd.d.exists("damage_"+save_ammo_types[i])) damage_by_type[save_ammo_types[i]]=sd.read_double("damage_"+save_ammo_types[i]);
+if(sd.d.exists("reserve_"+save_ammo_types[i])) ammo_reserves[save_ammo_types[i]]=sd.read_double("reserve_"+save_ammo_types[i]);
+if(sd.d.exists("bought_"+save_ammo_types[i])) ammo_types_bought[save_ammo_types[i]]=sd.read_bool("bought_"+save_ammo_types[i]);
+}
+// the equipment in hand when the game was saved.
+if(sd.d.exists("weaponcad")) wepchar.cad=sd.read_string("weaponcad");
+if(sd.d.exists("weaponsub")) wepchar.sub=sd.read_string("weaponsub");
+if(sd.d.exists("shieldtype")) shieldtype=sd.read_string("shieldtype");
+if(sd.d.exists("drawnshield")) drawnshield=sd.read_bool("drawnshield");
+// per-weapon and per-shield upgrade ledger bought in the arena shop.
+arena_clear_upgrades();
+string[]@ savedkeys = sd.d.get_keys();
+for(uint i=0; i<savedkeys.length(); i++)
+{
+if(savedkeys[i].starts_with("wepup_")) arena_wep_upgrades.set(savedkeys[i].substr(6), sd.read_double(savedkeys[i]));
+else if(savedkeys[i].starts_with("shup_")) arena_shield_upgrades.set(savedkeys[i].substr(5), sd.read_double(savedkeys[i]));
+}
+// the arena setup the run was played with, so load game can rebuild it.
+if(sd.d.exists("arenamode")) arena.mode=sd.read_string("arenamode");
+if(sd.d.exists("arenatile")) arena.platform_tile=sd.read_string("arenatile");
+if(sd.d.exists("arenacategory")) arena.category=sd.read_string("arenacategory");
+if(sd.d.exists("arenasubtype")) arena.subtype=sd.read_string("arenasubtype");
+if(sd.d.exists("arenamusic")) arena.music_clip=sd.read_string("arenamusic");
+if(sd.d.exists("arenamusicvol")) arena.music_vol=sd.read_double("arenamusicvol");
+if(sd.d.exists("arenaambience")) arena.source_clip=sd.read_string("arenaambience");
+if(sd.d.exists("arenaambiencevol")) arena.source_vol=sd.read_double("arenaambiencevol");
 }
 void writedata()
 {
-//fill in stuff here to write game variables.
+if(sd.fn=="") return;   // no save slot chosen yet; nothing to write to
+sd.add("playerx",me.x);
+sd.add("playery",me.y);
+sd.add("playerz",me.z);
+sd.add("kills",kills);
+sd.add("level",level);
+sd.add("xp",xp);
+sd.add("xprequiered",xprequiered);
+sd.add("points",points);
+sd.add("lifecard",lifecard);
+sd.add("attack",attack);
+sd.add("defence",defence);
+sd.add("maxhealth",maxhealth);
+sd.add("maxstamina",maxstamina);
+sd.add("damagemelee",damage_melee);
+sd.add("weaponcad",wepchar.cad);
+sd.add("weaponsub",wepchar.sub);
+sd.add("shieldtype",shieldtype);
+sd.add("drawnshield",drawnshield);
+sd.add("shieldon",shieldon);
+string[] save_ammo_types = {"normal","gas","air","battery","powder","arrow","rocket","water","knife","needle","dart","ball","mana","fuel","rock","grenade"};
+for(uint i=0; i<save_ammo_types.length(); i++)
+{
+double dmg=0, res=0;
+bool bought=false;
+damage_by_type.get(save_ammo_types[i], dmg);
+ammo_reserves.get(save_ammo_types[i], res);
+ammo_types_bought.get(save_ammo_types[i], bought);
+sd.add("damage_"+save_ammo_types[i], dmg);
+sd.add("reserve_"+save_ammo_types[i], res);
+sd.add("bought_"+save_ammo_types[i], bought);
+}
+string[]@ wepkeys = arena_wep_upgrades.get_keys();
+for(uint i=0; i<wepkeys.length(); i++)
+{
+double v=0;
+arena_wep_upgrades.get(wepkeys[i], v);
+sd.add("wepup_"+wepkeys[i], v);
+}
+string[]@ shieldkeys = arena_shield_upgrades.get_keys();
+for(uint i=0; i<shieldkeys.length(); i++)
+{
+double v=0;
+arena_shield_upgrades.get(shieldkeys[i], v);
+sd.add("shup_"+shieldkeys[i], v);
+}
+sd.add("arenamode",arena.mode);
+sd.add("arenatile",arena.platform_tile);
+sd.add("arenacategory",arena.category);
+sd.add("arenasubtype",arena.subtype);
+sd.add("arenamusic",arena.music_clip);
+sd.add("arenamusicvol",arena.music_vol);
+sd.add("arenaambience",arena.source_clip);
+sd.add("arenaambiencevol",arena.source_vol);
+sd.add("arenamaxx",arena.maxx);
+sd.add("arenamaxy",arena.maxy);
+sd.add("arenamaxz",arena.maxz);
+sd.save();
 }
 
 void readpreffs()
@@ -167,7 +283,7 @@ st.save();
 
 void set_save_slot(int slot)
 {
-    currentSaveSlot = DIRECTORY_APPDATA + "tsatria03/SimpleFighter/saves/game" + string(slot) + ".spf";
-    sd = savedata(currentSaveSlot, "");
+    currentSaveSlot = savesPath + "game" + slot + ".spf";
+    sd = savedata(currentSaveSlot, savekey);
 }
 
