@@ -36,42 +36,15 @@ if(mres<0 or sel=="back") { mainmenu(); return; }
 if(sel=="lg") { loadgamemenu(); }
 if(sel=="ng") { newgamemenu(); }
 }
-void loadgamemenu()
+// rebuild a run from the current slot's saved state: character base, saved
+// progression, the arena itself, field size, position, and equipment in hand.
+// Returns false when the slot has no arena setup stored, leaving the caller
+// to fall back to a fresh setup. Used by load game and by death's try again.
+bool arena_restore_run()
 {
-setupmenu(true);
-for (uint i = 1; i <= 20; i++)
-{
-string saveFile = savesPath + "game" + i + ".spf";
-        double kills = get_save_kills(saveFile);
-        if (kills == -1)
-        {
-            m.add_item("Slot " + i + ". Empty.", "sl" + i);
-        }
-        else
-        {
-            m.add_item("Slot " + i + ". Total kills: " + int(kills), "sl" + i);
-        }
-    }
-m.add_item("Back", "back");
-m.intro_text = "Select the save slot to load the game from.";
-int mres = m.run();
-string slotem = mres<0?"":m.selected_item_id;
-if (mres<0 or slotem == "back")
-{
-gamemenu();
-return;
-}
-int slotNumber = string_to_int(slotem.substr(2));
-set_save_slot(slotNumber);
-if (file_exists(currentSaveSlot))
-{
-speak("Loading slot " + slotNumber);
-m.fade_music();
 charparse();   // fresh character base first (full health and stamina)...
 readdata();    // ...then overlay the saved progression on top of it
-if(sd.d.exists("arenamode"))
-{
-// rebuild the saved arena and drop straight back into the fight.
+if(!sd.d.exists("arenamode")) return false;
 spawn_arena(arena.mode, arena.platform_tile, arena.category, arena.subtype, arena.music_clip, arena.music_vol, arena.source_clip, arena.source_vol);
 // restore the saved field size (spawn_arena resets the bounds to their defaults).
 if(sd.d.exists("arenamaxx"))
@@ -103,6 +76,53 @@ shieldwearslot = p.play_stationary_extended(get_pack_sound("main/equipments/shie
 shieldloop = p.play_stationary_extended(get_pack_sound("main/equipments/shields/" + shieldtype + "/general/*loop*"), true, 0, 0, 0, 100, false);
 shieldon = 1;
 }
+return true;
+}
+
+// death's try again in the arena: return to the run's last banked save, or start
+// the run over from scratch when nothing was ever saved. Runs inside the game
+// loop, so it only rebuilds the world; the running loop carries on around it.
+void arena_death_retry()
+{
+if(sd.fn!="" and file_exists(currentSaveSlot) and arena_restore_run()) return;
+// nothing to return to: a fresh factory run with the same arena setup.
+resetgame();
+respawn_arena();
+}
+
+void loadgamemenu()
+{
+setupmenu(true);
+for (uint i = 1; i <= 20; i++)
+{
+string saveFile = savesPath + "game" + i + ".spf";
+        double kills = get_save_kills(saveFile);
+        if (kills == -1)
+        {
+            m.add_item("Slot " + i + ". Empty.", "sl" + i);
+        }
+        else
+        {
+            m.add_item("Slot " + i + ". Total kills: " + int(kills), "sl" + i);
+        }
+    }
+m.add_item("Back", "back");
+m.intro_text = "Select the save slot to load the game from.";
+int mres = m.run();
+string slotem = mres<0?"":m.selected_item_id;
+if (mres<0 or slotem == "back")
+{
+gamemenu();
+return;
+}
+int slotNumber = string_to_int(slotem.substr(2));
+set_save_slot(slotNumber);
+if (file_exists(currentSaveSlot))
+{
+speak("Loading slot " + slotNumber);
+m.fade_music();
+if(arena_restore_run())
+{
 game();
 clearmap();
 gamemenu();
@@ -160,6 +180,10 @@ if (ans != "yes")
 newgamemenu();
 return;
 }
+// make the erase real: otherwise dying before the first save of the new run
+// would reload the previous run's save through death's try again.
+file_delete(currentSaveSlot);
+sd.d.delete_all();
 speak("Loading slot " + slotNumber);
 m.fade_music();
 modemenu();

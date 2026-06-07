@@ -119,8 +119,9 @@ p.destroy_sound(shieldslot);
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*fail*"),false);
 dlgplay(get_pack_sound("main/characters/"+chartype+"/general/*death*"), true, true, 30);
 dlgplay(get_map_sound("builder/construction/platforms/"+gmt(me.x,me.y)+"/*fall*"));
+bool was_arena = arena_active;   // captured before clearmap() ends the arena
 clearmap(true);
-show_death_prompt();
+show_death_prompt(was_arena);
 }
 }
 }
@@ -157,7 +158,7 @@ for (uint i = 0; i < bodypart.length(); i++)
 bone_damage.set(bodypart[i], 10);
 }
 }
-void show_death_prompt()
+void show_death_prompt(bool was_arena = false)
 {
 setupmenu();
 m.add_item("yes");
@@ -170,16 +171,22 @@ broken_bones.delete_all();
 clear_camera_markers(false);
 inv.clear();
 kombatlog.resize(0);
-charparse();
 if(mres==1)
 {
+charparse();
 me.x=0;
 me.y=0;
 me.z=0;
-mainmenu();
+if(was_arena) gamemenu();
+else mapmenu();
 }
 else
 {
+if(was_arena) arena_death_retry();
+else
+{
+charparse();
 if(!mapclear) load_map(mapname, mapowner, force_compiled:map_is_compiled, force_spawned:true);
+}
 }
 }
