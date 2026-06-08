@@ -120,7 +120,7 @@ spawn_platform(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, 1, 1, arena
 }
 
 // build a fresh arena. mode = 2d|topdown|3d; platform_tile "none" for no floor.
-void spawn_arena(string mode, string platform_tile, string category, string subtype, string music_clip="none", double music_vol=0, string source_clip="none", double source_vol=0, int base_cap=1, int spawntime=500)
+void spawn_arena(string mode, string platform_tile, string category, string subtype, string music_clip="none", double music_vol=0, string source_clip="none", double source_vol=0, int base_cap=1, int spawntime=500, string carpet="")
 {
 clearmap();   // tear down whatever map is loaded (e.g. the title/hub map) first
 mapmode=mode;
@@ -142,9 +142,14 @@ arena.minz=0; arena.maxz=(mode=="3d") ? 50 : 0;
 minx=arena.minx; maxx=arena.maxx;
 miny=arena.miny; maxy=arena.maxy;
 minz=arena.minz; maxz=arena.maxz;
-// pick one random carpet for this run; both safe corners wear the same one.
+// pick one random carpet for this run; both safe corners wear the same one. A loaded
+// game passes its saved carpet so the pair comes back exactly as it was left.
+if(carpet!="") arena.carpet_tile=carpet;
+else
+{
 string[] carpets=get_map_sound_folders("builder/construction/platforms/*carpet*");
 arena.carpet_tile=(carpets.length()>0) ? random_string(carpets) : "";
+}
 arena_lay_floor();
 arena_spawn_zone();
 arena_spawn_safe();
