@@ -39,6 +39,7 @@ class arena_state
 {
 double minx, maxx, miny, maxy, minz, maxz;
 string mode, platform_tile, path, category, subtype;
+string carpet_tile;   // the matching carpet laid over both safe corners (picked once per run)
 string music_clip, source_clip;
 double music_vol, source_vol;
 int base_cap, spawntime, zone_index;
@@ -94,6 +95,30 @@ else spawn_safezone(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, type, 
 arena.safe_far_index=int(safezones.length())-1;
 }
 
+// lay a carpet over each safe corner's footprint so the two zones are easy to find by
+// footstep. Spawned AFTER the floor so gmt()'s last-match-wins picks the carpet on top.
+// Both corners share arena.carpet_tile, so the matching pair always sounds identical.
+void arena_lay_carpets()
+{
+if(arena.carpet_tile=="" or arena.carpet_tile=="none") return;
+if(arena.platform_tile=="none" or arena.platform_tile=="") return;   // no floor, no carpet markers
+if(mapmode=="2d")
+{
+spawn_platform(0, 10, arena.miny, arena.miny, 1, 1, arena.carpet_tile, 0, 100, false, false);
+spawn_platform(arena.maxx-10, arena.maxx, arena.miny, arena.miny, 1, 1, arena.carpet_tile, 0, 100, false, false);
+}
+else if(mapmode=="topdown")
+{
+spawn_platform(0, 10, 0, 10, 1, 1, arena.carpet_tile, 0, 100, false, false);
+spawn_platform(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, 1, 1, arena.carpet_tile, 0, 100, false, false);
+}
+else
+{
+spawn_platform(0, 10, 0, 10, 1, 1, arena.carpet_tile, 0, 100, false, false, false, arena.minz);
+spawn_platform(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, 1, 1, arena.carpet_tile, 0, 100, false, false, false, arena.minz);
+}
+}
+
 // build a fresh arena. mode = 2d|topdown|3d; platform_tile "none" for no floor.
 void spawn_arena(string mode, string platform_tile, string category, string subtype, string music_clip="none", double music_vol=0, string source_clip="none", double source_vol=0, int base_cap=1, int spawntime=500)
 {
@@ -117,9 +142,13 @@ arena.minz=0; arena.maxz=(mode=="3d") ? 50 : 0;
 minx=arena.minx; maxx=arena.maxx;
 miny=arena.miny; maxy=arena.maxy;
 minz=arena.minz; maxz=arena.maxz;
+// pick one random carpet for this run; both safe corners wear the same one.
+string[] carpets=get_map_sound_folders("builder/construction/platforms/*carpet*");
+arena.carpet_tile=(carpets.length()>0) ? random_string(carpets) : "";
 arena_lay_floor();
 arena_spawn_zone();
 arena_spawn_safe();
+arena_lay_carpets();
 // optional music + ambient source, spawned as two independent soundsources so you
 // can have both ("none" = skip). path = builder/audio/<category>/<clip>/*loop*
 // the height axis (y on 2d, z on 3d) gets a 0-5 band so jumping stays inside the sound.
@@ -158,6 +187,7 @@ miny=arena.miny; maxy=arena.maxy;
 minz=arena.minz; maxz=arena.maxz;
 destroy_all_platforms();
 arena_lay_floor();
+arena_lay_carpets();   // re-lay over the safe corners; the far one tracks the new max edge
 if(arena.zone_index>=0 and arena.zone_index<int(npc_zones.length()) and @npc_zones[arena.zone_index]!=null)
 {
 npc_zones[arena.zone_index].maxx=arena.maxx;   // zone minx stays 11
