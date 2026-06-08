@@ -31,6 +31,7 @@ if(sd.d.exists("defence")) defence=sd.read_double("defence");
 if(sd.d.exists("maxhealth")) { maxhealth=sd.read_double("maxhealth"); health=maxhealth; }
 if(sd.d.exists("maxstamina")) { maxstamina=sd.read_double("maxstamina"); stamina=maxstamina; }
 if(sd.d.exists("damagemelee")) damage_melee=sd.read_double("damagemelee");
+if(sd.d.exists("modspeed")) modspeed=sd.read_int("modspeed");
 string[] save_ammo_types = {"normal","gas","air","battery","powder","arrow","rocket","water","knife","needle","dart","ball","mana","fuel","rock","grenade"};
 for(uint i=0; i<save_ammo_types.length(); i++)
 {
@@ -43,13 +44,15 @@ if(sd.d.exists("weaponcad")) wepchar.cad=sd.read_string("weaponcad");
 if(sd.d.exists("weaponsub")) wepchar.sub=sd.read_string("weaponsub");
 if(sd.d.exists("shieldtype")) shieldtype=sd.read_string("shieldtype");
 if(sd.d.exists("drawnshield")) drawnshield=sd.read_bool("drawnshield");
-// per-weapon and per-shield upgrade ledger bought in the arena shop.
+// per-weapon and per-shield upgrade ledger bought in the arena shop, and the items carried when the game was saved.
 arena_clear_upgrades();
+inv.clear();
 string[]@ savedkeys = sd.d.get_keys();
 for(uint i=0; i<savedkeys.length(); i++)
 {
 if(savedkeys[i].starts_with("wepup_")) arena_wep_upgrades.set(savedkeys[i].substr(6), sd.read_double(savedkeys[i]));
 else if(savedkeys[i].starts_with("shup_")) arena_shield_upgrades.set(savedkeys[i].substr(5), sd.read_double(savedkeys[i]));
+else if(savedkeys[i].starts_with("inv_")) inv.give(savedkeys[i].substr(4), sd.read_int(savedkeys[i]));
 }
 // the arena setup the run was played with, so load game can rebuild it.
 if(sd.d.exists("arenamode")) arena.mode=sd.read_string("arenamode");
@@ -78,6 +81,7 @@ sd.add("defence",defence);
 sd.add("maxhealth",maxhealth);
 sd.add("maxstamina",maxstamina);
 sd.add("damagemelee",damage_melee);
+sd.add("modspeed",modspeed);
 sd.add("weaponcad",wepchar.cad);
 sd.add("weaponsub",wepchar.sub);
 sd.add("shieldtype",shieldtype);
@@ -108,6 +112,17 @@ for(uint i=0; i<shieldkeys.length(); i++)
 double v=0;
 arena_shield_upgrades.get(shieldkeys[i], v);
 sd.add("shup_"+shieldkeys[i], v);
+}
+// drop the previous save's item keys first; the inventory shrinks as items get used, so stale keys can't just be overwritten.
+string[]@ oldkeys = sd.d.get_keys();
+for(uint i=0; i<oldkeys.length(); i++)
+{
+if(oldkeys[i].starts_with("inv_")) sd.d.delete(oldkeys[i]);
+}
+string[] invkeys = inv.get_keys();
+for(uint i=0; i<invkeys.length(); i++)
+{
+sd.add("inv_"+invkeys[i], inv.count(invkeys[i]));
 }
 sd.add("arenamode",arena.mode);
 sd.add("arenatile",arena.platform_tile);

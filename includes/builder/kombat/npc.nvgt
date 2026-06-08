@@ -889,6 +889,7 @@ painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
 
 void npc_apply_break_charbones(int dmg, string category)
 {
+if(arena_active) return;   // arena runs restore fully on load anyway; bone breaks don't fit the arcade pace
 if(category != "animals" && category != "zombies") return;
 if((dmg >= 100 && dmg <= 500 && dmg >= random(100, 500)) || dmg > 500)
 {
@@ -1534,7 +1535,7 @@ kills += 1;
 int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
 spawn_bodyfall(npcs[i].x, npcs[i].y, (falldelay <= 0 ? random(500, 1000) : falldelay), resolve_npc_fall_sound(npcs[i]), npcs[i].z);
 string[] heal_folders = {"health", "stamina"};
-string chosen_folder = random_string(heal_folders);
+string chosen_folder = arena_active ? "health" : random_string(heal_folders);   // stamina is never spent in the arena
 string[] healtypes = get_map_sound_folders("builder/interaction/items/"+chosen_folder+"/*");
 if(healtypes.length() != 0 and npcs[i].dropitem) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true, npcs[i].z);
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*kill*"), false);
