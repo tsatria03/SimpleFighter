@@ -112,6 +112,29 @@ spawn_platform(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, 1, 1, arena
 }
 }
 
+// lay a heal zone over each safe corner so resting in a corner slowly restores health.
+// arena_heal zones heal a random 5-10% of max health every 500-1000ms, silently (heal sound
+// none), matching the in-corner footprint of the safe zones exactly.
+void arena_lay_healzones()
+{
+int ht=random(500, 1000);
+if(mapmode=="2d")
+{
+spawn_healzone(0, 10, 0, 5, 1, 0, ht, "none", 0, 0, true);
+spawn_healzone(arena.maxx-10, arena.maxx, 0, 5, 1, 0, ht, "none", 0, 0, true);
+}
+else if(mapmode=="topdown")
+{
+spawn_healzone(0, 10, 0, 10, 1, 0, ht, "none", 0, 0, true);
+spawn_healzone(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, 1, 0, ht, "none", 0, 0, true);
+}
+else
+{
+spawn_healzone(0, 10, 0, 10, 1, 0, ht, "none", 0, 5, true);
+spawn_healzone(arena.maxx-10, arena.maxx, arena.maxy-10, arena.maxy, 1, 0, ht, "none", 0, 5, true);
+}
+}
+
 // build a fresh arena. mode = 2d|topdown|3d; platform_tile "none" for no floor.
 void spawn_arena(string mode, string platform_tile, string category, string subtype, string music_clip="none", double music_vol=0, string source_clip="none", double source_vol=0, int base_cap=1, int spawntime=500, string carpet="")
 {
@@ -147,6 +170,7 @@ arena_lay_floor();
 arena_spawn_zone();
 arena_spawn_safe();
 arena_lay_carpets();
+arena_lay_healzones();
 // optional music + ambient source, spawned as two independent soundsources so you
 // can have both ("none" = skip). path = builder/audio/<category>/<clip>/*loop*
 // the height axis (y on 2d, z on 3d) gets a 0-5 band so jumping stays inside the sound.
@@ -186,6 +210,8 @@ minz=arena.minz; maxz=arena.maxz;
 destroy_all_platforms();
 arena_lay_floor();
 arena_lay_carpets();   // re-lay over the safe corners; the far one tracks the new max edge
+destroy_all_healzones();
+arena_lay_healzones();   // re-lay both heal zones so the far one tracks the new max edge
 if(arena.zone_index>=0 and arena.zone_index<int(npc_zones.length()) and @npc_zones[arena.zone_index]!=null)
 {
 npc_zones[arena.zone_index].maxx=arena.maxx;   // zone minx stays 11

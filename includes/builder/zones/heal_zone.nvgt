@@ -4,6 +4,7 @@ healzone@[]healzones(0);
 class healzone
 {
 bool in_zone;
+bool arena_heal;   // arena safe-corner zone: heals a random 5-10% of max health per tick (item-style), silent
 int hitsound, healsound, takesound;
 double minx, maxx, miny, maxy;
 double minz, maxz;
@@ -12,7 +13,7 @@ int healhp;
 int healtime;
 string healtype;
 timer healtimer;
-healzone(double mx,double mx2,double my,double my2,int hm,int hp,int ht,string hlt,double mnz=0,double mxz=0)
+healzone(double mx,double mx2,double my,double my2,int hm,int hp,int ht,string hlt,double mnz=0,double mxz=0,bool ah=false)
 {
 minx=mx;
 maxx=mx2;
@@ -24,6 +25,7 @@ healmode=hm;
 healhp=hp;
 healtime=ht;
 healtype=hlt;
+arena_heal=ah;
 }
 }
 bool player_in_healzone(uint i)
@@ -39,6 +41,16 @@ for(uint i=0; i<healzones.length(); i++)
 if(player_in_healzone(i) and healzones[i].healtimer.elapsed>=healzones[i].healtime)
 {
 healzones[i].healtimer.restart();
+if(healzones[i].arena_heal)
+{
+if(invehicle==false and health<maxhealth)
+{
+double heal_percent = random(5, 10);
+health = min(health + maxhealth * (heal_percent / 100.0), maxhealth);
+}
+healzones[i].healtime = random(500, 1000);   // re-roll the interval each tick for an organic rhythm
+continue;
+}
 if(healzones[i].healmode==0 and invehicle==false)
 {
 if(shieldon==1)
@@ -84,9 +96,9 @@ healzones[i].in_zone = false;
 }
 }
 }
-void spawn_healzone(double x1,double x2,double y1,double y2,int hm,int hp,int ht,string hlt,double minz=0,double maxz=0)
+void spawn_healzone(double x1,double x2,double y1,double y2,int hm,int hp,int ht,string hlt,double minz=0,double maxz=0,bool arena_heal=false)
 {
-healzone hz1(x1,x2,y1,y2,hm,hp,ht,hlt,minz,maxz);
+healzone hz1(x1,x2,y1,y2,hm,hp,ht,hlt,minz,maxz,arena_heal);
 healzones.insert_last(hz1);
 }
 void destroy_all_healzones()
