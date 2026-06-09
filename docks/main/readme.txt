@@ -8,7 +8,9 @@ The fastest way to play is the game menu on the main menu, home of the arcade ar
 
 Maps and the map builder.
 
-The second half of the game is maps. The map menu lets you play the stock maps that ship with the game and build your own. Start with old_main - a guided showcase map where dozens of objects each sit in their own labeled exhibit with a sign explaining what they do and a live example you can walk up to and try. Do note that old_main is a historical piece: it was written toward the end of the game's sixth version, when the game was still an arcade shooter with a young builder attached. It has since been remodernized to load under the current map format and NPC system, but its exhibits reflect the game as it was then, and roughly half of today's entities - elevators, trampolines, bikes and aircraft, mines, security cameras, sensors, and many more - were added after it was written and aren't shown in it. You're more than welcome to explore it, both as a tour of the basics and as a piece of the game's history, and a fully modern showcase map may come in the future.
+The second half of the game is maps. The map menu lets you play the stock maps that ship with the game and build your own. Start with old_main - a guided showcase map where dozens of objects each sit in their own labeled exhibit with a sign explaining what they do and a live example you can walk up to and try. Do note that old_main is a historical piece: it was written toward the end of the 6th version of the game, when it was still an arcade shooter with a young builder attached.
+It has since been remodernized to load under the current map format and NPC system, but its exhibits reflect the game as it was then, and roughly half of today's entities - elevators, trampolines, bikes and aircraft, mines, security cameras, sensors, and many more - were added after it was written and aren't shown in it. You're more than welcome to explore it, both as a tour of the basics and as a piece of the game's history, and a fully modern showcase map may come in the future.
+
 The other stock maps (the 2d, topdown, and 3d test maps, a house, and an elevator demo) show off whole builds. When you're ready to create, the builder lets you design maps in any of the three modes and populate them with characters, weapons, shields, NPCs, doors, hazards, vehicles, zones, and dozens of other entities, then walk around your maps and use what you've placed. And if you want to go deeper still, every character, weapon, shield, NPC, and item is authored as a plain text info file with sounds resolved by name, so you can create entirely new content with nothing but a text editor and some audio clips.
 
 Game features.
@@ -16,17 +18,25 @@ Game features.
 The arcade arena: a launch and play survival mode with endless, level-scaled waves, normal and custom modes, two safe corners, and a live-resizable field.
 
 The ability to level up, gain experience, and upgrade stats with level up points.
+
 The ability to play stock maps, including a guided showcase map that demonstrates nearly every object in the game.
 The ability to build maps in three different modes (2d, topdown, and 3d), each with its own spatial rules.
-The ability to author your own characters, shields, weapons, NPCs, doors, items, zones, and more by editing plain text info files, or through the data manager's in-game editing forms so you never have to open a file at all.
+
 The ability to add environmental effects like HRTF, reverb, echo, lowpass, highpass, phaser, flanger, chorus, and distortion to your maps through effect space zones, with custom effect presets you can save under a name and reuse on any map.
+
+The ability to author your own characters, shields, weapons, NPCs, doors, items, zones, and more by editing plain text info files, or through the data manager's in-game editing forms so you never have to open a file at all.
 The ability to drop in your own sounds for any entity. Anything that's not in the data folder lives in the sounds folder, and the engine resolves clips by glob, so adding a sound is the wiring.
-The ability to bind up to 42 in game slash commands to keyboard slots through the macro system.
+
 The ability to compile maps into encrypted packs that the game falls back to when the decompiled folder is missing.
+
+The ability to bind up to 42 in game slash commands to keyboard slots through the macro system.
 The ability to rebind any control from inside the game, or edit the key config file by hand.
+
 The ability to configure the text to speech voice the game reads with - voice, rate, pitch, and volume - and to speak through your screen reader whenever one is running.
+
 The ability to place url sources and ambiences on maps that stream their audio from a web link instead of a bundled sound file.
 The ability to record the game's audio and save it as an mp3 file.
+
 The ability to use special equipment such as gliders that let you fly and cloners that duplicate the entities you strike.
 The ability to show or hide the main menu's documentation, game, map, and miscellaneous entries from the preferences screen, so the menu can be slimmed to just what you use.
 
@@ -67,10 +77,12 @@ Left arrow. Step left, when pressed or held.
 Right arrow. Step right, when pressed or held.
 Up arrow. Step forward on the y axis, when pressed or held. On 2d maps this steps up on altitude.
 Down arrow. Step backward on the y axis, when pressed or held. On 2d maps this steps down on altitude.
+
 Letter, W. Step up on the z axis (3d maps only), when pressed or held. On 2d and topdown this key does nothing.
 Letter, S. Step down on the z axis (3d maps only), when pressed or held. On 2d and topdown this key does nothing.
 Page up. Step up on the z axis (3d maps only). Same as W on 3d.
 Page down. Step down on the z axis (3d maps only). Same as S on 3d.
+
 Alt. Held while moving, toggles run mode for the duration. The auto run setting flips the default so you walk while alt is held instead.
 Spacebar. Jump, when pressed (or held, if auto jump is enabled in the settings menu). Disabled on topdown maps.
 
@@ -89,6 +101,7 @@ Alt plus shift plus left arrow. Face left.
 Alt plus shift plus right arrow. Face right.
 Alt plus shift plus up arrow. Face forward on the y axis. On 2d, faces up on altitude.
 Alt plus shift plus down arrow. Face backward on the y axis. On 2d, faces down on altitude.
+
 Alt plus shift plus W or page up. Face up on the z axis (3d maps only).
 Alt plus shift plus S or page down. Face down on the z axis (3d maps only).
 
@@ -106,16 +119,19 @@ F3. Reset jump height to default. Disabled on topdown.
 
 Arcade arena.
 
-These keys work only inside the arcade arena, where they take over from their normal meanings. While you're in an arena the command console, macros, the grappling hook, the sonar, and the jump height keys are all disabled.
+These keys work only inside the arcade arena, where they take over from their normal meanings. While you're in an arena the command console, the grappling hook, the sonar, and the jump height keys are all disabled, and the macro key row is repurposed to quick-draw weapons (see the entry at the end of this section).
 
 Comma. Speak the arena's maximum x reach in tiles.
 Period. Speak the arena's maximum y reach in tiles.
 Slash. Speak the arena's maximum z reach in tiles (3d arenas only; otherwise it reports there's no z axis).
+
 F1. Shrink the arena's maximum x by five tiles.
 F2. Grow the arena's maximum x by five tiles.
 F3. Reset the arena's maximum x to fifty tiles.
 F4, F5, F6. The same three actions for the y axis.
 F7, F8, F9. The same three actions for the z axis (3d arenas only).
+
+The macro row (backtick, 1 through 0, minus, equals, backspace). Quick-draw a weapon from your current category. Because macros are off in the arena, this row draws weapons instead: each key draws one weapon, in the same order the weapons menu lists that category, with shift and shift plus alt giving two more banks for 42 weapon slots in total. Draw a weapon of another category from the weapons menu to point the row at that category; press a slot with no weapon behind it and the game says the slot is empty.
 
 Hooking.
 
@@ -130,8 +146,10 @@ Board a vehicle, bike, or aircraft by pressing enter while standing on it. Bikes
 
 Letter, L. Lower an aircraft's landing gear to begin landing.
 Shift plus spacebar. Sound a vehicle's or bike's horn.
+
 Shift plus left or right arrow. Steer an aircraft left or right.
 Shift plus up or down arrow. Steer an aircraft forward or backward (3d and topdown only).
+
 Left or right arrow. Decrease or increase an aircraft's speed while flying.
 Up or down arrow. Raise or lower an aircraft's altitude while flying.
 
@@ -147,6 +165,7 @@ Letter, J. Face the sonar to your left side. On topdown and 3d this is body rela
 Letter, L. Face the sonar to your right side.
 Letter, K. Face the sonar behind you. On 2d this faces the sonar down on altitude.
 Letter, I. Face the sonar in front of you. On 2d this faces the sonar up on altitude.
+
 Shift plus letter I. Face the sonar up on the z axis (3d maps only).
 Shift plus letter K. Face the sonar down on the z axis (3d maps only).
 
@@ -158,6 +177,7 @@ Shift plus left arrow. Sweep left. Body relative on topdown and 3d.
 Shift plus right arrow. Sweep right.
 Shift plus up arrow. Sweep forward on the y axis. On 2d this sweeps the top.
 Shift plus down arrow. Sweep backward on the y axis. On 2d this sweeps the bottom.
+
 Shift plus W or shift plus page up. Sweep up on the z axis (3d maps only).
 Shift plus S or shift plus page down. Sweep down on the z axis (3d maps only).
 
@@ -167,14 +187,18 @@ The camera is a free moving cursor for inspecting the map at a distance. Hold G 
 
 Letter, G plus left or right arrow. Move the camera left or right. Body relative on topdown and 3d.
 Letter, G plus up or down arrow. Move the camera forward or backward on the y axis.
+
 Letter, G plus W or page up. Move the camera up on the z axis (3d maps only).
 Letter, G plus S or page down. Move the camera down on the z axis (3d maps only).
+
 Letter, G plus letter J. Set a left side selection marker.
 Letter, G plus letter L. Set a right side selection marker.
 Letter, G plus letter I. Set a forward (or top, on 2d) selection marker.
 Letter, G plus letter K. Set a backward (or bottom, on 2d) selection marker.
+
 Letter, G plus shift plus letter I. Set a top selection marker on the z axis (3d maps only).
 Letter, G plus shift plus letter K. Set a bottom selection marker on the z axis (3d maps only).
+
 Letter, G plus letter M. Toggle mfwc mode (camera focus).
 Letter, G plus letter Y. Toggle dexterity mode (camera responds without holding G).
 Letter, G plus letter R. Announce the tile, hazard, player presence, coordinates, and direction at the camera's current position.
@@ -194,6 +218,7 @@ Inventory.
 Tab. Cycle forward through inventory items.
 Shift plus tab. Cycle backward.
 Shift plus enter. Use the currently focused inventory item.
+
 Alt plus letter I. Open the inventory menu.
 Shift plus left bracket. Drop the inventory item currently in focus.
 
@@ -201,17 +226,22 @@ Healing and shields.
 
 Backslash. Toggle health restoration on or off.
 Right bracket. Toggle shield strength restoration on or off.
+
 Letter, O. Raze or wear a drawn shield. In one shield mode, hold O to keep the shield up; releasing lowers it.
 
 Status and information.
 
 Letter, C. Speak your current location and the tile being walked on.
+
 Letter, H. Speak your health and lives.
 Letter, Y. Speak your stamina.
 Letter, M. Speak your shield strength.
+
 Letter, N. Speak the direction and distance to the object you're tracking. Tracking is started from the object viewer.
 Shift plus letter N. Stop tracking the current object.
+
 Left bracket. Speak your total kills.
+
 Letter, Z. Toggle zone announcements on or off.
 Alt plus letter Q. Speak the text zone you're currently standing in.
 
@@ -219,18 +249,23 @@ Menus.
 
 Alt plus letter W. Open the weapons menu.
 Alt plus letter S. Open the shields menu.
+
 Alt plus letter E. Open the object viewer.
 Shift plus alt plus letter E. Open the combat log viewer.
+
 Shift plus letter H. Open the command help menu.
 Shift plus letter V. Open the points menu.
+
 Letter, B. Open the builder menu (disabled on compiled maps).
 Letter, U. Open the map editor menu (disabled on compiled maps).
+
 Alt plus letter R. Open the recording menu, where you can capture the game's audio and save it.
 
 System.
 
 Slash. Open the command prompt. Type a slash command and press enter to run it. Multiple commands can be chained with semicolons.
 Enter. Interact with whatever is at your feet, including doors, signs, clocks, calendars, passages, dialogs, and menu items.
+
 Letter, P. Pause or resume the game.
 Escape. Exit the current map and return to the last menu.
 

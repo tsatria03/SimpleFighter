@@ -25,6 +25,48 @@ break;
 }
 }
 
+// In the arena the macro row is repurposed to quick-draw weapons (macros are off there for anti-cheat).
+// Slot = bank*14 + key index, across the same plain / Shift / Shift+Alt banks as macros, giving 42
+// slots that map positionally onto the current weapon category's list, in the same order as the
+// weapons menu's category tab. Switch which category the row addresses by drawing a weapon of another
+// category from the menu. Slots past the category's count report empty; a locked weapon reports its level.
+void handle_arena_weapon_keys()
+{
+if(!drawable) return;
+uint bank = 0;
+if (shift_is_down() && alt_is_down())
+bank = 2;
+else if (shift_is_down())
+bank = 1;
+uint offset = bank * ordered_scriptkeys.length();
+for (uint i = 0; i < ordered_scriptkeys.length(); i++)
+{
+if (key_pressed(ordered_scriptkeys[i]))
+{
+arena_quick_draw(offset + i);
+break;
+}
+}
+}
+void arena_quick_draw(uint slot)
+{
+string[] weps = get_pack_sound_folders("main/equipments/weapons/" + wepchar.cad + "/*");
+if(slot >= weps.length())
+{
+speak("this slot is empty");
+return;
+}
+string id = weps[slot];
+weapon temp;
+temp.parse(wepchar.cad, id);
+if(level < temp.level)
+{
+speak(id + " unlocks at level " + int_to_string(int(temp.level)));
+return;
+}
+draw_weapon(wepchar.cad, id);
+}
+
 void handle_draw_keys()
 {
 if(controls.action_pressed("weapons_menu") && !shift_is_down() && drawable==true)
