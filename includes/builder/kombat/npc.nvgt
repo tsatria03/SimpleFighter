@@ -93,7 +93,8 @@ bool patrol_y_terrain;
 bool patrol_z_terrain;
 bool chase_terrains;
 int taunttime;
-int spawnsound = -1, mainsound = -1, defsound = -1, hurtsound = -1, stepsound = -1, tilesound = -1, wepsound = -1, healsound = -1;
+int taunt_delay = 0;   // ms of silence inserted between taunts; 0 = play continuously (the default)
+int spawnsound = -1, tauntsound = -1, defsound = -1, hurtsound = -1, stepsound = -1, tilesound = -1, wepsound = -1, healsound = -1;
 timer movetimer, firetimer, taunttimer;
 timer hurttimer;
 int hurtdelay;
@@ -232,6 +233,7 @@ run_health = 0;
 heal_amount = 0;
 rest_heal_time = 0;
 ambient_heal_time = 0;
+taunt_delay = 0;   // auto-scaled spawns (arena, scaled bosses/zones) ignore the type's taunt delay and taunt continuously
 w_hrange = hrange; w_vrange = vrange; w_zrange = zrange;
 w_hsight = hsight; w_vsight = vsight; w_zsight = zsight;
 w_lives = lives;
@@ -277,7 +279,7 @@ refon = false;
 // hit site so the "don't taunt while hurt" realism lives in one place.
 void react_to_hit(sound_pool@ pool, int mask_slot)
 {
-if(mainsound != -1) pool.pause_sound(mainsound);
+if(tauntsound != -1) pool.pause_sound(tauntsound);
 hurtdelay = (mask_slot != -1) ? round(pool.get_sound_length(mask_slot), 0) : 0;
 hurttimer.restart();
 hurting = true;
@@ -486,6 +488,7 @@ else if(k == "attack") parse_triple_int(v, self.attack, self.w_attack, self.h_at
 else if(k == "defense") parse_triple_int(v, self.defence, self.w_defence, self.h_defence);
 else if(k == "fire speed") parse_triple_int(v, self.firetime, self.w_firetime, self.h_firetime);
 else if(k == "move speed") parse_triple_int(v, self.movetime, self.w_movetime, self.h_movetime);
+else if(k == "taunt delay") self.taunt_delay = roll_slot_int(v);
 else if(k == "level") parse_triple_double(v, self.level, self.w_level, self.h_level);
 else if(k == "xp") parse_triple_double(v, self.xpvalue, self.w_xpvalue, self.h_xpvalue);
 else if(k == "attacking") self.fireable = string_to_bool(v);
@@ -660,7 +663,7 @@ if(@npcs[i] == null) continue;
 sound_pool@ pool = npc_pool(npcs[i].category);
 if(npcs[i].category == "helpers")
 pool.play_3d(get_map_sound("builder/kombat/npc/helpers/"+npcs[i].subtype+"/general/*remove*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), false);
-if(npcs[i].mainsound != -1) pool.destroy_sound(npcs[i].mainsound);
+if(npcs[i].tauntsound != -1) pool.destroy_sound(npcs[i].tauntsound);
 if(npcs[i].spawnsound != -1) pool.destroy_sound(npcs[i].spawnsound);
 if(npcs[i].refsound != -1) pool.destroy_sound(npcs[i].refsound);
 if(npcs[i].refsound2 != -1) pool.destroy_sound(npcs[i].refsound2);
@@ -928,7 +931,7 @@ bool human_armed = (npcs[i].category == "humans" && npcs[i].wephum.cad != "");
 
 if(npcs[i].hurting and npcs[i].hurttimer.elapsed >= npcs[i].hurtdelay)
 {
-if(npcs[i].mainsound != -1) pool.resume_sound(npcs[i].mainsound);
+if(npcs[i].tauntsound != -1) pool.resume_sound(npcs[i].tauntsound);
 npcs[i].hurting = false;
 }
 
@@ -1116,7 +1119,7 @@ npcs[i].x = new_x;
 npcs[i].y = new_y;
 npcs[i].z = new_z;
 npcs[i].telsound = pool.play_extended_3d(get_map_sound(sound_base+"/*tel*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-if(npcs[i].mainsound != -1) pool.update_sound_3d(npcs[i].mainsound, npcs[i].x, npcs[i].y, npcs[i].z);
+if(npcs[i].tauntsound != -1) pool.update_sound_3d(npcs[i].tauntsound, npcs[i].x, npcs[i].y, npcs[i].z);
 if(npcs[i].refsound2 != -1) pool.update_sound_3d(npcs[i].refsound2, npcs[i].x, npcs[i].y, npcs[i].z);
 npcs[i].teltimer.restart();
 }
@@ -1371,26 +1374,38 @@ break;
 }
 }
 }
-if(npcs[i].mainsound != -1) pool.update_sound_3d(npcs[i].mainsound, npcs[i].x, npcs[i].y, npcs[i].z);
+if(npcs[i].tauntsound != -1) pool.update_sound_3d(npcs[i].tauntsound, npcs[i].x, npcs[i].y, npcs[i].z);
 if(npcs[i].refsound2 != -1) pool.update_sound_3d(npcs[i].refsound2, npcs[i].x, npcs[i].y, npcs[i].z);
 npcs[i].movetimer.restart();
 }
 }
 
-if(npcs[i].taunttimer.elapsed >= npcs[i].taunttime and !npcs[i].hurting)
+if(!npcs[i].hurting and npcs[i].taunttimer.elapsed >= npcs[i].taunttime)
 {
 // the taunt is a looping "voice" so its slot is locked to this npc (reserve_slot skips
 // looping slots) - that's what lets the hit sites safely pause it. Re-rolled each cycle
 // so multi-clip npcs still bark a fresh taunt every time, just like a one-shot used to.
-if(npcs[i].mainsound != -1) { pool.destroy_sound(npcs[i].mainsound); npcs[i].mainsound = -1; }
+// Two-phase when taunt_delay > 0: play a clip, then fall silent for taunt_delay ms before
+// the next one. With taunt_delay == 0 the else branch always runs, so the next taunt fires
+// the instant the last clip ends with no gap - identical to the old continuous behavior.
+if(npcs[i].tauntsound != -1 and npcs[i].taunt_delay > 0)
+{
+pool.destroy_sound(npcs[i].tauntsound);
+npcs[i].tauntsound = -1;
+npcs[i].taunttime = npcs[i].taunt_delay;
+}
+else
+{
+if(npcs[i].tauntsound != -1) { pool.destroy_sound(npcs[i].tauntsound); npcs[i].tauntsound = -1; }
 string tauntclip = get_map_sound(sound_base+"/*taunt*");
 if(tauntclip != "")
 {
-npcs[i].mainsound = pool.play_extended_3d(tauntclip, me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
-int delay = round(pool.get_sound_length(npcs[i].mainsound), 0);
+npcs[i].tauntsound = pool.play_extended_3d(tauntclip, me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+int delay = round(pool.get_sound_length(npcs[i].tauntsound), 0);
 npcs[i].taunttime = (delay <= 0 ? random(500, 1000) : delay);
 }
 else npcs[i].taunttime = random(500, 1000);
+}
 npcs[i].taunttimer.restart();
 }
 
@@ -1548,7 +1563,7 @@ else if(npcs[i].currentlives <= 1 and paused == 0)
 // only the locked loops need an explicit stop; the transient one-shots (hurt, ref on/off,
 // launch) finish on their own, and destroying their stale recycled handles was clobbering
 // other npcs' sounds.
-if(npcs[i].mainsound != -1) { pool.destroy_sound(npcs[i].mainsound); npcs[i].mainsound = -1; }
+if(npcs[i].tauntsound != -1) { pool.destroy_sound(npcs[i].tauntsound); npcs[i].tauntsound = -1; }
 if(npcs[i].refsound2 != -1) { pool.destroy_sound(npcs[i].refsound2); npcs[i].refsound2 = -1; }
 npcs[i].defsound = pool.play_extended_3d(get_map_sound(sound_base+"/*death*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 if(xpmod >= 1)
