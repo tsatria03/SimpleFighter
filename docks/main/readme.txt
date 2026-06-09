@@ -119,7 +119,7 @@ F3. Reset jump height to default. Disabled on topdown.
 
 Arcade arena.
 
-These keys work only inside the arcade arena, where they take over from their normal meanings. While you're in an arena the command console, the grappling hook, the sonar, and the jump height keys are all disabled, and the macro key row is repurposed to quick-draw weapons (see the entry at the end of this section).
+These keys work only inside the arcade arena, where they take over from their normal meanings. While you're in an arena the command console, the builder and map editor menus, the grappling hook, the sonar, and the jump height keys are all disabled, and the macro key row is repurposed to quick-draw weapons (see the entry at the end of this section).
 
 Comma. Speak the arena's maximum x reach in tiles.
 Period. Speak the arena's maximum y reach in tiles.
