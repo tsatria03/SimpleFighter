@@ -28,11 +28,11 @@ return tv.speak_to_file(path, text);
 ttsenemie@[] ttsenemies(0);
 class ttsenemie
 {
-int ttsemsound;
-int hurtsound;
-int defsound;
-int stepsound, tilesound;
-int drawsound, firesound, hitsound, shellsound;
+int ttsemsound = -1;
+int hurtsound = -1;
+int defsound = -1;
+int stepsound, tilesound = -1;   // stepsound is a 0/1 step flag, not a sound slot - leave it
+int drawsound = -1, firesound = -1, hitsound = -1, shellsound = -1;
 double ttsenehealth;
 double ttsenemaxhealth;
 int ttsemx;
@@ -100,6 +100,15 @@ if (file_exists(hurt_file)) file_delete(hurt_file);
 generate_tts(hurt_file, ttsemhurt, voice, rate, pitch, volume);
 ttsemsound = ttsempool.play_extended_3d(taunt_file, me.x, me.y, me.z, ttsemx, ttsemy, ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
 }
+// mirror of npc.react_to_hit: pause the looping voice while in pain (safe - it's a locked
+// loop), and open the hurt window for the length of the masking sound.
+void react_to_hit(sound_pool@ pool, int mask_slot)
+{
+if(ttsemsound != -1) pool.pause_sound(ttsemsound);
+hurtdelay = (mask_slot != -1) ? round(pool.get_sound_length(mask_slot), 0) : 0;
+hurttimer.restart();
+hurting = true;
+}
 }
 void ttseneloop()
 {
@@ -108,7 +117,7 @@ for(uint i=0; i<ttsenemies.length(); i++)
 if(@ttsenemies[i] == null) continue;
 if(ttsenemies[i].hurting and ttsenemies[i].hurttimer.elapsed>=ttsenemies[i].hurtdelay)
 {
-ttsempool.resume_sound(ttsenemies[i].ttsemsound);
+if(ttsenemies[i].ttsemsound != -1) ttsempool.resume_sound(ttsenemies[i].ttsemsound);
 ttsenemies[i].hurting=false;
 }
 if(ttsenemies[i].ttsenemietime>0 and ttsenemies[i].ttsenemietimer.elapsed>=ttsenemies[i].ttsenemietime)
@@ -119,7 +128,7 @@ string tile = (mapmode == "3d") ? gmt(ttsenemies[i].ttsemx, ttsenemies[i].ttsemy
 ttsenemies[i].tilesound=p.play_extended_3d(get_map_sound("builder/construction/platforms/"+tile+"/*step*"),me.x,me.y,me.z,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,ttsenemies[i].ttsemz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,tilevolume,tilepitch,false);
 }
 ttsenemies[i].stepsound=0;
-ttsempool.update_sound_3d(ttsenemies[i].ttsemsound,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,ttsenemies[i].ttsemz);
+if(ttsenemies[i].ttsemsound != -1) ttsempool.update_sound_3d(ttsenemies[i].ttsemsound,ttsenemies[i].ttsemx,ttsenemies[i].ttsemy,ttsenemies[i].ttsemz);
 ttsenemies[i].ttsenemietimer.restart();
 if(ttsenemies[i].ttsemx<me.x and paused==0)
 {
@@ -188,8 +197,7 @@ ttsenemies[i].firetimer.restart();
 }
 if(ttsenemies[i].ttsenehealth<=0)
 {
-ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
-ttsempool.destroy_sound(ttsenemies[i].hurtsound);
+if(ttsenemies[i].ttsemsound != -1) { ttsempool.destroy_sound(ttsenemies[i].ttsemsound); ttsenemies[i].ttsemsound = -1; }
 if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file);
 generate_tts(ttsenemies[i].death_file, ttsenemies[i].ttsemdeath, ttsenemies[i].voice, ttsenemies[i].rate, ttsenemies[i].pitch, ttsenemies[i].volume);
 ttsenemies[i].defsound = ttsempool.play_extended_3d(ttsenemies[i].death_file, me.x, me.y, me.z, ttsenemies[i].ttsemx, ttsenemies[i].ttsemy, ttsenemies[i].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
@@ -213,7 +221,7 @@ void destroy_all_ttsenemies()
 for(uint i=0; i<ttsenemies.length(); i++)
 {
 if(@ttsenemies[i] == null) continue;
-ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
+if(ttsenemies[i].ttsemsound != -1) ttsempool.destroy_sound(ttsenemies[i].ttsemsound);
 if (file_exists(ttsenemies[i].taunt_file)) file_delete(ttsenemies[i].taunt_file);
 if (file_exists(ttsenemies[i].hurt_file)) file_delete(ttsenemies[i].hurt_file);
 if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file);

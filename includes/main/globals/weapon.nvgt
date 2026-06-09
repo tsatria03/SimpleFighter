@@ -11,7 +11,7 @@ dictionary damage_by_type;
 dictionary ammo_reserves;
 dictionary ammo_types_bought;
 
-sound_pool specialpool;
+sound_pool specialpool(200);   // matches the other npc category pools (see npc.nvgt) for arena swarms
 weapon wepchar;
 
 class weapon
@@ -564,12 +564,8 @@ kombatlog.insert_last(npcs[firer_npc].subtype + " attacked " + npcs[nj].subtype 
 if(n_impact > 0) kombatlog.insert_last(npcs[nj].subtype + " was slammed into a wall for " + n_impact + " damage.");
 if((n_hit_dmg + n_impact) > 0 and npcs[nj].health > 0)
 {
-npool.destroy_sound(npcs[nj].hurtsound);
-npool.pause_sound(npcs[nj].mainsound);
 npcs[nj].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[nj].category+"/"+npcs[nj].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[nj].x, npcs[nj].y, npcs[nj].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-npcs[nj].hurtdelay = round(npool.get_sound_length(npcs[nj].hurtsound), 0);
-npcs[nj].hurttimer.restart();
-npcs[nj].hurting = true;
+npcs[nj].react_to_hit(npool, npcs[nj].hurtsound);
 }
 return;
 }
@@ -803,11 +799,8 @@ if(npcs[j].category == "humans" and npcs[j].wephum.reflection and npcs[j].refon)
 int roll = random(0, 100);
 if(roll < npcs[j].wephum.refchance)
 {
-npool.pause_sound(npcs[j].mainsound);
 npcs[j].refsound = npool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+npcs[j].wephum.cad+"/"+npcs[j].wephum.sub+"/general/*block*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].refsound), 0);
-npcs[j].hurttimer.restart();
-npcs[j].hurting = true;
+npcs[j].react_to_hit(npool, npcs[j].refsound);
 return;
 }
 play_melee_hit_at(npcs[j].x, npcs[j].y, npcs[j].z);
@@ -818,12 +811,8 @@ kombatlog.insert_last(hit_dmg + " damage to " + npcs[j].subtype + " by " + sub +
 if(impact > 0) kombatlog.insert_last(npcs[j].subtype + " was slammed into a wall for " + impact + " damage.");
 if((hit_dmg + impact) > 0 and npcs[j].health > 0)
 {
-npool.destroy_sound(npcs[j].hurtsound);
-npool.pause_sound(npcs[j].mainsound);
 npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].hurtsound), 0);
-npcs[j].hurttimer.restart();
-npcs[j].hurting = true;
+npcs[j].react_to_hit(npool, npcs[j].hurtsound);
 }
 if(stun > 0) { stuntimer.restart(); stunned = true; stundir = stun; npcs[j].fireable = false; npcs[j].move_x = false; npcs[j].move_y = false; npcs[j].move_z = false; }
 return;
@@ -836,12 +825,8 @@ kombatlog.insert_last(hit_dmg + " damage to " + npcs[j].subtype + " by " + sub +
 if(impact > 0) kombatlog.insert_last(npcs[j].subtype + " was slammed into a wall for " + impact + " damage.");
 if((hit_dmg + impact) > 0 and npcs[j].health > 0)
 {
-npool.destroy_sound(npcs[j].hurtsound);
-npool.pause_sound(npcs[j].mainsound);
 npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].hurtsound), 0);
-npcs[j].hurttimer.restart();
-npcs[j].hurting = true;
+npcs[j].react_to_hit(npool, npcs[j].hurtsound);
 }
 if(stun > 0) { stuntimer.restart(); stunned = true; stundir = stun; npcs[j].fireable = false; npcs[j].move_x = false; npcs[j].move_y = false; npcs[j].move_z = false; }
 return;
@@ -856,12 +841,8 @@ ttsenemies[jt].ttsenehealth -= hit_dmg;
 kombatlog.insert_last(hit_dmg + " damage to tts enemie by " + sub + "'s weapon attack.");
 if(hit_dmg > 0 and ttsenemies[jt].ttsenehealth > 0)
 {
-ttsempool.destroy_sound(ttsenemies[jt].hurtsound);
-ttsempool.pause_sound(ttsenemies[jt].ttsemsound);
 ttsenemies[jt].hurtsound = ttsempool.play_extended_3d(ttsenemies[jt].hurt_file, me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-ttsenemies[jt].hurtdelay = round(ttsempool.get_sound_length(ttsenemies[jt].hurtsound), 0);
-ttsenemies[jt].hurttimer.restart();
-ttsenemies[jt].hurting = true;
+ttsenemies[jt].react_to_hit(ttsempool, ttsenemies[jt].hurtsound);
 }
 return;
 }
@@ -1080,11 +1061,8 @@ if(npcs[j].category == "humans" and npcs[j].wephum.reflection and npcs[j].refon)
 int roll = random(0, 100);
 if(roll < npcs[j].wephum.refchance)
 {
-npool.pause_sound(npcs[j].mainsound);
 npcs[j].refsound = npool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+npcs[j].wephum.cad+"/"+npcs[j].wephum.sub+"/general/*block*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].refsound), 0);
-npcs[j].hurttimer.restart();
-npcs[j].hurting = true;
+npcs[j].react_to_hit(npool, npcs[j].refsound);
 continue;
 }
 play_melee_hit_at(npcs[j].x, npcs[j].y, npcs[j].z);
@@ -1093,12 +1071,8 @@ npcs[j].health -= hd;
 kombatlog.insert_last(hd + " damage to " + npcs[j].subtype + " by " + sub + "'s weapon attack.");
 if(hd > 0 and npcs[j].health > 0)
 {
-npool.destroy_sound(npcs[j].hurtsound);
-npool.pause_sound(npcs[j].mainsound);
 npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].hurtsound), 0);
-npcs[j].hurttimer.restart();
-npcs[j].hurting = true;
+npcs[j].react_to_hit(npool, npcs[j].hurtsound);
 }
 if(stun > 0) { stuntimer.restart(); stunned = true; stundir = stun; npcs[j].fireable = false; npcs[j].move_x = false; npcs[j].move_y = false; npcs[j].move_z = false; }
 if(sc > 0) { sc--; if(sc <= 0) return; }
@@ -1110,12 +1084,8 @@ npcs[j].health -= hd;
 kombatlog.insert_last(hd + " damage to " + npcs[j].subtype + " by " + sub + "'s weapon attack.");
 if(hd > 0 and npcs[j].health > 0)
 {
-npool.destroy_sound(npcs[j].hurtsound);
-npool.pause_sound(npcs[j].mainsound);
 npcs[j].hurtsound = npool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[j].category+"/"+npcs[j].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[j].x, npcs[j].y, npcs[j].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-npcs[j].hurtdelay = round(npool.get_sound_length(npcs[j].hurtsound), 0);
-npcs[j].hurttimer.restart();
-npcs[j].hurting = true;
+npcs[j].react_to_hit(npool, npcs[j].hurtsound);
 }
 if(stun > 0) { stuntimer.restart(); stunned = true; stundir = stun; npcs[j].fireable = false; npcs[j].move_x = false; npcs[j].move_y = false; npcs[j].move_z = false; }
 if(sc > 0) { sc--; if(sc <= 0) return; }
@@ -1136,12 +1106,8 @@ ttsenemies[jt].ttsenehealth -= hd;
 kombatlog.insert_last(hd + " damage to tts enemie by " + sub + "'s weapon attack.");
 if(hd > 0 and ttsenemies[jt].ttsenehealth > 0)
 {
-ttsempool.destroy_sound(ttsenemies[jt].hurtsound);
-ttsempool.pause_sound(ttsenemies[jt].ttsemsound);
 ttsenemies[jt].hurtsound = ttsempool.play_extended_3d(ttsenemies[jt].hurt_file, me.x, me.y, me.z, ttsenemies[jt].ttsemx, ttsenemies[jt].ttsemy, ttsenemies[jt].ttsemz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-ttsenemies[jt].hurtdelay = round(ttsempool.get_sound_length(ttsenemies[jt].hurtsound), 0);
-ttsenemies[jt].hurttimer.restart();
-ttsenemies[jt].hurting = true;
+ttsenemies[jt].react_to_hit(ttsempool, ttsenemies[jt].hurtsound);
 }
 if(sc > 0) { sc--; if(sc <= 0) return; }
 }
