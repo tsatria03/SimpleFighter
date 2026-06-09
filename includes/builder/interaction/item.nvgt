@@ -5,7 +5,7 @@ obj@[]objs(0);
 
 class obj
 {
-bool automatic;
+bool automatic, looping;
 ;int getsound, hurtsound, objsound;
 int itx;
 int ity;
@@ -14,7 +14,7 @@ int objtime;
 string objtype;
 string objtype2;
 timer objtimer;
-obj(int ix,int iy,int sp,string ty,string ty2,bool itc,int iz=0)
+obj(int ix,int iy,int sp,string ty,string ty2,bool itc,int iz=0,bool lps=false)
 {
 itx=ix;
 ity=iy;
@@ -23,6 +23,9 @@ objtime=sp;
 objtype=ty;
 objtype2=ty2;
 automatic=itc;
+looping=lps;
+if(looping==true)
+objsound=itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objtype+"/"+objtype2+"/*loop*"),me.x,me.y,me.z,itx,ity,itz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 }
 }
 void objloop()
@@ -30,7 +33,7 @@ void objloop()
 for(uint i=0; i<objs.length(); i++)
 {
 if(@objs[i] == null) continue;
-if(objs[i].objtimer.elapsed>=objs[i].objtime)
+if(!objs[i].looping and objs[i].objtimer.elapsed>=objs[i].objtime)
 {
 objs[i].objsound=itempool.play_extended_3d(get_map_sound("builder/interaction/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*loop*"),me.x,me.y,me.z,objs[i].itx,objs[i].ity,objs[i].itz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 objs[i].objtimer.restart();
@@ -40,6 +43,7 @@ if(mapmode == "3d") obj_match = obj_match and me.z==objs[i].itz;
 if(obj_match and objs[i].automatic==true)
 {
 objs[i].getsound=itempool.play_stationary_extended(get_map_sound("builder/interaction/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,0,100,false);
+if(objs[i].looping) itempool.destroy_sound(objs[i].objsound);
 inv.give(objs[i].objtype2,1);
 speak(objs[i].objtype2);
 @objs[i] = null;
@@ -48,6 +52,7 @@ return;
 if(obj_match and objs[i].automatic==false and controls.action_repeating("interact"))
 {
 objs[i].getsound=itempool.play_stationary_extended(get_map_sound("builder/interaction/items/"+objs[i].objtype+"/"+objs[i].objtype2+"/*get*"),false,0,0,0,100,false);
+if(objs[i].looping) itempool.destroy_sound(objs[i].objsound);
 inv.give(objs[i].objtype2,1);
 speak(objs[i].objtype2);
 @objs[i] = null;
@@ -55,9 +60,9 @@ return;
 }
 }
 }
-void spawn_obj(int x,int y,int objtime,string objtype,string objtype2,bool automatic,int z=0)
+void spawn_obj(int x,int y,int objtime,string objtype,string objtype2,bool automatic,int z=0,bool looping=false)
 {
-obj o1(x,y,objtime,objtype,objtype2,automatic,z);
+obj o1(x,y,objtime,objtype,objtype2,automatic,z,looping);
 objs.insert_last(o1);
 }
 void destroy_all_objs()
@@ -90,9 +95,10 @@ string saved_sp = "500";
 int saved_cat_pos = 0;
 int saved_sub_pos = 0;
 bool saved_auto = false;
+bool saved_loop = false;
 bool do_build = true;
 int last_cat_pos = -1;
-int mx, my, mz, sp, cat_list, sub_list, auto_cb, ok, cn;
+int mx, my, mz, sp, cat_list, sub_list, auto_cb, loop_cb, ok, cn;
 while(true)
 {
 if(do_build)
@@ -105,6 +111,7 @@ saved_y = form.get_text(my);
 if(mapmode == "3d") saved_z = form.get_text(mz);
 saved_sp = form.get_text(sp);
 saved_auto = form.is_checked(auto_cb);
+saved_loop = form.is_checked(loop_cb);
 }
 form.reset();
 form.create_window("item", false, true, last_cat_pos != -1);
@@ -133,6 +140,7 @@ else
 for(uint i = 0; i < other_items.length(); i++) form.add_list_item(sub_list, other_items[i], other_items[i]);
 form.set_list_position(sub_list, saved_sub_pos, false);
 auto_cb = form.create_checkbox("autograb when stepped on", saved_auto);
+loop_cb = form.create_checkbox("looping sound", saved_loop);
 ok = form.create_button("&okay", true);
 cn = form.create_button("&cancel");
 if(last_cat_pos == -1)
@@ -232,10 +240,11 @@ btype2 = (saved_cat_pos == 0) ? health_items[p-1] : ((saved_cat_pos == 1) ? stam
 else
 btype2 = "none";
 bool bauto = form.is_checked(auto_cb);
+bool bloop = form.is_checked(loop_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_item(bx, by, bsp, btype, btype2, bauto, bz);
-spawn_obj(bx, by, bsp, btype, btype2, bauto, bz);
+write_item(bx, by, bsp, btype, btype2, bauto, bz, bloop);
+spawn_obj(bx, by, bsp, btype, btype2, bauto, bz, bloop);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -248,33 +257,25 @@ void read_item(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-if(sd.length() == 8)
-{
-int z=stn(sd[3]);
-int objtime=stn(sd[4]);
-string objtype=sd[5];
-string objtype2=sd[6];
-bool automatic=string_to_bool(sd[7]);
-spawn_obj(x, y, objtime, objtype, objtype2, automatic, z);
-}
-else
-{
-int objtime=stn(sd[3]);
-string objtype=sd[4];
-string objtype2=sd[5];
-bool automatic=string_to_bool(sd[6]);
-spawn_obj(x, y, objtime, objtype, objtype2, automatic, 0);
-}
+int z=0;
+int o=3;
+if(mapmode=="3d") { z=stn(sd[3]); o=4; }
+int objtime=stn(sd[o]);
+string objtype=sd[o+1];
+string objtype2=sd[o+2];
+bool automatic=string_to_bool(sd[o+3]);
+bool lps=string_to_bool(sd[o+4]);
+spawn_obj(x, y, objtime, objtype, objtype2, automatic, z, lps);
 }
 
-void write_item(int x, int y, int objtime, string objtype, string objtype2, bool automatic, int z=0)
+void write_item(int x, int y, int objtime, string objtype, string objtype2, bool automatic, int z=0, bool looping=false)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"item "+x+" "+y+" "+z+" "+objtime+" "+objtype+" "+objtype2+" "+automatic);
+mapper.write("\r\n"+"item "+x+" "+y+" "+z+" "+objtime+" "+objtype+" "+objtype2+" "+automatic+" "+looping);
 else
-mapper.write("\r\n"+"item "+x+" "+y+" "+objtime+" "+objtype+" "+objtype2+" "+automatic);
+mapper.write("\r\n"+"item "+x+" "+y+" "+objtime+" "+objtype+" "+objtype2+" "+automatic+" "+looping);
 mapper.close();
 bump_map_modified();
 }

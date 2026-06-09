@@ -5,19 +5,23 @@ checkpoint@ last_checkpoint = null;
 class checkpoint
 {
 int getsound, checksound;
+bool looping;
 int checkx;
 int checky;
 int checkz;
 int checktime;
 string checktype;
 timer checktimer;
-checkpoint(int ckx,int cky,int ckspeed,string cktype,int ckz=0)
+checkpoint(int ckx,int cky,int ckspeed,string cktype,int ckz=0,bool lps=false)
 {
 checkx=ckx;
 checky=cky;
 checkz=ckz;
 checktime=ckspeed;
 checktype=cktype;
+looping=lps;
+if(looping==true)
+checksound=checkpool.play_extended_3d(get_map_sound("builder/construction/checkpoints/"+checktype+"/*loop*"),me.x,me.y,me.z,checkx,checky,checkz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 }
 }
 void checkdeath()
@@ -113,6 +117,7 @@ if(mapmode == "3d") match = match and me.z==checkpoints[i].checkz;
 if(match)
 {
 checkpoints[i].getsound=checkpool.play_stationary_extended(get_map_sound("builder/construction/checkpoints/"+checkpoints[i].checktype+"/*get*"),false,0,0,0,100,false);
+if(checkpoints[i].looping) checkpool.destroy_sound(checkpoints[i].checksound);
 @last_checkpoint=checkpoints[i];
 @checkpoints[i] = null;
 return true;
@@ -134,7 +139,7 @@ void cploop()
 for(uint i=0; i<checkpoints.length(); i++)
 {
 if(@checkpoints[i] == null) continue;
-if(checkpoints[i].checktimer.elapsed>=checkpoints[i].checktime)
+if(!checkpoints[i].looping and checkpoints[i].checktimer.elapsed>=checkpoints[i].checktime)
 {
 checkpoints[i].checksound=checkpool.play_extended_3d(get_map_sound("builder/construction/checkpoints/"+checkpoints[i].checktype+"/*loop*"),me.x,me.y,me.z,checkpoints[i].checkx,checkpoints[i].checky,checkpoints[i].checkz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 checkpoints[i].checktimer.restart();
@@ -142,9 +147,9 @@ checkpoints[i].checktimer.restart();
 }
 acquire_checkpoint();
 }
-void spawn_checkpoint(int x,int y,int speed,string checktype,int z=0)
+void spawn_checkpoint(int x,int y,int speed,string checktype,int z=0,bool looping=false)
 {
-checkpoint cp1(x,y,speed,checktype,z);
+checkpoint cp1(x,y,speed,checktype,z,looping);
 checkpoints.insert_last(cp1);
 }
 void destroy_all_checkpoints()
@@ -185,6 +190,7 @@ form.add_list_item(check_list, "none", "none");
 for(uint i = 0; i < checks_list.length(); i++)
 form.add_list_item(check_list, checks_list[i], checks_list[i]);
 form.set_list_position(check_list, 0, false);
+int loop_cb = form.create_checkbox("looping sound", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -258,10 +264,11 @@ int bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(check_list);
 string btype = (p > 0) ? checks_list[p-1] : "none";
+bool bloop = form.is_checked(loop_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_checkpoint(bx, by, bsp, btype, bz);
-spawn_checkpoint(bx, by, bsp, btype, bz);
+write_checkpoint(bx, by, bsp, btype, bz, bloop);
+spawn_checkpoint(bx, by, bsp, btype, bz, bloop);
 load_map(mapname, mapowner, force_compiled:map_is_compiled, force_spawned:true);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -274,29 +281,23 @@ void read_checkpoint(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-if(sd.length() == 6)
-{
-int z=stn(sd[3]);
-int checktime=stn(sd[4]);
-string checktype=sd[5];
-spawn_checkpoint(x, y, checktime, checktype, z);
-}
-else
-{
-int checktime=stn(sd[3]);
-string checktype=sd[4];
-spawn_checkpoint(x, y, checktime, checktype, 0);
-}
+int z=0;
+int o=3;
+if(mapmode=="3d") { z=stn(sd[3]); o=4; }
+int checktime=stn(sd[o]);
+string checktype=sd[o+1];
+bool lps=string_to_bool(sd[o+2]);
+spawn_checkpoint(x, y, checktime, checktype, z, lps);
 }
 
-void write_checkpoint(int x, int y, int speed, string checktype, int z=0)
+void write_checkpoint(int x, int y, int speed, string checktype, int z=0, bool looping=false)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"checkpoint "+x+" "+y+" "+z+" "+speed+" "+checktype);
+mapper.write("\r\n"+"checkpoint "+x+" "+y+" "+z+" "+speed+" "+checktype+" "+looping);
 else
-mapper.write("\r\n"+"checkpoint "+x+" "+y+" "+speed+" "+checktype);
+mapper.write("\r\n"+"checkpoint "+x+" "+y+" "+speed+" "+checktype+" "+looping);
 mapper.close();
 bump_map_modified();
 }

@@ -8,8 +8,9 @@ int timbombz;
 int damage;
 int timbombtime;
 string timbombtype;
+bool looping;
 timer beeptimer, timbombtimer;
-timebomb(int bx,int by,int dmg,int btime,string bt,int bz=0)
+timebomb(int bx,int by,int dmg,int btime,string bt,int bz=0,bool lps=false)
 {
 timbombx=bx;
 timbomby=by;
@@ -17,8 +18,9 @@ timbombz=bz;
 damage=dmg;
 timbombtime=btime;
 timbombtype=bt;
+looping=lps;
 spawnsound=bombpool.play_extended_3d(get_map_sound("builder/traps/time bombs/"+timbombtype+"/*drop*"),me.x, me.y, me.z,timbombx, timbomby,timbombz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-loopsound=bombpool.play_extended_3d(get_map_sound("builder/traps/time bombs/"+timbombtype+"/*tick*"),me.x, me.y, me.z,timbombx, timbomby,timbombz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+loopsound=bombpool.play_extended_3d(get_map_sound("builder/traps/time bombs/"+timbombtype+"/*tick*"),me.x, me.y, me.z,timbombx, timbomby,timbombz,calculate_theta(me_rotation),0,0,0,0,0,0,looping,0,0,0,100,false);
 bombpool.update_sound_3d(loopsound, timbombx, timbomby, timbombz);
 }
 }
@@ -27,6 +29,8 @@ void timebombloop()
 for(uint i=0; i<timebombs.length(); i++)
 {
 if(@timebombs[i] == null) continue;
+if(!timebombs[i].looping)
+{
 float progress = 0.0;
 if(timebombs[i].timbombtime > 0)
 {
@@ -41,6 +45,7 @@ if(timebombs[i].beeptimer.elapsed >= interval)
 timebombs[i].loopsound = bombpool.play_extended_3d(get_map_sound("builder/traps/time bombs/"+timebombs[i].timbombtype+"/*tick*"),me.x, me.y, me.z,timebombs[i].timbombx, timebombs[i].timbomby,0,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 bombpool.update_sound_3d(timebombs[i].loopsound, timebombs[i].timbombx, timebombs[i].timbomby, timebombs[i].timbombz);
 timebombs[i].beeptimer.restart();
+}
 }
 if(timebombs[i].timbombtimer.elapsed>=timebombs[i].timbombtime)
 {
@@ -256,9 +261,9 @@ return;
 }
 }
 }
-void spawn_timebomb(int x,int y,int dmg,int timbombtime,string timbombtype,int z=0)
+void spawn_timebomb(int x,int y,int dmg,int timbombtime,string timbombtype,int z=0,bool looping=false)
 {
-timebomb tb1(x,y,dmg,timbombtime,timbombtype,z);
+timebomb tb1(x,y,dmg,timbombtime,timbombtype,z,looping);
 timebombs.insert_last(tb1);
 }
 void destroy_all_timebombs()
@@ -300,6 +305,7 @@ form.add_list_item(tbomb_list, "none", "none");
 for(uint i = 0; i < tbombs.length(); i++)
 form.add_list_item(tbomb_list, tbombs[i], tbombs[i]);
 form.set_list_position(tbomb_list, 0, false);
+int loop_cb = form.create_checkbox("looping sound", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
@@ -380,10 +386,11 @@ int bdm = string_to_number(form.get_text(dm));
 int bsp = string_to_number(form.get_text(sp));
 int p = form.get_list_position(tbomb_list);
 string btype = (p > 0) ? tbombs[p-1] : "none";
+bool bloop = form.is_checked(loop_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_timebomb(bx, by, bdm, bsp, btype, bz);
-spawn_timebomb(bx, by, bdm, bsp, btype, bz);
+write_timebomb(bx, by, bdm, bsp, btype, bz, bloop);
+spawn_timebomb(bx, by, bdm, bsp, btype, bz, bloop);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -396,31 +403,24 @@ void read_timebomb(string[] sd)
 {
 int x=stn(sd[1]);
 int y=stn(sd[2]);
-if(sd.length() == 7)
-{
-int z=stn(sd[3]);
-int dmg=stn(sd[4]);
-int sp=stn(sd[5]);
-string timbotype=sd[6];
-spawn_timebomb(x, y, dmg, sp, timbotype, z);
-}
-else
-{
-int dmg=stn(sd[3]);
-int sp=stn(sd[4]);
-string timbotype=sd[5];
-spawn_timebomb(x, y, dmg, sp, timbotype, 0);
-}
+int z=0;
+int o=3;
+if(mapmode=="3d") { z=stn(sd[3]); o=4; }
+int dmg=stn(sd[o]);
+int sp=stn(sd[o+1]);
+string timbotype=sd[o+2];
+bool lps=string_to_bool(sd[o+3]);
+spawn_timebomb(x, y, dmg, sp, timbotype, z, lps);
 }
 
-void write_timebomb(int x, int y, int damage, int speed, string timbombtype, int z=0)
+void write_timebomb(int x, int y, int damage, int speed, string timbombtype, int z=0, bool looping=false)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"time_bomb "+x+" "+y+" "+z+" "+damage+" "+speed+" "+timbombtype);
+mapper.write("\r\n"+"time_bomb "+x+" "+y+" "+z+" "+damage+" "+speed+" "+timbombtype+" "+looping);
 else
-mapper.write("\r\n"+"time_bomb "+x+" "+y+" "+damage+" "+speed+" "+timbombtype);
+mapper.write("\r\n"+"time_bomb "+x+" "+y+" "+damage+" "+speed+" "+timbombtype+" "+looping);
 mapper.close();
 bump_map_modified();
 }
