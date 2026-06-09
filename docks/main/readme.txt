@@ -225,7 +225,8 @@ Shift plus left bracket. Drop the inventory item currently in focus.
 Healing and shields.
 
 Backslash. Toggle health restoration on or off.
-Right bracket. Toggle shield strength restoration on or off.
+Right bracket. Toggle fast stamina restoration on or off. Stamina also trickles back on its own; this tops it up much faster while it's on.
+Left bracket. Toggle shield strength restoration on or off. The shield must be razed or worn for this to do anything.
 
 Letter, O. Raze or wear a drawn shield. In one shield mode, hold O to keep the shield up; releasing lowers it.
 
@@ -239,8 +240,6 @@ Letter, M. Speak your shield strength.
 
 Letter, N. Speak the direction and distance to the object you're tracking. Tracking is started from the object viewer.
 Shift plus letter N. Stop tracking the current object.
-
-Left bracket. Speak your total kills.
 
 Letter, Z. Toggle zone announcements on or off.
 Alt plus letter Q. Speak the text zone you're currently standing in.

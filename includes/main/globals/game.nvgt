@@ -2,12 +2,12 @@ bool autorun=false, camdext=false, freezgame=false, exit_game=false;
 
 int gamxit=1, turnmode=1;
 int autojump=0, jumpheight=5, locspeech=3, modspeed=5, paused=0;
-int hprestoration=0, sprestoration=0;
-int hprestoretime=2400, strestoretime=600, sprestoretime=1200;
+int hprestoration=0, sprestoration=0, stprestoration=0;
+int hprestoretime=2400, strestoretime=600, sprestoretime=1200, stprestoretime=1200;
 
 string[] kombatlog;
 
-timer hprestoretimer, strestoretimer, sprestoretimer;
+timer hprestoretimer, strestoretimer, sprestoretimer, stprestoretimer;
 sound_pool p, pool;
 
 key_hold cleft(KEY_LEFT,200,modspeed);
@@ -136,6 +136,15 @@ if(stamina<maxstamina and strestoretimer.elapsed>=strestoretime and healable==tr
 stamina+=maxstamina/100;
 strestoretimer.restart();
 }
+if(stamina<maxstamina and stprestoretimer.elapsed>=stprestoretime and healable==true)
+{
+if(stprestoration==1)
+{
+stamina+=maxstamina/4;
+if(stamina>=maxstamina) p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*healstop*"),false);
+stprestoretimer.restart();
+}
+}
 if(health<maxhealth and hprestoretimer.elapsed>=hprestoretime and healable==true)
 {
 if(hprestoration==1)
@@ -236,6 +245,12 @@ if(shieldstrength>=maxshieldstrength and sprestoration==1)
 sprestoration=0;
 p.destroy_sound(autoslot);
 shieldstrength=maxshieldstrength;
+}
+if(stamina>=maxstamina and stprestoration==1)
+{
+stprestoration=0;
+p.destroy_sound(autoslot);
+stamina=maxstamina;
 }
 }
 }
