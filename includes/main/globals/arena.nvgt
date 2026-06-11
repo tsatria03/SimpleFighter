@@ -1,6 +1,7 @@
 bool arena_active=false;
 
-double arena_step=5;       // F-key max-bound expansion step, in tiles
+double arena_step=5;       // F-key max-bound expansion step, in tiles (the "small" step)
+double arena_big_step=10;  // shift+F-key max-bound expansion step, in tiles (the "big" step)
 double arena_min_max=25;   // smallest a max edge can be shrunk to via the F-keys
 double arena_max_size=1000; // largest a max edge can be grown to via the F-keys
 double arena_default_max=50; // the starting max edge each axis resets to
@@ -67,7 +68,7 @@ double zminx=11;
 if(zminx>arena.maxx) zminx=arena.maxx;
 double zy2=(mapmode=="2d") ? arena.miny : arena.maxy;   // 2d spawns on the floor
 int cap=arena_cap();
-spawn_npc_zone(zminx, arena.maxx, arena.miny, zy2, arena.spawntime, int(level), arena.path, arena.category, arena.subtype, int(arena.minz), cap, true);
+spawn_npc_zone(zminx, arena.maxx, arena.miny, zy2, random(500, 1000), int(level), arena.path, arena.category, arena.subtype, int(arena.minz), cap, true);
 arena.zone_index=int(npc_zones.length())-1;
 }
 
@@ -291,7 +292,14 @@ if(controls.action_repeating("arena_shrink_y")) arena_resize_axis("y", -arena_st
 if(controls.action_repeating("arena_grow_y")) arena_resize_axis("y", arena_step);
 if(controls.action_repeating("arena_shrink_z")) arena_resize_axis("z", -arena_step);
 if(controls.action_repeating("arena_grow_z")) arena_resize_axis("z", arena_step);
-// F7-F9 reset max x, y, z back to the default.
+// shift+F1/F2, shift+F4/F5, shift+F7/F8 shrink/grow by the bigger step for faster reshaping.
+if(controls.action_repeating("arena_shrink_x_big")) arena_resize_axis("x", -arena_big_step);
+if(controls.action_repeating("arena_grow_x_big")) arena_resize_axis("x", arena_big_step);
+if(controls.action_repeating("arena_shrink_y_big")) arena_resize_axis("y", -arena_big_step);
+if(controls.action_repeating("arena_grow_y_big")) arena_resize_axis("y", arena_big_step);
+if(controls.action_repeating("arena_shrink_z_big")) arena_resize_axis("z", -arena_big_step);
+if(controls.action_repeating("arena_grow_z_big")) arena_resize_axis("z", arena_big_step);
+// reset max x, y, z back to the default.
 if(controls.action_pressed("arena_reset_x")) arena_reset_axis("x");
 if(controls.action_pressed("arena_reset_y")) arena_reset_axis("y");
 if(controls.action_pressed("arena_reset_z")) arena_reset_axis("z");
