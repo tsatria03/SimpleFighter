@@ -1,0 +1,469 @@
+wall@[]walls(0);
+class wall
+{
+bool destroyable;
+bool transparent;
+int defsound,hurtsound;
+int[] platform_ids;
+double minx,maxx,miny,maxy;
+double minz,maxz;
+double wallhealth;
+double wallmaxhealth;
+double volume;
+double pitch;
+string wall;
+string destplat;
+wall(double mx,double mx2,double my,double my2,double hp,double maxhp,string wy,double vol,double semitone,string dp,bool dtb,bool trp,double mnz=0,double mxz=0)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+minz=mnz;
+maxz=mxz;
+wallhealth=hp;
+wallmaxhealth=maxhp;
+wall=wy;
+volume=vol;
+pitch=semitone;
+destplat=dp;
+destroyable=dtb;
+transparent=trp;
+bool blk = (wall != "air");   // an air wall carves a walk-through gap instead of blocking
+if(mapmode == "3d")
+{
+for(double z = minz; z <= maxz; z++)
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, z, blk));
+}
+else
+{
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, wallhealth, wallmaxhealth, wall, volume, pitch, destroyable, false, true, 0, blk));
+}
+}
+}
+
+void checkforwalls()
+{
+string tile = platform_tile_at(me.x, me.y, me.z);
+if(tile!="" and string_contains(tile,"wall",1)>-1)
+{
+if(ascending)
+{
+// A walkable platform on top of this wall within jump reach? Snap straight up onto it.
+double top = wall_top_platform(me.x, me.y, (mapmode == "2d") ? me.y : me.z, ty2);
+if(top >= 0)
+{
+if(mapmode == "2d") me.y = top;
+else me.z = top;
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = (mapmode == "2d") ? me.y : me.z;
+return;
+}
+}
+wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+tile+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
+if(ascending)
+{
+if(mapmode == "2d") me.y -= 1;
+else me.z -= 1;
+}
+ascending=false;
+jumptimer.restart();
+atapex=true;
+}
+}
+void get_all_wall_tiles(double x, double y, array<string>@ walls_out, array<double>@ volumes, array<double>@ pitches)
+{
+for (uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if (walls[i].minx <= x && walls[i].maxx >= x && walls[i].miny <= y && walls[i].maxy >= y)
+{
+walls_out.insert_last(walls[i].wall);
+volumes.insert_last(walls[i].volume);
+pitches.insert_last(walls[i].pitch);
+}
+}
+}
+void wallcheck()
+{
+for(uint i=0; i<walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if(walls[i].wallhealth<=0)
+{
+p.destroy_sound(walls[i].hurtsound);
+walls[i].defsound=p.play_extended_3d(get_map_sound("builder/construction/walls/"+walls[i].wall+"/*death*"),me.x,me.y,me.z,walls[i].minx,walls[i].miny,walls[i].minz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch,false);
+p.update_sound_3d(walls[i].defsound,walls[i].minx,walls[i].miny,walls[i].minz);
+p.update_sound_range_3d(walls[i].defsound,0,walls[i].maxx-walls[i].minx,0,walls[i].maxy-walls[i].miny, 0, walls[i].maxz-walls[i].minz);
+for(int j = int(walls[i].platform_ids.length()) - 1; j >= 0; j--)
+remove_platform(walls[i].platform_ids[j]);
+string dp = walls[i].destplat;
+if(dp != "none" && dp != "")
+{
+string debris_tile = "";
+if(dp == "air")
+debris_tile = "air";
+else
+{
+string[] pool = get_map_sound_folders("builder/construction/platforms/*"+dp+"*");
+if(pool.length() != 0) debris_tile = random_string(pool);
+}
+if(debris_tile != "")
+{
+if(mapmode == "3d")
+{
+for(double z = walls[i].minz; z <= walls[i].maxz; z++)
+spawn_platform(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, 1, 1, debris_tile, 0, 100, false, false, false, z, false);
+}
+else
+spawn_platform(walls[i].minx, walls[i].maxx, walls[i].miny, walls[i].maxy, 1, 1, debris_tile, 0, 100, false, false, false, 0, false);
+}
+}
+@walls[i] = null;
+return;
+}
+}
+}
+bool wall_blocks(double x, double y, double z)
+{
+if(point_in_open_passage(x, y, z)) return false;
+// Defer to the same build-ordered tile resolution platform_tile_at uses: the cell only blocks if the top-most construction there is a wall (blocks=true). A platform built over the wall wins and the cell becomes walkable, matching 2d behavior.
+int idx = top_platform_index(x, y, z);
+return idx >= 0 && platforms[idx].blocks;
+}
+void bump_wall_at(double x, double y, double z)
+{
+if(!wallbump && wall_hit_once) return;
+for(uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if(x >= walls[i].minx && x <= walls[i].maxx
+&& y >= walls[i].miny && y <= walls[i].maxy
+&& z >= walls[i].minz && z <= walls[i].maxz)
+{
+if(glider_engine_on)
+p.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*rico*"), false);
+else
+wallslot = p.play_extended_3d(get_map_sound("builder/construction/walls/" + walls[i].wall + "/*bump*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, walls[i].volume, walls[i].pitch);
+if(!wallbump) wall_hit_once = true;
+return;
+}
+}
+}
+string wall_tile_at(double x, double y)
+{
+for(uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+return walls[i].wall;
+}
+return "";
+}
+string wall_tile_at(double x, double y, double z)
+{
+for(uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+{
+if(mapmode == "3d" && (z < walls[i].minz || z > walls[i].maxz)) continue;
+return walls[i].wall;
+}
+}
+return "";
+}
+bool is_transparent_wall(int x, int y)
+{
+for(uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+{
+return walls[i].transparent;
+}
+}
+return false;
+}
+bool is_transparent_wall(int x, int y, int z)
+{
+for(uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if(x >= walls[i].minx && x <= walls[i].maxx && y >= walls[i].miny && y <= walls[i].maxy)
+{
+if(mapmode == "3d" && (z < walls[i].minz || z > walls[i].maxz)) continue;
+return walls[i].transparent;
+}
+}
+return false;
+}
+int spawn_wall(double x1, double x2, double y1, double y2, double wallhealth, double wallmaxhealth, string wall, double wallvolume, double wallpitch, string destplat, bool destroyable, bool transparent, double minz=0, double maxz=0)
+{
+wall wl1(x1, x2, y1, y2, wallhealth, wallmaxhealth, wall, wallvolume, wallpitch, destplat, destroyable, transparent, minz, maxz);
+walls.insert_last(wl1);
+return walls.length() - 1;
+}
+void update_wall(int id, double x1, double x2, double y1, double y2)
+{
+if (id >= 0 && id < walls.length() && @walls[id] != null)
+{
+walls[id].minx = x1;
+walls[id].maxx = x2;
+walls[id].miny = y1;
+walls[id].maxy = y2;
+}
+}
+void remove_wall(int id)
+{
+if (id >= 0 && id < walls.length() && @walls[id] != null)
+{
+@walls[id] = null;
+}
+}
+void destroy_all_walls()
+{
+walls.resize(0);
+}
+
+void build_wall()
+{
+string[] walls_list = get_map_sound_folders("builder/construction/walls/*");
+if(walls_list.length() == 0)
+{
+dlg("Error. There are no walls available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+walls_list.insert_at(0, "wall");   // the generic type; "air" is added as the list's first item below
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("wall", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+int hp = form.create_input_box("health", "1");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+int wall_list = form.create_list("wall sound");
+form.add_list_item(wall_list, "air", "air");
+for(uint i = 0; i < walls_list.length(); i++)
+form.add_list_item(wall_list, walls_list[i], walls_list[i]);
+form.set_list_position(wall_list, 0, false);
+form.set_first_letter_nav(wall_list, false);
+int wall_vol = form.create_slider("wall volume", 0, -100, 0, "", 5);
+int wall_pit = form.create_slider("wall pitch", 100, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
+int destplat_list = form.create_list("destruction platform");
+form.add_list_item(destplat_list, "none", "none");
+form.add_list_item(destplat_list, "air", "air");
+form.add_list_item(destplat_list, "ash", "ash");
+form.add_list_item(destplat_list, "branch", "branch");
+form.add_list_item(destplat_list, "brokenglass", "brokenglass");
+form.add_list_item(destplat_list, "debris", "debris");
+form.add_list_item(destplat_list, "fire", "fire");
+form.add_list_item(destplat_list, "rocks", "rocks");
+form.add_list_item(destplat_list, "rubble", "rubble");
+form.add_list_item(destplat_list, "woodpile", "woodpile");
+form.set_list_position(destplat_list, 0, false);
+int dest_cb = form.create_checkbox("destroyable", false);
+int trans_cb = form.create_checkbox("transparent", false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+int active_group = 0;
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+int cur_group = 0;
+if(cur_focus == wall_list || cur_focus == wall_vol || cur_focus == wall_pit) cur_group = 1;
+int cur_wall_pos = form.get_list_position(wall_list);
+if(cur_group != active_group)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+active_group = cur_group;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group == 1 && cur_wall_pos > 0)
+{
+t.destroy_sound(prevslot);
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*bump*"), false, 0, 0, v, pt, false);
+keytimer.restart();
+}
+if(cur_focus == wall_list && control_is_down() && key_repeating(KEY_L) && cur_wall_pos > 0)
+{
+t.destroy_sound(prevslot);
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*hurt*"), false, 0, 0, v, pt, false);
+}
+if(cur_focus == wall_list && control_is_down() && key_repeating(KEY_H) && cur_wall_pos > 0)
+{
+t.destroy_sound(prevslot);
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls_list[cur_wall_pos-1]+"/*death*"), false, 0, 0, v, pt, false);
+}
+if(cur_focus == wall_list && !control_is_down() && key_up(KEY_LALT) && key_up(KEY_RALT) && walls_list.length() > 0)
+{
+string alpha = "abcdefghijklmnopqrstuvwxyz";
+for(uint k = 0; k < 26; k++)
+{
+if(!key_repeating(KEY_A + k)) continue;
+string letter = alpha.substr(k, 1);
+int n = int(walls_list.length());
+int start = (cur_wall_pos > 0) ? cur_wall_pos - 1 : -1;
+for(int s = 1; s <= n; s++)
+{
+int idx = ((start + s) % n + n) % n;
+string stripped = walls_list[idx];
+if(stripped.find("wall") == 0) stripped = stripped.substr(4);
+if(stripped.length() > 0 && stripped.substr(0, 1).lower() == letter)
+{
+form.set_list_position(wall_list, idx + 1, true);
+break;
+}
+}
+break;
+}
+}
+if(prevslot != -1 && cur_group == 1)
+{
+float v = form.get_slider(wall_vol);
+float pt = form.get_slider(wall_pit);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx).is_empty())
+{
+speak("Minimum x is required.");
+form.focus(mx);
+continue;
+}
+if(form.get_text(mx2).is_empty())
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+continue;
+}
+if(form.get_text(my).is_empty())
+{
+speak("Minimum y is required.");
+form.focus(my);
+continue;
+}
+if(form.get_text(my2).is_empty())
+{
+speak("Maximum y is required.");
+form.focus(my2);
+continue;
+}
+if(mnz != -1 && form.get_text(mnz).is_empty())
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz).is_empty())
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+double bhp = string_to_number(form.get_text(hp));
+int p = form.get_list_position(wall_list);
+string btype = (p > 0) ? walls_list[p-1] : "air";
+double bvol = form.get_slider(wall_vol);
+double bpit = form.get_slider(wall_pit);
+bool bdest = form.is_checked(dest_cb);
+bool btrans = form.is_checked(trans_cb);
+int dp_pos = form.get_list_position(destplat_list);
+string bdestplat = (dp_pos >= 0) ? form.get_list_item(destplat_list, dp_pos) : "none";
+t.destroy_sound(prevslot);
+resume_pools();
+write_wall(bx, bx2, by, by2, bhp, btype, bvol, bpit, bdestplat, bdest, btrans, bmnz, bmxz);
+spawn_wall(bx, bx2, by, by2, bhp, bhp, btype, bvol, bpit, bdestplat, bdest, btrans, bmnz, bmxz);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
+
+void read_wall(string[] sd)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double minz=0, maxz=0;
+int o=5;
+if(sd.length()==14)
+{
+minz=stn(sd[5]);
+maxz=stn(sd[6]);
+o=7;
+}
+double hp=stn(sd[o]);
+string walltype=sd[o+1];
+double wallvol=stn(sd[o+2]);
+double wallpitch=stn(sd[o+3]);
+string destplat=sd[o+4];
+bool dbl=string_to_bool(sd[o+5]);
+bool trp=string_to_bool(sd[o+6]);
+spawn_wall(mx, mx2, my, my2, hp, hp, walltype, wallvol, wallpitch, destplat, dbl, trp, minz, maxz);
+}
+
+void write_wall(double x1, double x2, double y1, double y2, double hp, string walltype, double vol, double pitch, string destplat, bool destroyable, bool transparent, double minz=0, double maxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"wall "+coords+" "+hp+" "+walltype+" "+vol+" "+pitch+" "+destplat+" "+destroyable+" "+transparent);
+mapper.close();
+bump_map_modified();
+}

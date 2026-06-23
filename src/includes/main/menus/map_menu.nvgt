@@ -1,0 +1,1278 @@
+int buildmenu_last_tab = 0;
+
+bool new_map_form()
+{
+string disallowed_name = "";
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+string saved_name = "";
+string saved_owner = defowner;
+string saved_description = "none";
+string saved_minx = "";
+string saved_maxx = "";
+string saved_miny = "";
+string saved_maxy = "";
+string saved_minz = "";
+string saved_maxz = "";
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+bool do_build = true;
+int nm_name, nm_owner, nm_description, nm_mode, nm_minx, nm_maxx, nm_miny, nm_maxy, nm_minz, nm_maxz, nm_ok, nm_cn;
+while(true)
+{
+if(do_build)
+{
+do_build = false;
+if(last_mode_pos != -2)
+{
+saved_name = form.get_text(nm_name);
+saved_owner = form.get_text(nm_owner);
+saved_description = form.get_text(nm_description);
+saved_minx = form.get_text(nm_minx);
+saved_maxx = form.get_text(nm_maxx);
+saved_miny = form.get_text(nm_miny);
+saved_maxy = form.get_text(nm_maxy);
+if(last_mode_pos == 2)
+{
+saved_minz = form.get_text(nm_minz);
+saved_maxz = form.get_text(nm_maxz);
+}
+}
+form.reset();
+form.create_window("new map", false, true, last_mode_pos != -2);
+nm_mode = form.create_list("map mode");
+form.add_list_item(nm_mode, "2d - side-view platformer with jumping and falling", "2d");
+form.add_list_item(nm_mode, "topdown - bird's-eye view with free movement on a flat plane and body rotation", "topdown");
+form.add_list_item(nm_mode, "3d - full volumetric world with jumping, body rotation, and falling", "3d");
+form.set_list_position(nm_mode, saved_mode_pos, false);
+nm_name = form.create_input_box("name", saved_name);
+form.set_disallowed_chars(nm_name, disallowed_name, false, "This character is not allowed.");
+nm_minx = form.create_input_box("minimum length (use a leading dash for negative)", saved_minx);
+nm_maxx = form.create_input_box("maximum length (use a leading dash for negative)", saved_maxx);
+form.set_disallowed_chars(nm_minx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(nm_maxx, disallowed_nums, false, "This character is not allowed.");
+if(saved_mode_pos == 0)
+{
+nm_miny = form.create_input_box("minimum height (use a leading dash for negative)", saved_miny);
+nm_maxy = form.create_input_box("maximum height (use a leading dash for negative)", saved_maxy);
+}
+else if(saved_mode_pos == 1)
+{
+nm_miny = form.create_input_box("minimum width (use a leading dash for negative)", saved_miny);
+nm_maxy = form.create_input_box("maximum width (use a leading dash for negative)", saved_maxy);
+}
+else if(saved_mode_pos == 2)
+{
+nm_miny = form.create_input_box("minimum width (use a leading dash for negative)", saved_miny);
+nm_maxy = form.create_input_box("maximum width (use a leading dash for negative)", saved_maxy);
+nm_minz = form.create_input_box("minimum height (use a leading dash for negative)", saved_minz);
+nm_maxz = form.create_input_box("maximum height (use a leading dash for negative)", saved_maxz);
+form.set_disallowed_chars(nm_minz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(nm_maxz, disallowed_nums, false, "This character is not allowed.");
+}
+if(saved_mode_pos != -1)
+{
+form.set_disallowed_chars(nm_miny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(nm_maxy, disallowed_nums, false, "This character is not allowed.");
+}
+nm_owner = form.create_input_box("owner", saved_owner);
+nm_description = form.create_input_box("description", saved_description);
+nm_ok = form.create_button("&okay", true);
+nm_cn = form.create_button("&cancel");
+if(last_mode_pos == -2)
+form.focus(nm_mode);
+else
+form.focus_silently(nm_mode);
+last_mode_pos = saved_mode_pos;
+}
+wait(5);
+form.monitor();
+int cur_mode_pos = form.get_list_position(nm_mode);
+if(cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(nm_cn))
+{
+speak("canceled");
+return false;
+}
+if(form.is_pressed(nm_ok))
+{
+if(saved_mode_pos == -1)
+{
+speak("Map mode is required.");
+form.focus(nm_mode);
+continue;
+}
+if(form.get_text(nm_name) == "")
+{
+speak("Name is required.");
+form.focus(nm_name);
+continue;
+}
+if(form.get_text(nm_owner) == "")
+{
+speak("Owner is required.");
+form.focus(nm_owner);
+continue;
+}
+if(form.get_text(nm_minx) == "")
+{
+speak("Minimum length is required.");
+form.focus(nm_minx);
+continue;
+}
+if(form.get_text(nm_maxx) == "")
+{
+speak("Maximum length is required.");
+form.focus(nm_maxx);
+continue;
+}
+if(form.get_text(nm_miny) == "")
+{
+speak((saved_mode_pos == 0) ? "Minimum height is required." : "Minimum width is required.");
+form.focus(nm_miny);
+continue;
+}
+if(form.get_text(nm_maxy) == "")
+{
+speak((saved_mode_pos == 0) ? "Maximum height is required." : "Maximum width is required.");
+form.focus(nm_maxy);
+continue;
+}
+if(saved_mode_pos == 2)
+{
+if(form.get_text(nm_minz) == "")
+{
+speak("Minimum height is required.");
+form.focus(nm_minz);
+continue;
+}
+if(form.get_text(nm_maxz) == "")
+{
+speak("Maximum height is required.");
+form.focus(nm_maxz);
+continue;
+}
+}
+string new_name = form.get_text(nm_name);
+string new_owner = form.get_text(nm_owner);
+string new_description = string_trim_sides(form.get_text(nm_description));
+if(new_description == "none") new_description = "";
+string new_mode = (saved_mode_pos == 0) ? "2d" : (saved_mode_pos == 1 ? "topdown" : "3d");
+double new_minx = string_to_number(form.get_text(nm_minx));
+double new_maxx = string_to_number(form.get_text(nm_maxx));
+double new_miny = string_to_number(form.get_text(nm_miny));
+double new_maxy = string_to_number(form.get_text(nm_maxy));
+double new_minz = 0;
+double new_maxz = 0;
+if(saved_mode_pos == 2)
+{
+new_minz = string_to_number(form.get_text(nm_minz));
+new_maxz = string_to_number(form.get_text(nm_maxz));
+}
+if(directory_exists("data/builder/maps/decompiled/"+new_name))
+{
+dlg("Error. A map with this name already exists. Press enter to continue.");
+form.focus(nm_name);
+continue;
+}
+create_map(new_name, new_owner, new_mode, new_minx, new_maxx, new_miny, new_maxy, new_minz, new_maxz, new_description);
+load_map(new_name, new_owner);
+return true;
+}
+}
+return false;
+}
+
+void buildobj(string buildtype)
+{
+if(buildtype == "aircraft")
+{
+build_aircraft();
+}
+if(buildtype == "aircraft_beacon")
+{
+build_airbeacon();
+}
+if(buildtype == "aircraft_turbulence")
+{
+build_air_turbulence();
+}
+if(buildtype == "bike")
+{
+build_bike();
+}
+if(buildtype == "vehicle")
+{
+build_vehicle();
+}
+if(buildtype == "blockage")
+{
+build_blockage();
+}
+if(buildtype == "conveyor_belt")
+{
+build_conveyor_belt();
+}
+if(buildtype == "elevator_floor")
+{
+build_elevator_floor();
+}
+if(buildtype == "moving_platform")
+{
+build_moving_platform();
+}
+if(buildtype == "platform")
+{
+build_platform();
+}
+if(buildtype == "staircase")
+{
+build_staircase();
+}
+if(buildtype == "vanishing_platform")
+{
+build_vanishing_platform();
+}
+if(buildtype == "wall")
+{
+build_wall();
+}
+if(buildtype == "calendar")
+{
+build_calendar();
+}
+if(buildtype == "clock")
+{
+build_clock();
+}
+if(buildtype == "item")
+{
+build_item();
+}
+if(buildtype == "sign")
+{
+build_sign();
+}
+if(buildtype == "switch")
+{
+build_switch();
+}
+if(buildtype == "sensor")
+{
+build_sensor();
+}
+if(buildtype == "text_square")
+{
+build_text_square();
+}
+if(buildtype == "character_blocker")
+{
+build_character_blocker();
+}
+if(buildtype == "checkpoint")
+{
+build_checkpoint();
+}
+if(buildtype == "command_blocker")
+{
+build_command_blocker();
+}
+if(buildtype == "effect_space")
+{
+build_effect_space();
+}
+if(buildtype == "spawnpoint")
+{
+build_spawnpoint();
+}
+if(buildtype == "timed_text")
+{
+build_timed_text();
+}
+if(buildtype == "travelpoint")
+{
+build_travelpoint();
+}
+if(buildtype == "npc")
+{
+build_npc();
+}
+if(buildtype == "projectile")
+{
+build_projectile();
+}
+if(buildtype == "tts_enemie")
+{
+build_ttsenemie();
+}
+if(buildtype == "door")
+{
+build_door();
+}
+if(buildtype == "item_door")
+{
+build_item_door();
+}
+if(buildtype == "elevator")
+{
+build_elevator();
+}
+if(buildtype == "lift")
+{
+build_lift();
+}
+if(buildtype == "passage")
+{
+build_passage();
+}
+if(buildtype == "item_passage")
+{
+build_item_passage();
+}
+if(buildtype == "teleporter")
+{
+build_teleporter();
+}
+if(buildtype == "sound_ambience")
+{
+build_sound_ambience();
+}
+if(buildtype == "sound_source")
+{
+build_sound_source();
+}
+if(buildtype == "speaker")
+{
+build_speaker();
+}
+if(buildtype == "trampoline")
+{
+build_trampoline();
+}
+if(buildtype == "url_ambience")
+{
+build_url_ambience();
+}
+if(buildtype == "url_source")
+{
+build_url_source();
+}
+if(buildtype == "excludable_ambience")
+{
+build_excludable_ambience();
+}
+if(buildtype == "excludable_source")
+{
+build_excludable_source();
+}
+if(buildtype == "timed_ambience")
+{
+build_timed_ambience();
+}
+if(buildtype == "timed_source")
+{
+build_timed_source();
+}
+if(buildtype == "bomb")
+{
+build_bomb();
+}
+if(buildtype == "fire")
+{
+build_fire();
+}
+if(buildtype == "floor_breaker")
+{
+build_floor_breaker();
+}
+if(buildtype == "force_field")
+{
+build_forcefield();
+}
+if(buildtype == "hazard")
+{
+build_hazard();
+}
+if(buildtype == "mine")
+{
+build_mine();
+}
+if(buildtype == "moving_hazard")
+{
+build_moving_hazard();
+}
+if(buildtype == "security_camera")
+{
+build_security_camera();
+}
+if(buildtype == "spike")
+{
+build_spike();
+}
+if(buildtype == "time_bomb")
+{
+build_timebomb();
+}
+if(buildtype == "vanishing_hazard")
+{
+build_vanishing_hazard();
+}
+if(buildtype == "npc_zone")
+{
+build_npc_zone();
+}
+if(buildtype == "bomb_zone")
+{
+build_bomb_zone();
+}
+if(buildtype == "heal_zone")
+{
+build_heal_zone();
+}
+if(buildtype == "item_zone")
+{
+build_item_zone();
+}
+if(buildtype == "menu_zone")
+{
+build_menu_zone();
+}
+if(buildtype == "obscurity_zone")
+{
+build_obscurity_zone();
+}
+if(buildtype == "projectile_zone")
+{
+build_projectile_zone();
+}
+if(buildtype == "safe_zone")
+{
+build_safe_zone();
+}
+if(buildtype == "fall_zone")
+{
+build_fall_zone();
+}
+if(buildtype == "story_zone")
+{
+build_story_zone();
+}
+if(buildtype == "text_zone")
+{
+build_text_zone();
+}
+}
+
+void buildmenu()
+{
+string[] cat_names = {"all", "audio", "construction", "interaction", "kombat", "misc", "transitions", "transportation", "traps", "zones"};
+string[][] entry_names = {
+{},
+{"effect space", "excludable ambience", "excludable source", "sound ambience", "sound source", "speaker", "timed ambience", "timed source", "url ambience", "url source"},
+{"blockage", "checkpoint", "conveyor belt", "elevator floor", "moving platform", "platform", "spawnpoint", "staircase", "vanishing platform", "wall"},
+{"calendar", "clock", "item", "sensor", "sign", "switch", "text square"},
+{"npc", "projectile", "tts enemie"},
+{"character blocker", "command blocker", "timed text"},
+{"door", "item door", "elevator", "lift", "passage", "item passage", "teleporter", "travelpoint", "trampoline"},
+{"aircraft", "aircraft beacon", "aircraft turbulence", "bike", "vehicle"},
+{"bomb", "fire", "floor breaker", "force field", "hazard", "mine", "moving hazard", "security camera", "spike", "time bomb", "vanishing hazard"},
+{"bomb zone", "fall zone", "heal zone", "item zone", "menu zone", "npc zone", "obscurity zone", "projectile zone", "safe zone", "story zone", "text zone"}
+};
+string[][] entry_ids = {
+{},
+{"effect_space", "excludable_ambience", "excludable_source", "sound_ambience", "sound_source", "speaker", "timed_ambience", "timed_source", "url_ambience", "url_source"},
+{"blockage", "checkpoint", "conveyor_belt", "elevator_floor", "moving_platform", "platform", "spawnpoint", "staircase", "vanishing_platform", "wall"},
+{"calendar", "clock", "item", "sensor", "sign", "switch", "text_square"},
+{"npc", "projectile", "tts_enemie"},
+{"character_blocker", "command_blocker", "timed_text"},
+{"door", "item_door", "elevator", "lift", "passage", "item_passage", "teleporter", "travelpoint", "trampoline"},
+{"aircraft", "aircraft_beacon", "aircraft_turbulence", "bike", "vehicle"},
+{"bomb", "fire", "floor_breaker", "force_field", "hazard", "mine", "moving_hazard", "security_camera", "spike", "time_bomb", "vanishing_hazard"},
+{"bomb_zone", "fall_zone", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "projectile_zone", "safe_zone", "story_zone", "text_zone"}
+};
+string[] converted_3d = {"aircraft_turbulence", "blockage", "bomb_zone", "fall_zone", "character_blocker", "command_blocker", "conveyor_belt", "effect_space", "force_field", "hazard", "heal_zone", "item_zone", "menu_zone", "npc_zone", "obscurity_zone", "platform", "bike", "projectile", "projectile_zone", "vehicle", "safe_zone", "story_zone", "door", "elevator", "elevator_floor", "item_door", "item_passage", "lift", "moving_hazard", "moving_platform", "passage", "sound_ambience", "sound_source", "speaker", "url_ambience", "url_source", "excludable_ambience", "excludable_source", "spike", "staircase", "teleporter", "trampoline", "timed_ambience", "timed_source", "timed_text", "travelpoint", "vanishing_hazard", "vanishing_platform", "wall", "text_zone", "aircraft", "aircraft_beacon", "checkpoint", "spawnpoint", "clock", "calendar", "sign", "text_square", "floor_breaker", "item", "switch", "sensor", "bomb", "fire", "mine", "time_bomb", "security_camera", "npc", "tts_enemie"};
+if(mapmode == "3d")
+{
+for(uint i = 1; i < entry_ids.length(); i++)
+{
+for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
+{
+bool keep = false;
+for(uint k = 0; k < converted_3d.length(); k++)
+{
+if(entry_ids[i][j] == converted_3d[k]) { keep = true; break; }
+}
+if(!keep)
+{
+entry_ids[i].remove_at(j);
+entry_names[i].remove_at(j);
+}
+}
+}
+}
+string[] excluded_topdown = {"aircraft_turbulence", "fall_zone", "floor_breaker", "lift", "elevator", "elevator_floor", "trampoline", "vanishing_platform"};
+if(mapmode == "topdown")
+{
+for(uint i = 1; i < entry_ids.length(); i++)
+{
+for(int j = int(entry_ids[i].length()) - 1; j >= 0; j--)
+{
+for(uint k = 0; k < excluded_topdown.length(); k++)
+{
+if(entry_ids[i][j] == excluded_topdown[k])
+{
+entry_ids[i].remove_at(j);
+entry_names[i].remove_at(j);
+break;
+}
+}
+}
+}
+}
+string[] all_names;
+dictionary all_id_lookup;
+for(uint i = 1; i < cat_names.length(); i++)
+{
+for(uint j = 0; j < entry_names[i].length(); j++)
+{
+all_names.insert_last(entry_names[i][j]);
+all_id_lookup[entry_names[i][j]] = entry_ids[i][j];
+}
+}
+all_names.sort_ascending();
+for(uint i = 0; i < all_names.length(); i++)
+{
+string id;
+all_id_lookup.get(all_names[i], id);
+entry_names[0].insert_last(all_names[i]);
+entry_ids[0].insert_last(id);
+}
+setupmenu();
+m.intro_text = "Build menu";
+m.tab_caption = "Category";
+for(uint i = 0; i < cat_names.length(); i++)
+{
+int t_idx = m.add_tab(cat_names[i]);
+for(uint j = 0; j < entry_names[i].length(); j++)
+m.add_item_to_tab(t_idx, entry_names[i][j], entry_ids[i][j]);
+}
+if(buildmenu_last_tab >= 0 && buildmenu_last_tab < int(cat_names.length()))
+m.set_active_tab_silent(buildmenu_last_tab);
+int mres = m.run(-1, true, false);
+int active_tab_after = m.active_tab;
+if(active_tab_after >= 0) buildmenu_last_tab = active_tab_after;
+if(mres < 0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+buildobj(m.selected_item_id);
+}
+void zonesmenu()
+{
+if(text_zones.length() == 0)
+{
+speak("There are no text zones available on this map.");
+return;
+}
+setupmenu();
+for(uint i = 0; i < text_zones.length(); i++)
+{
+double width = text_zones[i].maxx - text_zones[i].minx + 1;
+double height = text_zones[i].maxy - text_zones[i].miny + 1;
+string zone_desc;
+if(mapmode == "3d")
+{
+double depth = text_zones[i].maxz - text_zones[i].minz + 1;
+zone_desc = text_zones[i].text + ", " + int(width) + " x " + int(height) + " x " + int(depth) + " text zone, at " + int(text_zones[i].minx) + ", " + int(text_zones[i].miny) + ", " + int(text_zones[i].minz);
+}
+else
+{
+zone_desc = text_zones[i].text + ", " + int(width) + " x " + int(height) + " text zone, at " + int(text_zones[i].minx) + ", " + int(text_zones[i].miny);
+}
+m.add_item(zone_desc, text_zones[i].text);
+}
+m.intro_text = "Choose the text zone you'd like to go to. There are " + text_zones.length() + " text zones available on this map.";
+int mres = m.run();
+if(mres < 0)
+{
+speak("canceled");
+return;
+}
+if(mres >= 0 and mres < int(text_zones.length()))
+{
+text_zone@ selected_zone = text_zones[mres];
+gop("me", "", selected_zone.minx, selected_zone.miny, selected_zone.minz);
+}
+}
+
+void mapmenu()
+{
+while(true)
+{
+setupmenu(true);
+m.add_item("load map", "loadmap");
+m.add_item("new map", "nm");
+m.add_item("back", "back");
+m.intro_text="Map menu";
+int mres=m.run();
+if(mres<0) return;
+string buildem=m.selected_item_id;
+if(buildem=="back") return;
+if(buildem=="loadmap")
+{
+m.fade_music();
+setupmenu();
+m.add_item("compiled maps", "mg");
+m.add_item("decompiled maps", "mg2");
+m.add_item("back", "back");
+m.intro_text="Load map menu";
+int lmres = m.run();
+if(lmres < 0) continue;
+string sub = m.selected_item_id;
+if(sub == "back") continue;
+if(sub == "mg")
+{
+m.fade_music();
+string[] maps=find_files("data/builder/maps/compiled/*.map");
+if(maps.length()==0)
+{
+dlg("Error. There are no compiled maps available to view. Press enter to continue.");
+continue;
+}
+m.fade_music();
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+string temp_map_name = string_replace(maps[i], ".map", "", true);
+string map_path = "data/builder/maps/compiled/" + temp_map_name + ".map";
+string temp_mode = read_map_mode_compiled(map_path);
+map_meta@ meta = read_map_meta_compiled(map_path);
+string[] owners = parse_owner_list(meta.owner);
+string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
+string updated = time_ago(meta.modified_date);
+m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")");
+}
+m.intro_text="Compiled maps menu";
+int pickres=m.run();
+if(pickres<0) continue;
+if (pickres>=0 and pickres<int(maps.length()))
+{
+mapname=maps[pickres];
+mapname=string_replace(mapname, ".map", "", true);
+load_map(mapname, mapowner, force_compiled:true, force_spawned:true);
+game();
+}
+continue;
+}
+if(sub == "mg2")
+{
+m.fade_music();
+string[] maps=find_directories("data/builder/maps/decompiled/*");
+if(maps.length()==0)
+{
+dlg("Error. There are no decompiled maps available to view. Press enter to continue.");
+continue;
+}
+m.fade_music();
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+string temp_map_name = string_replace(maps[i], ".sif", "", true);
+string temp_mode = read_map_mode_decompiled(temp_map_name);
+map_meta@ meta = read_map_meta_decompiled(temp_map_name);
+string[] owners = parse_owner_list(meta.owner);
+string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
+string updated = time_ago(meta.modified_date);
+m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
+}
+m.intro_text="Decompiled maps menu";
+int pickres=m.run();
+if(pickres<0) continue;
+if (pickres>=0 and pickres<int(maps.length()))
+{
+mapname=maps[pickres];
+mapname=string_replace(mapname, ".sif", "", true);
+load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
+game();
+}
+continue;
+}
+continue;
+}
+if(buildem=="nm")
+{
+m.fade_music();
+if(new_map_form()) game();
+continue;
+}
+}
+}
+void mapmenu2()
+{
+setupmenu();
+m.add_item("add a line", "addline");
+m.add_item("edit a line", "editline");
+m.add_item("remove a line", "remline");
+m.add_item("add owners", "addown");
+m.add_item("edit owners", "editown");
+m.add_item("remove owners", "remown");
+m.add_item("edit description", "editdesc");
+m.add_item("rename map", "renmap");
+m.add_item("copy raw map data to clipboard", "clboard");
+m.add_item("paste raw map data from clipboard", "clboard2");
+m.add_item("Go to a text zone on the map","gmz");
+m.add_item("delete map", "dcm");
+m.add_item("load decompiled map", "lm");
+m.add_item("new map", "nm");
+m.add_item("reload map", "rcm");
+m.intro_text="Map menu";
+int mres=m.run();
+string mapem=mres<0?"":m.selected_item_id;
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mapem=="addline")
+{
+resume_pools();
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string newline=vd.input_box("Add line","Enter the line you'd like to add.");
+if(newline == "")
+{
+speak("canceled");
+return;
+}
+if(string_starts_with(newline, "mode "))
+{
+speak("Mode lines cannot be added. The map already has one.");
+return;
+}
+push_map_undo();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+newline);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+if(mapem=="remline")
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "rb");
+mapdata=mapper.read();
+string[] lines = delinear(mapdata);
+string[] filtered_lines;
+uint[] original_lines;
+filter_empty_lines(lines, filtered_lines, original_lines);
+setupmenu();
+for (uint i=0; i<filtered_lines.length(); i++)
+{
+m.add_item(filtered_lines[i],filtered_lines[i]);
+}
+m.intro_text="Select a line to remove";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+string sel = filtered_lines[mres];
+if(string_starts_with(sel,"mode ") or string_starts_with(sel,"minx ") or string_starts_with(sel,"maxx ") or string_starts_with(sel,"miny ") or string_starts_with(sel,"maxy ") or string_starts_with(sel,"minz ") or string_starts_with(sel,"maxz "))
+{
+resume_pools();
+speak("This line cannot be removed.");
+return;
+}
+if(mres>=0 and mres<int(filtered_lines.length()))
+{
+uint original_index=original_lines[mres];
+lines.remove_at(original_index);
+string final;
+for (uint i=0; i<lines.length(); i++)
+{
+if(i>0) final+="\r\n";
+final+=lines[i];
+}
+resume_pools();
+push_map_undo();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
+mapdata=mapper.read();
+mapper.write(final);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+}
+if(mapem=="editline")
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "rb");
+mapdata=mapper.read();
+mapper.close();
+string[] lines = delinear(mapdata);
+string[] filtered_lines;
+uint[] original_lines;
+filter_empty_lines(lines, filtered_lines, original_lines);
+setupmenu();
+for (uint i=0; i<filtered_lines.length(); i++)
+{
+m.add_item(filtered_lines[i],filtered_lines[i]);
+}
+m.intro_text="Select a line to edit";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres>=0 and mres<int(filtered_lines.length()))
+{
+uint original_index=original_lines[mres];
+if(string_starts_with(filtered_lines[mres], "mode "))
+{
+resume_pools();
+speak("This line cannot be edited.");
+return;
+}
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string final=vd.input_box("Edit line","Edit this map line.", lines[original_index]);
+if(final == "")
+{
+resume_pools();
+speak("canceled");
+return;
+}
+lines[original_index]=final;
+string mapline;
+for (uint i=0; i<lines.length(); i++)
+{
+if(i>0) mapline+="\r\n";
+mapline += lines[i];
+}
+resume_pools();
+push_map_undo();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
+mapper.write(mapline);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+}
+if(mapem=="addown")
+{
+resume_pools();
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string raw = vd.input_box("Add owners", "Enter one or more owner names to add, separated by commas.");
+if(raw == "")
+{
+speak("canceled");
+return;
+}
+string[] new_owners = parse_owner_list(raw);
+if(new_owners.length() == 0)
+{
+speak("No valid owner names entered.");
+return;
+}
+map_meta@ meta = read_map_meta_decompiled(mapname);
+string[] existing = parse_owner_list(meta.owner);
+if(existing.length() == 1 && existing[0].lower() == "noone") existing.resize(0);
+int added = 0;
+int skipped = 0;
+for(uint i = 0; i < new_owners.length(); i++)
+{
+bool dupe = false;
+for(uint j = 0; j < existing.length(); j++)
+{
+if(existing[j].lower() == new_owners[i].lower())
+{
+dupe = true;
+break;
+}
+}
+if(dupe)
+{
+skipped++;
+continue;
+}
+existing.insert_last(new_owners[i]);
+added++;
+}
+if(added == 0)
+{
+speak("No new owners were added; all names were already listed.");
+return;
+}
+meta.owner = string_join(existing, ", ");
+if(!write_map_meta(mapname, meta))
+{
+speak("Failed to write map metadata.");
+return;
+}
+mapowner = meta.owner;
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+string msg = "Added " + added + " owner" + (added == 1 ? "" : "s");
+if(skipped > 0) msg += "; skipped " + skipped + " duplicate" + (skipped == 1 ? "" : "s");
+msg += ".";
+speak(msg);
+}
+if(mapem=="editown")
+{
+map_meta@ meta = read_map_meta_decompiled(mapname);
+string[] owners = parse_owner_list(meta.owner);
+if(owners.length() == 0)
+{
+resume_pools();
+speak("There are no owners to edit.");
+return;
+}
+setupmenu();
+for(uint i = 0; i < owners.length(); i++)
+{
+m.add_item(owners[i], owners[i]);
+}
+m.intro_text = "Select an owner to edit";
+int mres = m.run();
+if(mres < 0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres < 0 || mres >= int(owners.length())) return;
+string old_name = owners[mres];
+resume_pools();
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string new_name = vd.input_box("Edit owner", "Edit this owner's name.", old_name);
+if(new_name == "")
+{
+speak("canceled");
+return;
+}
+new_name = string_trim_sides(new_name);
+if(new_name == "")
+{
+speak("Owner name cannot be empty.");
+return;
+}
+if(new_name.find(",") != -1)
+{
+speak("Owner names cannot contain commas.");
+return;
+}
+if(new_name == old_name)
+{
+speak("No change.");
+return;
+}
+for(uint i = 0; i < owners.length(); i++)
+{
+if(i == uint(mres)) continue;
+if(owners[i].lower() == new_name.lower())
+{
+speak("An owner with that name already exists.");
+return;
+}
+}
+owners[mres] = new_name;
+meta.owner = string_join(owners, ", ");
+if(!write_map_meta(mapname, meta))
+{
+speak("Failed to write map metadata.");
+return;
+}
+mapowner = meta.owner;
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Owner updated.");
+}
+if(mapem=="remown")
+{
+map_meta@ meta = read_map_meta_decompiled(mapname);
+string[] owners = parse_owner_list(meta.owner);
+if(owners.length() == 0)
+{
+resume_pools();
+speak("There are no owners to remove.");
+return;
+}
+if(owners.length() == 1 && owners[0].lower() == "noone")
+{
+resume_pools();
+speak("There are no real owners to remove. Add an owner first.");
+return;
+}
+setupmenu();
+for(uint i = 0; i < owners.length(); i++)
+{
+m.add_item(owners[i], owners[i]);
+}
+m.intro_text = "Select an owner to remove";
+int mres = m.run();
+if(mres < 0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres < 0 || mres >= int(owners.length())) return;
+owners.remove_at(mres);
+meta.owner = (owners.length() == 0) ? "noone" : string_join(owners, ", ");
+if(!write_map_meta(mapname, meta))
+{
+resume_pools();
+speak("Failed to write map metadata.");
+return;
+}
+mapowner = meta.owner;
+resume_pools();
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Owner removed.");
+}
+if(mapem=="editdesc")
+{
+map_meta@ meta = read_map_meta_decompiled(mapname);
+resume_pools();
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string current_desc = (meta.description == "") ? "none" : meta.description;
+string new_desc = vd.input_box("Edit description", "Edit the map description.", current_desc);
+if(new_desc == "" && current_desc != "")
+{
+speak("canceled");
+return;
+}
+new_desc = string_trim_sides(new_desc);
+if(new_desc == meta.description)
+{
+speak("canceled");
+return;
+}
+meta.description = new_desc;
+if(!write_map_meta(mapname, meta))
+{
+speak("Failed to write map metadata.");
+return;
+}
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Description updated.");
+}
+if(mapem=="renmap")
+{
+resume_pools();
+vd.set_disallowed_chars("/\\:*?\"<>|", false, "This character is not allowed in a map name.");
+string new_name = vd.input_box("Rename map", "Enter the new name for this map.", mapname);
+if(new_name == "" || new_name == mapname)
+{
+speak("canceled");
+return;
+}
+new_name = string_trim_sides(new_name);
+if(new_name == "" || new_name == mapname)
+{
+speak("canceled");
+return;
+}
+if(directory_exists("data/builder/maps/decompiled/" + new_name))
+{
+dlg("Error. A map with that name already exists. Press enter to continue.");
+return;
+}
+string old_name = mapname;
+string old_path = "data/builder/maps/decompiled/" + old_name;
+string new_path = "data/builder/maps/decompiled/" + new_name;
+if(!directory_rename(old_path, new_path))
+{
+dlg("Error. Failed to rename the map folder. Press enter to continue.");
+return;
+}
+int touched = fixup_travelpoint_destmaps(old_name, new_name);
+mapname = new_name;
+load_map(new_name, mapowner, anounce_mapload:false, force_compiled:false, force_spawned:true);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+string msg = "Map renamed to " + new_name + ".";
+if(touched > 0) msg += " Updated travelpoints in " + touched + " map" + (touched == 1 ? "" : "s") + ".";
+speak(msg);
+}
+if(mapem=="dcm")
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to delete "+mapname+"? This action cannot be undone.";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==0)
+{
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+if(directory_exists("data/builder/maps/decompiled/"+mapname)) directory_delete("data/builder/maps/decompiled/"+mapname);
+speak("map deleted");
+dlgplay(get_pack_sound("main/characters/"+chartype+"/map/*delete*"),false);
+me.x=0;
+me.y=0;
+me.z=0;
+clearmap();
+exit_game = true;
+return;
+}
+if(mres==1)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+if(mapem=="gmz")
+{
+zonesmenu();
+resume_pools();
+}
+if(mapem=="clboard")
+{
+resume_pools();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "rb");
+mapdata=mapper.read();
+clipboard_copy_text(mapdata);
+speak("The data of "+mapname+" has been copied to your clipboard");
+mapper.close();
+}
+if(mapem=="clboard2")
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to overwrite all existing map data with what's on your clipboard?";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==0)
+{
+string clipboard_data = clipboard_read_text();
+if (clipboard_data == "")
+{
+dlg("Error. The clipboard is empty.");
+resume_pools();
+return;
+}
+string[] lines = split_lines(clipboard_data);
+bool is_valid = validate_map_data(lines);
+if (!is_valid)
+{
+dlg("Error. The clipboard data is invalid.");
+resume_pools();
+return;
+}
+push_map_undo();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
+mapper.write(clipboard_data);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner, force_spawned:true);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+}
+if(mres==1)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+if(mapem=="lm")
+{
+string[] maps=find_directories("data/builder/maps/decompiled/*");
+if(maps.length()==0)
+{
+dlg("Error. There are no decompiled maps available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+string temp_map_name = string_replace(maps[i], ".sif", "", true);
+string temp_mode = read_map_mode_decompiled(temp_map_name);
+map_meta@ meta = read_map_meta_decompiled(temp_map_name);
+string[] owners = parse_owner_list(meta.owner);
+string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
+string updated = time_ago(meta.modified_date);
+m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
+}
+m.intro_text="Decompiled maps menu";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if (mres>=0 and mres<int(maps.length()))
+{
+resume_pools();
+mapname=maps[mres];
+mapname=string_replace(mapname, ".sif", "", true);
+load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
+}
+}
+}
+if(mapem=="nm")
+{
+resume_pools();
+new_map_form();
+}
+if(mapem=="rcm")
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to reload "+mapname+"?";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==0)
+{
+resume_pools();
+load_map(mapname, mapowner, anounce_mapload:false, force_compiled:map_is_compiled, force_spawned:true);
+speak("map reloaded");
+}
+if(mres==1)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+}

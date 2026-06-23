@@ -1,0 +1,508 @@
+menuzone@[]menuzones(0);
+string[] menu_zone_ids = {"default", "build", "settings", "stats", "zones", "info", "weapons", "shields", "character", "items", "shop", "komlog", "pause"};
+string[] menu_zone_labels = {"default - map editor", "build - build catalog", "settings - in-game preferences", "stats - player stats", "zones - text zone teleporter", "info - objects on field", "weapons - weapons inventory", "shields - shields inventory", "character - character themes", "items - items inventory", "shop - spend points", "komlog - kombat log", "pause - pause menu"};
+class menuzone
+{
+double minx, maxx, miny, maxy;
+double minz, maxz;
+string menu_name;
+menuzone(double mx,double mx2,double my,double my2,double mnz=0,double mxz=0,string menu="default")
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+minz=mnz;
+maxz=mxz;
+menu_name=menu;
+}
+void run_menu()
+{
+if(menu_name == "build") { buildmenu(); return; }
+if(menu_name == "settings") { settingsmenu(true); return; }
+if(menu_name == "stats") { statsmenu(true); return; }
+if(menu_name == "zones") { zonesmenu(); return; }
+if(menu_name == "info") { infomenu(); return; }
+if(menu_name == "weapons") { weaponsmenu(); return; }
+if(menu_name == "shields") { shieldsmenu(); return; }
+if(menu_name == "character") { charsmenu(true); return; }
+if(menu_name == "items") { if(inv.get_size() == 0) { speak("Your inventory is currently empty."); return; } invmenu(); return; }
+if(menu_name == "shop") { shopmenu(); return; }
+if(menu_name == "komlog") { komlogmenu(); return; }
+if(menu_name == "pause") { p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*pause*"),false); pause_game(); pausemenu(); return; }
+menzmenu();
+}
+void menzmenu()
+{
+if(glider_engine_on) glider_engine_stop();
+setupmenu();
+m.add_item("add a line", "addline");
+m.add_item("edit a line", "editline");
+m.add_item("remove a line", "remline");
+m.add_item("copy raw map data to clipboard", "clboard");
+m.add_item("paste raw map data from clipboard", "clboard2");
+m.add_item("Go to a text zone on the map","gmz");
+m.add_item("delete map", "dcm");
+m.add_item("load decompiled map", "lm");
+m.add_item("new map", "nm");
+m.add_item("reload map", "rcm");
+m.intro_text="Map menu";
+int mres=m.run();
+string mapem=mres<0?"":m.get_item_id(mres);
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mapem=="addline")
+{
+resume_pools();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "ab");
+mapdata=mapper.read();
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string newline=vd.input_box("Add line","Enter the line you'd like to add.");
+if(newline == "")
+{
+mapper.close();
+bump_map_modified();
+speak("canceled");
+return;
+}
+mapper.write("\r\n"+newline);
+mapper.close();
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+if(mapem=="remline")
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "rb");
+mapdata=mapper.read();
+string[] lines = delinear(mapdata);
+string[] filtered_lines;
+uint[] original_lines;
+filter_empty_lines(lines, filtered_lines, original_lines);
+setupmenu();
+for (uint i=0; i<filtered_lines.length(); i++)
+{
+m.add_item(filtered_lines[i],filtered_lines[i]);
+}
+m.intro_text="Select a line to remove";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+string sel = filtered_lines[mres];
+if(string_starts_with(sel,"mode ") or string_starts_with(sel,"minx ") or string_starts_with(sel,"maxx ") or string_starts_with(sel,"miny ") or string_starts_with(sel,"maxy ") or string_starts_with(sel,"minz ") or string_starts_with(sel,"maxz "))
+{
+resume_pools();
+speak("This line cannot be removed.");
+return;
+}
+if(mres>=0 and mres<int(filtered_lines.length()))
+{
+uint original_index=original_lines[mres];
+lines.remove_at(original_index);
+string final;
+for (uint i=0; i<lines.length(); i++)
+{
+if(i>0) final+="\r\n";
+final+=lines[i];
+}
+resume_pools();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
+mapdata=mapper.read();
+mapper.write(final);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+}
+if(mapem=="editline")
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "rb");
+mapdata=mapper.read();
+mapper.close();
+string[] lines = delinear(mapdata);
+string[] filtered_lines;
+uint[] original_lines;
+filter_empty_lines(lines, filtered_lines, original_lines);
+setupmenu();
+for (uint i=0; i<filtered_lines.length(); i++)
+{
+m.add_item(filtered_lines[i],filtered_lines[i]);
+}
+m.intro_text="Select a line to edit";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres>=0 and mres<int(filtered_lines.length()))
+{
+uint original_index=original_lines[mres];
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string final=vd.input_box("Edit line","Edit this menu zone line.", lines[original_index]);
+if(final == "")
+{
+resume_pools();
+speak("canceled");
+return;
+}
+lines[original_index]=final;
+string mapline;
+for (uint i=0; i<lines.length(); i++)
+{
+if(i>0) mapline+="\r\n";
+mapline += lines[i];
+}
+resume_pools();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
+mapper.write(mapline);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+}
+}
+if(mapem=="dcm")
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to delete "+mapname+"? This action cannot be undone.";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==0)
+{
+if(fademode==0) fade_multi_pool(0);
+if(fademode==1) fade_multi_pool(1);
+if(directory_exists("data/builder/maps/decompiled/"+mapname)) directory_delete("data/builder/maps/decompiled/"+mapname);
+speak("map deleted");
+dlgplay(get_pack_sound("main/characters/"+chartype+"/map/*delete*"),false);
+me.x=0;
+me.y=0;
+me.z=0;
+clearmap();
+exit_game = true;
+return;
+}
+if(mres==1)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+if(mapem=="gmz")
+{
+zonesmenu();
+resume_pools();
+}
+if(mapem=="clboard")
+{
+resume_pools();
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "rb");
+mapdata=mapper.read();
+clipboard_copy_text(mapdata);
+speak("The data of "+mapname+" has been copied to your clipboard");
+mapper.close();
+}
+if(mapem=="clboard2")
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to overwrite all existing map data with what's on your clipboard?";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==0)
+{
+string clipboard_data = clipboard_read_text();
+if (clipboard_data == "")
+{
+dlg("Error. The clipboard is empty.");
+resume_pools();
+return;
+}
+string[] lines = split_lines(clipboard_data);
+bool is_valid = validate_map_data(lines);
+if (!is_valid)
+{
+dlg("Error. The clipboard data is invalid.");
+resume_pools();
+return;
+}
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "wb");
+mapper.write(clipboard_data);
+mapper.close();
+bump_map_modified();
+load_map(mapname, mapowner, force_spawned:true);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+}
+if(mres==1)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+if(mapem=="lm")
+{
+string[] maps=find_directories("data/builder/maps/decompiled/*");
+if(maps.length()==0)
+{
+dlg("Error. There are no decompiled maps available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+else
+{
+setupmenu();
+for(uint i=0; i<maps.length(); i++)
+{
+string temp_map_name = string_replace(maps[i], ".sif", "", true);
+string temp_mode = read_map_mode_decompiled(temp_map_name);
+map_meta@ meta = read_map_meta_decompiled(temp_map_name);
+string[] owners = parse_owner_list(meta.owner);
+string owners_joined = (owners.length() == 0) ? "noone" : oxford_join(owners);
+string updated = time_ago(meta.modified_date);
+m.add_item(temp_map_name + " (" + temp_mode + " map) (By " + owners_joined + ", Updated " + updated + ")", maps[i]);
+}
+m.intro_text="Decompiled maps menu";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if (mres>=0 and mres<int(maps.length()))
+{
+resume_pools();
+mapname=maps[mres];
+mapname=string_replace(mapname, ".sif", "", true);
+load_map(mapname, mapowner, force_compiled:false, force_spawned:true);
+}
+}
+}
+if(mapem=="nm")
+{
+resume_pools();
+new_map_form();
+}
+if(mapem=="rcm")
+{
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text="Are you sure you want to reload "+mapname+"?";
+int mres=m.run();
+if(mres<0)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(mres==0)
+{
+resume_pools();
+load_map(mapname, mapowner, anounce_mapload:false, force_compiled:map_is_compiled, force_spawned:true);
+speak("map reloaded");
+}
+if(mres==1)
+{
+resume_pools();
+speak("canceled");
+return;
+}
+}
+}
+}
+void menuzoneloop()
+{
+for(uint i=0; i<menuzones.length(); i++)
+{
+bool in_zone = menuzones[i].minx<=me.x and menuzones[i].maxx>=me.x and menuzones[i].miny<=me.y and menuzones[i].maxy>=me.y;
+if(mapmode == "3d") in_zone = in_zone and me.z >= menuzones[i].minz and me.z <= menuzones[i].maxz;
+if(in_zone and controls.action_repeating("interact"))
+{
+if(menuzones[i].menu_name == "default" and map_is_compiled)
+{
+speak("You cannot edit anything on this compiled map.");
+}
+else
+{
+pause_pools();
+menuzones[i].run_menu();
+}
+}
+}
+}
+void spawn_menuzone(double x1,double x2,double y1,double y2,double minz=0,double maxz=0,string menu_name="default")
+{
+menuzone menz1(x1,x2,y1,y2,minz,maxz,menu_name);
+menuzones.insert_last(menz1);
+}
+void destroy_all_menuzones()
+{
+menuzones.resize(0);
+}
+
+void build_menu_zone()
+{
+form.reset();
+form.create_window("menu zone", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+int mx=form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2=form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my=form.create_input_box("minimum y", saved_my);
+int my2=form.create_input_box("maximum y", saved_my2);
+int mnz=-1, mxz=-1;
+if(mapmode == "3d")
+{
+mnz=form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz=form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+int menu_list = form.create_list("menu to open");
+for(uint i=0; i<menu_zone_labels.length(); i++)
+form.add_list_item(menu_list, menu_zone_labels[i], menu_zone_ids[i]);
+form.set_list_position(menu_list, 0, false);
+string disallowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/+=~";
+form.set_disallowed_chars(mx, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_chars, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_chars, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_chars, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_chars, false, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+while (true)
+{
+wait(5);
+form.monitor();
+double x=string_to_number(form.get_text(mx));
+double paxx=string_to_number(form.get_text(mx2));
+double y=string_to_number(form.get_text(my));
+double paxy=string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx)=="")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+}
+else if(form.get_text(mx2)=="")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+}
+else if(form.get_text(my)=="")
+{
+speak("Minimum y is required.");
+form.focus(my);
+}
+else if(form.get_text(my2)=="")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+}
+else if(mnz != -1 && form.get_text(mnz)=="")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+}
+else if(mxz != -1 && form.get_text(mxz)=="")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+}
+else
+{
+int sel = form.get_list_position(menu_list);
+string chosen_menu = (sel >= 0 && sel < int(menu_zone_ids.length())) ? menu_zone_ids[sel] : "default";
+resume_pools();
+write_menu_zone(x, paxx, y, paxy, bmnz, bmxz, chosen_menu);
+spawn_menuzone(x, paxx, y, paxy, bmnz, bmxz, chosen_menu);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"),false);
+speak("Map updated.");
+return;
+}
+}
+}
+}
+
+void read_menu_zone(string[] sd)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double mnz=0, mxz=0;
+string menu_name="default";
+if(sd.length()==6)
+{
+menu_name=sd[5];
+}
+else if(sd.length()==7)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+}
+else if(sd.length()==8)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+menu_name=sd[7];
+}
+spawn_menuzone(mx, mx2, my, my2, mnz, mxz, menu_name);
+}
+
+void write_menu_zone(double x1, double x2, double y1, double y2, double minz=0, double maxz=0, string menu_name="default")
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"menu_zone "+coords+" "+menu_name);
+mapper.close();
+bump_map_modified();
+}

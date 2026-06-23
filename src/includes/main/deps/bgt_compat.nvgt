@@ -1,0 +1,281 @@
+/* bgt_compat.nvgt - bgt compatibility layher
+ *
+ * NVGT - NonVisual Gaming Toolkit
+ * Copyright (c) 2022-2024 Sam Tupy
+ * https://nvgt.gg
+ * This software is provided "as-is", without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+ * Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+ * 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+ * 2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+ * 3. This notice may not be removed or altered from any source distribution.
+*/
+
+uint string_len(const string& in str) {
+	return str.length();
+}
+string string_replace(const string& in str, const string& in search, const string& in replace, bool replace_all) {
+	return str.replace(search, replace, replace_all);
+}
+string string_trim_left(const string& in str, uint count) {
+	if (str == "") return str;
+	return str.substr(count);
+}
+string string_trim_right(const string& in str, uint count) {
+	if (str == "") return str;
+	if (count > 0 and str.length() == 1) return "";
+	return str.slice(0, str.length() - count);
+}
+shared string[]@ string_split(const string& in str, const string& in delim, bool full = true) {
+	return str.split(delim, full);
+}
+shared int string_contains(const string& in str, const string& in search, int occurance = 1) {
+	uint c = 0;
+	int pos = -1;
+	while (c < occurance) {
+		pos = str.find_first(search, pos + 1);
+		if (pos > -1)
+			c++;
+		else
+			break;
+	}
+	return c == occurance ? pos : -1;
+}
+shared double string_to_number(const string& in num) {
+	return parse_float(num.trim_whitespace_left());
+}
+
+double absolute(double x) {
+	return (abs(x));
+}
+
+// Most of these directory constants are functional.
+const string DIRECTORY_DESKTOP_VIRTUAL = "";
+const string DIRECTORY_DESKTOP = "";
+const string get_DIRECTORY_MY_DOCUMENTS() property {
+	return DIRECTORY_HOME + "Documents";
+}
+
+//screen reader legacy function
+// Try to use NVGT's screen reader functions where possible. They are both much more efficient, and more powerful.
+bool screen_reader_is_running(int reader) {
+	if (reader == 1 and screen_reader_detect() == "JAWS") return (true);
+	if (reader == 2 and screen_reader_detect() == "SYSTEM_ACCESS") return (true);
+	if (reader == 4 and screen_reader_detect() == "NVDA") return (true);
+	return (false);
+}
+
+//string encryption and decryption. Does not work with existing bgt encrypted data
+string string_encrypt(const string& in the_string, const string& in encryption_key) {
+	return (string_aes_encrypt(the_string, encryption_key));
+}
+
+string string_decrypt(const string& in the_string, const string& in encryption_key) {
+	return (string_aes_decrypt(the_string, encryption_key));
+}
+
+//key constants
+const uint KEY_LCONTROL = KEY_LCTRL;
+const uint KEY_RCONTROL = KEY_RCTRL;
+const uint KEY_LMENU = KEY_LALT;
+const uint KEY_RMENU = KEY_RALT;
+const uint KEY_PRIOR = KEY_PAGEUP;
+const uint KEY_NEXT = KEY_PAGEDOWN;
+const uint KEY_LWIN = KEY_LGUI;
+const uint KEY_RWIN = KEY_RGUI;
+const uint KEY_LBRACKET = KEY_LEFTBRACKET;
+const uint KEY_RBRACKET = KEY_RIGHTBRACKET;
+const uint KEY_NUMPADENTER = KEY_NUMPAD_ENTER;
+const uint KEY_DASH = KEY_MINUS;
+
+const int JAWS = 1, WINDOW_EYES = 2, SYSTEM_ACCESS = 3, NVDA = 4;
+
+string sound_storage;
+
+bool show_game_window(const string& in title)
+{
+return show_window(title);
+}
+bool is_game_window_active()
+{
+return is_window_active();
+}
+bool clipboard_copy_text(const string& in text)
+{
+return clipboard_set_text(text);
+}
+bool screen_reader_speak(int reader, const string& in text)
+{
+return screen_reader_speak(text, false);
+}
+bool screen_reader_speak_interrupt(int reader, const string& in text)
+{
+return screen_reader_speak(text, true);
+}
+bool screen_reader_stop_speech(int reader)
+{
+return screen_reader_silence();
+}
+bool set_sound_storage(const string& in filename, bool reset = false)
+{
+if (reset and filename.is_empty())
+{
+@sound_default_pack = null;
+sound_storage = "";
+return true;
+}
+pack_file p;
+if (!p.open(filename, PACK_OPEN_MODE_READ)) return false;
+@sound_default_pack = p;
+sound_storage = filename;
+return true;
+}
+bool set_sound_decryption_key(const string& in key, bool force_encryption)
+{
+return true;
+}
+bool generate_profile(const string& in filename)
+{
+string r = generate_profile();
+if (r == "") return false;
+file f;
+if (!f.open(filename, "wb")) return false;
+bool success = f.write(r) == r.length();
+f.close();
+return success;
+}
+bool string_is_lower_case(const string& in str)
+{
+return str.is_lower();
+}
+bool string_is_upper_case(const string& in str)
+{
+return str.is_upper();
+}
+bool string_is_alphabetic(const string& in str)
+{
+return str.is_alphabetic();
+}
+bool string_is_digits(const string& in str)
+{
+return str.is_digits();
+}
+bool string_is_alphanumeric(const string& in str)
+{
+return str.is_alphanumeric();
+}
+
+double cosine(double r)
+{
+return cos(r);
+}
+double sine(double r)
+{
+return sin(r);
+}
+double arc_cosine(double x)
+{
+return acos(x);
+}
+double arc_sine(double x)
+{
+return asin(x);
+}
+double arc_tangent(double x)
+{
+return atan(x);
+}
+double power(double x, double y)
+{
+return pow(x, y);
+}
+double square_root(double value)
+{
+return sqrt(value);
+}
+double ceiling(double x)
+{
+return ceil(x);
+}
+double tangent(double x)
+{
+return tan(x);
+}
+
+pack_file@ open_pack(const string& in filename)
+{
+if (filename.is_empty()) return null;
+pack_file p;
+if (p.open(filename, PACK_OPEN_MODE_READ)) return p;
+return null;
+}
+
+string string_left(const string& in str, uint count)
+{
+if (str == "") return str;
+return str.substr(0, count);
+}
+string string_right(const string& in str, uint count)
+{
+if (str == "") return str;
+if (count >= str.length()) return str;
+return str.slice(str.length() - count, 0);
+}
+string string_mid(const string& in str, uint start, int count)
+{
+if (start == 0) start = 1;
+return str.substr(start - 1, count);
+}
+string string_reverse(const string& in str)
+{
+return str.reverse_bytes();
+}
+string string_to_lower_case(const string& in str)
+{
+return str.lower();
+}
+string string_to_upper_case(const string& in str)
+{
+return str.upper();
+}
+string get_last_error_text()
+{
+return "";
+}
+string get_sound_storage()
+{
+return sound_storage;
+}
+string clipboard_read_text()
+{
+return clipboard_get_text();
+}
+string generate_computer_id(const string& in application_id, bool hardware_only)
+{
+return generate_system_fingerprint(application_id);
+}
+string string_compress(string str)
+{
+return string_deflate(str, 9);
+}
+string string_decompress(string str)
+{
+return string_inflate(str);
+}
+string serialize(dictionary@ the_data)
+{
+return the_data.serialize();
+}
+string string_hash(const string& in data, int algorithm, bool binary)
+{
+if (algorithm == 1) return string_hash_sha256(data, binary);
+if (algorithm == 2) return string_hash_sha512(data, binary);
+return "";
+}
+string file_hash(const string& in filename, int algorithm, bool binary)
+{
+file f;
+if (!f.open(filename, "rb")) return "";
+string data = f.read();
+f.close();
+return string_hash(data, algorithm, binary);
+}

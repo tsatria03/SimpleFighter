@@ -17,12 +17,16 @@ GAME         = _cfg["game"]["name"]
 PASSWORD     = _cfg["game"]["password"]
 NVGT_FILE    = _cfg["game"]["nvgt_file"]
 NVGT_OUT     = os.path.splitext(NVGT_FILE)[0]
+SRC_DIR      = os.path.join(REPO_DIR, "src")    # the .nvgt source now lives here (post-reorg)
+ASSETS_DIR   = os.path.join(REPO_DIR, "sf")     # assets (data, docks, lib, sounds) live here
+BUNDLE       = os.path.join(SRC_DIR, NVGT_OUT)  # nvgt -c (run from src) produces this bundle folder
+ASSET_FOLDERS = ["data", "docks", "lib"]  # NOT sounds: the 2.3 GB sounds/ folder is downloaded on first run (downloadsounds), never bundled
 
 SITE_HTML    = _cfg["site"]["html"]
 SITE_REPO    = _cfg["site"]["repo"]
 SITE_PATH    = _cfg["site"]["path"]
 
-NVGT    = _tools["tools"]["nvgt"]
+NVGT    = _tools["tools"]["nvgt"]  # shared across all the legacy-engine games; set to the legacy build in ~/.game_tools/tools.ini
 SEVENZIP = _tools["tools"]["sevenzip"]
 GH      = _tools["tools"]["gh"]
 
@@ -389,16 +393,25 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
 
     if do_compile:
         print("Compiling NVGT source...")
-        if not run_cmd([NVGT, "-c", "-Q", os.path.join(REPO_DIR, NVGT_FILE)]):
+        # The source lives in src/; run nvgt -c from there so the bundle lands in src/<name>.
+        if not run_cmd([NVGT, "-c", "-Q", NVGT_FILE], cwd=SRC_DIR):
             print("ERROR: NVGT compilation failed.")
             return
         print("Compilation successful.\n")
+        print("Copying assets into the compiled bundle...")
+        # The assets live in sf/; copy them into the bundle so they sit cwd-relative beside the exe
+        # (lib merges with the runtime DLLs nvgt -c already placed there).
+        for folder in ASSET_FOLDERS:
+            asset_src = os.path.join(ASSETS_DIR, folder)
+            if not os.path.isdir(asset_src):
+                print(f"ERROR: missing asset folder: {asset_src}")
+                return
+            shutil.copytree(asset_src, os.path.join(BUNDLE, folder), dirs_exist_ok=True)
         print("Replacing compiled output in release folder...")
-        cst_out = os.path.join(REPO_DIR, NVGT_OUT)
         cst_dest = os.path.join(RELEASE_DIR, NVGT_OUT)
         if os.path.exists(cst_dest):
             shutil.rmtree(cst_dest)
-        shutil.move(cst_out, cst_dest)
+        shutil.move(BUNDLE, cst_dest)
         print("Release folder updated.\n")
     elif skip_compile == SKIP:
         print("Skipping compilation.\n")

@@ -1,0 +1,1259 @@
+bool sel_left_set = false, sel_right_set = false, sel_back_set = false, sel_front_set = false, sel_bottom_set = false, sel_top_set = false;
+bool mapclear=true;
+bool map_is_compiled = false;
+bool map_pack_loaded = false;
+bool wallbump=true, wall_hit_once = false;
+bool atapex, ascending, falling;
+
+double minx, maxx, miny, maxy, minz, maxz;
+
+double fallmod=21;
+double tilevolume=0, tilepitch=100, wallvolume=0, wallpitch=100;
+double me_rotation=0;
+double sel_left, sel_right, sel_back, sel_front, sel_bottom, sel_top;
+
+int camslot, fallslot, tileslot, wallslot;
+int fallcounter, jumping, movetime, ty1, ty2;
+
+int maploadbeeps=1, maploadsounds=1;
+int airtime=250, camtime=250, falltime=250, jumptime=100, runtime=500, walktime=1000;
+
+string mapdata;
+string mapname;
+string mapmode;
+string mapowner;
+string[] map_pack_files;
+
+string camdir="left";
+string facing="right";
+string defowner="noone";
+
+dictionary map_pack_folders;
+file mapper;
+sound_pool campool, mpool;
+timer airtimer, camtimer,  falltimer, jumptimer, movetimer, runtimer, walktimer;
+vector cam, me;
+
+void clear_camera_markers(bool feedback=true)
+{
+if (!sel_left_set && !sel_right_set && !sel_back_set && !sel_front_set && !sel_bottom_set && !sel_top_set)
+{
+if(feedback) speak("No selection points to clear.");
+return;
+}
+sel_left_set = false;
+sel_right_set = false;
+sel_back_set = false;
+sel_front_set = false;
+sel_bottom_set = false;
+sel_top_set = false;
+if(feedback==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camclear*"),false,0,0,0,100,false);
+if(feedback==true) speak("Selection points cleared.");
+}
+void clearmap(bool destroy_completely=true)
+{
+if(destroy_completely)
+{
+destroy_all_aircrafts();
+destroy_all_airbeacons();
+destroy_all_air_turbulences();
+destroy_all_ambsources();
+destroy_all_belts();
+destroy_all_bikes();
+destroy_all_blockages();
+destroy_all_bombs();
+destroy_all_bombzones();
+destroy_all_bullets();
+destroy_all_calendars();
+destroy_all_cameras();
+destroy_all_checkpoints();
+destroy_all_clocks();
+destroy_all_chblockers();
+destroy_all_cblockers();
+destroy_all_doors();
+destroy_all_effect_spaces();
+destroy_all_el_floors();
+destroy_all_elevators();
+destroy_all_ex_ambsources();
+destroy_all_ex_soundsources();
+destroy_all_fires();
+destroy_all_floorbreakers();
+destroy_all_forcefields();
+destroy_all_hazards();
+destroy_all_healzones();
+destroy_all_lifts();
+destroy_all_mines();
+destroy_all_menuzones();
+destroy_all_moving_hazards();
+destroy_all_moving_platforms();
+destroy_all_npcs();
+destroy_all_npc_zones();
+end_arena();
+destroy_all_obscurity_zones();
+destroy_all_objs();
+destroy_all_objzones();
+destroy_all_passages();
+destroy_all_platforms();
+destroy_all_projectiles();
+destroy_all_projzones();
+destroy_all_safezones();
+destroy_all_fallzones();
+destroy_all_signs();
+destroy_all_soundsources();
+destroy_all_speakers();
+destroy_all_url_sources();
+destroy_all_url_ambiences();
+destroy_all_spawnpoints();
+destroy_all_spikes();
+destroy_all_staircases();
+destroy_all_story_zones();
+destroy_all_switchers();
+destroy_all_ttsenemies();
+destroy_all_teleporters();
+destroy_all_text_squares();
+destroy_all_text_zones();
+destroy_all_timebombs();
+destroy_all_trampolines();
+destroy_all_timedambs();
+destroy_all_timedsources();
+destroy_all_timedtexts();
+destroy_all_travelpoints();
+destroy_all_vanishing_hazards();
+destroy_all_vanishing_platforms();
+destroy_all_vehicles();
+destroy_all_walls();
+}
+}
+
+void gop(string entity,string id,double x,double y,double z=0)
+{
+if(x<minx or x>maxx or y<miny or y>maxy)
+{
+speak("You can't move yourself or an entity out of map boundries.");
+return;
+}
+if(mapmode == "3d" and (z<minz or z>maxz))
+{
+speak("You can't move yourself or an entity out of map boundries.");
+return;
+}
+if (entity == "me")
+{
+me.x=x;
+me.y=y;
+me.z=z;
+fallcounter=0;
+jumping=0;
+falling=false;
+if(fallcounter>=0) p.destroy_sound(fallslot);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*move*"),false);
+if(mapmode == "3d") speak("Player moved to "+me.x+", "+me.y+", "+me.z+".");
+else speak("Player moved to "+me.x+", "+me.y+".");
+}
+else if(entity=="animal" || entity=="boss" || entity=="helper" || entity=="human" || entity=="robot" || entity=="special" || entity=="zombie")
+{
+string target_cat = (entity == "boss") ? "bosses" : (entity + "s");
+for(uint i=0; i<npcs.length(); i++)
+{
+if(@npcs[i] == null) continue;
+if(npcs[i].category == target_cat && npcs[i].subtype == id)
+{
+npcs[i].x = int(x);
+npcs[i].y = int(y);
+if(mapmode == "3d") npcs[i].z = int(z);
+sound_pool@ pool = npc_pool(npcs[i].category);
+if(npcs[i].tauntsound != -1) pool.update_sound_3d(npcs[i].tauntsound, npcs[i].x, npcs[i].y, npcs[i].z);
+npcs[i].movetimer.restart();
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*move*"),false);
+if(mapmode == "3d") speak(entity+" moved to "+npcs[i].x+", "+npcs[i].y+", "+npcs[i].z+".");
+else speak(entity+" moved to "+npcs[i].x+", "+npcs[i].y+".");
+return;
+}
+}
+}
+else
+{
+speak("Unknown entity type "+id+".");
+return;
+}
+}
+
+void create_map(string name, string owner, string mode, double mx, double mx2, double my, double my2, double mz=0, double mz2=0, string description="")
+{
+mapname=name;
+mapowner=owner;
+mapmode=mode;
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+minz=mz;
+maxz=mz2;
+
+string base = "data/builder/maps/decompiled/" + mapname;
+string[] mapdirs ={"/data", "/assets", "/assets/builder", "/assets/builder/audio", "/assets/builder/audio/musics", "/assets/builder/audio/sources", "/assets/builder/construction", "/assets/builder/construction/belts", "/assets/builder/construction/checkpoints", "/assets/builder/construction/moving platforms", "/assets/builder/construction/platforms", "/assets/builder/construction/vanishing platforms", "/assets/builder/construction/walls", "/assets/builder/interaction", "/assets/builder/interaction/calendars", "/assets/builder/interaction/clocks", "/assets/builder/interaction/dialogs", "/assets/builder/interaction/items", "/assets/builder/interaction/items/health", "/assets/builder/interaction/items/other", "/assets/builder/interaction/items/stamina", "/assets/builder/interaction/signs", "/assets/builder/interaction/switches", "/assets/builder/kombat", "/assets/builder/kombat/npc", "/assets/builder/kombat/npc/animals", "/assets/builder/kombat/npc/bosses", "/assets/builder/kombat/npc/helpers", "/assets/builder/kombat/npc/humans", "/assets/builder/kombat/npc/robots", "/assets/builder/kombat/npc/specials", "/assets/builder/kombat/npc/zombies", "/assets/builder/kombat/projectiles", "/assets/builder/transitions", "/assets/builder/transitions/doors", "/assets/builder/transitions/elevators", "/assets/builder/transitions/lifts", "/assets/builder/transitions/teleporters", "/assets/builder/transportation", "/assets/builder/transportation/aircrafts", "/assets/builder/transportation/bikes", "/assets/builder/transportation/vehicles", "/assets/builder/traps", "/assets/builder/traps/bombs", "/assets/builder/traps/fires", "/assets/builder/traps/floor breakers", "/assets/builder/traps/force fields", "/assets/builder/traps/hazards", "/assets/builder/traps/mines", "/assets/builder/traps/security cameras", "/assets/builder/traps/spikes", "/assets/builder/traps/time bombs", "/assets/builder/zones", "/assets/builder/zones/heal zones", "/assets/builder/zones/safe zones"};
+for (uint i = 0; i < mapdirs.length(); i++)
+{
+string fullpath = base + mapdirs[i];
+if (!directory_exists(fullpath))
+directory_create(fullpath);
+}
+
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","wb");
+mapdata=mapper.read();
+string header = "mode "+mode+"\r\n"+"minx "+mx+"\r\n"+"maxx "+mx2+"\r\n"+"miny "+my+"\r\n"+"maxy "+my2;
+if(mode == "3d") header += "\r\nminz "+mz+"\r\nmaxz "+mz2;
+mapper.write(header);
+mapper.close();
+bump_map_modified();
+string ts = utc_iso8601_now();
+file mf;
+if (mf.open("data/builder/maps/decompiled/"+mapname+"/data/meta.sif", "wb"))
+{
+mf.write("owner="+owner+"\r\ndescription="+quote_value(description)+"\r\ncreated date="+ts+"\r\nmodified date="+ts+"\r\n");
+mf.close();
+}
+me.x=0;
+me.y=0;
+me.z=0;
+dlg("The map template has been created successfully. Press enter to continue.");
+}
+
+void cam_left()
+{
+if(cam.x-1>=minx and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="left";
+cam.x-=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_right()
+{
+if(cam.x+1<=maxx and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="right";
+cam.x+=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_backward()
+{
+if(cam.y-1>=miny and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="backward";
+cam.y-=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_forward()
+{
+if(cam.y+1<=maxy and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="forward";
+cam.y+=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_down()
+{
+if(cam.z-1>=minz and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="down";
+cam.z-=1;
+playcam();
+camtimer.restart();
+}
+}
+void cam_up()
+{
+if(cam.z+1<=maxz and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="up";
+cam.z+=1;
+playcam();
+camtimer.restart();
+}
+}
+
+void face_left()
+{
+if(facing=="left"==false and turnable==true)
+{
+facing="left";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="left") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x-1,me.y,me.z,me.x-1,me.y,me.z,calculate_theta(me_rotation),false);
+}
+}
+void face_right()
+{
+if(facing=="right"==false and turnable==true)
+{
+facing="right";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="right") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x+1,me.y,me.z,me.x+1,me.y,me.z,calculate_theta(me_rotation),false);
+}
+}
+void face_backward()
+{
+if(facing=="backward"==false and turnable==true)
+{
+facing="backward";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="backward") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x,me.y-1,me.z,me.x,me.y-1,me.z,calculate_theta(me_rotation),false);
+}
+}
+void face_forward()
+{
+if(facing=="forward"==false and turnable==true)
+{
+facing="forward";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="forward") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x,me.y+1,me.z,me.x,me.y+1,me.z,calculate_theta(me_rotation),false);
+}
+}
+void face_down()
+{
+if(facing=="down"==false and turnable==true)
+{
+facing="down";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="down") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x,me.y-1,me.z,me.x,me.y-1,me.z,calculate_theta(me_rotation),false);
+}
+}
+void face_up()
+{
+if(facing=="up"==false and turnable==true)
+{
+facing="up";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="up") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x,me.y+1,me.z,me.x,me.y+1,me.z,calculate_theta(me_rotation),false);
+}
+}
+
+void rotate_left()
+{
+if(mapmode == "2d") return;
+if(turnable == false) return;
+me_rotation = turnleft(me_rotation, 45);
+bonecheck();
+p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*rotate*"),me.x-1,me.y,me.z,me.x-1,me.y,me.z,calculate_theta(me_rotation),false);
+facing = body_to_spy_dir(0);
+if(spokenturns==1) speak(dir_to_string(int(me_rotation), false));
+}
+
+void rotate_right()
+{
+if(mapmode == "2d") return;
+if(turnable == false) return;
+me_rotation = turnright(me_rotation, 45);
+bonecheck();
+p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*rotate*"),me.x+1,me.y,me.z,me.x+1,me.y,me.z,calculate_theta(me_rotation),false);
+facing = body_to_spy_dir(0);
+if(spokenturns==1) speak(dir_to_string(int(me_rotation), false));
+}
+
+void step_left()
+{
+if(facing=="left"==false and turnmode==1)
+{
+facing="left";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="left") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x-1,me.y,me.z,me.x-1,me.y,me.z,calculate_theta(me_rotation),false);
+}
+else if (mapmode != "2d" and me.x-1>=minx and wall_blocks(me.x-1, me.y, me.z))
+{
+bump_wall_at(me.x-1, me.y, me.z);
+}
+else if (me.x-1>=minx)
+{
+if(turnmode==0) facing="left";
+me.x--;
+bonecheck();
+playstep();
+}
+}
+void step_right()
+{
+if(facing=="right"==false and turnmode==1)
+{
+facing="right";
+bonecheck();
+if(spokenturns==1) speak(facing);
+if(facing=="right") p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x+1,me.y,me.z,me.x+1,me.y,me.z,calculate_theta(me_rotation),false);
+}
+else if (mapmode != "2d" and me.x+1<=maxx and wall_blocks(me.x+1, me.y, me.z))
+{
+bump_wall_at(me.x+1, me.y, me.z);
+}
+else if (me.x+1<=maxx)
+{
+if(turnmode==0) facing="right";
+me.x++;
+bonecheck();
+playstep();
+}
+}
+void step_down()
+{
+if (me.z-1 >= minz and wall_blocks(me.x, me.y, me.z-1))
+{
+bump_wall_at(me.x, me.y, me.z-1);
+}
+else if (me.z-1 >= minz && (platform_supports(me.x, me.y, me.z-1) || glider_engine_on))
+{
+facing="down";
+me.z--;
+bonecheck();
+playstep();
+}
+}
+void step_up()
+{
+if (me.z+1 <= maxz && wall_blocks(me.x, me.y, me.z+1))
+{
+bump_wall_at(me.x, me.y, me.z+1);
+}
+else if (me.z+1 <= maxz && (platform_supports(me.x, me.y, me.z+1) || glider_engine_on))
+{
+facing="up";
+me.z++;
+bonecheck();
+playstep();
+}
+}
+
+int body_world_angle(int body_dir)
+{
+int dir_deg = 0;
+if(body_dir == 1) dir_deg = 180;
+else if(body_dir == 2) dir_deg = 270;
+else if(body_dir == 3) dir_deg = 90;
+int world_deg = (int(me_rotation) + dir_deg) % 360;
+if(world_deg < 0) world_deg += 360;
+return world_deg;
+}
+string body_world_facing(int body_dir)
+{
+int wd = body_world_angle(body_dir);
+if(wd == 0 or wd == 45 or wd == 315) return "forward";
+if(wd == 90) return "right";
+if(wd == 135 or wd == 180 or wd == 225) return "backward";
+if(wd == 270) return "left";
+return facing;
+}
+void body_world_delta(int body_dir, int &out dx, int &out dy)
+{
+int wd = body_world_angle(body_dir);
+dx = 0; dy = 0;
+if(wd == 0) dy = 1;
+else if(wd == 45) { dx = 1; dy = 1; }
+else if(wd == 90) dx = 1;
+else if(wd == 135) { dx = 1; dy = -1; }
+else if(wd == 180) dy = -1;
+else if(wd == 225) { dx = -1; dy = -1; }
+else if(wd == 270) dx = -1;
+else if(wd == 315) { dx = -1; dy = 1; }
+}
+void body_step(int body_dir)
+{
+int dx, dy;
+body_world_delta(body_dir, dx, dy);
+double nx = me.x + dx;
+double ny = me.y + dy;
+if(nx < minx or nx > maxx or ny < miny or ny > maxy) return;
+if(wall_blocks(nx, ny, me.z))
+{
+bump_wall_at(nx, ny, me.z);
+return;
+}
+facing = body_world_facing(body_dir);
+me.x = nx;
+me.y = ny;
+bonecheck();
+playstep();
+}
+
+void body_cam_step(int body_dir)
+{
+if(camtimer.elapsed < camtime or cammable == false) return;
+int dx, dy;
+body_world_delta(body_dir, dx, dy);
+double nx = cam.x + dx;
+double ny = cam.y + dy;
+if(nx < minx or nx > maxx or ny < miny or ny > maxy) return;
+camdir = body_world_facing(body_dir);
+cam.x = nx;
+cam.y = ny;
+playcam();
+camtimer.restart();
+}
+
+void playcam()
+{
+string camtile = (mapmode == "3d") ? platform_tile_at(cam.x, cam.y, cam.z) : gct(cam.x, cam.y);
+bool cam_on_player = (mapmode == "3d") ? (me.x==cam.x and me.y==cam.y and me.z==cam.z) : (me.x==cam.x and me.y==cam.y);
+for (uint i = 0; i < hazards.length(); i++)
+{
+if(@hazards[i] == null) continue;
+if(cam_in_hazard(i))
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camhazard*"),false,0,0,0,100,false);
+if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camhazard*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+}
+}
+for (uint i = 0; i < safezones.length(); i++)
+{
+bool camera_in_zone = cam_in_safezone(i);
+if (camera_in_zone && !safezones[i].cam_in_zone)
+{
+if(mfc==true) safezones[i].safesound=safepool.play_stationary_extended(get_map_sound("builder/zones/safe zones/"+safezones[i].safetype+"/*in*"),false,0,0,0,100,false);
+if(mfc==false) safezones[i].safesound=campool.play_extended_3d(get_map_sound("builder/zones/safe zones/"+safezones[i].safetype+"/*in*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200,false);
+safezones[i].cam_in_zone=true;
+}
+else if (!camera_in_zone && safezones[i].cam_in_zone)
+{
+if(mfc==true) safezones[i].safesound=safepool.play_stationary_extended(get_map_sound("builder/zones/safe zones/"+safezones[i].safetype+"/*out*"),false,0,0,0,100,false);
+if(mfc==false) safezones[i].safesound=campool.play_extended_3d(get_map_sound("builder/zones/safe zones/"+safezones[i].safetype+"/*out*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200,false);
+safezones[i].cam_in_zone=false;
+}
+}
+{
+string camwallname = (mapmode == "3d") ? wall_tile_at(cam.x, cam.y, cam.z) : wall_tile_at(cam.x, cam.y);
+if (camwallname != "" && wall_blocks(cam.x, cam.y, cam.z))
+{
+if((mapmode == "3d") ? is_transparent_wall(cam.x, cam.y, cam.z) : is_transparent_wall(cam.x, cam.y))
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),false,0,0,0,100,false);
+if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),false,0,0,0,100);
+if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200);
+return;
+}
+else
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),false,0,0,0,100,false);
+if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camwall*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),false,0,0,0,100);
+if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construction/walls/"+camwallname+"/*bump*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200);
+cbounce();
+return;
+}
+}
+}
+if(cam_on_player)
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camplayer*"),false,0,0,0,100,false);
+if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camplayer*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200,false);
+}
+if(camtile=="" || camtile=="air")
+{
+if(mapmode != "topdown")
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camair*"),false,0,0,0,100,false);
+if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camair*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+}
+}
+else
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_pack_sound("main/characters/"+chartype+"/map/*camtile*"),false,0,0,0,100,false);
+if(mfc==false) camslot=campool.play_extended_3d(get_pack_sound("main/characters/"+chartype+"/map/*camtile*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+array<string> tiles;
+array<double> vols;
+array<double> pits;
+get_all_platform_tiles(cam.x, cam.y, tiles, vols, pits, cam.z);
+for(uint i=0; i<tiles.length(); i++)
+{
+if(mfc==true) camslot=campool.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles[i]+"/*step*"),false,0,0,0,100);
+if(mfc==false) camslot=campool.play_extended_3d(get_map_sound("builder/construction/platforms/"+tiles[i]+"/*step*"),me.x,me.y,me.z,cam.x,cam.y,cam.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,200);
+}
+}
+}
+void playstep()
+{
+if(blockage_check()) return;
+if (mapmode == "2d" && string_contains(platform_tile_at(me.x, me.y, me.z), "wall", 1) > -1)
+{
+string wname = platform_tile_at(me.x, me.y, me.z);
+if(glider_engine_on)
+{
+if(wallbump || !wall_hit_once)
+{
+p.play_stationary(get_pack_sound("main/equipments/weapons/"+wepchar.cad+"/"+wepchar.sub+"/general/*rico*"), false);
+if(!wallbump) wall_hit_once = true;
+}
+}
+else if (wallbump)
+{
+wallslot = p.play_extended_3d(get_map_sound("builder/construction/walls/" + wname + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+}
+else
+{
+if (!wall_hit_once)
+{
+wallslot = p.play_extended_3d(get_map_sound("builder/construction/walls/" + wname + "/*bump*"), me.x, me.y, me.z, me.x, me.y, me.z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, wallvolume, wallpitch);
+wall_hit_once = true;
+}
+}
+pbounce();
+return;
+}
+update_healzone();
+update_safezone();
+for(uint i=0; i<signs.length(); i++)
+{
+if(@signs[i] == null) continue;
+bool inside = me.x>=signs[i].minx and me.x<=signs[i].maxx and me.y>=signs[i].miny and me.y<=signs[i].maxy;
+if(mapmode == "3d") inside = inside and me.z>=signs[i].minz and me.z<=signs[i].maxz;
+if(jumping==0 and signs[i].looping==false and (!inside or !signs[i].was_inside))
+{
+signs[i].signsound=signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i].signtype+"/*step*"),me.x,me.y,me.z,signs[i].signx,signs[i].signy,signs[i].signz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+signpool.update_sound_range_3d(signs[i].signsound, 0, signs[i].maxx-signs[i].minx, 0, signs[i].maxy-signs[i].miny, 0, (mapmode=="3d")?(signs[i].maxz-signs[i].minz):0);
+}
+signs[i].was_inside = inside;
+}
+if(!glider_engine_on)
+{
+if(forcefield_check()) return;
+for(uint i=0; i<hazards.length(); i++)
+{
+if(@hazards[i] == null) continue;
+if(player_in_hazard(i) and !inplain)
+{
+if(lifecard>=2)
+{
+hazardpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*life*"),false);
+lifecard-=1;
+health=maxhealth;
+pbounce(5);
+return;
+}
+}
+}
+}
+if (son.cyclemode == 1)
+son.sonarcheck();
+if(jumping==0 && !glider_engine_on)
+{
+array<string> tiles;
+array<double> vols;
+array<double> pits;
+get_all_platform_tiles(me.x, me.y, tiles, vols, pits, me.z);
+for(uint i=0; i<tiles.length(); i++)
+{
+tileslot=p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles[i]+"/*step*"), false, 0, 0, vols[i], pits[i]);
+}
+}
+wall_hit_once = false;
+}
+void playfall()
+{
+if(blockage_check()) return;
+update_healzone();
+update_safezone();
+{
+string wname = platform_tile_at(me.x, me.y, me.z);
+if(string_contains(wname,"wall",1)>-1)
+{
+wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+wname+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
+if(jumping == 0 && !falling) pbounce();
+return;
+}
+}
+if(forcefield_check()) return;
+array<string> tiles;
+array<double> vols;
+array<double> pits;
+get_all_platform_tiles(me.x, me.y, tiles, vols, pits, me.z);
+if(!onbike)
+{
+for(uint i=0; i<tiles.length(); i++)
+{
+tileslot=p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles[i]+"/*fall*"), false, 0, 0, vols[i], pits[i]);
+}
+}
+if(onbike)
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+if(@bikes[i] == null) continue;
+if(bikes[i].moveable)
+{
+string biketile = identify_biketile(gmt(me.x, me.y));
+bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/platforms/"+biketile+"/*fall*"), false, 0, 0, 0, 100, false);
+break;
+}
+}
+}
+}
+void playland()
+{
+if(blockage_check()) return;
+update_healzone();
+update_safezone();
+{
+string wname = platform_tile_at(me.x, me.y, me.z);
+if(string_contains(wname,"wall",1)>-1)
+{
+wallslot=p.play_extended_3d(get_map_sound("builder/construction/walls/"+wname+"/*bump*"),me.x,me.y,me.z,me.x,me.y,me.z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,wallvolume,wallpitch);
+if(jumping == 0 && !falling) pbounce();
+return;
+}
+}
+if(forcefield_check()) return;
+p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*land*"),false);
+array<string> tiles;
+array<double> vols;
+array<double> pits;
+get_all_platform_tiles(me.x, me.y, tiles, vols, pits, me.z);
+if(!onbike)
+{
+for(uint i=0; i<tiles.length(); i++)
+{
+tileslot=p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles[i]+"/*land*"), false, 0, 0, vols[i], pits[i]);
+}
+}
+if(onbike)
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+if(@bikes[i] == null) continue;
+if(bikes[i].moveable)
+{
+string biketile = identify_biketile(gmt(me.x, me.y));
+bikepool.play_stationary_extended(get_map_sound("builder/transportation/bikes/"+bikes[i].biketype+"/platforms/"+biketile+"/*land*"), false, 0, 0, 0, 100, false);
+break;
+}
+}
+}
+}
+
+void cbounce()
+{
+if(camdir=="right")
+cam.x--;
+else if(camdir=="left")
+cam.x++;
+else if(camdir=="forward")
+cam.y--;
+else if(camdir=="backward")
+cam.y++;
+else if(camdir=="up")
+{
+if(mapmode == "2d") cam.y--;
+else cam.z--;
+}
+else if(camdir=="down")
+{
+if(mapmode == "2d") cam.y++;
+else cam.z++;
+}
+}
+void pbounce(int steps = 1)
+{
+if (facing == "right")
+me.x -= steps;
+else if (facing == "left")
+me.x += steps;
+else if (facing == "forward")
+me.y -= steps;
+else if (facing == "backward")
+me.y += steps;
+else if (facing == "up")
+{
+if(mapmode == "2d") me.y -= steps;
+else me.z -= steps;
+}
+else if (facing == "down")
+{
+if(mapmode == "2d") me.y += steps;
+else me.z += steps;
+}
+}
+void key_step_up()
+{
+if(mapmode == "2d")
+{
+if(jumping != 0) return;
+if(facing=="up"==false and turnmode==1)
+{
+facing="up";
+bonecheck();
+if(spokenturns==1) speak(facing);
+p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x,me.y+1,me.z,me.x,me.y+1,me.z,calculate_theta(me_rotation),false);
+}
+else if ((!gmt(me.x,me.y+1).is_empty() || glider_engine_on) && me.y+1 <= maxy)
+{
+if(turnmode==0) facing="up";
+me.y++;
+bonecheck();
+playstep();
+}
+}
+else body_step(0);
+}
+void key_step_down()
+{
+if(mapmode == "2d")
+{
+if(jumping != 0) return;
+if(facing=="down"==false and turnmode==1)
+{
+facing="down";
+bonecheck();
+if(spokenturns==1) speak(facing);
+p.play_3d(get_pack_sound("main/characters/"+chartype+"/general/*turn*"),me.x,me.y-1,me.z,me.x,me.y-1,me.z,calculate_theta(me_rotation),false);
+}
+else if ((!gmt(me.x,me.y-1).is_empty() || glider_engine_on) && me.y-1 >= miny)
+{
+if(turnmode==0) facing="down";
+me.y--;
+bonecheck();
+playstep();
+}
+}
+else body_step(1);
+}
+void key_strafe_left()
+{
+if(mapmode == "2d") step_left();
+else body_step(2);
+}
+void key_strafe_right()
+{
+if(mapmode == "2d") step_right();
+else body_step(3);
+}
+void key_step_pgup()
+{
+if(mapmode == "3d" && jumping == 0) step_up();
+}
+void key_step_pgdown()
+{
+if(mapmode == "3d" && jumping == 0) step_down();
+}
+void key_cam_up()
+{
+if(mapmode == "2d")
+{
+if(cam.y+1<=maxy and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="up";
+cam.y+=1;
+playcam();
+camtimer.restart();
+}
+}
+else body_cam_step(0);
+}
+void key_cam_down()
+{
+if(mapmode == "2d")
+{
+if(cam.y-1>=miny and camtimer.elapsed>=camtime and cammable==true)
+{
+camdir="down";
+cam.y-=1;
+playcam();
+camtimer.restart();
+}
+}
+else body_cam_step(1);
+}
+void key_cam_strafe_left()
+{
+if(mapmode == "2d") cam_left();
+else body_cam_step(2);
+}
+void key_cam_strafe_right()
+{
+if(mapmode == "2d") cam_right();
+else body_cam_step(3);
+}
+void key_cam_pgup()
+{
+if(mapmode == "3d") cam_up();
+}
+void key_cam_pgdown()
+{
+if(mapmode == "3d") cam_down();
+}
+string body_to_spy_dir(int body_dir)
+{
+int dx, dy;
+body_world_delta(body_dir, dx, dy);
+int adx = dx < 0 ? -dx : dx;
+int ady = dy < 0 ? -dy : dy;
+if(ady >= adx) return dy >= 0 ? "forward" : "backward";
+return dx >= 0 ? "right" : "left";
+}
+string body_to_sonar_dir(int body_dir)
+{
+int dx, dy;
+body_world_delta(body_dir, dx, dy);
+int adx = dx < 0 ? -dx : dx;
+int ady = dy < 0 ? -dy : dy;
+if(ady >= adx) return dy >= 0 ? "up" : "down";
+return dx >= 0 ? "right" : "left";
+}
+void key_spy_left()
+{
+if(mapmode == "2d") spy("left");
+else spy(body_to_spy_dir(2));
+}
+void key_spy_right()
+{
+if(mapmode == "2d") spy("right");
+else spy(body_to_spy_dir(3));
+}
+void key_spy_up()
+{
+if(mapmode == "2d") spy("forward");
+else spy(body_to_spy_dir(0));
+}
+void key_spy_down()
+{
+if(mapmode == "2d") spy("backward");
+else spy(body_to_spy_dir(1));
+}
+void key_spy_pgup()
+{
+if(mapmode == "3d") spy("up");
+}
+void key_spy_pgdown()
+{
+if(mapmode == "3d") spy("down");
+}
+void fallcheck()
+{
+if(mapmode == "topdown") return;
+if(onhook) return;
+if(doormove || elvmove || invehicle || inplain) return;
+if(glider_engine_on) return;
+if(mapmode == "2d")
+{
+if(jumping == 0 && falling == false && (gmt(me.x, me.y) == "" || gmt(me.x, me.y) == "air") && me.y > miny)
+{
+falling=true;
+int predicted = 0;
+int yy = me.y;
+while(yy > miny)
+{
+yy--;
+predicted++;
+string tt = gmt(me.x, yy);
+if(tt != "" && tt != "air") break;
+}
+if(predicted >= 8 && !onbike)
+{
+fallslot = p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*fall*"), false);
+fallslot = p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*plummet*"), false);
+}
+}
+}
+else if(mapmode == "3d")
+{
+if(jumping == 0 && falling == false && me.z > minz && !platform_supports(me.x, me.y, me.z))
+{
+falling = true;
+int predicted = 0;
+double zz = me.z;
+while(zz > minz)
+{
+zz--;
+predicted++;
+if(platform_supports(me.x, me.y, zz)) break;
+}
+if(predicted >= 8 && !onbike)
+{
+fallslot = p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*fall*"), false);
+fallslot = p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*plummet*"), false);
+}
+}
+}
+if(falling)
+{
+if(mapmode == "3d")
+{
+if(falltimer.elapsed >= falltime && me.z > minz)
+{
+falltimer.restart();
+me.z -= 1;
+fallcounter++;
+}
+bool landed = false;
+if(me.z <= minz) { me.z = minz; landed = true; }
+else if(platform_supports(me.x, me.y, me.z)) landed = true;
+if(landed)
+{
+if(fallcounter >= 0) p.destroy_sound(fallslot);
+bool soft_landing = (fallcounter < 8 || player_in_fallzone());
+if(!soft_landing and shieldon == 1) shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100);
+if(soft_landing)
+{
+playland();
+}
+else
+{
+playfall();
+int impact_dmg = max(1, fallcounter * fallmod);
+for(uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if(!walls[i].destroyable) continue;
+bool in_wall = (me.x >= walls[i].minx && me.x <= walls[i].maxx && me.y >= walls[i].miny && me.y <= walls[i].maxy && me.z >= walls[i].minz && me.z <= walls[i].maxz);
+if(!in_wall) continue;
+walls[i].wallhealth -= impact_dmg;
+kombatlog.insert_last(impact_dmg + " damage to " + string_replace(walls[i].wall, "wall", "", true) + " wall, falling down.");
+if(impact_dmg > 0) walls[i].hurtsound = p.play_stationary_extended(get_map_sound("builder/construction/walls/" + walls[i].wall + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
+for(uint k = 0; k < walls[i].platform_ids.length(); k++)
+{
+int pid = walls[i].platform_ids[k];
+if(pid >= 0 && pid < platforms.length() && @platforms[pid] != null)
+{
+platforms[pid].plathealth = walls[i].wallhealth;
+platforms[pid].platmaxhealth = walls[i].wallmaxhealth;
+}
+}
+break;
+}
+for(uint i = 0; i < platforms.length(); i++)
+{
+if(@platforms[i] == null) continue;
+if(!platforms[i].destroyable) continue;
+if(platforms[i].is_backing) continue;
+bool in_plat = (me.x >= platforms[i].minx && me.x <= platforms[i].maxx && me.y >= platforms[i].miny && me.y <= platforms[i].maxy && platforms[i].z == me.z);
+if(!in_plat) continue;
+platforms[i].plathealth -= impact_dmg;
+kombatlog.insert_last(impact_dmg + " damage to " + platforms[i].tile + " platform, falling down.");
+if(impact_dmg > 0) platforms[i].hurtsound = p.play_stationary_extended(get_map_sound("builder/construction/platforms/" + platforms[i].tile + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
+break;
+}
+if(fallcounter >= 8 and onbike)
+{
+int bdmg = max(1, fallcounter * fallmod);
+for(uint i = 0; i < bikes.length(); i++)
+{
+if(@bikes[i] == null) continue;
+if(bikes[i].moveable)
+{
+bikes[i].bikehealth -= bdmg;
+kombatlog.insert_last(bdmg + " damage to " + bikes[i].biketype + ", falling down.");
+if(bikes[i].bikehealth <= 0)
+{
+health -= bdmg;
+kombatlog.insert_last(bdmg + " damage to player, falling down.");
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, bdmg, 10 * fallcounter, count);
+}
+break;
+}
+}
+}
+int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
+if(fallcounter >= 8 and shieldon == 1 and !onbike)
+{
+shieldstrength -= sdm;
+kombatlog.insert_last(sdm + " damage to " + shieldtype + ", falling down.");
+stun_target("me", "", 10 * fallcounter);
+if(shieldstrength <= 0)
+{
+health -= sdm;
+kombatlog.insert_last(sdm + " damage to player, falling down.");
+string painfile;
+int damage_percent = round((float(sdm) / float(maxhealth)) * 100, 0);
+if(damage_percent <= 1) painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+else if(damage_percent >= 10) painfile = get_pack_sound("main/characters/" + chartype + "/general/*crit*");
+else painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, sdm, 10 * fallcounter, count);
+}
+}
+int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
+if(fallcounter >= 8 and shieldon == 0 and !onbike)
+{
+health -= dmg;
+kombatlog.insert_last(dmg + " damage to player, falling down.");
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if(damage_percent <= 1) painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+else if(damage_percent >= 10) painfile = get_pack_sound("main/characters/" + chartype + "/general/*crit*");
+else painfile = get_pack_sound("main/characters/" + chartype + "/general/*hurt*");
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, dmg, 10 * fallcounter, count);
+}
+}
+falling = false;
+fallcounter = 0;
+}
+return;
+}
+update_healzone();
+update_safezone();
+if(falltimer.elapsed>=falltime and me.y>miny)
+{
+falltimer.restart();
+me.y--;
+fallcounter++;
+}
+if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
+{
+if(fallcounter>=0) p.destroy_sound(fallslot);
+bool soft_landing = (fallcounter<8 || player_in_fallzone());
+if(!soft_landing and shieldon==1) shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100);
+if(soft_landing)
+{
+playland();
+}
+else
+{
+playfall();
+if (fallcounter >= 8)
+{
+int impact_dmg = max(1, (fallcounter * fallmod));
+for (uint i = 0; i < walls.length(); i++)
+{
+if(@walls[i] == null) continue;
+if (!walls[i].destroyable) continue;
+bool in_wall =(me.x >= walls[i].minx && me.x <= walls[i].maxx && me.y >= walls[i].miny && me.y <= walls[i].maxy);
+if (!in_wall) continue;
+walls[i].wallhealth -= impact_dmg;
+kombatlog.insert_last(impact_dmg+ " damage to "+string_replace(walls[i].wall, "wall", "", true)+" wall, falling down.");
+if(impact_dmg>0) walls[i].hurtsound=p.play_stationary_extended(get_map_sound("builder/construction/walls/"+walls[i].wall+"/*hurt*"),false,0,0,tilevolume,tilepitch,false);
+for(uint k=0; k<walls[i].platform_ids.length(); k++)
+{
+int pid = walls[i].platform_ids[k];
+if (pid >= 0 && pid < platforms.length() && @platforms[pid] != null)
+{
+platforms[pid].plathealth = walls[i].wallhealth;
+platforms[pid].platmaxhealth = walls[i].wallmaxhealth;
+}
+}
+break;
+}
+for (uint i = 0; i < staircases.length(); i++)
+{
+if(@staircases[i] == null) continue;
+if (!staircases[i].destroyable) continue;
+bool in_stairs =(me.x >= staircases[i].minx && me.x <= staircases[i].maxx && me.y >= staircases[i].miny && me.y <= staircases[i].maxy);
+if(mapmode == "3d") in_stairs = in_stairs && me.z >= staircases[i].minz && me.z <= staircases[i].maxz;
+if (!in_stairs) continue;
+staircases[i].stairshealth -= impact_dmg;
+kombatlog.insert_last(impact_dmg+ " damage to "+staircases[i].tile+" staircase, falling down.");
+if (impact_dmg > 0) staircases[i].hurtsound =p.play_stationary_extended(get_map_sound("builder/construction/platforms/" + staircases[i].tile + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
+for(uint k=0; k<staircases[i].platform_ids.length(); k++)
+{
+int pid = staircases[i].platform_ids[k];
+if (pid >= 0 && pid < platforms.length() && @platforms[pid] != null)
+{
+platforms[pid].plathealth = staircases[i].stairshealth;
+platforms[pid].platmaxhealth = staircases[i].stairsmaxhealth;
+}
+}
+break;
+}
+for (uint i = 0; i < platforms.length(); i++)
+{
+if (@platforms[i] == null) continue;
+if (!platforms[i].destroyable) continue;
+bool in_plat =(me.x >= platforms[i].minx && me.x <= platforms[i].maxx && me.y >= platforms[i].miny && me.y <= platforms[i].maxy);
+if (!in_plat) continue;
+platforms[i].plathealth -= impact_dmg;
+kombatlog.insert_last(impact_dmg+ " damage to "+platforms[i].tile+" platform, falling down.");
+if(impact_dmg>0) platforms[i].hurtsound=p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+platforms[i].tile+"/*hurt*"),false,0,0,tilevolume,tilepitch,false);
+break;
+}
+}
+if(fallcounter>=8 and onbike)
+{
+int bdmg = max(1, fallcounter * fallmod);
+for(uint i=0; i<bikes.length(); i++)
+{
+if(@bikes[i] == null) continue;
+if(bikes[i].moveable)
+{
+bikes[i].bikehealth -= bdmg;
+kombatlog.insert_last(bdmg+ " damage to "+bikes[i].biketype+", falling down.");
+if(bikes[i].bikehealth <= 0)
+{
+health -= bdmg;
+kombatlog.insert_last(bdmg+ " damage to player, falling down.");
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, bdmg, 10 * fallcounter, count);
+}
+break;
+}
+}
+}
+int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
+if(fallcounter>=8 and shieldon==1 and !onbike)
+{
+shieldstrength-=sdm;
+kombatlog.insert_last(sdm+ " damage to "+shieldtype+", falling down.");
+stun_target("me", "", 10 * fallcounter);
+if(shieldstrength<=0)
+{
+health -= sdm;
+kombatlog.insert_last(sdm+ " damage to player, falling down.");
+string painfile;
+int damage_percent = round((float(sdm) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1) painfile = get_pack_sound("main/characters/" + chartype+"/general/*hurt*");
+else if (damage_percent >= 10) painfile = get_pack_sound("main/characters/" + chartype+"/general/*crit*");
+else painfile = get_pack_sound("main/characters/" + chartype+"/general/*hurt*");
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, sdm, 10 * fallcounter, count);
+}
+}
+int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
+if(fallcounter>=8 and shieldon==0 and !onbike)
+{
+health -= dmg;
+kombatlog.insert_last(dmg+ " damage to player, falling down.");
+if (fallcounter>=8 and shieldon==0)
+{
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if (damage_percent <= 1)
+{
+painfile = get_pack_sound("main/characters/" + chartype+"/general/*hurt*");
+}
+else if (damage_percent >= 10)
+{
+painfile = get_pack_sound("main/characters/" + chartype+"/general/*crit*");
+}
+else
+{
+painfile = get_pack_sound("main/characters/" + chartype+"/general/*hurt*");
+}
+painslot = p.play_stationary_extended(painfile, false, 0, 0, 0, 100, false);
+}
+int ct = clamp((fallcounter - 8) * 10, 0, 100);
+int count = clamp((fallcounter - 8) / 2, 1, 5);
+break_charbones(ct, dmg, 10 * fallcounter, count);
+}
+}
+falling=false;
+fallcounter=0;
+acquire_checkpoint();
+}
+}
+}
