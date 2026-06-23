@@ -994,7 +994,14 @@ fallcounter++;
 }
 bool landed = false;
 if(me.z <= minz) { me.z = minz; landed = true; }
-else if(platform_supports(me.x, me.y, me.z)) landed = true;
+else if(platform_supports(me.x, me.y, me.z))
+{
+// Landed inside a wall (a blocking wall tile directly above)? Climb to the top of the wall
+// so we come to rest on top of it, not stuck inside. wall_blocks (not platform_supports) so
+// a walkable platform/overhang above us doesn't drag us up onto it.
+while(me.z < maxz and wall_blocks(me.x, me.y, me.z + 1)) me.z++;
+landed = true;
+}
 if(landed)
 {
 if(fallcounter >= 0) p.destroy_sound(fallslot);
@@ -1114,6 +1121,10 @@ fallcounter++;
 }
 if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
 {
+// Mirror of the 3d climb: if we came to rest inside a wall's height range, climb to the top
+// of the wall so we rest on top of it, not inside. wall_blocks so a platform/floor above us
+// doesn't drag us up onto it.
+while(me.y < maxy and wall_blocks(me.x, me.y + 1, me.z)) me.y++;
 if(fallcounter>=0) p.destroy_sound(fallslot);
 bool soft_landing = (fallcounter<8 || player_in_fallzone());
 if(!soft_landing and shieldon==1) shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100);
