@@ -1,0 +1,39 @@
+- [Path conventions](project_path_conventions.md) — Restructure: code in src/, assets+launcher in sf/, build/ + releases/; the cwd=sf/ trick; sf.py launcher; the build/version.txt sync regression to watch.
+- [Engine pinned to nvgt2](project_engine_pinned_nvgt2.md) — Game targets the legacy BASS fork at C:\nvgt2 (sf.py uses nvgtw.exe); the new C:\nvgt miniaudio install is only for testing others' games — don't suggest upgrading.
+- [Stability rules](project_stability_rules.md) — The load-bearing invariants (read_/write_ signatures, CRLF, double coords, capability flags, per-z 3d tiles, builder audio form, sentinel-null removal, camera-key collisions, spaced info.sif keys). Read before any edit in their area.
+- [Include tree](project_include_tree.md) — The src/includes/ architecture map: main/ engine subsystems and builder/ per-entity definitions, glob-include aggregation, one-file-per-entity contract.
+- [Map format](project_map_format.md) — On-disk map format (main.sif/meta.sif, .map packs), map modes 2d/topdown/3d, spanning-entity min/max y, quoted text fields, single/ranged one-keyword rule.
+- [Game data layout](project_game_data_layout.md) — sf/data/ layout: authored maps, keyboard.ini, macro packs, and the info.sif-is-the-contract rule for characters/shields/weapons/NPCs.
+- [Sound assets layout](project_sound_assets_layout.md) — sf/sounds/ structure: decompiled vs compiled packs, main/ vs builder/ split, glob clip discovery.
+- [Audio model](project_audio_model.md) — Runtime audio: sound_pool + HRTF, get_pack_sound/get_map_sound, adding a pool, and the load-bearing looping/locked-slot invariant.
+- [Script vs engine](project_script_vs_engine.md) — Investigate-script-first philosophy (diagnose in .nvgt before touching C++) plus the list of non-stock nvgt2 engine changes this game depends on.
+- [Build pipeline](project_build_pipeline.md) — Version source-of-truth (version.nvgt) and the build/tools.py compile → package → release → website pipeline.
+- [Repo hygiene](project_repo_hygiene.md) — .gitattributes CRLF enforcement and what .gitignore keeps out; CLAUDE.md and aidocks/ are committed.
+- [Deferred concerns](project_deferred_concerns.md) — Known shape-of-the-code non-bugs (no data-file versioning, glob-include noise, silent parser fallthrough, silent sound lookups, no tests). Don't proactively fix.
+- [Arcade arena revival (14.0)](project_arcade_arena_revival.md) — Revived the 7.0-removed arcade shooter as an arena.nvgt subsystem wrapping a capped npc_zone; modes, setup form, F-key resize, safe corners, anti-cheat.
+- [NVGT key_pressed is one-shot](project_nvgt_key_pressed_oneshot.md) — key_pressed() is consumed on first read each frame; read a multi-purpose key once and branch inside, never in two sibling if-checks.
+- [AngelScript braceless if](project_angelscript_braceless_if.md) — A braceless if/else governs only the next statement; a second statement in a braceless dispatch branch orphans the else and fails to compile (game won't launch).
+- [AngelScript reserved words](project_angelscript_reserved_words.md) — Never name a variable `out` (or in/inout/shared/final/from…); reserved keywords are a compile error.
+- [NVGT sound preload cache](project_nvgt_sound_preload_cache.md) — sound.load caches decoded audio by filename; regenerating audio into a reused path replays the old clip — use a fresh name or allow_preloads=false.
+- [Sound device indexing](project_sound_device_indexing.md) — Device list is index 0 "No sound", 1 "Default", 2+ named; SF trims index 0 and stores sound_output_device = trimmed_index+1. Don't add a synthetic Default item.
+- [Dialog conventions](project_dialog_conventions.md) — dlg() for everyday spoken player dialogs, dlgmessage() only for story-zone --paged text, alert() for visual/pre-init/tooling notices; don't blanket-convert between them.
+- [Confirm before implementing](feedback_confirm_before_implementing.md) — User has repeatedly flagged Claude over-implementing despite CLAUDE.md rules; plan mode was tried and disabled, so the rule rests on instruction-following alone — vigilance matters more.
+- [List modified files](feedback_list_modified_files.md) — End every turn that edited files with an explicit "Files changed:" list naming each touched file.
+- [No CRLF normalization](feedback_no_crlf_normalization.md) — Don't run post-edit CRLF normalizer passes; git handles line endings at commit time.
+- [CLAUDE.md length limit](feedback_claudemd_length.md) — Keep CLAUDE.md under 40,000 characters; move content to memory files rather than expanding inline.
+- [Changelog rules](feedback_changelog_rules.md) — Sentence caps, per-version entry limits (20 for .0, 10 for minors), version bump requirement, reverse-chronological order.
+- [.tp prose constraints](feedback_tp_prose.md) — Never reference engine internals in help topics; describe observable behavior only; filenames flat; new topics auto-appear via the help command's docks/builder/*.tp scan (no menu wiring).
+- [readme/todo quirks](feedback_readme_todo_quirks.md) — readme is out of date on map modes; todo Unfinished items are not commitments.
+- [Alphabetize new commands](feedback_alphabetize_commands.md) — New slash commands go in their true alphabetical slot in both the command-blocker allcommands list and commands.tp, not appended at the end.
+- [Alphabetize builder entities](feedback_alphabetize_builder_entities.md) — New builder entities go in alphabetical order within their category, in both the builder menu code (map_menu.nvgt) and any help topic that lists entities (e.g. maps.tp).
+- [Presets need a driving need](feedback_presets_need_driving_need.md) — Don't propose presets/type-abstractions for entities without real pain or demand; NPCs (30+ fields) and effects (player demand) were the only justified cases.
+- [Ask one question at a time](feedback_ask_one_question_at_a_time.md) — The dev reviews by screen reader; ask one question per turn and wait for the answer, don't batch several.
+- [Verify code while fixing](feedback_verify_code_while_fixing.md) — Re-locate by symbol not stored line number, confirm the finding is true, and flag adjacent bugs; the dev runs/verifies builds so wrong edits ship.
+- [Don't flag indentation](feedback_dont_flag_indentation.md) — AngelScript ignores indentation entirely; don't call out uneven whitespace or spend calls fixing it for compilation.
+- [Multiline comment style](feedback_multiline_comment_style.md) — Multi-line comments use one /* */ block, not stacked // lines; single-line still uses //.
+- [Menus say canceled](feedback_menus_say_canceled.md) — Every menu/input-box escape, Back, or No path speaks "canceled" for audible screen-reader feedback.
+- [Yes/no menu labels](feedback_yes_no_menu_labels.md) — Label yes/no items exactly "Yes"/"No" (Yes first); context goes in the prompt, not the labels.
+- [One-sentence game messages](feedback_one_sentence_game_messages.md) — In-game spoken feedback is exactly one sentence; no trailing advice sentence.
+- [Check git log for commits](feedback_check_git_log_for_commits.md) — The dev commits their own work between turns; check git log/status before asking about or assuming commit state.
+- [Stage commits before big changes](feedback_stage_commits_before_big_changes.md) — Proactively flag a commit break point before a risky change so safe pieces land first and the big change gets its own commit.
+- [Don't run or build the game](feedback_dont_run_or_build_the_game.md) — Never launch/compile the game (sf/sf.py, build/ tooling, src/sf.nvgt); make edits and stop, the dev runs and verifies. Read-only inspection is still fine.
