@@ -9,6 +9,6 @@ metadata:
 
 Keep CLAUDE.md under 40,000 characters. Do not add large blocks of content inline — move detailed rules and guidance to memory files instead and reference them with a pointer line.
 
-**Why:** CLAUDE.md was deliberately shortened from a peak of ~43,000 characters down to ~33,000. The detailed changelog rules, .tp prose constraints, and readme/todo quirks were extracted into memory files specifically to keep the file size down.
+**Why:** CLAUDE.md was deliberately shortened from a peak of ~43,000 characters down to ~33,000. The detailed changelog rules, help-topic prose constraints, and readme/todo quirks were extracted into memory files specifically to keep the file size down.
 
 **How to apply:** Before adding new content to CLAUDE.md, check the current character count. If an addition would push it toward or past 40,000 characters, put the content in a new memory file instead and add a brief pointer in CLAUDE.md. Existing memory files for this project: [[feedback-changelog-rules]], [[feedback-tp-prose]], [[feedback-readme-todo-quirks]].

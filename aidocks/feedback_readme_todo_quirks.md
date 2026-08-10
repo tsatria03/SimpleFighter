@@ -10,8 +10,8 @@ metadata:
 ## readme.txt
 
 - Player-facing high-level overview: a short pitch, a folder-layout summary, and a long enumerated list of in-game keyboard commands grouped by purpose (movement, menus, sonar, building, etc.).
-- This is the *general* documentation; deeper per-feature reference lives in `sf/docks/builder/*.tp`. When a player or dev asks how a specific subsystem works, prefer the .tp file over readme.txt.
-- **The readme is out of date with respect to map modes.** Older sections still reflect the 2d-only era; topdown and 3d map building have shipped. Don't mirror its older claims as authoritative — cross-check against the actual code in `src/includes/` and the per-feature .tp files when answering questions.
+- This is the *general* documentation; deeper per-feature reference lives in `sf/docks/builder/*.txt`. When a player or dev asks how a specific subsystem works, prefer the .txt file over readme.txt.
+- **The readme is out of date with respect to map modes.** Older sections still reflect the 2d-only era; topdown and 3d map building have shipped. Don't mirror its older claims as authoritative — cross-check against the actual code in `src/includes/` and the per-feature .txt files when answering questions.
 
 ## todo list.txt
 

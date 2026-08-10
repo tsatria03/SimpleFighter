@@ -1,6 +1,6 @@
 ---
 name: feedback-alphabetize-commands
-description: "When adding a new in-game slash command, insert it in alphabetical order by full command name in both the command-blocker allcommands list and commands.tp."
+description: "When adding a new in-game slash command, insert it in alphabetical order by full command name in both the command-blocker allcommands list and commands.txt."
 metadata: 
   node_type: memory
   type: feedback
@@ -10,7 +10,7 @@ metadata:
 When adding a new `/`-prefixed in-game command, place it in **alphabetical order by full command name** (not by alias) in every list that enumerates commands:
 
 - The `allcommands` array in `src/includes/builder/misc/command_blocker.nvgt` (each command is two entries: full name then alias, e.g. `"redomap", "ro"` — keep the pair together at the command's alphabetical slot).
-- The command entries in `sf/docks/builder/commands.tp`.
+- The command entries in `sf/docks/builder/commands.txt`.
 
 The lists are loosely grouped by prefix family but the dev wants new commands slotted into their true alphabetical position — e.g. `redomap` goes between `rawdata` and `relchar`, while `undomap` goes at the end after `suicide`. Keep complementary pairs adjacent and alphabetized within themselves where the existing convention already does so (gamestart/gamestop, give/giveall, kill/killall).
 

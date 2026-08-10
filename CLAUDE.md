@@ -66,7 +66,7 @@ These are the invariants that, if violated, silently break old maps, parsers, or
 ## Player-facing docs (sf/docks/)
 
 - **sf/docks/main/** — `changelog.txt` (source of truth for what shipped — trust over readme/todo; reverse-chronological, `New in X.Y.` headers), `readme.txt`, `todo list.txt`, `credits.txt`. Opened by `docksmenu()`/`dockread()` in src/sf.nvgt. The readme's "Customizing audio" section is the authoritative per-entity clip-name catalogue.
-- **sf/docks/builder/** — per-feature `.tp` reference topics served by `helpread()`; the `hp`/`help` command scans `docks/builder/*.tp` at runtime, so new topics auto-appear (no menu wiring).
+- **sf/docks/builder/** — per-feature `.txt` reference topics served by `helpread()`; the `hp`/`help` command scans `docks/builder/*.txt` at runtime, so new topics auto-appear (no menu wiring).
 
 Rules for writing/editing these: **[[feedback_changelog_rules]]**, **[[feedback_tp_prose]]**, **[[feedback_readme_todo_quirks]]**.
 

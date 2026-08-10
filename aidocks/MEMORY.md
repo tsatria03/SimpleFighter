@@ -22,10 +22,10 @@
 - [No CRLF normalization](feedback_no_crlf_normalization.md) — Don't run post-edit CRLF normalizer passes; git handles line endings at commit time.
 - [CLAUDE.md length limit](feedback_claudemd_length.md) — Keep CLAUDE.md under 40,000 characters; move content to memory files rather than expanding inline.
 - [Changelog rules](feedback_changelog_rules.md) — Sentence caps, per-version entry limits (20 for .0, 10 for minors), version bump requirement, reverse-chronological order.
-- [.tp prose constraints](feedback_tp_prose.md) — Never reference engine internals in help topics; describe observable behavior only; filenames flat; new topics auto-appear via the help command's docks/builder/*.tp scan (no menu wiring).
+- [Help-topic prose constraints](feedback_tp_prose.md) — Never reference engine internals in help topics; describe observable behavior only; filenames flat; new topics auto-appear via the help command's docks/builder/*.txt scan (no menu wiring).
 - [readme/todo quirks](feedback_readme_todo_quirks.md) — readme is out of date on map modes; todo Unfinished items are not commitments.
-- [Alphabetize new commands](feedback_alphabetize_commands.md) — New slash commands go in their true alphabetical slot in both the command-blocker allcommands list and commands.tp, not appended at the end.
-- [Alphabetize builder entities](feedback_alphabetize_builder_entities.md) — New builder entities go in alphabetical order within their category, in both the builder menu code (map_menu.nvgt) and any help topic that lists entities (e.g. maps.tp).
+- [Alphabetize new commands](feedback_alphabetize_commands.md) — New slash commands go in their true alphabetical slot in both the command-blocker allcommands list and commands.txt, not appended at the end.
+- [Alphabetize builder entities](feedback_alphabetize_builder_entities.md) — New builder entities go in alphabetical order within their category, in both the builder menu code (map_menu.nvgt) and any help topic that lists entities (e.g. maps.txt).
 - [Presets need a driving need](feedback_presets_need_driving_need.md) — Don't propose presets/type-abstractions for entities without real pain or demand; NPCs (30+ fields) and effects (player demand) were the only justified cases.
 - [Ask one question at a time](feedback_ask_one_question_at_a_time.md) — The dev reviews by screen reader; ask one question per turn and wait for the answer, don't batch several.
 - [Verify code while fixing](feedback_verify_code_while_fixing.md) — Re-locate by symbol not stored line number, confirm the finding is true, and flag adjacent bugs; the dev runs/verifies builds so wrong edits ship.
