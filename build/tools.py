@@ -20,6 +20,7 @@ NVGT_OUT     = os.path.splitext(NVGT_FILE)[0]
 SRC_DIR      = os.path.join(REPO_DIR, "src")    # the .nvgt source now lives here (post-reorg)
 ASSETS_DIR   = os.path.join(REPO_DIR, "sf")     # assets (data, docks, lib, sounds) live here
 BUNDLE       = os.path.join(SRC_DIR, NVGT_OUT)  # nvgt -c (run from src) produces this bundle folder
+VERSION_NVGT = os.path.join(SRC_DIR, "includes", "version.nvgt")  # generated mirror of version.txt (the source of truth)
 ASSET_FOLDERS = ["data", "docks", "lib"]  # NOT sounds: the 2.3 GB sounds/ folder is downloaded on first run (downloadsounds), never bundled
 
 SITE_HTML    = _cfg["site"]["html"]
@@ -58,6 +59,13 @@ def clip(text):
 def get_version():
     with open(os.path.join(SCRIPT_DIR, "version.txt"), "r") as f:
         return f.read().strip()
+
+def sync_version_file(version):
+    # Mirror version.txt into version.nvgt so the compiled build carries the right version;
+    # a compiled release has no build/version.txt beside it to read at runtime. CRLF like the repo.
+    with open(VERSION_NVGT, "w", newline="", encoding="utf-8") as f:
+        f.write(f'string version = "{version}";\r\n')
+    print(f"Synced version {version} into version.nvgt.\n")
 
 # ── Commit ────────────────────────────────────────────────────────────────────
 
@@ -393,6 +401,7 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
 
     if do_compile:
         print("Compiling NVGT source...")
+        sync_version_file(version)
         # The source lives in src/; run nvgt -c from there so the bundle lands in src/<name>.
         if not run_cmd([NVGT, "-c", "-Q", NVGT_FILE], cwd=SRC_DIR):
             print("ERROR: NVGT compilation failed.")

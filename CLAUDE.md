@@ -21,7 +21,7 @@ SimpleFighter is an audio-only action / map-builder game (currently v14.2) writt
 
 ## Running
 
-No test suite or linter. The game is launched with `sf/sf.py` (runs `src/sf.nvgt` under `C:\nvgt2\nvgtw.exe`, cwd `sf/`) and compiled/packaged via `build/tools.py` — but **the dev runs and builds it, not Claude**: never launch or compile it yourself (**[[feedback_dont_run_or_build_the_game]]**). `src/sf.nvgt` is the entry; its main() syncs the version constant to `build/version.txt`, installs the keyhook, gates on SCREEN_READER_AVAILABLE / SOUND_AVAILABLE, blocks a second instance, initializes sound pools, parses character/shield/weapon data, optionally checks for updates, downloads the sounds/ folder if missing, then loops mainmenu().
+No test suite or linter. The game is launched with `sf/sf.py` (runs `src/sf.nvgt` under `C:\nvgt2\nvgtw.exe`, cwd `sf/`) and compiled/packaged via `build/tools.py` — but **the dev runs and builds it, not Claude**: never launch or compile it yourself (**[[feedback_dont_run_or_build_the_game]]**). `src/sf.nvgt` is the entry; its main() installs the keyhook, gates on SCREEN_READER_AVAILABLE / SOUND_AVAILABLE, blocks a second instance, initializes sound pools, parses character/shield/weapon data, optionally checks for updates, downloads the sounds/ folder if missing, then loops mainmenu(). The version source of truth is `build/version.txt`, mirrored into `src/includes/version.nvgt` on launch (`sf.py`) and compile (`tools.py`) — see **[[feedback_update_build_version_txt]]**.
 
 ## Memory dispatch — where the detail lives
 

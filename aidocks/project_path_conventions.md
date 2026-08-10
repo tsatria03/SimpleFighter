@@ -11,7 +11,7 @@ metadata:
 
 - **`src/`** = code only. Entry `src/sf.nvgt`, plus `src/includes/` (`includes.nvgt`, `version.nvgt`, `builder/`, `main/`). No assets here.
 - **`sf/`** = runtime assets + launcher. `sf/sf.py` (launcher), `sf/data/`, `sf/docks/`, `sf/sounds/`, `sf/lib/` (the engine DLLs/exes — was the old repo-root `lib/`).
-- **`build/`** = the build/release pipeline (`tools.py` via `tools.bat`). `build/tools.ini` (per-game), `~/.game_tools/tools.ini` (host-wide tool paths), `build/version.txt` (derived).
+- **`build/`** = the build/release pipeline (`tools.py` via `tools.bat`). `build/tools.ini` (per-game), `~/.game_tools/tools.ini` (host-wide tool paths), `build/version.txt` (the version source of truth, mirrored into `src/includes/version.nvgt`).
 - **`releases/`** = compiled build outputs (gitignored).
 
 **The cwd trick (how code and assets connect):** `sf/sf.py` runs `../src/sf.nvgt` through NVGT but sets **cwd = `sf/`**, so every cwd-relative path in the code (`lib/...`, `sounds/...`, `data/...`, `docks/...`, `build/version.txt`) resolves under `sf/`. The include line `#include"includes/includes.nvgt"` in `sf.nvgt` resolves relative to the script → `src/includes/`. **No in-code path changed in the move** — only the launcher cwd (runtime) and `build/tools.py` (build) know about the split. So: a path naming a *file on disk* lives under `src/` or `sf/`; a bare `data/...`/`sounds/...`/`docks/...` string *in the code* is cwd-relative against `sf/`.
@@ -22,4 +22,4 @@ metadata:
 
 **Path remap from the pre-restructure layout:** `sf.nvgt`→`src/sf.nvgt`; `includes/…`→`src/includes/…`; `includes/version.nvgt`→`src/includes/version.nvgt`; `data/…`→`sf/data/…`; `docks/…`→`sf/docks/…`; `sounds/…`→`sf/sounds/…`; `lib/`→`sf/lib/`.
 
-**Version sync:** `src/sf.nvgt`'s uncompiled version-sync opens `../build/version.txt` (cwd is `sf/`, so it resolves to the repo-root `build/version.txt` that `tools.py` reads). This was briefly broken right after the restructure — it opened `build/version.txt` cwd-relative, targeting the nonexistent `sf/build/version.txt` — and was fixed by adding the `../`.
+**Version sync:** `build/version.txt` is the source of truth; it's mirrored **into** `src/includes/version.nvgt` by `sf/sf.py` before each launch and by `build/tools.py` (`sync_version_file`) before compile. See [[feedback_update_build_version_txt]] and [[project_build_pipeline]]. (Historical: the flow was originally reversed — `sf.nvgt` wrote its `version` constant out to `../build/version.txt` on launch, and briefly targeted the wrong cwd-relative path right after the restructure — but that block was removed when `version.txt` became the source of truth.)

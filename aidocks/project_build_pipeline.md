@@ -1,11 +1,11 @@
 ---
 name: project_build_pipeline
-description: Version source-of-truth (src/includes/version.nvgt) and the build/tools.py compile → package → release → website pipeline, with per-game and host-wide config locations.
+description: Version source-of-truth (build/version.txt, mirrored into version.nvgt on launch and compile) and the build/tools.py compile → package → release → website pipeline, with per-game and host-wide config locations.
 metadata:
   type: project
 ---
 
-The version lives in `src/includes/version.nvgt` as `string version = "X.Y"` — the single source of truth, included from includes.nvgt before the glob-includes. `build/version.txt` is a derived mirror that `build/tools.py` reads. On uncompiled launch `src/sf.nvgt` syncs the constant out to it, opening `../build/version.txt` (cwd is `sf/`, so this resolves to the repo-root file). Main-menu "change game version" overrides are transient (reset on next launch).
+`build/version.txt` is the **single source of truth** for the version. It's mirrored into `src/includes/version.nvgt` (`string version = "X.Y"`, included from includes.nvgt before the glob-includes) automatically: `sf/sf.py`'s `sync_version()` rewrites version.nvgt from version.txt before each launch, and `build/tools.py`'s `sync_version_file()` does the same before `nvgt -c` so a compiled release carries the right version (a compiled build has no `build/version.txt` beside it to read at runtime). `tools.py`'s `get_version()` reads version.txt for release naming/tagging/website. **Don't hand-edit version.nvgt — it's a generated mirror** (see [[feedback_update_build_version_txt]]). Main-menu "change game version" overrides are transient (reset on next launch).
 
 `build/tools.bat` launches `build/tools.py` (Python 3.12), a menu-driven tool covering commit ops (commit, undo, push, history) and release ops. Pipeline:
 
