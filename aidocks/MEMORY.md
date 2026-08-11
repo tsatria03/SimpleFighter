@@ -26,6 +26,7 @@
 - [Dock line length 1024](feedback_dock_line_length_1024.md) — Keep every line in the player-facing docks (sf/docks/main + sf/docks/builder) at or under 1024 chars; the dev's screen reader splits longer lines mid-thought.
 - [Update build/version.txt](feedback_update_build_version_txt.md) — build/version.txt is the single source of truth; bump only it (with the changelog block), and it's mirrored into version.nvgt on launch (sf.py) and compile (tools.py). Never hand-edit version.nvgt.
 - [Help-topic prose constraints](feedback_tp_prose.md) — Never reference engine internals in help topics; describe observable behavior only; filenames flat; new topics auto-appear via the help command's docks/builder/*.txt scan (no menu wiring).
+- [Draft topics stay short](feedback_draft_topics_short.md) — A requested DRAFT of a doc is 2-3 short paragraphs showing the direction, not the whole finished topic; write the full page only for the final.
 - [readme/todo quirks](feedback_readme_todo_quirks.md) — readme is out of date on map modes; todo Unfinished items are not commitments.
 - [Alphabetize new commands](feedback_alphabetize_commands.md) — New slash commands go in their true alphabetical slot in both the command-blocker allcommands list and commands.txt, not appended at the end.
 - [Alphabetize builder entities](feedback_alphabetize_builder_entities.md) — New builder entities go in alphabetical order within their category, in both the builder menu code (map_menu.nvgt) and any help topic that lists entities (e.g. maps.txt).

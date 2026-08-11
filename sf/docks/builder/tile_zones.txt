@@ -1,0 +1,37 @@
+Tile zones.
+
+A tile zone is an invisible rectangular area that changes how the ground inside it behaves. There is nothing to see, hear, or bump into — it simply overrides properties of the tiles you stand on while you're within its bounds. Every setting is optional: change only what you want, and leave the rest of the ground behaving normally. Use a tile zone for a patch of slippery ice or sticky mud, a low crawlspace you can't jump in, or ground that punishes a fall harder or softer than usual.
+
+How a tile zone works.
+
+A tile zone covers a rectangular area and watches for you to stand on the ground inside it. When you do, it applies whatever overrides you set — a walk speed, a jump height, and how falls onto that ground are handled — and lifts them again the moment you step off. Each setting is independent: one you leave alone stays exactly as it was, so a zone that changes only speed won't touch your jump, and the other way around.
+
+Every numeric field starts at -1, which means "leave this alone." Type a real value to override that property, or leave it at -1 to let the ground behave normally. The surface field starts at "any." The normal values a property returns to are: walk speed 5, jump height 5, fall distance 8 squares, and fall damage 21. A tile zone with every field left at its default does nothing at all — it's just an empty region.
+
+The surface field decides which ground the zone acts on. Left at "any," the overrides apply to every tile inside the zone. Set to a specific platform tile, only that kind of ground triggers them, and any other tile inside the zone is left normal — so you can drop a zone over a mixed floor and have it change only the ice, say, and not the stone beside it.
+
+When two tile zones overlap, the one built later wins on any setting they both change, while a setting only the other zone changes still applies. This lets you lay a large zone and then carve an exception inside it — a wide slow-mud area with an even slower pocket in the middle.
+
+Tile zone fields.
+
+The tile zone form takes the following:
+
+Coordinates. A minimum and maximum x and a minimum and maximum y (and a minimum and maximum z on 3d maps), marking the area the zone covers.
+
+Speed. The walk speed forced on the ground, on the same scale as your own speed keys, where higher is faster and 5 is normal. Unlike your own keys, which stop at 20, a zone has no upper limit. Leave it at -1 to keep your own speed, or set 1 or higher to override it. While you're on the zone's ground your speed keys have no effect, and your own speed returns the moment you leave.
+
+Jump height. The jump height forced in the zone, where 5 is normal. Set 0 to stop jumping entirely — a crawlspace or low ceiling where you can't leave the ground — or 1 and up for a forced height, again with no upper limit. Leave it at -1 to keep your own jump. As with speed, your jump-height keys have no effect while you're inside, and your own jump returns when you step off. (Jumping only exists on 2d and 3d maps, so this field isn't shown on topdown maps.)
+
+Fall distance. How many squares you can fall onto this ground before the landing hurts, where 8 is normal. A drop shorter than this is a free, soft landing; this far or farther is a hard landing that damages you. Lower makes short drops sting, higher lets you fall farther unharmed. Leave it at -1 to keep the normal distance. (Shown on 2d and 3d maps only.)
+
+Fall damage. How hard each fallen square hits once a fall crosses the distance above, where 21 is normal. Higher is more brutal ground, lower is gentler. Leave it at -1 to keep the normal amount. (Shown on 2d and 3d maps only.)
+
+Surface. Which ground the overrides act on, chosen from the platform tiles with "any" at the top. "any" affects every tile in the zone; a specific tile affects only that kind of ground.
+
+How fall distance and fall damage differ from a fall zone.
+
+These two settings are easy to mix up with the separate fall zone element, but they do opposite kinds of thing. A fall zone is an all-or-nothing safety net: any landing inside it is always soft, from any height, cancelling fall damage completely — it's for water, a haystack, a crash mat, or the bottom of a chute. It has no dials to set; it's simply on wherever you place it. A tile zone's fall distance and fall damage instead tune the normal fall rules on a patch of ground: they set how far you can drop before it hurts and how hard it hits when it does. A tile zone can make ground gentler than normal or harsher than normal, but it never fully switches fall damage off the way a fall zone does. So: for a spot where every landing is guaranteed safe, reach for a fall zone; to change how punishing falls are on certain ground, in either direction, reach for a tile zone.
+
+Authoring tile zones by hand.
+
+If you edit main.sif directly, a tile zone on a 2d or topdown map is: tile_zone minx maxx miny maxy surface speed jump_height fall_distance fall_damage. On a 3d map a minimum and maximum z follow the y pair: tile_zone minx maxx miny maxy minz maxz surface speed jump_height fall_distance fall_damage. The surface is a platform tile name or the word any. Each of the four numeric settings is a whole number, or -1 to leave that property unchanged. On topdown maps the jump and fall settings have no effect, but the line still carries them (written as -1).
