@@ -700,7 +700,7 @@ movetimer.restart();
 void handle_jump_keys()
 {
 bool space_trigger = autojump==1 ? controls.action_down("jump") : controls.action_pressed("jump");
-if(space_trigger and key_up(KEY_G) and !shift_is_down() and jumping==0 and jumpable==true and falling==false and doormove==false and elvmove==false and mapmode != "topdown" and !glider_engine_on)
+if(space_trigger and key_up(KEY_G) and !shift_is_down() and jumping==0 and jumpable==true and falling==false and doormove==false and elvmove==false and mapmode != "topdown" and !glider_engine_on and jumpheight>=1)
 {
 if(onhook && (hk.hook_direction == 3 || hk.hook_direction == 5))
 {
@@ -1033,27 +1033,31 @@ speak("moving speed reset");
 
 void handle_height_keys()
 {
-if(controls.action_repeating("jump_height_down") and jumpheight!=1 and jumpchange==true and mapmode != "topdown")
+// These edit player_own_jump (the persistent preference), not the live jumpheight, and go inert
+// while a tile zone is forcing jump height (tz_jump_active) so a zone override can't be fought or
+// corrupted -- any press inside such a zone is ignored, per the discard-on-exit design. The zone's
+// own jump height still applies via tilezoneloop; this only governs your own value.
+if(controls.action_repeating("jump_height_down") and player_own_jump!=1 and jumpchange==true and mapmode != "topdown" and !tz_jump_active)
 {
-jumpheight-=1;
+player_own_jump-=1;
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*change*"),false);
-speak("jump height decreased to"+jumpheight+"squares");
+speak("jump height decreased to"+player_own_jump+"squares");
 }
-if(controls.action_repeating("jump_height_up") and jumpheight!=20 and jumpchange==true and mapmode != "topdown")
+if(controls.action_repeating("jump_height_up") and player_own_jump!=20 and jumpchange==true and mapmode != "topdown" and !tz_jump_active)
 {
-jumpheight+=1;
+player_own_jump+=1;
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*change*"),false);
-speak("jump height increased to"+jumpheight+"squares");
+speak("jump height increased to"+player_own_jump+"squares");
 }
-if(controls.action_pressed("jump_height_reset") and jumpchange==true and mapmode != "topdown")
+if(controls.action_pressed("jump_height_reset") and jumpchange==true and mapmode != "topdown" and !tz_jump_active)
 {
-if(jumpheight==5)
+if(player_own_jump==5)
 {
 speak("jump hight is already reset");
 }
-else if(jumpheight<=20)
+else if(player_own_jump<=20)
 {
-jumpheight=5;
+player_own_jump=5;
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*change*"),false);
 speak("jump hight reset");
 }

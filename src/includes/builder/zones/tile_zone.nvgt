@@ -19,8 +19,8 @@ stn(); cast to int when applied to the int globals in the runtime loop):
                    threshold (normal 21). -1 = unchanged.
 
 Data, lifecycle, read/write, the build form, and the menu/parser/clearmap wiring are all
-in place, and the per-frame runtime loop (tilezoneloop) now applies the SPEED override.
-Jump height and the two fall knobs still hook into the loop in later sections.
+in place, and the per-frame runtime loop (tilezoneloop) now applies the SPEED and JUMP-HEIGHT
+overrides. The two fall knobs still hook into the loop in the next section.
 Zone arrays are compacted like the other zones (heal/safe): spawn appends, destroy_all
 resizes to zero, and there is no per-element sentinel removal because zones aren't
 destroyable.
@@ -74,31 +74,37 @@ tilezone tz1(x1, x2, y1, y2, surf, spd, jh, fd, fdmg, minz, maxz);
 tilezones.insert_last(tz1);
 }
 // ---- Runtime override state ----
-// tz_speed_active flags that a zone is currently overriding speed. It gates the shift+A/D/F
-// keys (game_handlers.nvgt) so they stay inert while a zone dictates speed. There is NO saved
-// value: the player's own speed lives in player_own_speed (game.nvgt), which the keys edit and
-// the loop falls back to -- so nothing to save, restore, or corrupt.
+// tz_speed_active / tz_jump_active flag that a zone is currently overriding speed / jump height.
+// They gate the shift+A/D/F speed keys and the F1-F3 jump keys (game_handlers.nvgt) so those stay
+// inert while a zone dictates that property. There is NO saved value: the player's own values live
+// in player_own_speed / player_own_jump (game.nvgt), which the keys edit and the loop falls back
+// to -- so nothing to save, restore, or corrupt.
 bool tz_speed_active = false;
+bool tz_jump_active = false;
 
 /*
 Per-frame override loop. Runs in game()'s loop group under freezgame==false, BEFORE the
 walktime recompute at game.nvgt:117, so a speed change lands the next frame. Each frame:
 gather every zone the player stands in, drop those whose surface filter doesn't match the tile
-underfoot, then let the LATEST-defined match win each knob (layering). modspeed is a pure output
-here -- set it to the merged override while a zone applies, else back to the player's own
-preference (player_own_speed). This is what removes the old two-owners-fighting-over-modspeed
-bug: the speed keys only ever touch player_own_speed, never the live modspeed. Jump height and
-the fall knobs slot in here the same way in later sections.
+underfoot, then let the LATEST-defined match win each knob (layering). modspeed and jumpheight are
+pure outputs here -- set to the merged override while a zone applies, else back to the player's own
+preference (player_own_speed / player_own_jump). This is what removes the old two-owners-fighting
+bug: the keys only ever touch the player_own_* preference, never the live global. Jump height's 0
+override (no jumping at all) is enforced by the `jumpheight>=1` guard on the jump trigger in
+game_handlers.nvgt (handle_jump_keys), so a forced 0 blocks the jump entirely -- no hop, no sound.
+The fall knobs slot in here the same way in the next section.
 */
 void tilezoneloop()
 {
 string underfoot = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
 double eff_speed = -1;   // merged winner across covering, surface-matching zones; -1 = none set speed
+double eff_jump = -1;    // same for jump height; -1 = none set jump (0 IS a real override -- no jump)
 for(uint i = 0; i < tilezones.length(); i++)
 {
 if(!player_in_tilezone(i)) continue;
 if(tilezones[i].surface != "any" && underfoot != tilezones[i].surface) continue;
 if(tilezones[i].speed >= 1) eff_speed = tilezones[i].speed;   // only 1+ is a real override; a stray 0/negative (hand-edited map) is ignored like -1, never forcing modspeed below 1
+if(tilezones[i].jump_height >= 0) eff_jump = tilezones[i].jump_height;   // 0 = no jump, 1+ = forced height; -1/negative is no-op (also guards hand-edited negatives)
 }
 if(eff_speed != -1)
 {
@@ -110,12 +116,23 @@ else
 tz_speed_active = false;
 modspeed = player_own_speed;
 }
+if(eff_jump != -1)
+{
+tz_jump_active = true;
+jumpheight = int(eff_jump);
+}
+else
+{
+tz_jump_active = false;
+jumpheight = player_own_jump;
+}
 }
 
 void destroy_all_tilezones()
 {
-// The player may be standing in a zone at unload; drop the override back to their own speed.
+// The player may be standing in a zone at unload; drop any override back to their own value.
 if(tz_speed_active) { modspeed = player_own_speed; tz_speed_active = false; }
+if(tz_jump_active) { jumpheight = player_own_jump; tz_jump_active = false; }
 tilezones.resize(0);
 }
 
