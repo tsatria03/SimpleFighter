@@ -43,8 +43,9 @@ spawn_surfaces();
 // height at column p regardless of which axis the ramp climbs.
 double surface_height(double x, double y)
 {
-bool axis_is_x = (direction == "leftup" || direction == "leftdown" || direction == "rightup" || direction == "rightdown");
-bool rises_positive = (direction == "rightup" || direction == "leftdown" || direction == "forwardup" || direction == "backwarddown");
+string d = string_replace(direction, "_", "", true);
+bool axis_is_x = (d == "leftup" || d == "leftdown" || d == "rightup" || d == "rightdown");
+bool rises_positive = (d == "rightup" || d == "leftdown" || d == "forwardup" || d == "backwarddown");
 double axis_min = axis_is_x ? minx : miny;
 double axis_max = axis_is_x ? maxx : maxy;
 double p = axis_is_x ? x : y;
@@ -68,8 +69,9 @@ tile sits at a whole level. y/left-right ramps rise along x; forward/backward al
 */
 void spawn_surfaces()
 {
-bool axis_is_x = (direction == "leftup" || direction == "leftdown" || direction == "rightup" || direction == "rightdown");
-bool rises_positive = (direction == "rightup" || direction == "leftdown" || direction == "forwardup" || direction == "backwarddown");
+string d = string_replace(direction, "_", "", true);
+bool axis_is_x = (d == "leftup" || d == "leftdown" || d == "rightup" || d == "rightdown");
+bool rises_positive = (d == "rightup" || d == "leftdown" || d == "forwardup" || d == "backwarddown");
 double axis_min = axis_is_x ? minx : miny;
 double axis_max = axis_is_x ? maxx : maxy;
 double top_height = base_height + step_height * (axis_max - axis_min);
@@ -127,15 +129,28 @@ player_slant = -1;
 }
 
 /*
+Called at the very top of playstep(). Runs the full slant attach/snap (slantcheck) so the
+player is on the ramp surface BEFORE the footstep reads the tile underfoot. Running the
+full logic (not just a snap) also covers the FIRST step onto a ramp: player_slant isn't
+set until slantcheck runs later in the frame, so without detecting-and-snapping here that
+first step would sound whatever floor sits underneath the ramp, not the ramp's own tile.
+*/
+void slant_snap_player()
+{
+slantcheck();
+}
+
+/*
 Per-frame elevation follow. While the player is on a slant, force their vertical
 coordinate (me.y on 2d, me.z on 3d) to the ramp surface under them and clear the fall
 state, so walking along the ramp carries them up/down instead of falling between the
 diagonal floor tiles. MUST be called immediately BEFORE fallcheck() in the main loop:
 otherwise the frame after a horizontal step leaves the player unsupported at the old
 height and fallcheck starts a fall before this can correct it. The player counts as
-"on" a slant once they stand exactly on one of its ramp tiles (vertical == the surface
-at their column); they come off it by walking out of the footprint (onto the top
-landing or off the low end). Guarded like fallcheck (skips hooks/vehicles/gliders/jumps).
+"on" a slant when they are within the footprint at a height inside the ramp's body
+(base..surface at their column) -- so you re-attach by walking into the footprint from
+the side or below, not only when standing exactly on the surface tile; they come off by
+walking out of the footprint. Guarded like fallcheck (skips hooks/vehicles/gliders/jumps).
 */
 void slantcheck()
 {
@@ -156,15 +171,6 @@ if(mapmode == "3d") me.z = h;
 else me.y = h;
 falling = false;
 fallcounter = 0;
-// The player only lands on the ramp tile after this snap, so playstep() (already run
-// during the horizontal step, at the pre-snap height) found no tile and stayed silent.
-// Replay the floor tile's step sound here, matching playstep()'s platform logic.
-array<string> tiles;
-array<double> vols;
-array<double> pits;
-get_all_platform_tiles(me.x, me.y, tiles, vols, pits, me.z);
-for(uint j = 0; j < tiles.length(); j++)
-tileslot = p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles[j]+"/*step*"), false, 0, 0, vols[j], pits[j]);
 }
 return;
 }
@@ -176,9 +182,20 @@ if(@slants[i] == null) continue;
 if(!slants[i].contains(me.x, me.y)) continue;
 double h = slants[i].surface_height(me.x, me.y);
 double cur = (mapmode == "3d") ? me.z : me.y;
-if(cur == h)
+// Attach when the player is within the ramp's solid body at this column -- anywhere
+// from its base height up to the surface -- so you get back onto the hill when you
+// walk into its footprint from the side or from below, not only when standing exactly
+// on the surface tile. Above the surface is a fall/jump landing, handled elsewhere.
+if(cur >= slants[i].base_height && cur <= h)
 {
 player_slant = int(i);
+if(cur != h)
+{
+if(mapmode == "3d") me.z = h;
+else me.y = h;
+falling = false;
+fallcounter = 0;
+}
 return;
 }
 }
@@ -189,8 +206,9 @@ On-disk map line (space-delimited, mode-dependent length):
   2d (12 tokens): slant minx maxx base direction step_height  bottomtile bottomvol bottompitch  toptile topvol toppitch
   3d (14 tokens): slant minx maxx miny maxy base direction step_height  bottomtile bottomvol bottompitch  toptile topvol toppitch
 base is the low-end elevation; the top height is computed from step_height, not stored.
-A surface's tile is the literal "none" to opt out. direction is a no-space token
-(leftup/leftdown/rightup/rightdown/forwardup/forwarddown/backwardup/backwarddown).
+A surface's tile is the literal "none" to opt out. direction is an underscored token
+(left_up/left_down/right_up/right_down/forward_up/forward_down/backward_up/backward_down);
+comparisons strip underscores, so older no-underscore tokens (rightup) still load.
 */
 void read_slant(string[] sd)
 {
@@ -258,22 +276,22 @@ if(my2 != -1) form.set_disallowed_chars(my2, disallowed_nums, false, "This chara
 form.set_disallowed_chars(bh, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sh, disallowed_nums, false, "This character is not allowed.");
 // Direction list (mode-aware); dir_tokens mirrors the item order for retrieval by position.
-string[] dir_tokens = {"leftup","leftdown","rightup","rightdown"};
+string[] dir_tokens = {"left_up","left_down","right_up","right_down"};
 int dir_list = form.create_list("direction");
-form.add_list_item(dir_list, "left up", "leftup");
-form.add_list_item(dir_list, "left down", "leftdown");
-form.add_list_item(dir_list, "right up", "rightup");
-form.add_list_item(dir_list, "right down", "rightdown");
+form.add_list_item(dir_list, "left up", "left_up");
+form.add_list_item(dir_list, "left down", "left_down");
+form.add_list_item(dir_list, "right up", "right_up");
+form.add_list_item(dir_list, "right down", "right_down");
 if(mapmode == "3d")
 {
-form.add_list_item(dir_list, "forward up", "forwardup");
-form.add_list_item(dir_list, "forward down", "forwarddown");
-form.add_list_item(dir_list, "backward up", "backwardup");
-form.add_list_item(dir_list, "backward down", "backwarddown");
-dir_tokens.insert_last("forwardup");
-dir_tokens.insert_last("forwarddown");
-dir_tokens.insert_last("backwardup");
-dir_tokens.insert_last("backwarddown");
+form.add_list_item(dir_list, "forward up", "forward_up");
+form.add_list_item(dir_list, "forward down", "forward_down");
+form.add_list_item(dir_list, "backward up", "backward_up");
+form.add_list_item(dir_list, "backward down", "backward_down");
+dir_tokens.insert_last("forward_up");
+dir_tokens.insert_last("forward_down");
+dir_tokens.insert_last("backward_up");
+dir_tokens.insert_last("backward_down");
 }
 form.set_list_position(dir_list, 0, false);
 // Bottom surface group (the sloped ramp floor). "none" opts out.
