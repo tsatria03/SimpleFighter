@@ -1,0 +1,111 @@
+/*
+Tile zone -- an invisible rectangular region that overrides how the ground underfoot
+behaves. It has no sound and nothing to bump: it just quietly changes properties of the
+tiles inside its box while the player stands on them. Every knob is optional, carrying a
+-1 "leave unchanged" sentinel (or "any" for the surface filter) so a zone touches only
+what the author actually set; a zone with everything left unchanged does nothing.
+
+Knobs (all whole numbers, stored as double for uniformity with the double coords and
+stn(); cast to int when applied to the int globals in the runtime loop):
+  surface       -- which tile the overrides target: "any" = every tile in the box, or a
+                   single platform tile name = only that tile type triggers them.
+  speed         -- walk speed on those tiles, on the modspeed scale (normal 5). No upper
+                   cap (a zone can exceed the player's own 1-20 keys); floor 1. -1 = unchanged.
+  jump_height   -- jump height in the zone (normal 5). 0 = no jumping at all; no upper cap.
+                   -1 = unchanged (distinct from the real value 0).
+  fall_distance -- hard-landing threshold in squares (normal 8): a shorter drop is a free
+                   soft landing, this or longer hurts. -1 = unchanged.
+  fall_damage   -- the fallmod multiplier for how hard each fallen square hits past the
+                   threshold (normal 21). -1 = unchanged.
+
+Data, lifecycle, and read/write are in place; the build form and the per-frame
+override/restore loop (tilezoneloop) still come in later sections, so nothing runs yet.
+Zone arrays are compacted like the other zones (heal/safe): spawn appends, destroy_all
+resizes to zero, and there is no per-element sentinel removal because zones aren't
+destroyable.
+
+On-disk map line (space-delimited, mode-dependent length), mirroring the other zones'
+always-present min/max y:
+  2d / topdown (10 tokens): tile_zone minx maxx miny maxy  surface speed jump_height fall_distance fall_damage
+  3d          (12 tokens): tile_zone minx maxx miny maxy minz maxz  surface speed jump_height fall_distance fall_damage
+surface is "any" or a platform tile name; each numeric knob is a whole number or the -1
+"leave unchanged" sentinel.
+*/
+tilezone@[] tilezones(0);
+
+class tilezone
+{
+bool in_zone;
+double minx, maxx, miny, maxy;
+double minz, maxz;
+string surface;
+double speed;
+double jump_height;
+double fall_distance;
+double fall_damage;
+tilezone(double mx, double mx2, double my, double my2, string surf, double spd, double jh, double fd, double fdmg, double mnz=0, double mxz=0)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+minz=mnz;
+maxz=mxz;
+surface=surf;
+speed=spd;
+jump_height=jh;
+fall_distance=fd;
+fall_damage=fdmg;
+}
+}
+// Is the player inside this zone's box? (z is only bounded on 3d.) The surface filter
+// -- whether the tile underfoot actually matches -- is applied in the runtime loop, not
+// here, so this stays pure geometry like player_in_healzone.
+bool player_in_tilezone(uint i)
+{
+if(!(tilezones[i].minx<=me.x and tilezones[i].maxx>=me.x and tilezones[i].miny<=me.y and tilezones[i].maxy>=me.y)) return false;
+if(mapmode == "3d" and (me.z < tilezones[i].minz or me.z > tilezones[i].maxz)) return false;
+return true;
+}
+void spawn_tilezone(double x1, double x2, double y1, double y2, string surf, double spd, double jh, double fd, double fdmg, double minz=0, double maxz=0)
+{
+tilezone tz1(x1, x2, y1, y2, surf, spd, jh, fd, fdmg, minz, maxz);
+tilezones.insert_last(tz1);
+}
+void destroy_all_tilezones()
+{
+tilezones.resize(0);
+}
+
+void read_tile_zone(string[] sd)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==12)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string surf=sd[o];
+double spd=stn(sd[o+1]);
+double jh=stn(sd[o+2]);
+double fd=stn(sd[o+3]);
+double fdmg=stn(sd[o+4]);
+spawn_tilezone(mx, mx2, my, my2, surf, spd, jh, fd, fdmg, mnz, mxz);
+}
+
+void write_tile_zone(double x1, double x2, double y1, double y2, string surface, double speed, double jump_height, double fall_distance, double fall_damage, double minz=0, double maxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"tile_zone "+coords+" "+surface+" "+speed+" "+jump_height+" "+fall_distance+" "+fall_damage);
+mapper.close();
+bump_map_modified();
+}
