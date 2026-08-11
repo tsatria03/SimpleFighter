@@ -1,0 +1,56 @@
+/*
+Slant -- a directional ramp. A horizontal footprint plus a single base height that
+rises by step_height whole levels per tile along its direction. The bottom surface is
+a diagonal run of floor tiles; the top surface is a flat landing at the high end.
+Section 1: data + lifecycle only. The floor-tile spawning (spawn_slant_surfaces) and
+the walk-across elevation logic (slantcheck) are added in later sections, so this file
+compiles on its own and is inert until it is wired into the menu, parser, and game loop.
+*/
+slant@[] slants(0);
+class slant
+{
+double minx, maxx, miny, maxy;
+double base_height;
+double step_height;
+string direction;
+string bottom_tile;
+double bottom_volume, bottom_pitch;
+string top_tile;
+double top_volume, top_pitch;
+int[] platform_ids;
+slant(double mnx, double mxx, double mny, double mxy, double bs, double sh, string dir, string btile, double bvol, double bpit, string ttile, double tvol, double tpit)
+{
+minx=mnx;
+maxx=mxx;
+miny=mny;
+maxy=mxy;
+base_height=bs;
+step_height=sh;
+direction=dir;
+bottom_tile=btile;
+bottom_volume=bvol;
+bottom_pitch=bpit;
+top_tile=ttile;
+top_volume=tvol;
+top_pitch=tpit;
+// The floor tiles this slant lays down are spawned in a later section and their ids
+// pushed into platform_ids; nothing is spawned yet.
+}
+}
+int spawn_slant(double mnx, double mxx, double mny, double mxy, double bs, double sh, string dir, string btile, double bvol, double bpit, string ttile, double tvol, double tpit)
+{
+slant s(mnx, mxx, mny, mxy, bs, sh, dir, btile, bvol, bpit, ttile, tvol, tpit);
+slants.insert_last(s);
+return slants.length() - 1;
+}
+void remove_slant(int id)
+{
+if(id >= 0 && id < slants.length() && @slants[id] != null)
+{
+@slants[id] = null;
+}
+}
+void destroy_all_slants()
+{
+slants.resize(0);
+}

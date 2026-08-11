@@ -10,6 +10,7 @@
 - [Build pipeline](project_build_pipeline.md) — Version source-of-truth (version.nvgt) and the build/tools.py compile → package → release → website pipeline.
 - [Repo hygiene](project_repo_hygiene.md) — .gitattributes CRLF enforcement and what .gitignore keeps out; CLAUDE.md and aidocks/ are committed.
 - [Deferred concerns](project_deferred_concerns.md) — Known shape-of-the-code non-bugs (no data-file versioning, glob-include noise, silent parser fallthrough, silent sound lookups, no tests). Don't proactively fix.
+- [Feature ideas & settled designs](project_feature_ideas.md) — Living backlog of feature candidates and agreed-but-unbuilt designs (not shipped). Currently holds the settled Slant (directional ramp) and Tile zone (invisible ground-behavior override) builder-entity designs.
 - [Arcade arena revival (14.0)](project_arcade_arena_revival.md) — Revived the 7.0-removed arcade shooter as an arena.nvgt subsystem wrapping a capped npc_zone; modes, setup form, F-key resize, safe corners, anti-cheat.
 - [NVGT key_pressed is one-shot](project_nvgt_key_pressed_oneshot.md) — key_pressed() is consumed on first read each frame; read a multi-purpose key once and branch inside, never in two sibling if-checks.
 - [AngelScript braceless if](project_angelscript_braceless_if.md) — A braceless if/else governs only the next statement; a second statement in a braceless dispatch branch orphans the else and fails to compile (game won't launch).
@@ -27,6 +28,8 @@
 - [readme/todo quirks](feedback_readme_todo_quirks.md) — readme is out of date on map modes; todo Unfinished items are not commitments.
 - [Alphabetize new commands](feedback_alphabetize_commands.md) — New slash commands go in their true alphabetical slot in both the command-blocker allcommands list and commands.txt, not appended at the end.
 - [Alphabetize builder entities](feedback_alphabetize_builder_entities.md) — New builder entities go in alphabetical order within their category, in both the builder menu code (map_menu.nvgt) and any help topic that lists entities (e.g. maps.txt).
+- [Don't name others' games](feedback_dont_name_others_games.md) — In committed files, don't name games the dev didn't create; refer generically ("an external reference game"). Games the dev made (e.g. CaveDefender) are fine to name.
+- [Builder form control order](feedback_builder_form_control_order.md) — Builder forms lay out controls as: input boxes → lists/sliders → checkboxes → buttons (okay then cancel); give numeric fields sensible defaults. Templates: build_platform/build_staircase.
 - [Presets need a driving need](feedback_presets_need_driving_need.md) — Don't propose presets/type-abstractions for entities without real pain or demand; NPCs (30+ fields) and effects (player demand) were the only justified cases.
 - [Ask one question at a time](feedback_ask_one_question_at_a_time.md) — The dev reviews by screen reader; ask one question per turn and wait for the answer, don't batch several.
 - [Verify code while fixing](feedback_verify_code_while_fixing.md) — Re-locate by symbol not stored line number, confirm the finding is true, and flag adjacent bugs; the dev runs/verifies builds so wrong edits ship.
