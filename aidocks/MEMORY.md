@@ -22,7 +22,8 @@
 - [List modified files](feedback_list_modified_files.md) — End every turn that edited files with an explicit "Files changed:" list naming each touched file.
 - [No CRLF normalization](feedback_no_crlf_normalization.md) — Don't run post-edit CRLF normalizer passes; git handles line endings at commit time.
 - [CLAUDE.md length limit](feedback_claudemd_length.md) — Keep CLAUDE.md under 40,000 characters; move content to memory files rather than expanding inline.
-- [Changelog rules](feedback_changelog_rules.md) — Sentence caps, per-version entry limits (20 for .0, 10 for minors), version bump requirement, reverse-chronological order.
+- [Changelog rules](feedback_changelog_rules.md) — Sentence caps, per-version entry limits (20 for .0, 10 for minors), version bump requirement, reverse-chronological order; a changelog is a record, not a manual.
+- [Dock line length 1024](feedback_dock_line_length_1024.md) — Keep every line in the player-facing docks (sf/docks/main + sf/docks/builder) at or under 1024 chars; the dev's screen reader splits longer lines mid-thought.
 - [Update build/version.txt](feedback_update_build_version_txt.md) — build/version.txt is the single source of truth; bump only it (with the changelog block), and it's mirrored into version.nvgt on launch (sf.py) and compile (tools.py). Never hand-edit version.nvgt.
 - [Help-topic prose constraints](feedback_tp_prose.md) — Never reference engine internals in help topics; describe observable behavior only; filenames flat; new topics auto-appear via the help command's docks/builder/*.txt scan (no menu wiring).
 - [readme/todo quirks](feedback_readme_todo_quirks.md) — readme is out of date on map modes; todo Unfinished items are not commitments.
