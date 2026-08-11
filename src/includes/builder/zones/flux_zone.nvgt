@@ -6,8 +6,9 @@ after you step off (the "faster the more I walk" idea). Four independent signed 
 speed, health, stamina, shield -- each a whole number; positive ramps up, negative drains, 0 = off.
 Silent (the ground's own step sounds play). No jump/fall knobs (jump is an odd fit, fall is landing-time).
 
-Data, lifecycle, read/write, and the build form are in place. The per-step apply logic (fluxzone_step,
-hooked into playstep) and the menu/parser/clearmap wiring come in later sections, so nothing runs yet.
+Fully wired and live: data, lifecycle, read/write, the build form, the per-step apply logic
+(fluxzone_step in playstep), and the menu/parser/clearmap wiring are all in place. Only the §5 help
+topic + changelog remain.
 
 On-disk map line (space-delimited, mode-dependent length; min/max y always present like the other zones):
   2d / topdown (10 tokens): flux_zone minx maxx miny maxy  surface speed_step health_step stamina_step shield_step
@@ -59,6 +60,41 @@ fluxzones.insert_last(fz1);
 void destroy_all_fluxzones()
 {
 fluxzones.resize(0);
+}
+
+/*
+Per-step stat accumulator. Called from playstep() once per real step onto walkable ground, using the
+tile just stepped onto. For each flux zone the player stands in, apply the surface filter (the tile
+underfoot must match the zone's surface unless that is "any"), then let the LATEST-built matching zone
+win each knob -- the same layering as the tile zone, so you can carve a stronger or gentler pocket
+inside a larger zone; a knob a zone leaves at 0 doesn't override the outer zone's value for that knob.
+The winning steps are added to the player's OWN values and STICK. Speed floors at 1 HERE (nothing else
+floors player_own_speed, and modspeed<1 freezes movement); health/stamina/shield just take the delta
+and let the game loop's existing clamps cap them, fire death at 0 health, and break the shield at 0
+strength. The shield step only acts while a shield is raised.
+*/
+void fluxzone_step()
+{
+if(fluxzones.length() == 0) return;
+string underfoot = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
+double eff_speed = 0, eff_health = 0, eff_stamina = 0, eff_shield = 0;   // 0 = no matching zone set this knob (0 is also "off")
+for(uint i = 0; i < fluxzones.length(); i++)
+{
+if(!player_in_fluxzone(i)) continue;
+if(fluxzones[i].surface != "any" && underfoot != fluxzones[i].surface) continue;
+if(fluxzones[i].speed_step != 0) eff_speed = fluxzones[i].speed_step;
+if(fluxzones[i].health_step != 0) eff_health = fluxzones[i].health_step;
+if(fluxzones[i].stamina_step != 0) eff_stamina = fluxzones[i].stamina_step;
+if(fluxzones[i].shield_step != 0) eff_shield = fluxzones[i].shield_step;
+}
+if(eff_speed != 0)
+{
+player_own_speed = int(player_own_speed + eff_speed);
+if(player_own_speed < 1) player_own_speed = 1;
+}
+if(eff_health != 0) health += eff_health;
+if(eff_stamina != 0) stamina += eff_stamina;
+if(eff_shield != 0 && shieldon == 1) shieldstrength += eff_shield;
 }
 
 void read_flux_zone(string[] sd)
