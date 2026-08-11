@@ -18,9 +18,10 @@ stn(); cast to int when applied to the int globals in the runtime loop):
   fall_damage   -- the fallmod multiplier for how hard each fallen square hits past the
                    threshold (normal 21). -1 = unchanged.
 
-Data, lifecycle, read/write, the build form, and the menu/parser/clearmap wiring are all
-in place, and the per-frame runtime loop (tilezoneloop) now applies the SPEED and JUMP-HEIGHT
-overrides. The two fall knobs still hook into the loop in the next section.
+All runtime knobs are live. The per-frame loop (tilezoneloop) applies the SPEED and JUMP-HEIGHT
+overrides; the two FALL knobs (distance + damage) are applied at LANDING time via tilezone_apply_fall
+(called from fallcheck in map.nvgt), not the per-frame loop, because falling damage is a one-shot
+landing event rather than a continuous state. Only the §5 help topic + changelog remain.
 Zone arrays are compacted like the other zones (heal/safe): spawn appends, destroy_all
 resizes to zero, and there is no per-element sentinel removal because zones aren't
 destroyable.
@@ -125,6 +126,27 @@ else
 {
 tz_jump_active = false;
 jumpheight = player_own_jump;
+}
+}
+
+/*
+Landing-time fall override, called from fallcheck's landing code in BOTH the 3d and 2d/topdown
+branches. Unlike speed/jump this isn't a continuous per-frame state -- fall distance and fall damage
+only matter at the instant you land -- so instead of a persistent override the caller SAVES
+fall_threshold + fallmod, calls this to set them from any covering, surface-matching zone (layering:
+later-defined wins per knob), runs the landing damage, then RESTORES both, so nothing leaks to the
+next fall. A knob left unset (-1/negative) leaves its default. Deliberately does NOT touch the
+bone-break severity math in fallcheck -- that keeps its own fixed 8 baseline (dev request).
+*/
+void tilezone_apply_fall()
+{
+string underfoot = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
+for(uint i = 0; i < tilezones.length(); i++)
+{
+if(!player_in_tilezone(i)) continue;
+if(tilezones[i].surface != "any" && underfoot != tilezones[i].surface) continue;
+if(tilezones[i].fall_distance >= 0) fall_threshold = int(tilezones[i].fall_distance);   // 0+ overrides; -1/negative no-op
+if(tilezones[i].fall_damage >= 0) fallmod = tilezones[i].fall_damage;                    // 0+ overrides; -1/negative no-op
 }
 }
 

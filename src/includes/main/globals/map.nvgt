@@ -8,6 +8,11 @@ bool atapex, ascending, falling;
 double minx, maxx, miny, maxy, minz, maxz;
 
 double fallmod=21;
+// Hard-landing threshold: a fall shorter than this many squares is a free soft landing. Normally 8.
+// A tile zone can override it (and fallmod) transiently at the moment of landing via tilezone_apply_fall,
+// which the fallcheck landing code saves and restores so it never leaks. The bone-break severity math in
+// fallcheck keeps its OWN fixed 8 baseline and is deliberately not driven by this.
+int fall_threshold=8;
 double tilevolume=0, tilepitch=100, wallvolume=0, wallpitch=100;
 double me_rotation=0;
 double sel_left, sel_right, sel_back, sel_front, sel_bottom, sel_top;
@@ -1009,7 +1014,9 @@ landed = true;
 if(landed)
 {
 if(fallcounter >= 0) p.destroy_sound(fallslot);
-bool soft_landing = (fallcounter < 8 || player_in_fallzone());
+int tz_fthresh_save = fall_threshold; double tz_fallmod_save = fallmod;
+tilezone_apply_fall();   // override fall_threshold + fallmod from a covering tile zone; restored below
+bool soft_landing = (fallcounter < fall_threshold || player_in_fallzone());
 if(!soft_landing and shieldon == 1) shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100);
 if(soft_landing)
 {
@@ -1051,7 +1058,7 @@ kombatlog.insert_last(impact_dmg + " damage to " + platforms[i].tile + " platfor
 if(impact_dmg > 0) platforms[i].hurtsound = p.play_stationary_extended(get_map_sound("builder/construction/platforms/" + platforms[i].tile + "/*hurt*"), false, 0, 0, tilevolume, tilepitch, false);
 break;
 }
-if(fallcounter >= 8 and onbike)
+if(fallcounter >= fall_threshold and onbike)
 {
 int bdmg = max(1, fallcounter * fallmod);
 for(uint i = 0; i < bikes.length(); i++)
@@ -1074,7 +1081,7 @@ break;
 }
 }
 int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
-if(fallcounter >= 8 and shieldon == 1 and !onbike)
+if(fallcounter >= fall_threshold and shieldon == 1 and !onbike)
 {
 shieldstrength -= sdm;
 kombatlog.insert_last(sdm + " damage to " + shieldtype + ", falling down.");
@@ -1095,7 +1102,7 @@ break_charbones(ct, sdm, 10 * fallcounter, count);
 }
 }
 int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
-if(fallcounter >= 8 and shieldon == 0 and !onbike)
+if(fallcounter >= fall_threshold and shieldon == 0 and !onbike)
 {
 health -= dmg;
 kombatlog.insert_last(dmg + " damage to player, falling down.");
@@ -1110,6 +1117,7 @@ int count = clamp((fallcounter - 8) / 2, 1, 5);
 break_charbones(ct, dmg, 10 * fallcounter, count);
 }
 }
+fall_threshold = tz_fthresh_save; fallmod = tz_fallmod_save;   // restore -- override never leaks past this landing
 falling = false;
 fallcounter = 0;
 }
@@ -1130,7 +1138,9 @@ if(gmt(me.x, me.y)!="" && gmt(me.x, me.y)!="air")
 // doesn't drag us up onto it.
 while(me.y < maxy and wall_blocks(me.x, me.y + 1, me.z)) me.y++;
 if(fallcounter>=0) p.destroy_sound(fallslot);
-bool soft_landing = (fallcounter<8 || player_in_fallzone());
+int tz_fthresh_save = fall_threshold; double tz_fallmod_save = fallmod;
+tilezone_apply_fall();   // override fall_threshold + fallmod from a covering tile zone; restored below
+bool soft_landing = (fallcounter<fall_threshold || player_in_fallzone());
 if(!soft_landing and shieldon==1) shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100);
 if(soft_landing)
 {
@@ -1139,7 +1149,7 @@ playland();
 else
 {
 playfall();
-if (fallcounter >= 8)
+if (fallcounter >= fall_threshold)
 {
 int impact_dmg = max(1, (fallcounter * fallmod));
 for (uint i = 0; i < walls.length(); i++)
@@ -1195,7 +1205,7 @@ if(impact_dmg>0) platforms[i].hurtsound=p.play_stationary_extended(get_map_sound
 break;
 }
 }
-if(fallcounter>=8 and onbike)
+if(fallcounter>=fall_threshold and onbike)
 {
 int bdmg = max(1, fallcounter * fallmod);
 for(uint i=0; i<bikes.length(); i++)
@@ -1218,7 +1228,7 @@ break;
 }
 }
 int sdm = max(1, (fallcounter * fallmod) - (shielddefence * 3));
-if(fallcounter>=8 and shieldon==1 and !onbike)
+if(fallcounter>=fall_threshold and shieldon==1 and !onbike)
 {
 shieldstrength-=sdm;
 kombatlog.insert_last(sdm+ " damage to "+shieldtype+", falling down.");
@@ -1239,11 +1249,11 @@ break_charbones(ct, sdm, 10 * fallcounter, count);
 }
 }
 int dmg = max(1, (fallcounter * fallmod) - (defence * 3));
-if(fallcounter>=8 and shieldon==0 and !onbike)
+if(fallcounter>=fall_threshold and shieldon==0 and !onbike)
 {
 health -= dmg;
 kombatlog.insert_last(dmg+ " damage to player, falling down.");
-if (fallcounter>=8 and shieldon==0)
+if (fallcounter>=fall_threshold and shieldon==0)
 {
 string painfile;
 int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
@@ -1266,6 +1276,7 @@ int count = clamp((fallcounter - 8) / 2, 1, 5);
 break_charbones(ct, dmg, 10 * fallcounter, count);
 }
 }
+fall_threshold = tz_fthresh_save; fallmod = tz_fallmod_save;   // restore -- override never leaks past this landing
 falling=false;
 fallcounter=0;
 acquire_checkpoint();
