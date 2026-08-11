@@ -2,11 +2,13 @@
 Slant -- a directional ramp. A horizontal footprint plus a single base height that
 rises by step_height whole levels per tile along its direction. The bottom surface is
 a diagonal run of floor tiles; the top surface is a flat landing at the high end.
-Section 1: data + lifecycle only. The floor-tile spawning (spawn_slant_surfaces) and
-the walk-across elevation logic (slantcheck) are added in later sections, so this file
-compiles on its own and is inert until it is wired into the menu, parser, and game loop.
+The constructor lays the floor via spawn_surfaces(); slantcheck() -- run each frame
+just BEFORE fallcheck() -- keeps the player glued to the ramp as they walk. Still to be
+wired into the builder menu, the map parser, the game loop, and clearmap (Section 5),
+so nothing runs yet.
 */
 slant@[] slants(0);
+int player_slant = -1;
 class slant
 {
 double minx, maxx, miny, maxy;
@@ -35,6 +37,26 @@ top_volume=tvol;
 top_pitch=tpit;
 spawn_surfaces();
 }
+// The ramp surface height at a horizontal position. axis is x for left/right ramps,
+// y for forward/backward; the height rises step_height per tile from the low end.
+// Passing the same axis coordinate in both slots (surface_height(p, p)) yields the
+// height at column p regardless of which axis the ramp climbs.
+double surface_height(double x, double y)
+{
+bool axis_is_x = (direction == "leftup" || direction == "leftdown" || direction == "rightup" || direction == "rightdown");
+bool rises_positive = (direction == "rightup" || direction == "leftdown" || direction == "forwardup" || direction == "backwarddown");
+double axis_min = axis_is_x ? minx : miny;
+double axis_max = axis_is_x ? maxx : maxy;
+double p = axis_is_x ? x : y;
+return rises_positive ? (base_height + step_height * (p - axis_min)) : (base_height + step_height * (axis_max - p));
+}
+// Is (x, y) inside the ramp's horizontal footprint? (y is only bounded on 3d.)
+bool contains(double x, double y)
+{
+if(x < minx || x > maxx) return false;
+if(mapmode == "3d" && (y < miny || y > maxy)) return false;
+return true;
+}
 /*
 Lay the ramp's floor. The bottom surface is a diagonal run of one floor tile per
 column along the ramp axis, each at that column's computed height (base + step*n).
@@ -55,7 +77,7 @@ if(bottom_tile != "none")
 {
 for(double p = axis_min; p <= axis_max; p++)
 {
-double h = rises_positive ? (base_height + step_height * (p - axis_min)) : (base_height + step_height * (axis_max - p));
+double h = surface_height(p, p);
 if(axis_is_x)
 {
 if(mapmode == "3d")
@@ -101,6 +123,56 @@ if(id >= 0 && id < slants.length() && @slants[id] != null)
 void destroy_all_slants()
 {
 slants.resize(0);
+player_slant = -1;
+}
+
+/*
+Per-frame elevation follow. While the player is on a slant, force their vertical
+coordinate (me.y on 2d, me.z on 3d) to the ramp surface under them and clear the fall
+state, so walking along the ramp carries them up/down instead of falling between the
+diagonal floor tiles. MUST be called immediately BEFORE fallcheck() in the main loop:
+otherwise the frame after a horizontal step leaves the player unsupported at the old
+height and fallcheck starts a fall before this can correct it. The player counts as
+"on" a slant once they stand exactly on one of its ramp tiles (vertical == the surface
+at their column); they come off it by walking out of the footprint (onto the top
+landing or off the low end). Guarded like fallcheck (skips hooks/vehicles/gliders/jumps).
+*/
+void slantcheck()
+{
+if(mapmode == "topdown") return;
+if(onhook) return;
+if(doormove || elvmove || invehicle || inplain) return;
+if(glider_engine_on) return;
+if(jumping != 0) return;
+if(player_slant != -1)
+{
+if(player_slant >= 0 && player_slant < int(slants.length()) && @slants[player_slant] != null && slants[player_slant].contains(me.x, me.y))
+{
+double h = slants[player_slant].surface_height(me.x, me.y);
+double cur = (mapmode == "3d") ? me.z : me.y;
+if(cur != h)
+{
+if(mapmode == "3d") me.z = h;
+else me.y = h;
+falling = false;
+fallcounter = 0;
+}
+return;
+}
+player_slant = -1;
+}
+for(uint i = 0; i < slants.length(); i++)
+{
+if(@slants[i] == null) continue;
+if(!slants[i].contains(me.x, me.y)) continue;
+double h = slants[i].surface_height(me.x, me.y);
+double cur = (mapmode == "3d") ? me.z : me.y;
+if(cur == h)
+{
+player_slant = int(i);
+return;
+}
+}
 }
 
 /*

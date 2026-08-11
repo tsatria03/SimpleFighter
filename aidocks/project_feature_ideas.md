@@ -13,7 +13,9 @@ Living backlog of feature ideas and agreed-but-not-yet-built designs for SimpleF
 
 ## Slant — a directional ramp/incline builder entity (DESIGN SETTLED 2026-08, not yet built)
 
-A new **construction** builder entity. Modeled on the "slant" in an external reference game (its map-syntax glossary), adapted to SimpleFighter's conventions. Design was walked through and settled with the dev; the pieces below are agreed. Get final sign-off before coding.
+A new **construction** builder entity. Modeled on the "slant" in an external reference game (its map-syntax glossary), adapted to SimpleFighter's conventions. Design was walked through and settled with the dev; the pieces below are agreed.
+
+**Build status (2026-08, in progress, section-by-section):** DONE — §1 data+lifecycle, §2 read/write, §3 build form, §4a floor-tile spawning (diagonal ramp + top landing), §4b `slantcheck` walk-across elevation mechanic (all in `src/includes/builder/construction/slant.nvgt`). PENDING — §5 wiring (construction menu entry between platform & staircase, parser dispatch, **`slantcheck()` call placed immediately before `fallcheck()`** in game.nvgt, `destroy_all_slants()` in clearmap), §6 slant-aware jump landing (dev wants it — see below), §7 docs (`slant.txt` help topic + changelog under the open 14.3).
 
 **What it is.** A region you walk across that changes your **elevation** as you move — it raises (or lowers) you by a set **step height** for every tile you move along it. Think of it as a staircase you climb by walking *sideways* instead of pressing up: you set how tall each step is, and moving across it carries you up or down automatically. It sits on SF's whole-level grid — each tile you move lands you on a whole level.
 
@@ -56,7 +58,7 @@ A ramp is a **two-way slope**: whichever way climbs, the opposite descends — a
 **Still open (implementation detail):**
 - Exact map-line field order and the precise `sd.length()` variants per mode.
 - **Resolved:** the ramp/landing surfaces are always **plain non-destroyable, non-overlap** floor (dev decision 2026-08) — no destroyable/overlap/health fields on the class or form; spawn the floor tiles as non-destroyable, non-overlap platforms. (Overlap is offered only by platform & staircase; destroyable by platform/staircase/wall/door/sign/clock/calendar/spike/projectile — a slant needs neither.)
-- Jump/fall behavior at the *edges* — jumping off the ramp, or falling onto it from above — so support/`fallcheck` stay sane at the entry/exit tiles (the mid-ramp case is handled by the diagonal tiles).
+- **Slant-aware jump landing (§6) — likely UNNEEDED; test first (finding 2026-08).** Correction to an earlier worry: the slant's floor tiles are spawned **non-backing** (§4a), and the jump-landing code lands on any `user_platform_at(...)` hit (`game_handlers.nvgt:738, 805, 848`) — which **does** see non-backing tiles. So the existing landing already handles slant tiles; `slantcheck` re-attaches (`player_slant`) the next frame. The staircase needed its `is_staircase_top`/`in_staircase_volume` predicates ONLY because its tiles are **backing** (hidden from `user_platform_at`) — that problem doesn't apply here. Plausible-but-unverified quirk: on a **step-height-1** ramp, a jump may re-land on the next tile up almost immediately (feels like small hops). **Decision: wire it up (§5), jump-test on a real ramp, and only add §6 if testing shows a real problem** — don't write speculative jump-landing edits into load-bearing code that we can't verify yet.
 
 ---
 
