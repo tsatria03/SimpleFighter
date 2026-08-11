@@ -33,8 +33,56 @@ bottom_pitch=bpit;
 top_tile=ttile;
 top_volume=tvol;
 top_pitch=tpit;
-// The floor tiles this slant lays down are spawned in a later section and their ids
-// pushed into platform_ids; nothing is spawned yet.
+spawn_surfaces();
+}
+/*
+Lay the ramp's floor. The bottom surface is a diagonal run of one floor tile per
+column along the ramp axis, each at that column's computed height (base + step*n).
+The top surface is a single flat landing one tile past the high end, at the top
+height, spanning the ramp's width, so stepping off the top lands on ground. Either
+surface is skipped when its tile is "none". All tiles are plain, non-destroyable,
+non-overlap platforms. Heights are whole (base and step are whole numbers), so every
+tile sits at a whole level. y/left-right ramps rise along x; forward/backward along y.
+*/
+void spawn_surfaces()
+{
+bool axis_is_x = (direction == "leftup" || direction == "leftdown" || direction == "rightup" || direction == "rightdown");
+bool rises_positive = (direction == "rightup" || direction == "leftdown" || direction == "forwardup" || direction == "backwarddown");
+double axis_min = axis_is_x ? minx : miny;
+double axis_max = axis_is_x ? maxx : maxy;
+double top_height = base_height + step_height * (axis_max - axis_min);
+if(bottom_tile != "none")
+{
+for(double p = axis_min; p <= axis_max; p++)
+{
+double h = rises_positive ? (base_height + step_height * (p - axis_min)) : (base_height + step_height * (axis_max - p));
+if(axis_is_x)
+{
+if(mapmode == "3d")
+platform_ids.insert_last(spawn_platform(p, p, miny, maxy, 1, 1, bottom_tile, bottom_volume, bottom_pitch, false, false, false, h));
+else
+platform_ids.insert_last(spawn_platform(p, p, h, h, 1, 1, bottom_tile, bottom_volume, bottom_pitch, false, false, false));
+}
+else
+platform_ids.insert_last(spawn_platform(minx, maxx, p, p, 1, 1, bottom_tile, bottom_volume, bottom_pitch, false, false, false, h));
+}
+}
+if(top_tile != "none")
+{
+if(axis_is_x)
+{
+double lx = rises_positive ? (axis_max + 1) : (axis_min - 1);
+if(mapmode == "3d")
+platform_ids.insert_last(spawn_platform(lx, lx, miny, maxy, 1, 1, top_tile, top_volume, top_pitch, false, false, false, top_height));
+else
+platform_ids.insert_last(spawn_platform(lx, lx, top_height, top_height, 1, 1, top_tile, top_volume, top_pitch, false, false, false));
+}
+else
+{
+double ly = rises_positive ? (axis_max + 1) : (axis_min - 1);
+platform_ids.insert_last(spawn_platform(minx, maxx, ly, ly, 1, 1, top_tile, top_volume, top_pitch, false, false, false, top_height));
+}
+}
 }
 }
 int spawn_slant(double mnx, double mxx, double mny, double mxy, double bs, double sh, string dir, string btile, double bvol, double bpit, string ttile, double tvol, double tpit)
