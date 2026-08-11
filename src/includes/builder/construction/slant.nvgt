@@ -202,6 +202,30 @@ return;
 }
 
 /*
+Camera analog of the player's slant follow. While the camera sits horizontally over a
+slant footprint, ride the ramp: force the camera's vertical coordinate (cam.y on 2d,
+cam.z on 3d) to the ramp surface at that column, so the describe (G+R) and playback
+(G+T) keys report and play the ramp's own surface tile and its climbing height, instead
+of the flat plane the camera would otherwise sweep straight past the diagonal tiles.
+Called at the top of playcam() and of the camera describe read. Unlike the player's
+base..surface body test this snaps unconditionally over the footprint -- the camera
+always rides the surface, so there is no empty height to hunt for.
+*/
+void slant_camera()
+{
+if(mapmode == "topdown") return;
+for(uint i = 0; i < slants.length(); i++)
+{
+if(@slants[i] == null) continue;
+if(!slants[i].contains(cam.x, cam.y)) continue;
+double h = slants[i].surface_height(cam.x, cam.y);
+if(mapmode == "3d") cam.z = h;
+else cam.y = h;
+return;
+}
+}
+
+/*
 On-disk map line (space-delimited, mode-dependent length):
   2d (12 tokens): slant minx maxx base direction step_height  bottomtile bottomvol bottompitch  toptile topvol toppitch
   3d (14 tokens): slant minx maxx miny maxy base direction step_height  bottomtile bottomvol bottompitch  toptile topvol toppitch
