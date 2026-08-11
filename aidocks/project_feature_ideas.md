@@ -117,6 +117,19 @@ Fall damage was settled as **Option A**: SF has no flat "normal-landing damage" 
 
 ---
 
+## Tile-zone per-step ramp (extension to the shipped tile zone) — DESIGN SETTLED 2026-08, not yet built
+
+A movement-driven accumulator baked INTO the existing tile zone, distilled from an external reference game's "triggers" — the one non-duplicative idea from that comparison (SF's sensors/switches/heal zones/spikes/trampolines already cover the rest; see the candidate-ideas note). Where the tile zone's existing knobs SET a value and revert on step-off, the ramp knobs **permanently nudge the player's own stat a little with EACH STEP** taken on a matching tile, and the change **sticks** after you leave (the whole point: "faster the more I walk").
+
+- **Stats (3 new knobs): speed, health, stamina.** NO jump (odd use), NO fall (landing-time, not per-step). All three apply in EVERY mode incl. topdown (none are altitude-based).
+- **Each knob = a signed per-step amount:** whole number, magnitude ≥1, no max; positive ramps up, negative drains, **0 = off (default)**. Applied once per real step.
+- **Value bounds:** no artificial floor EXCEPT speed, floored at 1 (technical: `modspeed<1` freezes the walktime recompute). Health/stamina follow normal rules — a draining ramp CAN reach 0 (health = death). (The dev's "min 1" = the per-step AMOUNT magnitude, NOT a value floor.)
+- **Targets the player's OWN persistent values:** speed → `player_own_speed += delta` (live `modspeed` derives from it, per §4b); health → `health += delta` (clamp 0..maxhealth); stamina → `stamina += delta` (clamp 0..maxstamina). Persists on step-off. **Health/stamina ALWAYS hit health/stamina, NEVER the shield** (dev decision 2026-08 — simpler than heal zones, which redirect to shield when raised).
+- **Reset:** death resets speed+jump via `reset_move_stats()` (map death-retry + checkpoint respawn — built 2026-08 as a standalone fix, `checkpoint.nvgt`) and health/stamina via `charparse()`; stamina also auto-regens (health does NOT — needs the heal key).
+- **Runtime hook:** `playstep()` (`map.nvgt`) is the single per-step choke point — every real step (`step_left/right/up/down`, `body_step`) calls it and it already runs per-step zone work (heal/safe zones). Add `tilezone_step()` there: scan covering, surface-matching zones (layering, later-index-wins), apply the three deltas.
+- **On-disk format (adds 3 fields):** current line is length **10** (2d/topdown) / **12** (3d); ramp adds `speed_step health_step stamina_step` → **13 / 15**. `read_tile_zone` MUST accept BOTH old (10/12, steps default 0) and new (13/15) for back-compat (dev has 14.3 test maps in the old format).
+- **Proposed build sections:** (1) data + read/write with back-compat lengths, (2) form (3 input boxes, default 0), (3) runtime `tilezone_step` in `playstep`, (4) docs (`tile_zones.txt` ramp section + the set-vs-ramp distinction + changelog).
+
 ## Candidate ideas (not yet designed)
 
 **Builder comparison against an external reference game — completed 2026-08.** Every builder element in that game was checked against SimpleFighter's full set, filtered by SF's **no-element-IDs rule** (effect space is the only ID-using entity). Conclusion: only **Slant** and **Tile zone** (both designed above) are worth adding — everything else is already in SF under another name, is online-only, or is locked behind an ID/trigger ("interactable") system SF deliberately doesn't use. Lesser, more-involved maybes noted but not designed: playable **instruments**, and a **timed-map** (countdown) map setting. No need to re-run this survey.

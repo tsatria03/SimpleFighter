@@ -31,6 +31,18 @@ if(health<=0 and lifecard<=1)
 playerdeath();
 }
 }
+// On a MAP death or checkpoint respawn, drop the player's movement stats back to their defaults.
+// Speed and jump height can be pushed up by the player's own keys (and, once built, a tile zone's
+// per-step ramp), and charparse() -- which resets the rest of the character -- deliberately doesn't
+// touch them, so without this a jacked-up speed or jump would survive death. Arena deaths run their
+// own reset (resetgame / save-slot restore), so this is only ever called on the map side.
+void reset_move_stats()
+{
+player_own_speed = 5;
+modspeed = 5;
+player_own_jump = 5;
+jumpheight = 5;
+}
 void playerdeath()
 {
 bool was_arena = arena_active;   // captured before clearmap() ends the arena
@@ -56,6 +68,7 @@ p.destroy_sound(shieldslot);
 dlgplay(get_pack_sound("main/characters/"+chartype+"/general/*death*"), true, true, 30);
 dlgplay(get_map_sound("builder/construction/platforms/"+gmt(me.x,me.y)+"/*fall*"));
 clearmap(true);
+if(!was_arena) reset_move_stats();   // map death: clear any ramped speed/jump back to 5 (the arena runs its own reset)
 setupmenu();
 m.add_item("yes");
 m.add_item("no");
@@ -132,6 +145,7 @@ me.x=last_checkpoint.checkx;
 me.y=last_checkpoint.checky;
 if(mapmode == "3d") me.z=last_checkpoint.checkz;
 health=maxhealth;
+reset_move_stats();   // a checkpoint respawn also clears a ramped speed/jump back to 5
 load_map(mapname, mapowner, force_compiled:map_is_compiled, force_spawned:true);
 }
 void cploop()
