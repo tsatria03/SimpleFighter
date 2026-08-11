@@ -6,9 +6,8 @@ after you step off (the "faster the more I walk" idea). Four independent signed 
 speed, health, stamina, shield -- each a whole number; positive ramps up, negative drains, 0 = off.
 Silent (the ground's own step sounds play). No jump/fall knobs (jump is an odd fit, fall is landing-time).
 
-This section is data + lifecycle + read/write only. The per-step apply logic (fluxzone_step, hooked
-into playstep), the build form, and the menu/parser/clearmap wiring come in later sections, so nothing
-runs yet.
+Data, lifecycle, read/write, and the build form are in place. The per-step apply logic (fluxzone_step,
+hooked into playstep) and the menu/parser/clearmap wiring come in later sections, so nothing runs yet.
 
 On-disk map line (space-delimited, mode-dependent length; min/max y always present like the other zones):
   2d / topdown (10 tokens): flux_zone minx maxx miny maxy  surface speed_step health_step stamina_step shield_step
@@ -93,4 +92,132 @@ if(mapmode=="3d") coords+=" "+minz+" "+maxz;
 mapper.write("\r\n"+"flux_zone "+coords+" "+surface+" "+speed_step+" "+health_step+" "+stamina_step+" "+shield_step);
 mapper.close();
 bump_map_modified();
+}
+
+void build_flux_zone()
+{
+string[] tiles_list = get_map_sound_folders("builder/construction/platforms/*");
+if(tiles_list.length() == 0)
+{
+dlg("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+// The minus sign is NOT in this set, so negative (draining) step values can be typed; "." is in it,
+// so only whole numbers are possible. Every step field defaults to 0 (off), and all four show in
+// every mode -- speed/health/stamina/shield aren't altitude-based, so nothing is hidden on topdown.
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("flux zone", false);
+bool y_uses_back_front = mapmode != "2d";
+string saved_my = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_my2 = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my = form.create_input_box("minimum y", saved_my);
+int my2 = form.create_input_box("maximum y", saved_my2);
+int mnz = -1, mxz = -1;
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
+mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
+}
+int sp = form.create_input_box("speed step", "0");
+int hp = form.create_input_box("health step", "0");
+int st = form.create_input_box("stamina step", "0");
+int sh = form.create_input_box("shield step", "0");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(st, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sh, disallowed_nums, false, "This character is not allowed.");
+int surf_list = form.create_list("surface");
+form.add_list_item(surf_list, "any", "any");
+for(uint i = 0; i < tiles_list.length(); i++)
+form.add_list_item(surf_list, tiles_list[i], tiles_list[i]);
+form.set_list_position(surf_list, 0, false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx) == "")
+{
+speak("Minimum x is required.");
+form.focus(mx);
+continue;
+}
+if(form.get_text(mx2) == "")
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+continue;
+}
+if(form.get_text(my) == "")
+{
+speak("Minimum y is required.");
+form.focus(my);
+continue;
+}
+if(form.get_text(my2) == "")
+{
+speak("Maximum y is required.");
+form.focus(my2);
+continue;
+}
+if(mnz != -1 && form.get_text(mnz) == "")
+{
+speak("Minimum z is required.");
+form.focus(mnz);
+continue;
+}
+if(mxz != -1 && form.get_text(mxz) == "")
+{
+speak("Maximum z is required.");
+form.focus(mxz);
+continue;
+}
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double by = string_to_number(form.get_text(my));
+double by2 = string_to_number(form.get_text(my2));
+double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+// Steps are optional; an empty field means 0 (off).
+double bsp = (form.get_text(sp) == "") ? 0 : string_to_number(form.get_text(sp));
+double bhp = (form.get_text(hp) == "") ? 0 : string_to_number(form.get_text(hp));
+double bst = (form.get_text(st) == "") ? 0 : string_to_number(form.get_text(st));
+double bsh = (form.get_text(sh) == "") ? 0 : string_to_number(form.get_text(sh));
+int p = form.get_list_position(surf_list);
+string bsurf = (p > 0) ? tiles_list[p-1] : "any";
+resume_pools();
+write_flux_zone(bx, bx2, by, by2, bsurf, bsp, bhp, bst, bsh, bmnz, bmxz);
+spawn_fluxzone(bx, bx2, by, by2, bsurf, bsp, bhp, bst, bsh, bmnz, bmxz);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
 }
