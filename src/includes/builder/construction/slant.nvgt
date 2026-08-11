@@ -98,3 +98,205 @@ mapper.write("\r\n"+"slant "+coords+" "+dir+" "+sh+" "+btile+" "+bvol+" "+bpit+"
 mapper.close();
 bump_map_modified();
 }
+
+void build_slant()
+{
+string[] tiles_list = get_map_sound_folders("builder/construction/platforms/*");
+if(tiles_list.length() == 0)
+{
+dlg("Error. There are no platforms available to view. Press enter to continue.");
+resume_pools();
+return;
+}
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("slant", false);
+// Input boxes first: footprint, base height, step height.
+int mx = form.create_input_box("minimum x", sel_left_set ? sel_left : "");
+int mx2 = form.create_input_box("maximum x", sel_right_set ? sel_right : "");
+int my=-1, my2=-1;
+if(mapmode == "3d")
+{
+my = form.create_input_box("minimum y", sel_back_set ? sel_back : "");
+my2 = form.create_input_box("maximum y", sel_front_set ? sel_front : "");
+}
+int bh = form.create_input_box("base height", sel_bottom_set ? sel_bottom : "");
+int sh = form.create_input_box("step height", "1");
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
+if(my != -1) form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(my2 != -1) form.set_disallowed_chars(my2, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(bh, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sh, disallowed_nums, false, "This character is not allowed.");
+// Direction list (mode-aware); dir_tokens mirrors the item order for retrieval by position.
+string[] dir_tokens = {"leftup","leftdown","rightup","rightdown"};
+int dir_list = form.create_list("direction");
+form.add_list_item(dir_list, "left up", "leftup");
+form.add_list_item(dir_list, "left down", "leftdown");
+form.add_list_item(dir_list, "right up", "rightup");
+form.add_list_item(dir_list, "right down", "rightdown");
+if(mapmode == "3d")
+{
+form.add_list_item(dir_list, "forward up", "forwardup");
+form.add_list_item(dir_list, "forward down", "forwarddown");
+form.add_list_item(dir_list, "backward up", "backwardup");
+form.add_list_item(dir_list, "backward down", "backwarddown");
+dir_tokens.insert_last("forwardup");
+dir_tokens.insert_last("forwarddown");
+dir_tokens.insert_last("backwardup");
+dir_tokens.insert_last("backwarddown");
+}
+form.set_list_position(dir_list, 0, false);
+// Bottom surface group (the sloped ramp floor). "none" opts out.
+int bottom_list = form.create_list("bottom surface");
+form.add_list_item(bottom_list, "none", "none");
+for(uint i = 0; i < tiles_list.length(); i++)
+form.add_list_item(bottom_list, tiles_list[i], tiles_list[i]);
+form.set_list_position(bottom_list, 0, false);
+int bottom_vol = form.create_slider("bottom surface volume", 0, -100, 0, "", 5);
+int bottom_pit = form.create_slider("bottom surface pitch", 100, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
+// Top surface group (the landing at the high end). "none" opts out.
+int top_list = form.create_list("top surface");
+form.add_list_item(top_list, "none", "none");
+for(uint i = 0; i < tiles_list.length(); i++)
+form.add_list_item(top_list, tiles_list[i], tiles_list[i]);
+form.set_list_position(top_list, 0, false);
+int top_vol = form.create_slider("top surface volume", 0, -100, 0, "", 5);
+int top_pit = form.create_slider("top surface pitch", 100, sound_pitch_lower_limit*100, sound_pitch_upper_limit*100, "", 5);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(mx);
+int active_group = 0;
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+int cur_group = 0, active_list = -1, active_vol = -1, active_pit = -1;
+if(cur_focus == bottom_list || cur_focus == bottom_vol || cur_focus == bottom_pit)
+{
+cur_group = 1; active_list = bottom_list; active_vol = bottom_vol; active_pit = bottom_pit;
+}
+else if(cur_focus == top_list || cur_focus == top_vol || cur_focus == top_pit)
+{
+cur_group = 2; active_list = top_list; active_vol = top_vol; active_pit = top_pit;
+}
+int cur_tile_pos = (cur_group > 0) ? form.get_list_position(active_list) : 0;
+if(cur_group != active_group)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+active_group = cur_group;
+}
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime && cur_group > 0 && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+float v = form.get_slider(active_vol);
+float pt = form.get_slider(active_pit);
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*step*"), false, 0, 0, v, pt, false);
+keytimer.restart();
+}
+if(cur_group > 0 && control_is_down() && key_repeating(KEY_L) && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+float v = form.get_slider(active_vol);
+float pt = form.get_slider(active_pit);
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*land*"), false, 0, 0, v, pt, false);
+}
+if(cur_group > 0 && control_is_down() && key_repeating(KEY_H) && cur_tile_pos > 0)
+{
+t.destroy_sound(prevslot);
+float v = form.get_slider(active_vol);
+float pt = form.get_slider(active_pit);
+prevslot = t.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles_list[cur_tile_pos-1]+"/*fall*"), false, 0, 0, v, pt, false);
+}
+if(prevslot != -1 && cur_group > 0)
+{
+float v = form.get_slider(active_vol);
+float pt = form.get_slider(active_pit);
+t.update_sound_start_values(prevslot, 0, v, pt);
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(mx).is_empty())
+{
+speak("Minimum x is required.");
+form.focus(mx);
+continue;
+}
+if(form.get_text(mx2).is_empty())
+{
+speak("Maximum x is required.");
+form.focus(mx2);
+continue;
+}
+if(my != -1 && form.get_text(my).is_empty())
+{
+speak("Minimum y is required.");
+form.focus(my);
+continue;
+}
+if(my2 != -1 && form.get_text(my2).is_empty())
+{
+speak("Maximum y is required.");
+form.focus(my2);
+continue;
+}
+if(form.get_text(bh).is_empty())
+{
+speak("Base height is required.");
+form.focus(bh);
+continue;
+}
+if(form.get_text(sh).is_empty())
+{
+speak("Step height is required.");
+form.focus(sh);
+continue;
+}
+double bstep = string_to_number(form.get_text(sh));
+if(bstep < 1)
+{
+speak("Step height must be at least 1.");
+form.focus(sh);
+continue;
+}
+double bx = string_to_number(form.get_text(mx));
+double bx2 = string_to_number(form.get_text(mx2));
+double bmy = (my != -1) ? string_to_number(form.get_text(my)) : 0;
+double bmy2 = (my2 != -1) ? string_to_number(form.get_text(my2)) : 0;
+double bbase = string_to_number(form.get_text(bh));
+string bdir = dir_tokens[form.get_list_position(dir_list)];
+int bp = form.get_list_position(bottom_list);
+string bbtile = (bp > 0) ? tiles_list[bp-1] : "none";
+double bbvol = form.get_slider(bottom_vol);
+double bbpit = form.get_slider(bottom_pit);
+int tp = form.get_list_position(top_list);
+string bttile = (tp > 0) ? tiles_list[tp-1] : "none";
+double btvol = form.get_slider(top_vol);
+double btpit = form.get_slider(top_pit);
+t.destroy_sound(prevslot);
+resume_pools();
+write_slant(bx, bx2, bmy, bmy2, bbase, bstep, bdir, bbtile, bbvol, bbpit, bttile, btvol, btpit);
+spawn_slant(bx, bx2, bmy, bmy2, bbase, bstep, bdir, bbtile, bbvol, bbpit, bttile, btvol, btpit);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
