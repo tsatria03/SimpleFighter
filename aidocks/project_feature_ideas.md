@@ -55,7 +55,7 @@ A ramp is a **two-way slope**: whichever way climbs, the opposite descends — a
 
 **Still open (implementation detail):**
 - Exact map-line field order and the precise `sd.length()` variants per mode.
-- Whether the two auto-surfaces carry platform health/destroyable/overlap or just default to non-destroyable.
+- **Resolved:** the ramp/landing surfaces are always **plain non-destroyable, non-overlap** floor (dev decision 2026-08) — no destroyable/overlap/health fields on the class or form; spawn the floor tiles as non-destroyable, non-overlap platforms. (Overlap is offered only by platform & staircase; destroyable by platform/staircase/wall/door/sign/clock/calendar/spike/projectile — a slant needs neither.)
 - Jump/fall behavior at the *edges* — jumping off the ramp, or falling onto it from above — so support/`fallcheck` stay sane at the entry/exit tiles (the mid-ramp case is handled by the diagonal tiles).
 
 ---

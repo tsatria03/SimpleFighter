@@ -54,3 +54,47 @@ void destroy_all_slants()
 {
 slants.resize(0);
 }
+
+/*
+On-disk map line (space-delimited, mode-dependent length):
+  2d (12 tokens): slant minx maxx base direction step_height  bottomtile bottomvol bottompitch  toptile topvol toppitch
+  3d (14 tokens): slant minx maxx miny maxy base direction step_height  bottomtile bottomvol bottompitch  toptile topvol toppitch
+base is the low-end elevation; the top height is computed from step_height, not stored.
+A surface's tile is the literal "none" to opt out. direction is a no-space token
+(leftup/leftdown/rightup/rightdown/forwardup/forwarddown/backwardup/backwarddown).
+*/
+void read_slant(string[] sd)
+{
+double mnx=stn(sd[1]);
+double mxx=stn(sd[2]);
+double mny=0, mxy=0;
+int o=3;
+if(sd.length()==14)
+{
+mny=stn(sd[3]);
+mxy=stn(sd[4]);
+o=5;
+}
+double base=stn(sd[o]);
+string dir=sd[o+1];
+double sh=stn(sd[o+2]);
+string btile=sd[o+3];
+double bvol=stn(sd[o+4]);
+double bpit=stn(sd[o+5]);
+string ttile=sd[o+6];
+double tvol=stn(sd[o+7]);
+double tpit=stn(sd[o+8]);
+spawn_slant(mnx, mxx, mny, mxy, base, sh, dir, btile, bvol, bpit, ttile, tvol, tpit);
+}
+
+void write_slant(double mnx, double mxx, double mny, double mxy, double base, double sh, string dir, string btile, double bvol, double bpit, string ttile, double tvol, double tpit)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=mnx+" "+mxx;
+if(mapmode=="3d") coords+=" "+mny+" "+mxy;
+coords+=" "+base;
+mapper.write("\r\n"+"slant "+coords+" "+dir+" "+sh+" "+btile+" "+bvol+" "+bpit+" "+ttile+" "+tvol+" "+tpit);
+mapper.close();
+bump_map_modified();
+}
