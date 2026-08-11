@@ -1000,27 +1000,31 @@ face_up();
 
 void handle_speed_keys()
 {
-if(controls.action_repeating("speed_up") and modspeed!=20 and speedable==true)
+// These edit player_own_speed (the persistent preference), not the live modspeed, and go
+// inert while a tile zone is dictating speed (tz_speed_active) so a zone override can't be
+// fought or corrupted -- any press inside such a zone is simply ignored, per the discard-on-exit
+// design. The zone's own speed still applies via tilezoneloop; this only governs your own value.
+if(controls.action_repeating("speed_up") and player_own_speed!=20 and speedable==true and !tz_speed_active)
 {
-modspeed+=1;
+player_own_speed+=1;
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*change*"),false);
-speak("speed"+modspeed);
+speak("speed"+player_own_speed);
 }
-if(controls.action_repeating("speed_down") and modspeed!=1 and speedable==true)
+if(controls.action_repeating("speed_down") and player_own_speed!=1 and speedable==true and !tz_speed_active)
 {
-modspeed-=1;
+player_own_speed-=1;
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*change*"),false);
-speak("speed"+modspeed);
+speak("speed"+player_own_speed);
 }
-if(controls.action_pressed("speed_reset") && speedable==true)
+if(controls.action_pressed("speed_reset") && speedable==true && !tz_speed_active)
 {
-if(modspeed==5)
+if(player_own_speed==5)
 {
 speak("moving speed is already reset");
 }
-else if(modspeed<=20)
+else if(player_own_speed<=20)
 {
-modspeed=5;
+player_own_speed=5;
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*change*"),false);
 speak("moving speed reset");
 }
