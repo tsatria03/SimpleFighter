@@ -18,9 +18,9 @@ stn(); cast to int when applied to the int globals in the runtime loop):
   fall_damage   -- the fallmod multiplier for how hard each fallen square hits past the
                    threshold (normal 21). -1 = unchanged.
 
-Data, lifecycle, read/write, and the build form are in place; the per-frame
-override/restore loop (tilezoneloop) and the menu/parser/clearmap wiring still come in a
-later section, so nothing runs yet.
+Data, lifecycle, read/write, the build form, and the menu/parser/clearmap wiring are all
+in place, and the per-frame runtime loop (tilezoneloop) now applies the SPEED override.
+Jump height and the two fall knobs still hook into the loop in later sections.
 Zone arrays are compacted like the other zones (heal/safe): spawn appends, destroy_all
 resizes to zero, and there is no per-element sentinel removal because zones aren't
 destroyable.
@@ -73,8 +73,46 @@ void spawn_tilezone(double x1, double x2, double y1, double y2, string surf, dou
 tilezone tz1(x1, x2, y1, y2, surf, spd, jh, fd, fdmg, minz, maxz);
 tilezones.insert_last(tz1);
 }
+// ---- Runtime override state (per knob: save the player's own value at entry, restore on exit) ----
+bool tz_speed_active = false;   // is a zone currently overriding walk speed?
+int tz_saved_speed = 0;         // the player's own modspeed, captured the moment the override began
+
+/*
+Per-frame override loop. Runs in game()'s loop group under freezgame==false, BEFORE the
+walktime recompute at game.nvgt:117, so a speed change lands the same frame. Each frame:
+gather every zone the player stands in, drop those whose surface filter doesn't match the
+tile underfoot, then let the LATEST-defined match win each knob (layering). Apply the merged
+speed by driving modspeed exactly the way the A/D keys do; on the first frame no zone applies,
+restore the value saved at entry -- a proper reset that discards any A/D change made inside the
+zone. Save/restore is per-knob, so a zone that leaves speed unchanged (-1) never touches it.
+Jump height and the fall knobs slot in here the same way in later sections.
+*/
+void tilezoneloop()
+{
+string underfoot = (mapmode == "3d") ? gmt(me.x, me.y, me.z) : gmt(me.x, me.y);
+double eff_speed = -1;   // merged winner across covering, surface-matching zones; -1 = none set speed
+for(uint i = 0; i < tilezones.length(); i++)
+{
+if(!player_in_tilezone(i)) continue;
+if(tilezones[i].surface != "any" && underfoot != tilezones[i].surface) continue;
+if(tilezones[i].speed != -1) eff_speed = tilezones[i].speed;
+}
+if(eff_speed != -1)
+{
+if(!tz_speed_active) { tz_saved_speed = modspeed; tz_speed_active = true; }
+modspeed = int(eff_speed);
+}
+else if(tz_speed_active)
+{
+modspeed = tz_saved_speed;
+tz_speed_active = false;
+}
+}
+
 void destroy_all_tilezones()
 {
+// The player may be standing in a zone at unload; restore any active override first.
+if(tz_speed_active) { modspeed = tz_saved_speed; tz_speed_active = false; }
 tilezones.resize(0);
 }
 
