@@ -156,6 +156,15 @@ if(mapmode == "3d") me.z = h;
 else me.y = h;
 falling = false;
 fallcounter = 0;
+// The player only lands on the ramp tile after this snap, so playstep() (already run
+// during the horizontal step, at the pre-snap height) found no tile and stayed silent.
+// Replay the floor tile's step sound here, matching playstep()'s platform logic.
+array<string> tiles;
+array<double> vols;
+array<double> pits;
+get_all_platform_tiles(me.x, me.y, tiles, vols, pits, me.z);
+for(uint j = 0; j < tiles.length(); j++)
+tileslot = p.play_stationary_extended(get_map_sound("builder/construction/platforms/"+tiles[j]+"/*step*"), false, 0, 0, vols[j], pits[j]);
 }
 return;
 }
@@ -240,8 +249,8 @@ if(mapmode == "3d")
 my = form.create_input_box("minimum y", sel_back_set ? sel_back : "");
 my2 = form.create_input_box("maximum y", sel_front_set ? sel_front : "");
 }
-int bh = form.create_input_box("base height", sel_bottom_set ? sel_bottom : "");
-int sh = form.create_input_box("step height", "1");
+int bh = form.create_input_box("bottom height", sel_bottom_set ? sel_bottom : "0");
+int sh = form.create_input_box("slope amount", "1");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 if(my != -1) form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
@@ -378,20 +387,20 @@ continue;
 }
 if(form.get_text(bh).is_empty())
 {
-speak("Base height is required.");
+speak("Bottom height is required.");
 form.focus(bh);
 continue;
 }
 if(form.get_text(sh).is_empty())
 {
-speak("Step height is required.");
+speak("Slope amount is required.");
 form.focus(sh);
 continue;
 }
 double bstep = string_to_number(form.get_text(sh));
 if(bstep < 1)
 {
-speak("Step height must be at least 1.");
+speak("Slope amount must be at least 1.");
 form.focus(sh);
 continue;
 }
