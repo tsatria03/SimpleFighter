@@ -1,0 +1,96 @@
+/*
+Flux zone -- a ranged region that nudges the player's own stats a little with EACH STEP taken on a
+matching tile inside it. Unlike a tile zone (which SETS a value while you stand on it and reverts
+when you leave), a flux zone PERMANENTLY accumulates: the change moves your real value and sticks
+after you step off (the "faster the more I walk" idea). Four independent signed per-step amounts --
+speed, health, stamina, shield -- each a whole number; positive ramps up, negative drains, 0 = off.
+Silent (the ground's own step sounds play). No jump/fall knobs (jump is an odd fit, fall is landing-time).
+
+This section is data + lifecycle + read/write only. The per-step apply logic (fluxzone_step, hooked
+into playstep), the build form, and the menu/parser/clearmap wiring come in later sections, so nothing
+runs yet.
+
+On-disk map line (space-delimited, mode-dependent length; min/max y always present like the other zones):
+  2d / topdown (10 tokens): flux_zone minx maxx miny maxy  surface speed_step health_step stamina_step shield_step
+  3d          (12 tokens): flux_zone minx maxx miny maxy minz maxz  surface speed_step health_step stamina_step shield_step
+surface is "any" or a platform tile name; each step is a signed whole number, 0 = off. At step time
+(a later section) the values apply to the player's own globals: player_own_speed (floor 1), health,
+stamina, and shieldstrength (only while a shield is raised). Zone arrays are compacted (no null-guard),
+like heal/safe zones.
+*/
+fluxzone@[] fluxzones(0);
+
+class fluxzone
+{
+double minx, maxx, miny, maxy;
+double minz, maxz;
+string surface;
+double speed_step;
+double health_step;
+double stamina_step;
+double shield_step;
+fluxzone(double mx, double mx2, double my, double my2, string surf, double sp, double hp, double st, double sh, double mnz=0, double mxz=0)
+{
+minx=mx;
+maxx=mx2;
+miny=my;
+maxy=my2;
+minz=mnz;
+maxz=mxz;
+surface=surf;
+speed_step=sp;
+health_step=hp;
+stamina_step=st;
+shield_step=sh;
+}
+}
+// Is the player inside this zone's box? (z is only bounded on 3d.) The surface filter -- whether the
+// tile underfoot actually matches -- is applied at step time, not here, so this stays pure geometry.
+bool player_in_fluxzone(uint i)
+{
+if(!(fluxzones[i].minx<=me.x and fluxzones[i].maxx>=me.x and fluxzones[i].miny<=me.y and fluxzones[i].maxy>=me.y)) return false;
+if(mapmode == "3d" and (me.z < fluxzones[i].minz or me.z > fluxzones[i].maxz)) return false;
+return true;
+}
+void spawn_fluxzone(double x1, double x2, double y1, double y2, string surf, double sp, double hp, double st, double sh, double minz=0, double maxz=0)
+{
+fluxzone fz1(x1, x2, y1, y2, surf, sp, hp, st, sh, minz, maxz);
+fluxzones.insert_last(fz1);
+}
+void destroy_all_fluxzones()
+{
+fluxzones.resize(0);
+}
+
+void read_flux_zone(string[] sd)
+{
+double mx=stn(sd[1]);
+double mx2=stn(sd[2]);
+double my=stn(sd[3]);
+double my2=stn(sd[4]);
+double mnz=0, mxz=0;
+int o=5;
+if(sd.length()==12)
+{
+mnz=stn(sd[5]);
+mxz=stn(sd[6]);
+o=7;
+}
+string surf=sd[o];
+double sp=stn(sd[o+1]);
+double hp=stn(sd[o+2]);
+double st=stn(sd[o+3]);
+double sh=stn(sd[o+4]);
+spawn_fluxzone(mx, mx2, my, my2, surf, sp, hp, st, sh, mnz, mxz);
+}
+
+void write_flux_zone(double x1, double x2, double y1, double y2, string surface, double speed_step, double health_step, double stamina_step, double shield_step, double minz=0, double maxz=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords=x1+" "+x2+" "+y1+" "+y2;
+if(mapmode=="3d") coords+=" "+minz+" "+maxz;
+mapper.write("\r\n"+"flux_zone "+coords+" "+surface+" "+speed_step+" "+health_step+" "+stamina_step+" "+shield_step);
+mapper.close();
+bump_map_modified();
+}
