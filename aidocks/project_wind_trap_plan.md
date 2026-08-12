@@ -39,10 +39,10 @@ Build one section at a time, pausing for review/commit between sections, per [[f
 
 Fire's tokens plus the three new fields at the END (keeps parsing additive). `direction` is the int 1-6 (belt scheme), not a word. Distinguish 2d/3d by `mapmode == "3d"` inside `read_wind` (like `read_mhazard`), NOT by a raw length that could collide with another element:
 
-- 2d / topdown: `wind x y  xrange yrange  speed windtype  direction push health  moveable moveable2`
-- 3d: `wind x y z  xrange yrange zrange  speed windtype  direction push health  moveable moveable2 moveable3`
+- 2d / topdown: `wind x y  xrange yrange  speed push health direction windtype  moveable moveable2`
+- 3d: `wind x y z  xrange yrange zrange  speed push health direction windtype  moveable moveable2 moveable3`
 
-(direction/push/health sit right after windtype so the moveable bools trail at the very end, matching fire's line shape — dev's request.)
+(Token order follows the build form top-to-bottom: coords, ranges, speed, push, health, direction, wind sound, then the move bools last — dev's request. In the form, direction comes before wind sound.)
 
 ## Section plan
 
@@ -52,6 +52,6 @@ Fire's tokens plus the three new fields at the END (keeps parsing additive). `di
 - **§4 — Build form + menu. DONE.** `build_wind` mirrors `build_fire` (incl. space=`*hit*` / ctrl+L=`*loop*` audition) plus: a **push distance** box (default "1", required, rejected if < 1) and a **health** box (default "0", optional — blank→0) after speed; a **direction** list after the wind-sound list using the conveyor-belt mode-aware labels + int ids (2d: left/right/down/up = 1/2/3/4; topdown: left/right/backward/forward = 1/2/3/4; 3d: adds down/up = 5/6), picked via `string_to_number(get_list_item_id(...))`. Control order = inputs → lists → checkboxes → buttons. Menu: added "wind"/"wind" to the traps row of `entry_names`/`entry_ids` (after vanishing hazard), added "wind" to `converted_3d` (works on 3d), left OUT of `excluded_topdown` (works on topdown), and added the `if(buildtype=="wind") build_wind();` dispatch. NOTE: negative health can't heal — `windloop`'s `>=1` gate makes any health < 1 a silent gust, so no form guard is needed on health.
 - **§5 — Docs. DONE.** Changelog entry added at the top of 14.3 (record-not-manual, [[feedback_changelog_rules]]) — brings 14.3 to 6 of 10. Help topic `sf/docks/builder/winds.txt` written, modeled on `fires.txt` (intro → How a wind works → fields → auditioning → authoring by hand), observable behavior only per [[feedback_tp_prose]], with the fire contrast woven in and the direction number codes explained in the authoring section. Auto-appears in the help menu via the `docks/builder/*.txt` scan (no menu wiring).
 
-Post-§5 integration (dev-requested, easy to miss for a new point entity): added a wind block to `spy_check_entities` in `spier.nvgt` (mirrors the fire block — compacted array so no null guard, no `found_object`) so the spy scanner announces "wind"; and added "wind" to the `spier_entities` list in `obscurity_zone.nvgt` so it's a selectable type an obscurity zone can hide from the spier. (Wind isn't in `menu_entities` — it has no info menu entry, same as fire.)
+Post-§5 additions (dev-requested): the strike now also plays the character's pain cry when it damages you, mirrored from the spike (`spike.nvgt:68-84`) — `*crit*` at 10%+ of maxhealth else `*hurt*`, via `painslot`/`p`; based on the flat `windhealth` (wind applies no defence reduction). And the spy/obscurity integration (easy to miss for a new point entity): added a wind block to `spy_check_entities` in `spier.nvgt` (mirrors the fire block — compacted array so no null guard, no `found_object`) so the spy scanner announces "wind"; and added "wind" to the `spier_entities` list in `obscurity_zone.nvgt` so it's a selectable type an obscurity zone can hide from the spier. (Wind isn't in `menu_entities` — it has no info menu entry, same as fire.)
 
 Status: **WHOLE WIND TRAP FEATURE COMPLETE** across all five sections. Files: `wind.nvgt` (data/lifecycle/runtime/push/read/write/build), `game.nvgt` (windloop hook), `map.nvgt` (clearmap), `map_parser.nvgt` (dispatch), `effect_space.nvgt` (effect pool), `decpool.nvgt` (all_pools registration — the crash fix), `map_menu.nvgt` (traps entry + dispatch + converted_3d), `changelog.txt`, `winds.txt`.
