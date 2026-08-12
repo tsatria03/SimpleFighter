@@ -144,7 +144,9 @@ slantcheck();
 Per-frame elevation follow. While the player is on a slant, force their vertical
 coordinate (me.y on 2d, me.z on 3d) to the ramp surface under them and clear the fall
 state, so walking along the ramp carries them up/down instead of falling between the
-diagonal floor tiles. MUST be called immediately BEFORE fallcheck() in the main loop:
+diagonal floor tiles. If a fall was already underway when the ramp re-catches them, its
+fall sound is destroyed too (guarded on falling) so it doesn't keep playing after they land
+back on -- mirroring the destroy in fallcheck's landing. MUST be called immediately BEFORE fallcheck() in the main loop:
 otherwise the frame after a horizontal step leaves the player unsupported at the old
 height and fallcheck starts a fall before this can correct it. The player counts as
 "on" a slant when they are within the footprint at a height inside the ramp's body
@@ -169,6 +171,7 @@ if(cur != h)
 {
 if(mapmode == "3d") me.z = h;
 else me.y = h;
+if(falling) p.destroy_sound(fallslot);
 falling = false;
 fallcounter = 0;
 }
@@ -193,6 +196,7 @@ if(cur != h)
 {
 if(mapmode == "3d") me.z = h;
 else me.y = h;
+if(falling) p.destroy_sound(fallslot);
 falling = false;
 fallcounter = 0;
 }
