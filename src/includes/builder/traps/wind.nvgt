@@ -114,6 +114,53 @@ if(mapmode=="3d") me.z = nz;
 }
 
 /*
+On-disk line (space-delimited). Distinguished by mapmode (like read_mhazard), which matches the
+length gate in map_parser (2d/topdown = 12 tokens, 3d = 15). The three new fields -- direction, push,
+health -- trail the fire-shaped tokens:
+  2d / topdown: wind x y  xrange yrange  speed windtype moveable moveable2  direction push health
+  3d          : wind x y z  xrange yrange zrange  speed windtype moveable moveable2 moveable3  direction push health
+*/
+void read_wind(string[] sd)
+{
+double wx=stn(sd[1]);
+double wy=stn(sd[2]);
+double wz=0;
+int o=3;
+if(mapmode == "3d")
+{
+wz=stn(sd[3]);
+o=4;
+}
+double wrange=stn(sd[o]);
+double wrange2=stn(sd[o+1]);
+double wrange3=0;
+if(mapmode == "3d") { wrange3=stn(sd[o+2]); o+=3; } else o+=2;
+double sp=stn(sd[o]);
+string wt=sd[o+1];
+bool wm=string_to_bool(sd[o+2]);
+bool wm2=string_to_bool(sd[o+3]);
+bool wm3=false;
+int po=o+4;
+if(mapmode == "3d") { wm3=string_to_bool(sd[o+4]); po=o+5; }
+string dir=sd[po];
+double psh=stn(sd[po+1]);
+double hp=stn(sd[po+2]);
+spawn_wind(wx, wy, wrange, wrange2, sp, wt, wm, wm2, dir, psh, hp, wz, wrange3, wm3);
+}
+
+void write_wind(double x, double y, double windrange, double windrange2, double speed, string windtype, bool moveable, bool moveable2, string direction, double push, double windhealth, double z=0, double windrange3=0, bool moveable3=false)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string zsrc = (mapmode == "3d") ? (" "+z) : "";
+string zrng = (mapmode == "3d") ? (" "+windrange3) : "";
+string zmov = (mapmode == "3d") ? (" "+moveable3) : "";
+mapper.write("\r\n"+"wind "+x+" "+y+zsrc+" "+windrange+" "+windrange2+zrng+" "+speed+" "+windtype+" "+moveable+" "+moveable2+zmov+" "+direction+" "+push+" "+windhealth);
+mapper.close();
+bump_map_modified();
+}
+
+/*
 Runtime for winds, called each frame from the game loop (game.nvgt, right after fireloop). Throttled
 to each wind's own windtime tick so it pulses rather than firing every frame: once the player enters
 the seeing box the wind latches spotted, then per tick it homes one tile toward the player on its
