@@ -864,6 +864,12 @@ dlg("Miscellaneous menu "+(hidemisc ? "hidden" : "unhidden")+". Press enter to c
 }
 void settingsmenu(bool ingame=false)
 {
+// Outer rebuild loop: an action that opens a sub-menu/dialog (theme picker, sound
+// device, reset, etc.) clobbers this form, so it "break"s out of the inner monitor
+// loop and this outer loop rebuilds the form from scratch -- replacing the old
+// recursion (which re-called settingsmenu and left stale frames on the stack).
+while (true)
+{
 form.reset();
 form.create_window("preferences", false);
 int tabs = form.create_tab_panel("Category");
@@ -996,15 +1002,12 @@ continue;
 }
 defowner = mowner;
 dlg("Map owner set. Press enter to continue.");
-form.reset();
-settingsmenu();
+break;
 }
 if (!ingame && form.is_pressed(hid))
 {
 hidemenu();
-form.reset();
-settingsmenu();
-return;
+break;
 }
 if (!ingame && form.is_pressed(slt))
 {
@@ -1012,8 +1015,7 @@ string[] chars = get_pack_sound_folders("main/characters/*");
 if (chars.length() == 0)
 {
 dlg("Error. There are no character themes available to view. Press enter to continue.");
-form.reset();
-settingsmenu();
+break;
 }
 else
 {
@@ -1024,6 +1026,7 @@ if (res != "")
 t.destroy_sound(prevslot);
 chartype = res;
 }
+break;
 }
 }
 if (!ingame && form.is_pressed(slk))
@@ -1032,8 +1035,7 @@ string[] themetype = get_pack_sound_folders("main/keyboards/*");
 if (themetype.length() == 0)
 {
 dlg("Error. There are no keyboard themes available to view. Press enter to continue.");
-form.reset();
-settingsmenu();
+break;
 }
 else
 {
@@ -1043,6 +1045,7 @@ if (res != "")
 t.destroy_sound(prevslot);
 keyboardtheme = res;
 }
+break;
 }
 }
 if (!ingame && form.is_pressed(sln))
@@ -1051,8 +1054,7 @@ string[] menu = get_pack_sound_folders("main/menus/*");
 if (menu.length() == 0)
 {
 dlg("Error. There are no menu themes available to view. Press enter to continue.");
-form.reset();
-settingsmenu();
+break;
 }
 else
 {
@@ -1062,6 +1064,7 @@ if (res != "")
 t.destroy_sound(prevslot);
 menutype = res;
 }
+break;
 }
 }
 if (!ingame && form.is_pressed(sdm))
@@ -1077,16 +1080,14 @@ m.intro_text = "Choose a sound device you'd like to use in the game.";
 int mres = m.run();
 if (mres < 0)
 {
-form.reset();
-settingsmenu();
+break;
 }
 if (mres >= 0 && mres < int(devices.length()))
 {
 soundcard = devices[mres];
 sound_output_device = mres + 1;
 dlg("Sound device set to " + soundcard + ". Press enter to continue.");
-form.reset();
-settingsmenu();
+break;
 }
 }
 if (!ingame && form.is_pressed(rest))
@@ -1098,8 +1099,7 @@ m.intro_text = "Are you sure you want to reset all of your settings?";
 int mres = m.run();
 if (mres < 0)
 {
-form.reset();
-settingsmenu();
+break;
 }
 if (mres == 0)
 {
@@ -1112,8 +1112,7 @@ restart("sf.exe");
 }
 if (mres == 1)
 {
-form.reset();
-settingsmenu();
+break;
 }
 }
 if (form.is_pressed(ttscfg))
@@ -1127,16 +1126,12 @@ speak("This is your current voice configuration.");
 if (!ingame && form.is_pressed(viewbinds))
 {
 view_keyboard_bindings();
-form.reset();
-settingsmenu(ingame);
-return;
+break;
 }
 if (!ingame && form.is_pressed(rebind))
 {
 rebind_keyboard_action();
-form.reset();
-settingsmenu(ingame);
-return;
+break;
 }
 if (form.is_pressed(preffscn))
 {
@@ -1148,6 +1143,7 @@ if (form.is_pressed(preffsok))
 writepreffs();
 if (ingame) { speak("Settings saved."); resume_pools(); return; }
 else { dlg("Settings saved. Press enter to continue."); return; }
+}
 }
 }
 }
