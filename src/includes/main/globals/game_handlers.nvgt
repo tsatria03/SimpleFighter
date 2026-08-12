@@ -735,17 +735,22 @@ jumptimer.restart();
 if(mapmode == "3d")
 {
 me.z -= 1;
-if (me.z <= ty1) { me.z = ty1; playland(); jumping = 0; }
+if (in_slant_volume(me.x, me.y, me.z)) { me.z = slant_surface_at(me.x, me.y); playland(); jumping = 0; ty1 = me.z; }
+else if (me.z <= ty1 && slant_surface_at(me.x, me.y) < 0) { me.z = ty1; playland(); jumping = 0; }
 else if (user_platform_at(me.x, me.y, me.z) || is_staircase_top(me.x, me.y, me.z)) { playland(); jumping = 0; ty1 = me.z; }
 }
 else
 {
 me.y-=1;
+if(in_slant_volume(me.x, me.y, 0)) { me.y = slant_surface_at(me.x, me.y); playland(); jumping = 0; }
+else
+{
 checkforplatforms();
-if (me.y <= ty1)
+if (me.y <= ty1 && slant_surface_at(me.x, me.y) < 0)
 {
 me.y=ty1;
 jumping=0;
+}
 }
 }
 }
@@ -835,6 +840,17 @@ atapex = false;
 ty1 = me.z;
 return;
 }
+if(in_slant_volume(me.x, me.y, me.z))
+{
+if(onhook) hk.release_hook();
+me.z = slant_surface_at(me.x, me.y);
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.z;
+return;
+}
 int body_dir = -1;
 if(controls.action_down("move_up")) body_dir = 0;
 else if(controls.action_down("move_down")) body_dir = 1;
@@ -914,6 +930,16 @@ if (me.y>=ty2)
 {
 if(in_staircase(me.x, me.y) || user_platform_at(me.x, me.y, 0))
 {
+playland();
+jumping = 0;
+ascending = false;
+atapex = false;
+ty1 = me.y;
+return;
+}
+if(in_slant_volume(me.x, me.y, 0))
+{
+me.y = slant_surface_at(me.x, me.y);
 playland();
 jumping = 0;
 ascending = false;

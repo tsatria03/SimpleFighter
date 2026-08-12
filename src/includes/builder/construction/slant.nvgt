@@ -129,6 +129,46 @@ player_slant = -1;
 }
 
 /*
+Jump-landing predicates, the slant analogue of is_staircase_top / in_staircase_volume. A slant is a
+diagonal wedge -- base_height up to the per-column surface_height -- not a solid box, so a jump arc can
+sail over the thin surface tile without ever coinciding with it (staircase tiles are backing, hidden
+from user_platform_at, which is why the staircase always needed these; the slant needs them for the
+same "don't jump straight over me" reason). cur is the height axis: me.z on 3d, me.y on 2d.
+slant_surface_at returns the covering slant's surface height at that column (-1 = none) so a landing
+can SNAP to the ramp surface, since -- unlike the staircase's flat top -- each column sits at its own
+height.
+*/
+double slant_surface_at(double x, double y)
+{
+for(uint i = 0; i < slants.length(); i++)
+{
+if(@slants[i] == null) continue;
+if(slants[i].contains(x, y)) return slants[i].surface_height(x, y);
+}
+return -1;
+}
+bool is_slant_surface(double x, double y, double z)
+{
+double cur = (mapmode == "3d") ? z : y;
+for(uint i = 0; i < slants.length(); i++)
+{
+if(@slants[i] == null) continue;
+if(slants[i].contains(x, y) && cur == slants[i].surface_height(x, y)) return true;
+}
+return false;
+}
+bool in_slant_volume(double x, double y, double z)
+{
+double cur = (mapmode == "3d") ? z : y;
+for(uint i = 0; i < slants.length(); i++)
+{
+if(@slants[i] == null) continue;
+if(slants[i].contains(x, y) && cur >= slants[i].base_height && cur <= slants[i].surface_height(x, y)) return true;
+}
+return false;
+}
+
+/*
 Called at the very top of playstep(). Runs the full slant attach/snap (slantcheck) so the
 player is on the ramp surface BEFORE the footstep reads the tile underfoot. Running the
 full logic (not just a snap) also covers the FIRST step onto a ramp: player_slant isn't
