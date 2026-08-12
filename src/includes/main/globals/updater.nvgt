@@ -61,16 +61,8 @@ wait(500);
 alert("Notice", "The update file already exists. Skipping download.");
 }
 wait(500);
-string ext = filename.substr(filename.rfind(".") + 1);
 setupmenu(false);
-if (ext == "exe")
-{
-m.add_item("Run Installer", "run");
-}
-else if (ext == "7z" || ext == "zip")
-{
 m.add_item("Extract file", "extract");
-}
 m.add_item("Cancel", "cancel");
 m.intro_text = "The update has been downloaded. What would you like to do with " + bare_name + "?";
 int mres = m.run();
@@ -78,16 +70,6 @@ string choice = m.selected_item_id;
 if (mres < 0 || choice == "cancel")
 {
 speak("Canceled");
-return false;
-}
-if (choice == "run")
-{
-wait(500);
-if (!run(filename, "", false, false))
-{
-alert("Error", "Could not launch the installer.");
-}
-exit();
 return false;
 }
 if (choice == "extract")
@@ -113,18 +95,7 @@ return true;
 string get_download_url(string projectname, string new_version)
 {
 string base = "https://github.com/tsatria03/" + projectname + "/releases/download/V" + new_version+"0";
-setupmenu(false);
-m.add_item("Windows Installer", "installer");
-m.add_item("Windows Portable", "portable");
-m.add_item("cancel", "cancel");
-m.intro_text = "Which version of the game would you like to download?";
-int mres = m.run();
-string version_choice = m.selected_item_id;
-if (mres < 0 || version_choice == "cancel") mainmenu();
-if (version_choice == "portable")
 return base + "/SimpleFighter_windows_portable_password_is_SpfBuilder.7z";
-else
-return base + "/SimpleFighter_windows_installer_password_is_SpfBuilder.exe";
 }
 
 void downloadsounds()
@@ -132,7 +103,6 @@ void downloadsounds()
 quest=question("Error", "There are no sounds detected in the game! Would you like to download them now?");
 if (quest != 1)
 {
-mainmenu();
 return;
 }
 if (file_exists("sounds.7z"))
@@ -146,7 +116,6 @@ if (result != "finished")
 {
 alert("download error", "Download failed or was canceled.");
 if(file_exists("sounds.7z")) file_delete("sounds.7z");
-mainmenu();
 return;
 }
 alert("finished", "Download completed successfully.");
@@ -166,5 +135,5 @@ restart("sf.exe");
 return;
 }
 alert("extraction_error", "Error occurred during extraction.");
-mainmenu();
+return;
 }
