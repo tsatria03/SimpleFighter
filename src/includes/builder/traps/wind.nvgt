@@ -119,9 +119,10 @@ if(mapmode=="3d") me.z = nz;
 /*
 On-disk line (space-delimited). Distinguished by mapmode (like read_mhazard), which matches the
 length gate in map_parser (2d/topdown = 12 tokens, 3d = 15). The three new fields -- direction (an
-int 1-6, the conveyor-belt scheme), push, health -- trail the fire-shaped tokens:
-  2d / topdown: wind x y  xrange yrange  speed windtype moveable moveable2  direction push health
-  3d          : wind x y z  xrange yrange zrange  speed windtype moveable moveable2 moveable3  direction push health
+int 1-6, the conveyor-belt scheme), push, health -- sit right after windtype, so the moveable bools
+still trail at the very end exactly like fire's line:
+  2d / topdown: wind x y  xrange yrange  speed windtype  direction push health  moveable moveable2
+  3d          : wind x y z  xrange yrange zrange  speed windtype  direction push health  moveable moveable2 moveable3
 */
 void read_wind(string[] sd)
 {
@@ -140,14 +141,13 @@ double wrange3=0;
 if(mapmode == "3d") { wrange3=stn(sd[o+2]); o+=3; } else o+=2;
 double sp=stn(sd[o]);
 string wt=sd[o+1];
-bool wm=string_to_bool(sd[o+2]);
-bool wm2=string_to_bool(sd[o+3]);
+int dir=stn(sd[o+2]);
+double psh=stn(sd[o+3]);
+double hp=stn(sd[o+4]);
+bool wm=string_to_bool(sd[o+5]);
+bool wm2=string_to_bool(sd[o+6]);
 bool wm3=false;
-int po=o+4;
-if(mapmode == "3d") { wm3=string_to_bool(sd[o+4]); po=o+5; }
-int dir=stn(sd[po]);
-double psh=stn(sd[po+1]);
-double hp=stn(sd[po+2]);
+if(mapmode == "3d") wm3=string_to_bool(sd[o+7]);
 spawn_wind(wx, wy, wrange, wrange2, sp, wt, wm, wm2, dir, psh, hp, wz, wrange3, wm3);
 }
 
@@ -158,7 +158,7 @@ mapdata=mapper.read();
 string zsrc = (mapmode == "3d") ? (" "+z) : "";
 string zrng = (mapmode == "3d") ? (" "+windrange3) : "";
 string zmov = (mapmode == "3d") ? (" "+moveable3) : "";
-mapper.write("\r\n"+"wind "+x+" "+y+zsrc+" "+windrange+" "+windrange2+zrng+" "+speed+" "+windtype+" "+moveable+" "+moveable2+zmov+" "+direction+" "+push+" "+windhealth);
+mapper.write("\r\n"+"wind "+x+" "+y+zsrc+" "+windrange+" "+windrange2+zrng+" "+speed+" "+windtype+" "+direction+" "+push+" "+windhealth+" "+moveable+" "+moveable2+zmov);
 mapper.close();
 bump_map_modified();
 }
