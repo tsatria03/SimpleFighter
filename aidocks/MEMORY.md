@@ -17,6 +17,7 @@
 - [NVGT key_pressed is one-shot](project_nvgt_key_pressed_oneshot.md) — key_pressed() is consumed on first read each frame; read a multi-purpose key once and branch inside, never in two sibling if-checks.
 - [AngelScript braceless if](project_angelscript_braceless_if.md) — A braceless if/else governs only the next statement; a second statement in a braceless dispatch branch orphans the else and fails to compile (game won't launch).
 - [AngelScript reserved words](project_angelscript_reserved_words.md) — Never name a variable `out` (or in/inout/shared/final/from…); reserved keywords are a compile error.
+- [AngelScript while(true) return](project_angelscript_while_true_return.md) — A value-returning function whose only returns are inside a while(true) loop fails to compile ("Not all paths return a value"); add an unreachable fallback return after the loop.
 - [NVGT sound preload cache](project_nvgt_sound_preload_cache.md) — sound.load caches decoded audio by filename; regenerating audio into a reused path replays the old clip — use a fresh name or allow_preloads=false.
 - [Sound device indexing](project_sound_device_indexing.md) — Device list is index 0 "No sound", 1 "Default", 2+ named; SF trims index 0 and stores sound_output_device = trimmed_index+1. Don't add a synthetic Default item.
 - [Dialog conventions](project_dialog_conventions.md) — dlg() for everyday spoken player dialogs, dlgmessage() only for story-zone --paged text, alert() for visual/pre-init/tooling notices; don't blanket-convert between them.
