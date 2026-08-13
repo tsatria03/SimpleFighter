@@ -11,9 +11,9 @@ Fully wired and live: data, lifecycle, read/write, the build form, the per-step 
 topic + changelog remain.
 
 On-disk map line (space-delimited, mode-dependent length; min/max y always present like the other zones):
-  2d / topdown (10 tokens): flux_zone minx maxx miny maxy  surface speed_step health_step stamina_step shield_step
-  3d          (12 tokens): flux_zone minx maxx miny maxy minz maxz  surface speed_step health_step stamina_step shield_step
-surface is "any" or a platform tile name; each step is a signed whole number, 0 = off. At step time
+  2d / topdown (10 tokens): flux_zone minx maxx miny maxy  surface speed_amount health_amount stamina_amount shield_amount
+  3d          (12 tokens): flux_zone minx maxx miny maxy minz maxz  surface speed_amount health_amount stamina_amount shield_amount
+surface is "any" or a platform tile name; each amount is a signed whole number, 0 = off. At step time
 (a later section) the values apply to the player's own globals: player_own_speed (floor 1), health,
 stamina, and shieldstrength (only while a shield is raised). Zone arrays are compacted (no null-guard),
 like heal/safe zones.
@@ -25,10 +25,10 @@ class fluxzone
 double minx, maxx, miny, maxy;
 double minz, maxz;
 string surface;
-double speed_step;
-double health_step;
-double stamina_step;
-double shield_step;
+double speed_amount;
+double health_amount;
+double stamina_amount;
+double shield_amount;
 fluxzone(double mx, double mx2, double my, double my2, string surf, double sp, double hp, double st, double sh, double mnz=0, double mxz=0)
 {
 minx=mx;
@@ -38,10 +38,10 @@ maxy=my2;
 minz=mnz;
 maxz=mxz;
 surface=surf;
-speed_step=sp;
-health_step=hp;
-stamina_step=st;
-shield_step=sh;
+speed_amount=sp;
+health_amount=hp;
+stamina_amount=st;
+shield_amount=sh;
 }
 }
 // Is the player inside this zone's box? (z is only bounded on 3d.) The surface filter -- whether the
@@ -68,10 +68,10 @@ tile just stepped onto. For each flux zone the player stands in, apply the surfa
 underfoot must match the zone's surface unless that is "any"), then let the LATEST-built matching zone
 win each knob -- the same layering as the tile zone, so you can carve a stronger or gentler pocket
 inside a larger zone; a knob a zone leaves at 0 doesn't override the outer zone's value for that knob.
-The winning steps are added to the player's OWN values and STICK. Speed floors at 1 HERE (nothing else
+The winning amounts are added to the player's OWN values and STICK. Speed floors at 1 HERE (nothing else
 floors player_own_speed, and modspeed<1 freezes movement); health/stamina/shield just take the delta
 and let the game loop's existing clamps cap them, fire death at 0 health, and break the shield at 0
-strength. The shield step only acts while a shield is raised.
+strength. The shield amount only acts while a shield is raised.
 */
 void fluxzone_step()
 {
@@ -82,10 +82,10 @@ for(uint i = 0; i < fluxzones.length(); i++)
 {
 if(!player_in_fluxzone(i)) continue;
 if(fluxzones[i].surface != "any" && underfoot != fluxzones[i].surface) continue;
-if(fluxzones[i].speed_step != 0) eff_speed = fluxzones[i].speed_step;
-if(fluxzones[i].health_step != 0) eff_health = fluxzones[i].health_step;
-if(fluxzones[i].stamina_step != 0) eff_stamina = fluxzones[i].stamina_step;
-if(fluxzones[i].shield_step != 0) eff_shield = fluxzones[i].shield_step;
+if(fluxzones[i].speed_amount != 0) eff_speed = fluxzones[i].speed_amount;
+if(fluxzones[i].health_amount != 0) eff_health = fluxzones[i].health_amount;
+if(fluxzones[i].stamina_amount != 0) eff_stamina = fluxzones[i].stamina_amount;
+if(fluxzones[i].shield_amount != 0) eff_shield = fluxzones[i].shield_amount;
 }
 if(eff_speed != 0)
 {
@@ -119,13 +119,13 @@ double sh=stn(sd[o+4]);
 spawn_fluxzone(mx, mx2, my, my2, surf, sp, hp, st, sh, mnz, mxz);
 }
 
-void write_flux_zone(double x1, double x2, double y1, double y2, string surface, double speed_step, double health_step, double stamina_step, double shield_step, double minz=0, double maxz=0)
+void write_flux_zone(double x1, double x2, double y1, double y2, string surface, double speed_amount, double health_amount, double stamina_amount, double shield_amount, double minz=0, double maxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string coords=x1+" "+x2+" "+y1+" "+y2;
 if(mapmode=="3d") coords+=" "+minz+" "+maxz;
-mapper.write("\r\n"+"flux_zone "+coords+" "+surface+" "+speed_step+" "+health_step+" "+stamina_step+" "+shield_step);
+mapper.write("\r\n"+"flux_zone "+coords+" "+surface+" "+speed_amount+" "+health_amount+" "+stamina_amount+" "+shield_amount);
 mapper.close();
 bump_map_modified();
 }
@@ -139,8 +139,8 @@ dlg("Error. There are no platforms available to view. Press enter to continue.")
 resume_pools();
 return;
 }
-// The minus sign is NOT in this set, so negative (draining) step values can be typed; "." is in it,
-// so only whole numbers are possible. Every step field defaults to 0 (off), and all four show in
+// The minus sign is NOT in this set, so negative (draining) amount values can be typed; "." is in it,
+// so only whole numbers are possible. Every amount field defaults to 0 (off), and all four show in
 // every mode -- speed/health/stamina/shield aren't altitude-based, so nothing is hidden on topdown.
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
@@ -158,10 +158,10 @@ if(mapmode == "3d")
 mnz = form.create_input_box("minimum z", sel_bottom_set ? sel_bottom : "");
 mxz = form.create_input_box("maximum z", sel_top_set ? sel_top : "");
 }
-int sp = form.create_input_box("speed step", "0");
-int hp = form.create_input_box("health step", "0");
-int st = form.create_input_box("stamina step", "0");
-int sh = form.create_input_box("shield step", "0");
+int sp = form.create_input_box("speed amount", "0");
+int hp = form.create_input_box("health amount", "0");
+int st = form.create_input_box("stamina amount", "0");
+int sh = form.create_input_box("shield amount", "0");
 form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(mx2, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
@@ -240,7 +240,7 @@ double by = string_to_number(form.get_text(my));
 double by2 = string_to_number(form.get_text(my2));
 double bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
 double bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
-// Steps are optional; an empty field means 0 (off).
+// Amounts are optional; an empty field means 0 (off).
 double bsp = (form.get_text(sp) == "") ? 0 : string_to_number(form.get_text(sp));
 double bhp = (form.get_text(hp) == "") ? 0 : string_to_number(form.get_text(hp));
 double bst = (form.get_text(st) == "") ? 0 : string_to_number(form.get_text(st));
