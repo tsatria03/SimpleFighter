@@ -87,7 +87,13 @@ restore_last_checkpoint();
 else
 {
 firepool.destroy_sound(fires[i].firesound);
-dlgplay(get_map_sound("builder/traps/fires/"+fires[i].firetype+"/*hit*"));
+string firehit = get_map_sound("builder/traps/fires/"+fires[i].firetype+"/*hit*");
+if(firehit != "") dlgplay(firehit);
+else   // no fire hit sound (type "none" or a pack missing the clip): fall back to a normal death's cues...
+{
+dlgplay(get_pack_sound("main/characters/"+chartype+"/general/*death*"));   // ...the character's own death cry...
+dlgplay(get_map_sound("builder/construction/platforms/"+gmt(me.x,me.y)+"/*fall*"));   // ...plus the fall sound of the tile you're standing on, like checkpoint.nvgt's playerdeath
+}
 @fires[i] = null;
 wepdef=0;
 p.destroy_sound(refslot);
