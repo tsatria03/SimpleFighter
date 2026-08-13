@@ -7,7 +7,7 @@ metadata:
 
 Do NOT launch or build the game yourself. Specifically, never run:
 
-- `sf/sf.py` — the launcher (runs `src/sf.nvgt` under `C:\nvgt2\nvgtw.exe`).
+- `sf/sf.py` — the launcher (runs `src/sf.nvgt` under `C:\nvgt2\nvgt.exe`).
 - anything under `build/` — `build/tools.py` / `build/tools.bat` (compile / package / release pipeline).
 - `src/sf.nvgt` directly, or any other `nvgt` / `nvgtw` compile-or-run invocation.
 

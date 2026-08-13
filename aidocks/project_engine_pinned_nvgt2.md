@@ -7,7 +7,7 @@ metadata:
   originSessionId: 777a1634-8da0-4673-807a-7d9e5ab41e7f
 ---
 
-SimpleFighter (and all of tsatria03's games) target a **pinned legacy NVGT fork** installed at **`C:\nvgt2`**. The launcher hard-codes it (`sf/sf.py` runs `C:\nvgt2\nvgtw.exe`); `build/tools.py` reads the engine path from `~/.game_tools/tools.ini`, pointed at the same `nvgt2` build.
+SimpleFighter (and all of tsatria03's games) target a **pinned legacy NVGT fork** installed at **`C:\nvgt2`**. The launcher hard-codes it (`sf/sf.py` runs `C:\nvgt2\nvgt.exe` — the console build, windowless via `CREATE_NO_WINDOW`, so NVGT's compile output can be captured to `sf/errors.txt`; switched from `nvgtw.exe` for exactly that reason); `build/tools.py` reads the engine path from `~/.game_tools/tools.ini`, pointed at the same `nvgt2` build.
 
 A **newer stock NVGT is also installed at `C:\nvgt`** — the dev put it there to test someone else's game. It uses **miniaudio**; the fork stays on **BASS**, and the game's `sound_pool`/HRTF code is written against the BASS-backed sound object. The new install is NOT for this project.
 
