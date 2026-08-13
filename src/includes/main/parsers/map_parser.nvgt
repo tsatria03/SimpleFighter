@@ -166,7 +166,7 @@ else return false;
 return true;
 }
 
-void load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false, bool force_spawned=false)
+bool load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false, bool force_spawned=false)
 {
 mapname = name;
 mapowner = owner;
@@ -213,7 +213,7 @@ else if (file_exists(compiled_path))
 if (!load_map_pack(mapname, ""))
 {
 dlg("Error: Map failed to load.");
-mapmenu();
+return false;
 }
 if (map_pack.file_exists("data/main.sif"))
 {
@@ -231,7 +231,7 @@ meta_text = map_pack.read_file("data/meta.sif", 0, size);
 if (!loaded)
 {
 dlg("Error: Map not found or missing data/main.sif.");
-mapmenu();
+return false;
 }
 map_meta@ meta = parse_map_meta(meta_text);
 mapowner = meta.owner;
@@ -266,8 +266,7 @@ if(key_pressed(KEY_ESCAPE))
 if(loadsounds==1) mapload.stop();
 speak("Map load canceled.");
 clearmap();
-mapmenu();
-return;
+return false;
 }
 if(loadbeeps == 1)
 {
@@ -339,8 +338,7 @@ if(mapmode == "")
 if(loadsounds==1) mapload.stop();
 dlg("Error: Map is missing the 'mode' field in data/main.sif. Add a line like 'mode 2d' (or topdown, or 3d) and try again.");
 clearmap();
-mapmenu();
-return;
+return false;
 }
 apply_map_pool();
 if (force_spawned)
@@ -375,4 +373,5 @@ if(speak_percentage==true) speak("100 "+"percent");
 if(loadbeeps == 1) beep_percentage(100);
 }
 if(anounce_mapload==true) speak("map loded.");
+return true;
 }
