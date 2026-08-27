@@ -1,12 +1,12 @@
 - [Path conventions](project_path_conventions.md) — Restructure: code in src/, assets+launcher in sf/, build/ + releases/; the cwd=sf/ trick; sf.py launcher; the build/version.txt sync regression to watch.
-- [Engine pinned to nvgt2](project_engine_pinned_nvgt2.md) — Game targets the legacy BASS fork at C:\nvgt2 (sf.py uses nvgt.exe, windowless via CREATE_NO_WINDOW, to capture compile errors); the new C:\nvgt miniaudio install is only for testing others' games — don't suggest upgrading.
+- [Engine pinned to nvgt](project_engine_pinned_nvgt2.md) — Game targets the legacy BASS fork at C:\nvgt (sf.py uses nvgt.exe, windowless via CREATE_NO_WINDOW, to capture compile errors); the new C:\nvgt2 miniaudio install is only for testing others' games — don't suggest upgrading.
 - [Stability rules](project_stability_rules.md) — The load-bearing invariants (read_/write_ signatures, CRLF, double coords, capability flags, per-z 3d tiles, builder audio form, sentinel-null removal, camera-key collisions, spaced info.sif keys). Read before any edit in their area.
 - [Include tree](project_include_tree.md) — The src/includes/ architecture map: main/ engine subsystems and builder/ per-entity definitions, glob-include aggregation, one-file-per-entity contract.
 - [Map format](project_map_format.md) — On-disk map format (main.sif/meta.sif, .map packs), map modes 2d/topdown/3d, spanning-entity min/max y, quoted text fields, single/ranged one-keyword rule.
 - [Game data layout](project_game_data_layout.md) — sf/data/ layout: authored maps, keyboard.ini, macro packs, and the info.sif-is-the-contract rule for characters/shields/weapons/NPCs.
 - [Sound assets layout](project_sound_assets_layout.md) — sf/sounds/ structure: decompiled vs compiled packs, main/ vs builder/ split, glob clip discovery.
 - [Audio model](project_audio_model.md) — Runtime audio: sound_pool + HRTF, get_pack_sound/get_map_sound, adding a pool, and the load-bearing looping/locked-slot invariant.
-- [Script vs engine](project_script_vs_engine.md) — Investigate-script-first philosophy (diagnose in .nvgt before touching C++) plus the list of non-stock nvgt2 engine changes this game depends on.
+- [Script vs engine](project_script_vs_engine.md) — Investigate-script-first philosophy (diagnose in .nvgt before touching C++) plus the list of non-stock nvgt engine changes this game depends on.
 - [Build pipeline](project_build_pipeline.md) — Version source-of-truth (version.nvgt) and the build/tools.py compile → package → release → website pipeline.
 - [Repo hygiene](project_repo_hygiene.md) — .gitattributes CRLF enforcement and what .gitignore keeps out; CLAUDE.md and aidocks/ are committed.
 - [Deferred concerns](project_deferred_concerns.md) — Known shape-of-the-code non-bugs (no data-file versioning, glob-include noise, silent parser fallthrough, silent sound lookups, no tests). Don't proactively fix.

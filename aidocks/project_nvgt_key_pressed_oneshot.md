@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-In the pinned nvgt2 engine, `key_pressed(KEY_X)` is **consumed on the first read** each frame. Reading the SAME key in two separate `if` checks in one loop iteration means the second check always sees false.
+In the pinned nvgt engine, `key_pressed(KEY_X)` is **consumed on the first read** each frame. Reading the SAME key in two separate `if` checks in one loop iteration means the second check always sees false.
 
 **Why:** a common trap when one physical key drives multiple behaviors (modifier combos, mode branches). Example from a sibling NVGT game: an auto-run feature added `if(key_pressed(KEY_R) and alt_is_down())` right before an existing `else if(key_pressed(KEY_R) and !in_game)` check — with Alt up, the first read ate the R press, so plain R silently did nothing.
 

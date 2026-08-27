@@ -17,7 +17,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.normpath(os.path.join(HERE, "..", "src", "sf.nvgt"))
 VERSION_TXT = os.path.normpath(os.path.join(HERE, "..", "build", "version.txt"))
 VERSION_NVGT = os.path.normpath(os.path.join(HERE, "..", "src", "includes", "version.nvgt"))
-NVGT = r"C:\nvgt2\nvgt.exe"
+NVGT = r"C:\nvgt\nvgt.exe"
 # How long (seconds) to watch the game for an early exit before assuming it compiled and detaching. A failed
 # compile bails out within a second or two; a clean compile keeps running the game, so this is also the launch
 # delay on a successful start. Raise it if compilation ever takes longer than this on a slow machine.

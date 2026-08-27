@@ -1,11 +1,11 @@
 ---
 name: project_script_vs_engine
-description: Investigate-script-first philosophy — diagnose bugs/perf in the .nvgt layer before touching the C++ engine — plus the list of non-stock Legacy-NVGT (nvgt2) engine changes this game depends on.
+description: Investigate-script-first philosophy — diagnose bugs/perf in the .nvgt layer before touching the C++ engine — plus the list of non-stock Legacy-NVGT (nvgt) engine changes this game depends on.
 metadata:
   type: project
 ---
 
-The codebase spans two repos: SimpleFighter (this one, .nvgt scripts) and Legacy-NVGT (the engine, C++ — the pinned `nvgt2` fork, see [[project_engine_pinned_nvgt2]]). Engine changes are slower to iterate, harder to revert, and require a `scons` rebuild before they're testable, so the default when chasing a bug or perf issue is **diagnose in the script layer first**, and only reach for engine changes once you've ruled out the script layer with concrete evidence.
+The codebase spans two repos: SimpleFighter (this one, .nvgt scripts) and Legacy-NVGT (the engine, C++ — the pinned `nvgt` fork, see [[project_engine_pinned_nvgt2]]). Engine changes are slower to iterate, harder to revert, and require a `scons` rebuild before they're testable, so the default when chasing a bug or perf issue is **diagnose in the script layer first**, and only reach for engine changes once you've ruled out the script layer with concrete evidence.
 
 - **Symptom → script side first.** When a behavior is wrong or slow, start by tracing it through the `.nvgt` call sites that produce it. Most of what feels like an "engine issue" turns out to be a wrapper, a resolver, or a hot loop in script — and even when the engine *is* involved, the script side usually has a way to mitigate or sidestep it without touching C++.
 - **Isolate with a minimal repro before touching either side.** When a bug only shows up in complex maps or large packs, build the smallest version that still triggers it and bisect. The "50 signs with `signtype=none` still lags" experiment that uncovered the O(N) pack scan was worth hours of engine speculation.

@@ -2,11 +2,11 @@ TTS enemies.
 
 TTS enemies are voice-acted combatants whose taunts, hurt cries, and death lines are rendered live from text using the system's installed text to speech voices, instead of pre-recorded audio clips. They are the watered down siblings of NPCs: a TTS enemy walks toward you, draws a randomly picked weapon, fires when it reaches your tile, and falls dead with a final spoken line. They have no ranges, no AI states, no levels, no lives, no item drops, and no helpers, so the design space is deliberately small. What makes them interesting isn't combat depth, it's personality, since every TTS enemy can have its own voice, rate, volume, and pitch.
 
-TTS enemies are 2d only. The 3d port is intentionally deferred until the 2d feature is fully proven, so attempting to spawn one on a topdown or 3d map is silently rejected.
+TTS enemies work on all three map modes — 2d, topdown, and 3d. On a 3d map they also move and are hit through height, and both the builder form and the spawn line take a z coordinate to match.
 
 Combat behavior.
 
-A TTS enemy walks one tile per movement tick toward the player on the x and y axes, slowing down on per tile step sounds the same way the player and other entities do, and updates its taunt audio's spatial position as it moves. When it reaches the player's tile, the fire timer governs how often it can attack. On each fire tick the enemy plays its weapon's fire clip from its position, the weapon's hit and shell clips at the listener, and applies max(1, attack - defense times three) damage to the player. If the player has a shield raised, the damage is routed to the shield strength using the shield's defense stat instead, and only the shield hit clip plays since the weapon fire would be muffled behind the shield in that case. The player's character hurt or critical clip plays based on what fraction of max health the hit consumed.
+A TTS enemy walks one tile per movement tick toward the player on the x and y axes, and through height too on a 3d map, slowing down on per tile step sounds the same way the player and other entities do, and updates its taunt audio's spatial position as it moves. When it reaches the player's tile, the fire timer governs how often it can attack. On each fire tick the enemy plays its weapon's fire clip from its position, the weapon's hit and shell clips at the listener, and applies max(1, attack - defense times three) damage to the player. If the player has a shield raised, the damage is routed to the shield strength using the shield's defense stat instead, and only the shield hit clip plays since the weapon fire would be muffled behind the shield in that case. The player's character hurt or critical clip plays based on what fraction of max health the hit consumed.
 
 Damage taken from the player is symmetric: the player's weapon attack does max(1, weapon damage - tts enemy defense times three) on contact, whether the weapon is a ranged shot that flies in or a melee swing that lands directly. When a hit lands, the enemy's taunt audio pauses for the duration of its hurt clip, the hurt clip plays, and the taunt resumes from where it left off, giving every connection a clean audio recoil. Movement is not interrupted, so the enemy keeps closing on you through hits, which prevents stun lock exploits while still letting the player feel the strike land. Killing blows skip the hurt clip and play the death line followed by a body fall sized to the death audio's length.
 
@@ -41,7 +41,7 @@ The taunt and hurt clips are rendered once at spawn into the system temp folder 
 
 TTS enemy builder.
 
-Opening the TTS enemy entry under the kombat tab on a 2d map brings up a single form with x and y inputs prefilled from the camera markers, numeric inputs for health, attack, defense, fire time, and speed, three plain text inputs for the taunt, hurt, and death lines, a list of installed SAPI voices populated from the system, three sliders for rate, volume, and pitch, a preview taunt button, and the standard okay and cancel buttons.
+Opening the TTS enemy entry under the kombat tab brings up a single form with x and y inputs prefilled from the camera markers (and a z input on a 3d map), numeric inputs for health, attack, defense, fire time, and speed, three plain text inputs for the taunt, hurt, and death lines, a list of installed SAPI voices populated from the system, three sliders for rate, volume, and pitch, a preview taunt button, and the standard okay and cancel buttons.
 
 The voice list filters out the engine's builtin fallback voice, leaving only real installed SAPI voices that will produce useful audio on the player's machine. If the system has no real voices the form refuses to open with an error.
 
@@ -59,6 +59,10 @@ The spawn line format on disk is the following:
 
 ttsenemie x y health attack defense firetime speed taunt hurt death voice rate volume pitch
 
-The first eight fields are space separated numbers, followed by four space separated strings each wrapped in double quotes (which is what allows the multi word taunt, hurt, death, and voice fields to round trip through the parser without needing escape characters), followed by three space separated numbers for the SAPI voice settings.
+On a 3d map a z coordinate follows the y:
+
+ttsenemie x y z health attack defense firetime speed taunt hurt death voice rate volume pitch
+
+The leading fields are space separated numbers — x and y (plus z on a 3d map), then health, attack, defense, fire time, and speed — followed by four space separated strings each wrapped in double quotes (which is what allows the multi word taunt, hurt, death, and voice fields to round trip through the parser without needing escape characters), followed by three space separated numbers for the SAPI voice settings.
 
 The line is parsed back into spawn_ttsenemie on map load, so editing this file by hand is a valid way to bulk place enemies, swap voice assignments across an entire map, or tune combat stats without going through the form. The line editor in the builder shows the raw line as it appears on disk, including the quotes and the full SAPI voice name, since both are part of the contract that lets the same line reload into the same enemy on the next map load.
