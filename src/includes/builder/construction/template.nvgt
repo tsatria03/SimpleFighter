@@ -333,3 +333,58 @@ if(result.length() > 0)
 sort_naturally(result);
 return result;
 }
+
+/*
+Builder templates — §3: the tpl reference line.
+
+On-disk line: tpl x y path category subtype   (2d / topdown, length 6)
+              tpl x y z path category subtype (3d, length 7)
+
+read_template resolves the referenced template (§2), offsets its geometry to the placed anchor
+(§1 template_place), and spawns each resulting piece through the normal entity dispatcher
+(dispatch_entity_line) — so plain-platform / staircase / wall spawn logic (incl. per-z walls) is
+reused verbatim. A missing template is SILENTLY SKIPPED (dev decision 2026-08): players notice a
+gap when navigating. No recursion risk: template geometry is platform/staircase/wall only, so the
+expanded lines never re-enter the tpl branch.
+*/
+void read_template(string[] sd)
+{
+double ax = stn(sd[1]);
+double ay = stn(sd[2]);
+double az = 0;
+int o = 3;
+if(mapmode == "3d")
+{
+az = stn(sd[3]);
+o = 4;
+}
+string path = sd[o];
+string category = sd[o + 1];
+string subtype = sd[o + 2];
+string dir = template_dir(path, category, subtype);
+if(dir == "")
+return;
+string content = template_main_content(dir);
+if(content == "")
+return;
+string[] lines = split_lines(content);
+string[] placed = template_place(lines, mapmode, ax, ay, az);
+for(uint i = 0; i < placed.length(); i++)
+{
+string[] gsd = string_split(string_trim_sides(placed[i]), " ", true);
+dispatch_entity_line(gsd);
+}
+}
+
+// Write a tpl reference line to the current map's main.sif (used by placement, §4).
+void write_template(double x, double y, string path, string category, string subtype, double z = 0)
+{
+mapper.open("data/builder/maps/decompiled/" + mapname + "/" + "data/main.sif", "ab");
+mapdata = mapper.read();
+string coords = x + " " + y;
+if(mapmode == "3d")
+coords += " " + z;
+mapper.write("\r\n" + "tpl " + coords + " " + path + " " + category + " " + subtype);
+mapper.close();
+bump_map_modified();
+}
