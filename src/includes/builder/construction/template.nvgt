@@ -1,0 +1,187 @@
+/*
+Builder templates — §1: coordinate offsetter + geometry line-model.
+
+A builder template is a hand-authored, geometry-only map fragment (plain platforms,
+staircases, walls) that gets placed by reference and expanded at load. This file is the
+foundation the rest of the feature builds on: it knows, for each geometry keyword in each
+map mode, exactly which tokens of a line are coordinates, so template geometry can be
+normalized to its own corner and re-offset to a placement anchor WITHOUT disturbing the
+non-coordinate fields (health, tile, volume, pitch, destroyable, overlap, etc.).
+
+The token layouts below mirror read_platform / read_staircase / read_wall EXACTLY. They key
+on (keyword, mapmode, length) because a single length can mean different things per mode (a
+length-11 platform is minx maxx miny maxy on topdown, but minx maxx y z on 3d). Do not diverge
+from the read_ functions — see project_stability_rules (read_/write_ signatures, mode length cases).
+
+axis codes returned per token: 0 = not a coordinate, 1 = x, 2 = y, 3 = z.
+*/
+
+// Returns an int[] the same length as sd, marking each token's axis (0/1/2/3).
+// Returns an EMPTY array if the line is not a recognized, correctly-sized geometry line
+// for this mode (unknown keyword, wrong length, or a non-template entity) — callers treat
+// an empty result as "skip / invalid".
+int[] template_line_axes(string[] sd, string mode)
+{
+int[] axes;
+int len = int(sd.length());
+if(len < 1)
+return axes;
+string kw = sd[0];
+if(kw == "platform")
+{
+if(mode == "2d" && len == 10)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2;
+return axes;
+}
+if(mode == "topdown" && len == 11)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2; axes[4] = 2;
+return axes;
+}
+if(mode == "3d" && len == 11)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2; axes[4] = 3;
+return axes;
+}
+if(mode == "3d" && len == 12)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2; axes[4] = 2; axes[5] = 3;
+return axes;
+}
+return axes;
+}
+if(kw == "staircase")
+{
+if(len == 11)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2; axes[4] = 2;
+return axes;
+}
+if(len == 13)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2; axes[4] = 2; axes[5] = 3; axes[6] = 3;
+return axes;
+}
+return axes;
+}
+if(kw == "wall")
+{
+if(len == 12)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2; axes[4] = 2;
+return axes;
+}
+if(len == 14)
+{
+axes.resize(len);
+axes[1] = 1; axes[2] = 1; axes[3] = 2; axes[4] = 2; axes[5] = 3; axes[6] = 3;
+return axes;
+}
+return axes;
+}
+return axes;
+}
+
+// True if a single line is a recognized, correctly-sized geometry line for the mode.
+// Blank lines are treated as harmless (true). Used by the §5 save-validator.
+bool template_valid_line(string line, string mode)
+{
+string trimmed = string_trim_sides(line);
+if(trimmed == "")
+return true;
+string[] sd = string_split(trimmed, " ", true);
+return template_line_axes(sd, mode).length() > 0;
+}
+
+// Shift one geometry line's coordinate tokens by (dx, dy, dz). A non-geometry line is
+// returned unchanged (callers decide whether to keep or skip it).
+string template_offset_line(string line, string mode, double dx, double dy, double dz)
+{
+string[] sd = string_split(string_trim_sides(line), " ", true);
+int[] axes = template_line_axes(sd, mode);
+if(axes.length() == 0)
+return line;
+for(uint j = 0; j < sd.length(); j++)
+{
+if(axes[j] == 1)
+{
+double nv = stn(sd[j]) + dx;
+sd[j] = "" + nv;
+}
+else if(axes[j] == 2)
+{
+double nv = stn(sd[j]) + dy;
+sd[j] = "" + nv;
+}
+else if(axes[j] == 3)
+{
+double nv = stn(sd[j]) + dz;
+sd[j] = "" + nv;
+}
+}
+return join_string_array(sd, 0, sd.length());
+}
+
+// Place a template's geometry: normalize every line to the template's own minimum corner
+// (so the authored absolute position is irrelevant) and re-offset so that corner lands at
+// the anchor (ax, ay, az). Returns ONLY the offset geometry lines — the mode header and any
+// non-geometry line are dropped. This is the core transform shared by load-time expansion
+// (§3) and compile-time bake (§6).
+string[] template_place(string[] lines, string mode, double ax, double ay, double az)
+{
+// Pass 1: find the template's own minimum corner across every geometry line.
+double minx = 0, miny = 0, minz = 0;
+bool hx = false, hy = false, hz = false;
+for(uint i = 0; i < lines.length(); i++)
+{
+string[] sd = string_split(string_trim_sides(lines[i]), " ", true);
+int[] axes = template_line_axes(sd, mode);
+if(axes.length() == 0)
+continue;
+for(uint j = 0; j < sd.length(); j++)
+{
+if(axes[j] == 0)
+continue;
+double v = stn(sd[j]);
+if(axes[j] == 1)
+{
+if(!hx || v < minx) { minx = v; }
+hx = true;
+}
+else if(axes[j] == 2)
+{
+if(!hy || v < miny) { miny = v; }
+hy = true;
+}
+else if(axes[j] == 3)
+{
+if(!hz || v < minz) { minz = v; }
+hz = true;
+}
+}
+}
+double dx = ax - minx;
+double dy = ay - miny;
+double dz = az - minz;
+// Pass 2: emit each geometry line, offset; skip the header and anything non-geometry.
+string[] result;
+for(uint i = 0; i < lines.length(); i++)
+{
+string trimmed = string_trim_sides(lines[i]);
+if(trimmed == "")
+continue;
+string[] sd = string_split(trimmed, " ", true);
+if(template_line_axes(sd, mode).length() == 0)
+continue;
+result.insert_last(template_offset_line(trimmed, mode, dx, dy, dz));
+}
+return result;
+}
