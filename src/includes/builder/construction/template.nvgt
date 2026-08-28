@@ -185,3 +185,151 @@ result.insert_last(template_offset_line(trimmed, mode, dx, dy, dz));
 }
 return result;
 }
+
+/*
+Builder templates — §2: resolution + I/O.
+
+Two storage roots: the global library and the current map's own folder. A template lives at
+<root>/<category>/<subtype>/ holding main.sif (mode header + geometry) and meta.sif (description).
+Resolution honors the placement line's path token (global / map / any) with MAP-FIRST precedence,
+mirroring read_npc_info (npc.nvgt): map/any try the map copy first; map alone fails if absent;
+any/global fall back to the global library. So a map-local template of the same name shadows the
+global one.
+*/
+
+string template_global_base()
+{
+return "data/builder/templates";
+}
+
+string template_map_base()
+{
+return "data/builder/maps/decompiled/" + mapname + "/templates/builder";
+}
+
+// Resolve the folder for (category, subtype) honoring path. Returns "" if not found.
+string template_dir(string path, string category, string subtype)
+{
+string maplocal = template_map_base() + "/" + category + "/" + subtype;
+if(path == "map" || path == "any")
+{
+if(file_exists(maplocal + "/main.sif"))
+return maplocal;
+if(path == "map")
+return "";
+}
+string globaldir = template_global_base() + "/" + category + "/" + subtype;
+if(file_exists(globaldir + "/main.sif"))
+return globaldir;
+return "";
+}
+
+// Raw contents of a resolved template's main.sif ("" on failure).
+string template_main_content(string dir)
+{
+if(dir == "")
+return "";
+file f;
+if(!f.open(dir + "/main.sif", "rb"))
+return "";
+string content = f.read();
+f.close();
+return content;
+}
+
+// The mode declared in a template's main.sif header ("mode 2d" -> "2d"); "" if none.
+string template_header_mode(string dir)
+{
+string content = template_main_content(dir);
+if(content == "")
+return "";
+string[] lines = split_lines(content);
+for(uint i = 0; i < lines.length(); i++)
+{
+string[] sd = string_split(string_trim_sides(lines[i]), " ", true);
+if(sd.length() >= 2 && sd[0] == "mode")
+return string_trim_sides(sd[1]);
+}
+return "";
+}
+
+// The description from a template's meta.sif (quotes optional, like map meta); "" if none.
+string template_description(string dir)
+{
+if(dir == "")
+return "";
+file f;
+if(!f.open(dir + "/meta.sif", "rb"))
+return "";
+string content = f.read();
+f.close();
+string[] lines = split_lines(content);
+for(uint i = 0; i < lines.length(); i++)
+{
+string line = lines[i];
+int eq = string_find(line, "=");
+if(eq < 0)
+continue;
+string key = string_trim_sides(line.substr(0, eq));
+if(key == "description")
+return strip_quotes(string_trim_sides(line.substr(eq + 1)));
+}
+return "";
+}
+
+// Category folder names available for the given path, deduped and naturally sorted.
+string[] template_categories(string path)
+{
+string[] result;
+if(path == "global" || path == "any")
+{
+string[] gd = find_directories(template_global_base() + "/*");
+for(uint i = 0; i < gd.length(); i++)
+{
+if(result.find(gd[i]) < 0)
+result.insert_last(gd[i]);
+}
+}
+if(path == "map" || path == "any")
+{
+string[] md = find_directories(template_map_base() + "/*");
+for(uint i = 0; i < md.length(); i++)
+{
+if(result.find(md[i]) < 0)
+result.insert_last(md[i]);
+}
+}
+if(result.length() > 0)
+sort_naturally(result);
+return result;
+}
+
+// Template (subtype) names within a category for the given path — only folders that actually
+// hold a main.sif — deduped and naturally sorted.
+string[] template_subtypes(string path, string category)
+{
+string[] result;
+if(path == "global" || path == "any")
+{
+string base = template_global_base() + "/" + category;
+string[] gd = find_directories(base + "/*");
+for(uint i = 0; i < gd.length(); i++)
+{
+if(file_exists(base + "/" + gd[i] + "/main.sif") && result.find(gd[i]) < 0)
+result.insert_last(gd[i]);
+}
+}
+if(path == "map" || path == "any")
+{
+string base = template_map_base() + "/" + category;
+string[] md = find_directories(base + "/*");
+for(uint i = 0; i < md.length(); i++)
+{
+if(file_exists(base + "/" + md[i] + "/main.sif") && result.find(md[i]) < 0)
+result.insert_last(md[i]);
+}
+}
+if(result.length() > 0)
+sort_naturally(result);
+return result;
+}
