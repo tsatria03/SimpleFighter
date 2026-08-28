@@ -31,7 +31,7 @@ ERROR: <plain-english reason>
 Full example box (2d map, three bad platforms; a correct 2d platform is `platform 0 20 0 100 stone 0 100 false false`):
 
 - Title bar: `Map errors`
-- Caption (read first): `3 lines could not be loaded. Fix each one from the edit a line menu.`
+- Caption / box label: `Map errors` (dev-settled 2026-08 — just the words "Map errors", NOT a count or "fix it from the edit a line menu" sentence; that guidance lives in the docs instead)
 - Body:
 
 ```

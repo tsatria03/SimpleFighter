@@ -137,10 +137,7 @@ return "line: "+line_no+"\r\ntext: "+text+"\r\nERROR: "+reason;
 }
 void show_map_error_box()
 {
-string caption;
-if(map_error_count==1) caption="1 line could not be loaded. Fix it from the edit a line menu.";
-else caption=""+map_error_count+" lines could not be loaded. Fix each one from the edit a line menu.";
-vd.info_box("Map errors", caption, map_error_report);
+vd.info_box("Map errors", "Map errors", map_error_report);
 }
 void present_map_errors(string[] blocks)
 {
@@ -183,6 +180,27 @@ if(line_is_map_header(sd)) return;
 string reason = entity_line_error(sd, mode);
 if(reason == "") return;
 string[] blocks = {map_error_block(line_no, line, reason)};
+present_map_errors(blocks);
+}
+/* Validate every entity line of the current map file (post-write) and show the collected error box
+for all that won't load. Used after a whole-map paste. Line numbers are the 1-based position among
+non-empty lines, matching the edit a line menu; header lines are skipped. */
+void report_map_file_errors(string mode)
+{
+string[] all = delinear(read_map_main_sif());
+string[] filtered;
+uint[] orig;
+filter_empty_lines(all, filtered, orig);
+string[] blocks;
+for(uint i=0; i<filtered.length(); i++)
+{
+string[] sd = string_split(filtered[i], " ", true);
+if(sd.length()==0) continue;
+if(line_is_map_header(sd)) continue;
+string reason = entity_line_error(sd, mode);
+if(reason == "") continue;
+blocks.insert_last(map_error_block(int(i+1), filtered[i], reason));
+}
 present_map_errors(blocks);
 }
 
