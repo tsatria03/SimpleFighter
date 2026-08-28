@@ -255,6 +255,28 @@ string checktype=sd[o+1];
 bool lps=string_to_bool(sd[o+2]);
 spawn_checkpoint(x, y, checktime, checktype, z, lps);
 }
+/* Tier 2 semantic check: coordinates in the map, a numeric speed, a checkpoint sound that exists
+(or "none" for silent), and a true/false looping flag. Mirrors read_checkpoint's length-keyed z.
+This is the first entity to use name_exists (its sound folder must be a real one on disk). */
+string checkpoint_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col = 1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col = 2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(mode == "3d")
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col = 3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col = o; return "the speed must be a number."; }
+string ctype = sd[o+1];
+if(ctype != "none" && !name_exists("builder/construction/checkpoints/*", ctype)) { col = o+1; return "the checkpoint sound '"+ctype+"' does not exist."; }
+if(!is_bool_token(sd[o+2])) { col = o+2; return "the looping value must be true or false."; }
+return "";
+}
 
 void write_checkpoint(int x, int y, int speed, string checktype, int z=0, bool looping=false)
 {

@@ -309,6 +309,22 @@ if(hitok.length()>=7 && hitok.substr(0,7)=="random(") return "";
 if(stn(lotok) > stn(hitok)) return "minimum is greater than maximum";
 return "";
 }
+/* True if a folder named `name` exists among those matching the sounds glob (e.g. the checkpoint
+sound folders). Used for name-existence checks; resolves the same way the entity's build form lists
+its choices — get_map_sound_folders returns the leaf folder names. Sentinels like "none"/"any" are
+the caller's responsibility to accept before calling this. */
+bool name_exists(string glob_path, string name)
+{
+string[] folders = get_map_sound_folders(glob_path);
+for(uint i=0; i<folders.length(); i++)
+if(folders[i]==name) return true;
+return false;
+}
+/* True if the token is a boolean as the builder writes it (lowercase true/false). */
+bool is_bool_token(string s)
+{
+return s=="true" || s=="false";
+}
 /* Tier 2 SEMANTIC validation, run only AFTER entity_line_error() confirms the line is structurally
 valid (recognized object, right field count). Returns "" if the values are fine, else a plain-english
 reason; col is set to the 1-based value position that's wrong (the sd index — keyword is 0, first
@@ -323,6 +339,7 @@ if(k=="fall_zone") return fall_zone_semantic_error(sd, mode, col);
 if(k=="airbeacon") return airbeacon_semantic_error(sd, mode, col);
 if(k=="air_turbulence") return air_turbulence_semantic_error(sd, mode, col);
 if(k=="url_source" || k=="url_ambience") return url_audio_semantic_error(sd, mode, col);
+if(k=="checkpoint") return checkpoint_semantic_error(sd, mode, col);
 return "";
 }
 
