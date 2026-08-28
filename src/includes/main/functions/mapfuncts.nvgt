@@ -130,7 +130,6 @@ return true;
 box can be re-shown with /merrors, and builds/presents that box from formatted blocks. The blocks
 are produced by the callers using entity_line_error() (map_parser.nvgt) as the validator. */
 string map_error_report="";
-int map_error_count=0;
 string map_error_block(int line_no, string text, string reason)
 {
 return "line: "+line_no+"\r\ntext: "+text+"\r\nERROR: "+reason;
@@ -149,17 +148,20 @@ if(i>0) body+="\r\n\r\n";
 body+=blocks[i];
 }
 map_error_report=body;
-map_error_count=int(blocks.length());
 show_map_error_box();
 }
+/* The /merrors handler: re-scan the map you're currently on (however you got here — menu, reload,
+travelpoint, door) and show its full error box, or speak that there are none. The command is gated
+to decompiled maps in the parser, so this never runs on a compiled map. */
 void show_last_map_errors()
 {
-if(map_error_count==0 || map_error_report=="")
+string[] blocks = collect_map_file_errors(mapmode);
+if(blocks.length()==0)
 {
 speak("There are no map errors to show.");
 return;
 }
-show_map_error_box();
+present_map_errors(blocks);
 }
 int map_nonempty_line_count()
 {
@@ -182,16 +184,17 @@ if(reason == "") return;
 string[] blocks = {map_error_block(line_no, line, reason)};
 present_map_errors(blocks);
 }
-/* Validate every entity line of the current map file (post-write) and show the collected error box
-for all that won't load. Used after a whole-map paste. Line numbers are the 1-based position among
-non-empty lines, matching the edit a line menu; header lines are skipped. */
-void report_map_file_errors(string mode)
+/* Scan every entity line of the current map file and return one error block per line that won't
+load (unrecognized object or wrong value count). Line numbers are the 1-based position among
+non-empty lines, matching the edit a line menu; header lines are skipped. Shared by the whole-map
+report (load/reload/paste) and the /merrors on-demand check. */
+string[] collect_map_file_errors(string mode)
 {
+string[] blocks;
 string[] all = delinear(read_map_main_sif());
 string[] filtered;
 uint[] orig;
 filter_empty_lines(all, filtered, orig);
-string[] blocks;
 for(uint i=0; i<filtered.length(); i++)
 {
 string[] sd = string_split(filtered[i], " ", true);
@@ -201,7 +204,13 @@ string reason = entity_line_error(sd, mode);
 if(reason == "") continue;
 blocks.insert_last(map_error_block(int(i+1), filtered[i], reason));
 }
-present_map_errors(blocks);
+return blocks;
+}
+/* Validate the whole current map and show the collected error box for all lines that won't load.
+Used after a whole-map paste and on map load/reload. */
+void report_map_file_errors(string mode)
+{
+present_map_errors(collect_map_file_errors(mode));
 }
 
 float stn(string str)
