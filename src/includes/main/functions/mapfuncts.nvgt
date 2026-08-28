@@ -164,6 +164,27 @@ return;
 }
 show_map_error_box();
 }
+int map_nonempty_line_count()
+{
+string[] all = delinear(read_map_main_sif());
+string[] f;
+uint[] o;
+filter_empty_lines(all, f, o);
+return int(f.length());
+}
+/* Validate one just-written map line (permit-but-warn): if it isn't a valid entity line for the
+given mode, show the error box for it. line_no is its 1-based position among the map's non-empty
+lines. Header lines (mode/bounds) are skipped — they aren't placeable objects. */
+void report_single_map_line(string line, int line_no, string mode)
+{
+string[] sd = string_split(line, " ", true);
+if(sd.length()==0) return;
+if(line_is_map_header(sd)) return;
+string reason = entity_line_error(sd, mode);
+if(reason == "") return;
+string[] blocks = {map_error_block(line_no, line, reason)};
+present_map_errors(blocks);
+}
 
 float stn(string str)
 {
