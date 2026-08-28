@@ -946,6 +946,95 @@ return;
 }
 }
 
+/*
+Builder templates — §6: compile-time bake.
+
+When a map compiles to a .map pack, every tpl reference must be replaced by its expanded raw
+geometry so the pack is self-contained (the templates live outside the pack, and the recipient
+may not have them). compile_map (packfuncts.nvgt) calls template_bake_main() to get the baked
+main.sif to pack in place of the original — the decompiled source keeps its compact tpl lines.
+These are keyed on an explicit map name + the map's own header mode, because compile does NOT
+load the map, so the globals mapname/mapmode are not the chosen map.
+*/
+
+// Resolve a template folder for the bake, using an explicit map name (not the global mapname).
+string template_bake_dir(string map_name, string path, string category, string subtype)
+{
+string maplocal = "data/builder/maps/decompiled/" + map_name + "/templates/builder/" + category + "/" + subtype;
+if(path == "map" || path == "any")
+{
+if(file_exists(maplocal + "/main.sif"))
+return maplocal;
+if(path == "map")
+return "";
+}
+string globaldir = template_global_base() + "/" + category + "/" + subtype;
+if(file_exists(globaldir + "/main.sif"))
+return globaldir;
+return "";
+}
+
+// Return a copy of map_name's main.sif with every tpl reference expanded into raw geometry.
+// Non-tpl lines pass through unchanged; a dangling reference is silently dropped (as at load).
+string template_bake_main(string map_name)
+{
+string path = "data/builder/maps/decompiled/" + map_name + "/data/main.sif";
+file f;
+if(!f.open(path, "rb"))
+return "";
+string content = f.read();
+f.close();
+string[] lines = split_lines(content);
+string mode = "";
+for(uint i = 0; i < lines.length(); i++)
+{
+string[] hs = string_split(string_trim_sides(lines[i]), " ", true);
+if(hs.length() >= 2 && hs[0] == "mode")
+{
+mode = string_trim_sides(hs[1]);
+break;
+}
+}
+string baked = "";
+bool first = true;
+for(uint i = 0; i < lines.length(); i++)
+{
+string line = lines[i];
+string[] sd = string_split(string_trim_sides(line), " ", true);
+bool is_tpl = (sd.length() >= 1 && sd[0] == "tpl" && ((mode == "3d" && sd.length() == 7) || (mode != "3d" && sd.length() == 6)));
+if(!is_tpl)
+{
+if(!first) baked += "\r\n";
+baked += line;
+first = false;
+continue;
+}
+double ax = stn(sd[1]);
+double ay = stn(sd[2]);
+double az = 0;
+int o = 3;
+if(mode == "3d")
+{
+az = stn(sd[3]);
+o = 4;
+}
+string dir = template_bake_dir(map_name, sd[o], sd[o + 1], sd[o + 2]);
+if(dir == "")
+continue;
+string tcontent = template_main_content(dir);
+if(tcontent == "")
+continue;
+string[] placed = template_place(split_lines(tcontent), mode, ax, ay, az);
+for(uint j = 0; j < placed.length(); j++)
+{
+if(!first) baked += "\r\n";
+baked += placed[j];
+first = false;
+}
+}
+return baked;
+}
+
 // The data-manager hub for builder templates: add / edit / remove / view.
 void template_chooser()
 {

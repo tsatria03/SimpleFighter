@@ -414,6 +414,7 @@ alert("Map Compiler", "There are " + file_list.length() + " files in the map. Pr
 show_window("Compiling map.");
 wait(5);
 int percent = -1;
+string bake_temp = "data/builder/maps/compiled/.templatebake.tmp";
 for (uint i = 0; i < file_list.length(); i++)
 {
 double progress = (double(i) / double(file_list.length())) * 100.0;
@@ -424,9 +425,24 @@ percent = rounded;
 beep_percentage(percent);
 }
 string relative = string_replace(file_list[i], source_folder + "/", "", true);
+if(relative == "data/main.sif")
+{
+// Bake builder-template references into raw geometry so the pack is self-contained.
+file bf;
+if(bf.open(bake_temp, "wb"))
+{
+bf.write(template_bake_main(chosen));
+bf.close();
+pfile.add_file(bake_temp, relative);
+}
+else
+pfile.add_file(file_list[i], relative);
+}
+else
 pfile.add_file(file_list[i], relative);
 }
 pfile.close();
+if(file_exists(bake_temp)) file_delete(bake_temp);
 alert("Success!", "Map compiled to " + full_output_path);
 show_window("Simple fighter, version "+version);
 }
