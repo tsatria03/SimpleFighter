@@ -130,9 +130,11 @@ return true;
 box can be re-shown with /maperrors, and builds/presents that box from formatted blocks. The blocks
 are produced by the callers using entity_line_error() (map_parser.nvgt) as the validator. */
 string map_error_report="";
-string map_error_block(int line_no, string text, string reason)
+string map_error_block(int line_no, string text, string reason, int col=-1)
 {
-return "line: "+line_no+"\r\ntext: "+text+"\r\nERROR: "+reason;
+string head = "line: "+line_no;
+if(col>=0) head += " ("+col+")";
+return head+"\r\ntext: "+text+"\r\nERROR: "+reason;
 }
 void show_map_error_box()
 {
@@ -179,10 +181,27 @@ void report_single_map_line(string line, int line_no, string mode)
 string[] sd = string_split(line, " ", true);
 if(sd.length()==0) return;
 if(line_is_map_header(sd)) return;
+int col=-1;
 string reason = entity_line_error(sd, mode);
+if(reason == "")
+{
+reason = entity_semantic_error(sd, mode, col);
 if(reason == "") return;
-string[] blocks = {map_error_block(line_no, line, reason)};
+}
+string[] blocks = {map_error_block(line_no, line, reason, col)};
 present_map_errors(blocks);
+}
+/* The build-menu forms (build_<entity>) append their line and reload but don't call
+report_single_map_line themselves, so after a successful build we check the just-appended last
+line here. Called centrally from buildobj, only when the map actually grew by a line. */
+void report_last_built_line()
+{
+string[] all = delinear(read_map_main_sif());
+string[] f;
+uint[] o;
+filter_empty_lines(all, f, o);
+if(f.length()==0) return;
+report_single_map_line(f[f.length()-1], int(f.length()), mapmode);
 }
 /* Scan every entity line of the current map file and return one error block per line that won't
 load (unrecognized object or wrong value count). Line numbers are the 1-based position among
@@ -200,9 +219,14 @@ for(uint i=0; i<filtered.length(); i++)
 string[] sd = string_split(filtered[i], " ", true);
 if(sd.length()==0) continue;
 if(line_is_map_header(sd)) continue;
+int col=-1;
 string reason = entity_line_error(sd, mode);
+if(reason == "")
+{
+reason = entity_semantic_error(sd, mode, col);
 if(reason == "") continue;
-blocks.insert_last(map_error_block(int(i+1), filtered[i], reason));
+}
+blocks.insert_last(map_error_block(int(i+1), filtered[i], reason, col));
 }
 return blocks;
 }

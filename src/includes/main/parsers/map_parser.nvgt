@@ -263,6 +263,64 @@ if(sd.length()==0) return false;
 string k=sd[0];
 return k=="mode" || k=="minx" || k=="maxx" || k=="miny" || k=="maxy" || k=="minz" || k=="maxz";
 }
+/* --- Tier 2 semantic validation: shared helpers --- */
+/* True if the token is a usable number: a plain integer/decimal (optionally negative) or a
+random(low,high) token, which is valid in any numeric field and expands at load. */
+bool is_number_token(string s)
+{
+if(s.length()==0) return false;
+if(s.length()>=8 && s.substr(0,7)=="random(" && s.substr(s.length()-1,1)==")") return true;
+uint start=0;
+if(s.substr(0,1)=="-") start=1;
+bool dot=false, digit=false;
+for(uint i=start; i<s.length(); i++)
+{
+string c=s.substr(i,1);
+if(c>="0" && c<="9") digit=true;
+else if(c=="." && !dot) dot=true;
+else return false;
+}
+return digit;
+}
+/* A coordinate value is in the map if it falls within that axis's min/max bounds (z only on 3d). */
+bool coord_in_bounds(string axis, double v, string mode)
+{
+if(axis=="x") return v>=minx && v<=maxx;
+if(axis=="y") return v>=miny && v<=maxy;
+if(axis=="z") return mode!="3d" || (v>=minz && v<=maxz);
+return true;
+}
+/* Check one coordinate token: returns "" if fine, else a reason fragment ("must be a number" /
+"is outside the map"). A random(...) token is number-valid but its rolled value can't be
+bounds-checked, so bounds are skipped for it. */
+string coord_token_error(string tok, string axis, string mode)
+{
+if(!is_number_token(tok)) return "must be a number";
+if(tok.length()>=7 && tok.substr(0,7)=="random(") return "";
+if(!coord_in_bounds(axis, stn(tok), mode)) return "is outside the map";
+return "";
+}
+/* For a ranged span, the minimum must not exceed the maximum. Both tokens are assumed already
+number-checked by the caller; random(...) on either end is left alone (its value is unknown). */
+string range_token_error(string lotok, string hitok)
+{
+if(lotok.length()>=7 && lotok.substr(0,7)=="random(") return "";
+if(hitok.length()>=7 && hitok.substr(0,7)=="random(") return "";
+if(stn(lotok) > stn(hitok)) return "minimum is greater than maximum";
+return "";
+}
+/* Tier 2 SEMANTIC validation, run only AFTER entity_line_error() confirms the line is structurally
+valid (recognized object, right field count). Returns "" if the values are fine, else a plain-english
+reason; col is set to the 1-based value position that's wrong (the sd index — keyword is 0, first
+value is 1) so the error box can show "line: N (col)". Per-entity checkers live in each entity's own
+.nvgt file, mirroring its read_ function; this just dispatches. Grows one entity at a time. */
+string entity_semantic_error(string[] sd, string mode, int &out col)
+{
+col = -1;
+string k = sd[0];
+if(k=="spawnpoint") return spawnpoint_semantic_error(sd, mode, col);
+return "";
+}
 
 bool load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false, bool force_spawned=false)
 {

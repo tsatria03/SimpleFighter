@@ -109,6 +109,22 @@ int spy=stn(sd[2]);
 int spz = (sd.length() == 4) ? stn(sd[3]) : 0;
 create_spawnpoint(spx, spy, spz);
 }
+/* Tier 2 semantic check: a spawnpoint is coordinates only, so verify each coordinate token is a
+number and sits inside the map. Mirrors read_spawnpoint's length-keyed z (checked only when the
+line actually carries it). */
+string spawnpoint_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col = 1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col = 2; return "the y coordinate "+e+"."; }
+if(sd.length() >= 4)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col = 3; return "the z coordinate "+e+"."; }
+}
+return "";
+}
 
 void write_spawnpoint(int x, int y, int z=0)
 {
