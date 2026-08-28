@@ -167,6 +167,102 @@ read_vehicle(sd);
 else return false;
 return true;
 }
+/* Structural validator twin of dispatch_entity_line above. Returns "" if the line would load,
+otherwise a plain-english reason (unrecognized object, or wrong number of values). It mirrors the
+exact keyword + length gates of dispatch_entity_line WITHOUT spawning, so it MUST be kept in sync
+with that function: any entity added/changed there must be updated here too. `mode` is passed in
+(not read from the global mapmode) so a paste can be checked against the pasted map's own mode. */
+string entity_line_error(string[] sd, string mode)
+{
+if(sd.length()==0) return "";
+string k = sd[0];
+uint L = sd.length();
+bool is3d = (mode=="3d");
+bool known=false, lenok=false;
+if(k=="platform"){ known=true; lenok=(L==10||L==11||L==12); }
+else if(k=="staircase"){ known=true; lenok=(L==11||L==13); }
+else if(k=="slant"){ known=true; lenok=(L==12||L==14); }
+else if(k=="vanishing_hazard"){ known=true; lenok=(L==5||L==6||L==7||L==9); }
+else if(k=="vanishing_platform"){ known=true; lenok=(L==11||L==12||L==13); }
+else if(k=="wall"){ known=true; lenok=(L==12||L==14); }
+else if(k=="tpl"){ known=true; lenok=(is3d ? L==7 : L==6); }
+else if(k=="blockage"){ known=true; lenok=(is3d ? L>=8 : L>=6); }
+else if(k=="door"){ known=true; lenok=(is3d ? L>=17 : L>=15); }
+else if(k=="elevator"){ known=true; lenok=(L>=10); }
+else if(k=="el_floor"){ known=true; lenok=(L>=5); }
+else if(k=="passage"){ known=true; lenok=(is3d ? L>=16 : L>=14); }
+else if(k=="menu_zone"){ known=true; lenok=(L==5||L==6||L==7||L==8); }
+else if(k=="safe_zone"){ known=true; lenok=(L==6||L==8); }
+else if(k=="fall_zone"){ known=true; lenok=(L==5||L==7); }
+else if(k=="text_zone" || k=="zone"){ known=true; lenok=(is3d ? L>=8 : L>=6); }
+else if(k=="obscurity_zone"){ known=true; lenok=(is3d ? L>=11 : L>=9); }
+else if(k=="effect_space"){ known=true; lenok=(L>=10); }
+else if(k=="text_square"){ known=true; lenok=(L>=4); }
+else if(k=="clock"){ known=true; lenok=(L>=6); }
+else if(k=="calendar"){ known=true; lenok=(L>=6); }
+else if(k=="chblocker"){ known=true; lenok=(is3d ? L>=9 : L>=7); }
+else if(k=="cblocker"){ known=true; lenok=(is3d ? L>=9 : L>=7); }
+else if(k=="sound_ambience"){ known=true; lenok=(L==7||L==8||L==9||L==11); }
+else if(k=="sound_source"){ known=true; lenok=(L==7||L==8||L==9||L==11); }
+else if(k=="speaker"){ known=true; lenok=(L==9||L==11); }
+else if(k=="trampoline"){ known=true; lenok=(L==7||L==9); }
+else if(k=="url_ambience"){ known=true; lenok=(L==6||L==7||L==8||L==10); }
+else if(k=="url_source"){ known=true; lenok=(L==6||L==7||L==8||L==10); }
+else if(k=="excludable_ambience"){ known=true; lenok=(L==13||L==17); }
+else if(k=="excludable_source"){ known=true; lenok=(L==13||L==17); }
+else if(k=="time_bomb"){ known=true; lenok=(L==7||L==8); }
+else if(k=="timed_ambience"){ known=true; lenok=(L==8||L==9||L==10||L==12); }
+else if(k=="timed_source"){ known=true; lenok=(L==8||L==9||L==10||L==12); }
+else if(k=="timed_text"){ known=true; lenok=(is3d ? L>=6 : L>=5); }
+else if(k=="heal_zone"){ known=true; lenok=(L==9||L==11); }
+else if(k=="tile_zone"){ known=true; lenok=(L==10||L==12); }
+else if(k=="flux_zone"){ known=true; lenok=(L==10||L==12); }
+else if(k=="hazard"){ known=true; lenok=(L==5||L==6||L==7||L==9); }
+else if(k=="lift"){ known=true; lenok=(L==13||L==15); }
+else if(k=="mine"){ known=true; lenok=(L==6||L==7); }
+else if(k=="mhazard"){ known=true; lenok=(L==11||L==14); }
+else if(k=="mplatform"){ known=true; lenok=(L==16||L==19); }
+else if(k=="sign"){ known=true; lenok=(L>=7); }
+else if(k=="checkpoint"){ known=true; lenok=(L==6||L==7); }
+else if(k=="story_zone"){ known=true; lenok=(is3d ? L>=10 : L>=8); }
+else if(k=="item"){ known=true; lenok=(L==8||L==9); }
+else if(k=="item_zone"){ known=true; lenok=(L==8||L==10); }
+else if(k=="spike"){ known=true; lenok=(L==8||L==9||L==10||L==12); }
+else if(k=="spawnpoint"){ known=true; lenok=(L==3||L==4); }
+else if(k=="travelpoint"){ known=true; lenok=(is3d ? L>=9 : L>=7); }
+else if(k=="aircraft"){ known=true; lenok=(L==5||L==6); }
+else if(k=="airbeacon"){ known=true; lenok=(L==3||L==4||L==5||L==6); }
+else if(k=="air_turbulence"){ known=true; lenok=(is3d ? L==7 : L==6); }
+else if(k=="npc"){ known=true; lenok=(L==7||L==8); }
+else if(k=="ttsenemie"){ known=true; lenok=true; }
+else if(k=="camera"){ known=true; lenok=(L==11||L==13); }
+else if(k=="floor_breaker"){ known=true; lenok=(L==4||L==5); }
+else if(k=="fire"){ known=true; lenok=(L==9||L==12); }
+else if(k=="wind"){ known=true; lenok=(L==12||L==15); }
+else if(k=="force_field"){ known=true; lenok=(L==6||L==7||L==8||L==10); }
+else if(k=="projectile"){ known=true; lenok=(L==16||L==19); }
+else if(k=="npc_zone"){ known=true; lenok=(L==9||L==10||L==11); }
+else if(k=="bike"){ known=true; lenok=(L==6||L==7); }
+else if(k=="bomb"){ known=true; lenok=(L==6||L==7); }
+else if(k=="bomb_zone"){ known=true; lenok=(L==6||L==7||L==8); }
+else if(k=="belt"){ known=true; lenok=(L==9||L==11); }
+else if(k=="projectile_zone"){ known=true; lenok=(L==6||L==7||L==8); }
+else if(k=="switch"){ known=true; lenok=true; }
+else if(k=="sensor"){ known=true; lenok=true; }
+else if(k=="teleporter"){ known=true; lenok=(L==12||L==16); }
+else if(k=="vehicle"){ known=true; lenok=(L==10||L==11); }
+if(!known) return "this is not a recognized object.";
+if(!lenok) return "this object has the wrong number of values.";
+return "";
+}
+/* True for the structural header lines (mode + bounds) that are not placeable entities, so callers
+validating a whole pasted map skip them instead of flagging them as unrecognized objects. */
+bool line_is_map_header(string[] sd)
+{
+if(sd.length()==0) return false;
+string k=sd[0];
+return k=="mode" || k=="minx" || k=="maxx" || k=="miny" || k=="maxy" || k=="minz" || k=="maxz";
+}
 
 bool load_map(string name, string owner, bool instent_update=true, bool speak_percentage=false, bool anounce_mapload=true, int loadtime=50, int loadbeeps=maploadbeeps, int loadsounds=maploadsounds, bool force_compiled=false, bool force_spawned=false)
 {
