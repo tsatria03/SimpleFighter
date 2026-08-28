@@ -126,6 +126,44 @@ if (!(has_minx && has_maxx && has_miny && has_maxy && mode_count == 1 && mode_va
 if (mode_val == "3d" && !(has_minz && has_maxz)) return false;
 return true;
 }
+/* Map error reporting (Tier 1). Holds the most recent authoring-time error report so the errors
+box can be re-shown with /merrors, and builds/presents that box from formatted blocks. The blocks
+are produced by the callers using entity_line_error() (map_parser.nvgt) as the validator. */
+string map_error_report="";
+int map_error_count=0;
+string map_error_block(int line_no, string text, string reason)
+{
+return "line: "+line_no+"\r\ntext: "+text+"\r\nERROR: "+reason;
+}
+void show_map_error_box()
+{
+string caption;
+if(map_error_count==1) caption="1 line could not be loaded. Fix it from the edit a line menu.";
+else caption=""+map_error_count+" lines could not be loaded. Fix each one from the edit a line menu.";
+vd.info_box("Map errors", caption, map_error_report);
+}
+void present_map_errors(string[] blocks)
+{
+if(blocks.length()==0) return;
+string body="";
+for(uint i=0; i<blocks.length(); i++)
+{
+if(i>0) body+="\r\n\r\n";
+body+=blocks[i];
+}
+map_error_report=body;
+map_error_count=int(blocks.length());
+show_map_error_box();
+}
+void show_last_map_errors()
+{
+if(map_error_count==0 || map_error_report=="")
+{
+speak("There are no map errors to show.");
+return;
+}
+show_map_error_box();
+}
 
 float stn(string str)
 {
