@@ -322,6 +322,36 @@ int al = stn(sd[5]);
 spawn_air_turbulence(x, 0, miny, maxy, 0, 0, ad, al);
 }
 }
+/* Tier 2 semantic check: air_turbulence has an x position, a range along the depth/height axis, and
+two distance numbers, all mode-branched exactly like read_air_turbulence (no names). */
+string air_turbulence_semantic_error(string[] sd, string mode, int &out col)
+{
+if(mode == "3d")
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col = 1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col = 2; return "the y coordinate "+e+"."; }
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col = 3; return "the minimum z "+e+"."; }
+e = coord_token_error(sd[4], "z", mode);
+if(e != "") { col = 4; return "the maximum z "+e+"."; }
+if(range_token_error(sd[3], sd[4]) != "") { col = 4; return "the maximum z is less than the minimum z."; }
+if(!is_number_token(sd[5])) { col = 5; return "the announce distance must be a number."; }
+if(!is_number_token(sd[6])) { col = 6; return "the alarm distance must be a number."; }
+return "";
+}
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col = 1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col = 2; return "the minimum y "+e+"."; }
+e = coord_token_error(sd[3], "y", mode);
+if(e != "") { col = 3; return "the maximum y "+e+"."; }
+if(range_token_error(sd[2], sd[3]) != "") { col = 3; return "the maximum y is less than the minimum y."; }
+if(!is_number_token(sd[4])) { col = 4; return "the announce distance must be a number."; }
+if(!is_number_token(sd[5])) { col = 5; return "the alarm distance must be a number."; }
+return "";
+}
 
 void write_air_turbulence(double x, double y, double miny, double maxy, double minz, double maxz, int announce_distance, int alarm_distance)
 {
