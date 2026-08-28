@@ -542,3 +542,436 @@ return;
 }
 }
 }
+
+/*
+Builder templates — §5: management UI (data manager -> "builder templates").
+
+template_chooser() is the add/edit/remove/view hub (modeled on npc_chooser). The shared bits:
+template_choose() runs a path/category/subtype picker used by edit/remove/view; template_write()
+is the validate-on-save writer used by add/edit — it scans the box, and if ANY non-empty line
+is not a well-formed platform/staircase/wall for this mode it NOTIFIES and refuses (rawdata-style),
+otherwise writes main.sif (auto-prepended mode header + the lines) and meta.sif (description).
+*/
+
+class template_pick
+{
+string path;
+string category;
+string subtype;
+bool ok = false;
+}
+
+// Path/category/subtype picker. Returns a template_pick with ok=false if cancelled.
+template_pick@ template_choose(string title, string button_label)
+{
+string[] paths = {"any", "global", "map"};
+int saved_path_pos = 0, saved_cat_pos = 0, saved_sub_pos = 0;
+bool do_build = true;
+int last_path_pos = -1;
+int focus_after_build = 0;
+int path_list, cat_list, sub_list, b_ok, b_cn;
+string[] cats, subs;
+template_pick pick;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+cats = template_categories(paths[saved_path_pos]);
+if(saved_cat_pos < 0 || saved_cat_pos >= int(cats.length())) saved_cat_pos = 0;
+string cc = (cats.length() > 0) ? cats[saved_cat_pos] : "";
+subs = template_subtypes(paths[saved_path_pos], cc);
+if(saved_sub_pos < 0 || saved_sub_pos >= int(subs.length())) saved_sub_pos = 0;
+form.reset();
+form.create_window(title, false, true, last_path_pos != -1);
+path_list = form.create_list("path");
+for(uint i = 0; i < paths.length(); i++)
+form.add_list_item(path_list, paths[i], paths[i]);
+form.set_list_position(path_list, saved_path_pos, false);
+cat_list = form.create_list("category");
+for(uint i = 0; i < cats.length(); i++)
+form.add_list_item(cat_list, cats[i], cats[i]);
+if(cats.length() > 0) form.set_list_position(cat_list, saved_cat_pos, false);
+sub_list = form.create_list("template");
+for(uint i = 0; i < subs.length(); i++)
+form.add_list_item(sub_list, subs[i], subs[i]);
+if(subs.length() > 0) form.set_list_position(sub_list, saved_sub_pos, false);
+b_ok = form.create_button("&" + button_label, true);
+b_cn = form.create_button("&cancel");
+if(last_path_pos == -1) form.focus(path_list);
+else if(focus_after_build == 1) form.focus_silently(cat_list);
+else form.focus_silently(path_list);
+last_path_pos = saved_path_pos;
+}
+form.monitor();
+int cur_path = form.get_list_position(path_list);
+if(cur_path != -1 && cur_path != saved_path_pos)
+{
+saved_path_pos = cur_path;
+saved_cat_pos = 0;
+saved_sub_pos = 0;
+focus_after_build = 0;
+do_build = true;
+continue;
+}
+int cur_cat = form.get_list_position(cat_list);
+if(cur_cat != -1 && cur_cat != saved_cat_pos)
+{
+saved_cat_pos = cur_cat;
+saved_sub_pos = 0;
+focus_after_build = 1;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_cn))
+{
+speak("canceled");
+return pick;
+}
+if(form.is_pressed(b_ok))
+{
+if(subs.length() == 0)
+{
+speak("There are no templates in this category.");
+continue;
+}
+int p = form.get_list_position(sub_list);
+if(p < 0 || p >= int(subs.length()))
+{
+speak("A template is required.");
+form.focus(sub_list);
+continue;
+}
+pick.path = paths[saved_path_pos];
+pick.category = cats[saved_cat_pos];
+pick.subtype = subs[p];
+pick.ok = true;
+return pick;
+}
+}
+return pick;
+}
+
+// Validate box content as geometry-only for the current mode; if clean, write main.sif (mode
+// header + the geometry lines) and meta.sif (description) into dir. Returns true on save; on an
+// invalid line it speaks the problem and returns false (caller keeps the form open to fix it).
+bool template_write(string dir, string mode, string boxcontent, string description)
+{
+string[] lines = split_lines(boxcontent);
+int bad = 0;
+int firstbad = -1;
+string[] keep;
+for(uint i = 0; i < lines.length(); i++)
+{
+string t = string_trim_sides(lines[i]);
+if(t == "")
+continue;
+if(!template_valid_line(t, mode))
+{
+bad++;
+if(firstbad < 0) firstbad = int(i) + 1;
+continue;
+}
+keep.insert_last(t);
+}
+if(bad > 0)
+{
+speak("" + bad + (bad == 1 ? " line is" : " lines are") + " not valid template geometry, first on line " + firstbad + ". A template may only contain platforms, staircases, and walls.");
+return false;
+}
+if(keep.length() == 0)
+{
+speak("The template has no geometry.");
+return false;
+}
+string maincontent = "mode " + mode;
+for(uint i = 0; i < keep.length(); i++)
+maincontent += "\r\n" + keep[i];
+create_subfolders(dir + "/main.sif");
+file f;
+if(!f.open(dir + "/main.sif", "wb"))
+{
+speak("Failed to write the template.");
+return false;
+}
+f.write(maincontent);
+f.close();
+file mf;
+if(mf.open(dir + "/meta.sif", "wb"))
+{
+mf.write("description=" + quote_value(description) + "\r\n");
+mf.close();
+}
+return true;
+}
+
+// Add: type name + description, pick path + (existing) category, paste/type geometry. Paste
+// anything; validation happens on save (template_write).
+void add_template()
+{
+string[] paths = {"global", "map"};
+string[] modes = {"2d", "topdown", "3d"};
+string saved_name = "";
+string saved_desc = "";
+string saved_box = "";
+int saved_path_pos = 0;
+int saved_cat_pos = 0;
+int saved_mode_pos = 0;
+bool do_build = true;
+int last_path_pos = -1;
+int focus_after_build = 0;
+int in_name, in_desc, in_box, mode_list, path_list, cat_list, ok, cn;
+string[] cats;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+if(last_path_pos != -1)
+{
+saved_name = form.get_text(in_name);
+saved_desc = form.get_text(in_desc);
+saved_box = form.get_text(in_box);
+saved_mode_pos = form.get_list_position(mode_list);
+if(saved_mode_pos < 0) saved_mode_pos = 0;
+}
+cats = template_categories(paths[saved_path_pos]);
+if(saved_cat_pos < 0 || saved_cat_pos >= int(cats.length())) saved_cat_pos = 0;
+form.reset();
+form.create_window("add template", false, true, last_path_pos != -1);
+in_name = form.create_input_box("name", saved_name);
+in_desc = form.create_input_box("description", saved_desc);
+in_box = form.create_input_box("geometry", saved_box, "", 0, false, true, false);
+mode_list = form.create_list("mode");
+for(uint i = 0; i < modes.length(); i++)
+form.add_list_item(mode_list, modes[i], modes[i]);
+form.set_list_position(mode_list, saved_mode_pos, false);
+path_list = form.create_list("path");
+for(uint i = 0; i < paths.length(); i++)
+form.add_list_item(path_list, paths[i], paths[i]);
+form.set_list_position(path_list, saved_path_pos, false);
+cat_list = form.create_list("category");
+for(uint i = 0; i < cats.length(); i++)
+form.add_list_item(cat_list, cats[i], cats[i]);
+if(cats.length() > 0) form.set_list_position(cat_list, saved_cat_pos, false);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_path_pos == -1) form.focus(in_name);
+else if(focus_after_build == 1) form.focus_silently(path_list);
+else form.focus_silently(in_name);
+last_path_pos = saved_path_pos;
+}
+form.monitor();
+int cur_path = form.get_list_position(path_list);
+if(cur_path != -1 && cur_path != saved_path_pos)
+{
+saved_path_pos = cur_path;
+saved_cat_pos = 0;
+focus_after_build = 1;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+string name = string_trim_sides(form.get_text(in_name));
+if(name == "")
+{
+speak("A name is required.");
+form.focus(in_name);
+continue;
+}
+if(cats.length() == 0)
+{
+speak("No categories exist. Create a category folder first.");
+continue;
+}
+if(paths[saved_path_pos] == "map" && mapname == "")
+{
+speak("No map is loaded, so a template can only be saved globally.");
+continue;
+}
+int mp = form.get_list_position(mode_list);
+if(mp < 0) mp = 0;
+string mode = modes[mp];
+string category = cats[saved_cat_pos];
+string base = (paths[saved_path_pos] == "global") ? template_global_base() : template_map_base();
+string dir = base + "/" + category + "/" + name;
+if(file_exists(dir + "/main.sif"))
+{
+setupmenu();
+m.add_item("Yes");
+m.add_item("No");
+m.intro_text = "A template named " + name + " already exists in " + category + ". Overwrite it?";
+int overres = m.run();
+if(overres != 0)
+{
+speak("canceled");
+continue;
+}
+}
+if(template_write(dir, mode, form.get_text(in_box), string_trim_sides(form.get_text(in_desc))))
+{
+speak("Template saved.");
+return;
+}
+}
+}
+}
+
+// Edit an existing template's geometry and description in place.
+void edit_template()
+{
+template_pick@ pick = template_choose("edit template", "edit");
+if(pick is null || !pick.ok)
+return;
+string dir = template_dir(pick.path, pick.category, pick.subtype);
+if(dir == "")
+{
+speak("That template could not be found.");
+return;
+}
+string[] lines = split_lines(template_main_content(dir));
+string body = "";
+for(uint i = 0; i < lines.length(); i++)
+{
+string[] sd = string_split(string_trim_sides(lines[i]), " ", true);
+if(sd.length() >= 1 && sd[0] == "mode")
+continue;
+if(body != "") body += "\r\n";
+body += lines[i];
+}
+string saved_desc = template_description(dir);
+string emode = template_header_mode(dir);
+if(emode == "") emode = "2d";
+bool do_build = true;
+int in_desc, in_box, ok, cn;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+form.reset();
+form.create_window("edit " + pick.subtype, false, true, false);
+in_desc = form.create_input_box("description", saved_desc);
+in_box = form.create_input_box("geometry", body, "", 0, false, true, false);
+ok = form.create_button("&save", true);
+cn = form.create_button("&cancel");
+form.focus(in_desc);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(cn))
+{
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(template_write(dir, emode, form.get_text(in_box), string_trim_sides(form.get_text(in_desc))))
+{
+if(mapname != "") load_map(mapname, mapowner);
+speak("Template saved.");
+return;
+}
+}
+}
+}
+
+// Remove a template (deletes its folder), then reload so any placed instances drop out.
+void remove_template()
+{
+template_pick@ pick = template_choose("remove template", "remove");
+if(pick is null || !pick.ok)
+return;
+string dir = template_dir(pick.path, pick.category, pick.subtype);
+if(dir == "")
+{
+speak("That template could not be found.");
+return;
+}
+setupmenu();
+m.add_item("Yes");
+m.add_item("No");
+m.intro_text = "Are you sure you want to remove the template " + pick.subtype + " from " + pick.category + "?";
+int mres = m.run();
+if(mres != 0)
+{
+speak("canceled");
+return;
+}
+directory_delete(dir);
+if(mapname != "") load_map(mapname, mapowner);
+speak("Template removed.");
+}
+
+// View a template's geometry read-only.
+void view_template()
+{
+template_pick@ pick = template_choose("view template", "view");
+if(pick is null || !pick.ok)
+return;
+string dir = template_dir(pick.path, pick.category, pick.subtype);
+if(dir == "")
+{
+speak("That template could not be found.");
+return;
+}
+string content = template_main_content(dir);
+string desc = template_description(dir);
+bool do_build = true;
+int in_desc, in_box, b_back;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+form.reset();
+form.create_window("view " + pick.subtype, false, true, false);
+in_desc = form.create_input_box("description", desc, "", 0, true, false, false);
+in_box = form.create_input_box("geometry", content, "", 0, true, true, false);
+b_back = form.create_button("&back", false, true);
+form.focus(in_desc);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
+return;
+}
+}
+
+// The data-manager hub for builder templates: add / edit / remove / view.
+void template_chooser()
+{
+bool do_build = true;
+int b_add, b_edit, b_remove, b_view, b_back;
+while(true)
+{
+wait(5);
+if(do_build)
+{
+do_build = false;
+form.reset();
+form.create_window("builder templates", false, true, false);
+b_add = form.create_button("&add template");
+b_edit = form.create_button("&edit template");
+b_remove = form.create_button("&remove template");
+b_view = form.create_button("&view template");
+b_back = form.create_button("&back", false, true);
+form.focus(b_add);
+}
+form.monitor();
+if(key_pressed(KEY_ESCAPE) || form.is_pressed(b_back))
+return;
+if(form.is_pressed(b_add)) { add_template(); do_build = true; continue; }
+if(form.is_pressed(b_edit)) { edit_template(); do_build = true; continue; }
+if(form.is_pressed(b_remove)) { remove_template(); do_build = true; continue; }
+if(form.is_pressed(b_view)) { view_template(); do_build = true; continue; }
+}
+}
