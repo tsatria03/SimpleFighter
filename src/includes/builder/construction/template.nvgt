@@ -347,6 +347,45 @@ reused verbatim. A missing template is SILENTLY SKIPPED (dev decision 2026-08): 
 gap when navigating. No recursion risk: template geometry is platform/staircase/wall only, so the
 expanded lines never re-enter the tpl branch.
 */
+// Resolve a template's main.sif CONTENT honoring path (map-first). When the current map is
+// compiled, a map-scoped template is read from the loaded map PACK (it travels inside the pack),
+// so map-scoped tpl references stay LIVE in a compiled map instead of being baked. Global
+// templates always come from disk. "" if not found.
+string template_resolve_content(string path, string category, string subtype)
+{
+if(path == "map" || path == "any")
+{
+if(map_is_compiled && map_pack_loaded)
+{
+string pf = "templates/builder/" + category + "/" + subtype + "/main.sif";
+if(map_pack.file_exists(pf))
+return map_pack.read_file(pf, 0, map_pack.get_file_size(pf));
+}
+else
+{
+string maplocal = template_map_base() + "/" + category + "/" + subtype + "/main.sif";
+file f;
+if(file_exists(maplocal) && f.open(maplocal, "rb"))
+{
+string c = f.read();
+f.close();
+return c;
+}
+}
+if(path == "map")
+return "";
+}
+string globalmain = template_global_base() + "/" + category + "/" + subtype + "/main.sif";
+file gf;
+if(file_exists(globalmain) && gf.open(globalmain, "rb"))
+{
+string c = gf.read();
+gf.close();
+return c;
+}
+return "";
+}
+
 void read_template(string[] sd)
 {
 double ax = stn(sd[1]);
@@ -361,10 +400,7 @@ o = 4;
 string path = sd[o];
 string category = sd[o + 1];
 string subtype = sd[o + 2];
-string dir = template_dir(path, category, subtype);
-if(dir == "")
-return;
-string content = template_main_content(dir);
+string content = template_resolve_content(path, category, subtype);
 if(content == "")
 return;
 string[] lines = split_lines(content);
@@ -1009,16 +1045,26 @@ baked += line;
 first = false;
 continue;
 }
+int o = (mode == "3d") ? 4 : 3;
+string tpath = sd[o];
+string tcat = sd[o + 1];
+string tsub = sd[o + 2];
+bool has_maplocal = file_exists("data/builder/maps/decompiled/" + map_name + "/templates/builder/" + tcat + "/" + tsub + "/main.sif");
+if(tpath == "map" || (tpath == "any" && has_maplocal))
+{
+// A map-scoped template travels inside the pack, so keep the reference LIVE instead of
+// baking it — the pack resolves it from its own embedded template at play time.
+if(!first) baked += "\r\n";
+baked += line;
+first = false;
+continue;
+}
+// Global (or "any" with no map-local copy) -> bake, since the template won't travel with the pack.
 double ax = stn(sd[1]);
 double ay = stn(sd[2]);
 double az = 0;
-int o = 3;
-if(mode == "3d")
-{
-az = stn(sd[3]);
-o = 4;
-}
-string dir = template_bake_dir(map_name, sd[o], sd[o + 1], sd[o + 2]);
+if(mode == "3d") az = stn(sd[3]);
+string dir = template_bake_dir(map_name, tpath, tcat, tsub);
 if(dir == "")
 continue;
 string tcontent = template_main_content(dir);
