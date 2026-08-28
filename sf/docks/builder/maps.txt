@@ -86,7 +86,7 @@ Edit description. Change the map's description.
 Rename map. Give the map a new name. Any travelpoints in other maps that pointed to the old name are updated to match, so links between maps don't break.
 
 Copy raw map data to clipboard. Copy the entire text of the map's main file to your clipboard, so you can paste it elsewhere or into another map.
-Paste raw map data from clipboard. Replace the whole map with the text on your clipboard, after a confirmation. The pasted text is checked for a valid mode and size header first and rejected if it isn't a valid map.
+Paste raw map data from clipboard. Replace the whole map with the text on your clipboard, after a confirmation. The pasted text is checked for a valid mode and size header first and rejected if it isn't a valid map, and once it's pasted every object line is checked as well, with any invalid ones listed in the map errors box.
 
 Go to a text zone on the map. Jump straight to a text zone chosen from a list of the ones on the map — a quick way to move around a large map while building.
 
@@ -130,7 +130,25 @@ Single and ranged objects share one keyword. Many objects can be placed either o
 
 Random numbers are allowed in number fields. Anywhere a line takes a number, you can write random(low,high) instead of a fixed value — for example random(1,5) — and a fresh number in that range is rolled each time the map loads. The two numbers are separated by a comma and wrapped in random( ). This is a hand-writing convenience; the builder forms always write plain numbers.
 
-Malformed lines are dropped silently. If a line doesn't match any object the reader knows — a misspelled keyword, the wrong number of fields, missing quotes where quotes are required — the line is skipped without an error, and the map loads as if it weren't there. There is no warning, so if an object you wrote by hand doesn't show up in the map, check the line against that object's authoring section for a typo or a missing field.
+Invalid lines are reported, not dropped silently. If a line doesn't match any object the reader knows — a misspelled keyword, or the wrong number of fields for the mode — it can't be placed and won't appear in the map. It is no longer discarded without a word, though: the builder gathers up every invalid line and lists it in a box so you can find and fix it. The next section, checking a map for errors, covers exactly when that box appears and how to read it.
+
+Checking a map for errors.
+
+An object line is only useful if the game can read it, and two things can stop it: the first word isn't the name of any object the game knows (usually a misspelling), or the line has the wrong number of fields for the map's mode. A line with either problem can't be placed, so it won't appear in the map. Rather than let it vanish without a word, the builder collects every such line and shows them in a box titled map errors, one entry per bad line. Each entry gives the line's position in the map, the exact text of the line, and what's wrong with it — that it isn't a recognized object, or that it has the wrong number of values. Read down the list, fix each line from the edit a line menu or in a text editor, and the object appears once the line is right; until then the bad line stays saved, so nothing is lost, but nothing is placed for it either.
+
+The box doesn't appear at random. It shows up at the moments you'd want it to, which are the following:
+
+When you add a line by hand and it isn't valid, the box shows that one line.
+When you edit a line into something invalid, the box shows that one line.
+
+When you paste raw map data over the map, the box lists every invalid line in what you pasted at once.
+
+When you open a decompiled map from the maps menu and it already contains invalid lines, the box lists them all before you drop into the map.
+When you reload a decompiled map that contains invalid lines, the same list appears.
+
+It deliberately stays quiet the rest of the time. Crossing into another map through a travelpoint or a similar in-map link during play does not pop the box, so ordinary play is never interrupted by it, even if the map you land on has problems. For those moments there is a command: on any decompiled map, run the map errors command — its full name is maperrors and its short form is ms — to check the map you're standing on right now and list any invalid lines, or hear that there are none. It works no matter how you reached the map, so it's the way to check a map you arrived at by travelpoint, and it's also how you bring the list back if you closed the box before you were done with it.
+
+One thing the check does not do is judge the values themselves. It confirms that the object exists and that the line has the right number of fields, but not that those fields make sense — a coordinate outside the map's edges, or a tile or enemy name that doesn't exist, will still pass. So a line that clears the check can still be wrong in other ways; the check catches the mistakes that would make a line disappear, not every possible mistake. Compiled maps are sealed and aren't checked at all.
 
 A note on the meta file.
 
@@ -155,11 +173,16 @@ Url sounds. The same as local sounds, but streamed live from a web address inste
 Construction objects.
 
 Blockages. An invisible barrier that bounces you back with a spoken message instead of a solid surface.
+
 Checkpoints. A tile that becomes your safety net, returning you there on a fatal hit instead of ending the run.
+
 Conveyor belts. A stretch of floor that carries you along one tile at a time while you stand on it.
+
 Platforms. The ground you walk on — floors, ledges, and walkways painted with a tile; also covers moving platforms and vanishing platforms.
 Slants. A ramp that carries you up or down as you walk across it, on 2d and 3d maps only.
+
 Spawnpoints. Where the player appears when a map loads, and a moving respawn point that updates as you walk over new ones.
+
 Staircases. A platform that spans a range of tiles and carries the player up or down through height as they cross it, instead of sitting at a single flat height.
 Walls. Solid barriers you can't walk or pass through, the vertical counterpart to a platform's floor.
 
@@ -172,6 +195,7 @@ Items. Collectibles the player picks up off the ground and carries in their inve
 
 Sensors. The contact-triggered version of a switch, firing automatically as the player enters its area and again as they leave.
 Signs. A written message the player reads by standing on it and pressing the interact key.
+
 Switches. A tile the player presses to flip a state, run a slash command, and optionally hold an ambient loop.
 Text squares. A silent sign — the same spoken text as a sign, but with no sound of its own and nothing that can destroy it.
 
@@ -194,15 +218,19 @@ Transition objects.
 
 Doors. A trigger that carries the player to a destination coordinate when activated, with open, travel, and close sounds.
 Elevators. A call point the player rides between named floors through a menu of every floor on the map.
+
 Lifts. A platform that rides up and down on its own between a low and a high point, carrying the player when they're aboard.
 Passages. A corridor that stays sealed until the player opens it, then becomes a walkable path that can be closed again.
+
 Teleporters. A pad that relocates the player the instant they land on it, and which can also hunt the player within a range.
 Trampolines. A pad that launches the player straight up when they step or land on it, on 2d and 3d maps only.
+
 Travelpoints. A trigger that sends the player to a different map entirely, dropping them at a chosen spot in it.
 
 Transportation objects.
 
 Aircrafts. A rideable plane the player flies across the map, along with its landing beacons and its hazardous turbulence.
+
 Bikes. A rideable bicycle the player mounts and pedals across the map.
 Vehicles. A rideable motor vehicle with real momentum, and the option to run enemies down.
 
@@ -210,22 +238,30 @@ Trap objects.
 
 Bombs. A placed explosive that counts down a fuse and then detonates on its tile; also covers time bombs and bomb zones, which rain bombs over an area while the player is inside.
 Fires. A deadly flame that kills the player the instant they touch it and can hunt them once it spots them.
+
 Floor breakers. A single-tile hole punched in the floor that the player falls through.
 Force fields. A barrier that pulses on and off on a timer, dangerous one moment and passable the next.
+
 Hazards. A region that costs the player a whole life the moment they step into it; also covers moving hazards that travel back and forth and vanishing hazards that blink on and off on a timer.
 Mines. A single-use planted explosive that arms and then detonates on whatever steps onto it.
+
 Security cameras. A watcher that scans the area in front of it and raises an alarm and summons enemies when it spots the player.
 Spikes. A floor trap that grinds the player's health down a bite at a time while they stand on it.
+
 Winds. A trap that chases you like a fire, but instead of killing you it blows you a set number of tiles in the direction it faces, stopping at any wall, and can wear down your health if you give it a health value.
 
 Zone objects.
 
 Fall zones. An area where the player never takes fall damage, no matter how far they dropped to reach it.
 Flux zones. An invisible area that permanently ramps your speed, health, stamina, or shield up or down a little with each step you take across it, and the change sticks with you after you leave.
+
 Heal zones. An area that changes the player's health over time while they stand inside it, healing or draining depending on how it's set.
 Menu zones. A patch of map that becomes a kiosk, opening a chosen menu — a shop, the settings, a locker — when the player interacts with it.
+
 Obscurity zones. An area that hides chosen entity types from the player's senses while they stand inside it.
 Safe zones. A sanctuary enemies can't enter and enemy shots can't reach.
+
 Story zones. A multi-page passage of story text shown when the player enters or interacts with it.
 Text zones. A named region whose name is spoken as the player enters it and announced again as they leave.
+
 Tile zones. An invisible area that overrides how the ground inside it behaves — your walk speed, jump height, and how far and hard you can fall — while you stand on it, leaving anything you don't set normal.
