@@ -248,6 +248,38 @@ double soundvol=stn(sd[o+2]);
 double soundpitch=stn(sd[o+3]);
 spawn_speaker(lx, ly, rx, ry, sorcetype, sorcetype2, soundvol, soundpitch, lz, rz);
 }
+/* Tier 2 semantic check: speaker has a left emitter point and a right emitter point (z on 3d), then
+the audio block. Length-keyed (9 = flat, 11 = 3d). */
+string speaker_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (sd.length() == 11);
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the left x "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the left y "+e+"."; }
+int o = 5;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the left z "+e+"."; }
+e = coord_token_error(sd[4], "x", mode);
+if(e != "") { col=4; return "the right x "+e+"."; }
+e = coord_token_error(sd[5], "y", mode);
+if(e != "") { col=5; return "the right y "+e+"."; }
+e = coord_token_error(sd[6], "z", mode);
+if(e != "") { col=6; return "the right z "+e+"."; }
+o = 7;
+}
+else
+{
+e = coord_token_error(sd[3], "x", mode);
+if(e != "") { col=3; return "the right x "+e+"."; }
+e = coord_token_error(sd[4], "y", mode);
+if(e != "") { col=4; return "the right y "+e+"."; }
+o = 5;
+}
+return audio_block_error(sd, o, col);
+}
 
 void write_speaker(double lx, double ly, double rx, double ry, string sourcetype, string sourcetype2, double vol, double pitch, double lz=0, double rz=0)
 {

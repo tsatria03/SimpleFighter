@@ -339,6 +339,54 @@ double soundpitch=stn(sd[o+3]);
 int sourcetime=stn(sd[o+4]);
 spawn_timedsource(x, x, y, y, soundvol, soundpitch, sourcetime, sorcetype, sorcetype2, z, z);
 }
+/* Tier 2 semantic check shared by timed_source AND timed_ambience: single (8/9) or ranged (10/12)
+coords, the audio block, then a timer number. Length-keyed z. */
+string timed_audio_semantic_error(string[] sd, string mode, int &out col)
+{
+uint L = sd.length();
+int o = 3;
+if(L==8 || L==9)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+o = 3;
+if(L==9)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+}
+else
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the minimum x "+e+"."; }
+e = coord_token_error(sd[2], "x", mode);
+if(e != "") { col=2; return "the maximum x "+e+"."; }
+if(range_token_error(sd[1], sd[2]) != "") { col=2; return "the maximum x is less than the minimum x."; }
+e = coord_token_error(sd[3], "y", mode);
+if(e != "") { col=3; return "the minimum y "+e+"."; }
+e = coord_token_error(sd[4], "y", mode);
+if(e != "") { col=4; return "the maximum y "+e+"."; }
+if(range_token_error(sd[3], sd[4]) != "") { col=4; return "the maximum y is less than the minimum y."; }
+o = 5;
+if(L==12)
+{
+e = coord_token_error(sd[5], "z", mode);
+if(e != "") { col=5; return "the minimum z "+e+"."; }
+e = coord_token_error(sd[6], "z", mode);
+if(e != "") { col=6; return "the maximum z "+e+"."; }
+if(range_token_error(sd[5], sd[6]) != "") { col=6; return "the maximum z is less than the minimum z."; }
+o = 7;
+}
+}
+string r = audio_block_error(sd, o, col);
+if(r != "") return r;
+if(!is_number_token(sd[o+4])) { col=o+4; return "the timer must be a number."; }
+return "";
+}
 
 void read_ranged_timed_source(string[] sd)
 {

@@ -335,6 +335,19 @@ int v = int(stn(tok));
 if(v < lo || v > hi) return "must be from "+lo+" to "+hi;
 return "";
 }
+/* Validates the shared audio block at index o (category, clip, volume, pitch): category is musics
+or sources, the clip exists in that category's map folders (or "none"), and volume/pitch are
+numbers. Sets col on error. Shared by sound / timed / excludable sources and ambiences and speaker. */
+string audio_block_error(string[] sd, int o, int &out col)
+{
+string cat = sd[o];
+if(cat != "musics" && cat != "sources") { col=o; return "the category must be musics or sources."; }
+string clip = sd[o+1];
+if(clip != "none" && !name_exists("builder/audio/"+cat+"/*", clip)) { col=o+1; return "the sound '"+clip+"' does not exist."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the volume must be a number."; }
+if(!is_number_token(sd[o+3])) { col=o+3; return "the pitch must be a number."; }
+return "";
+}
 /* Tier 2 SEMANTIC validation, run only AFTER entity_line_error() confirms the line is structurally
 valid (recognized object, right field count). Returns "" if the values are fine, else a plain-english
 reason; col is set to the 1-based value position that's wrong (the sd index — keyword is 0, first
@@ -379,6 +392,10 @@ if(k=="projectile") return projectile_semantic_error(sd, mode, col);
 if(k=="item") return item_semantic_error(sd, mode, col);
 if(k=="item_zone") return item_zone_semantic_error(sd, mode, col);
 if(k=="teleporter") return teleporter_semantic_error(sd, mode, col);
+if(k=="sound_source" || k=="sound_ambience") return sound_audio_semantic_error(sd, mode, col);
+if(k=="timed_source" || k=="timed_ambience") return timed_audio_semantic_error(sd, mode, col);
+if(k=="excludable_source" || k=="excludable_ambience") return excludable_audio_semantic_error(sd, mode, col);
+if(k=="speaker") return speaker_semantic_error(sd, mode, col);
 return "";
 }
 
