@@ -150,6 +150,46 @@ bool wm3=false;
 if(mapmode == "3d") wm3=string_to_bool(sd[o+7]);
 spawn_wind(wx, wy, wrange, wrange2, sp, wt, wm, wm2, dir, psh, hp, wz, wrange3, wm3);
 }
+/* Tier 2 semantic check: wind has a position, per-axis seeing ranges, speed/push/health numbers, a
+direction (1-4 flat, 1-6 in 3d), a wind sound (or "none"), and move-on-axis flags. */
+string wind_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (mode == "3d");
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the x range must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the y range must be a number."; }
+if(is3d)
+{
+if(!is_number_token(sd[o+2])) { col=o+2; return "the z range must be a number."; }
+o += 3;
+}
+else o += 2;
+if(!is_number_token(sd[o])) { col=o; return "the speed must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the push distance must be a number."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the health must be a number."; }
+int dmax = is3d ? 6 : 4;
+string de = dir_id_error(sd[o+3], 1, dmax);
+if(de != "") { col=o+3; return "the direction "+de+"."; }
+string wt = sd[o+4];
+if(wt != "none" && !name_exists("builder/traps/winds/*", wt)) { col=o+4; return "the wind sound '"+wt+"' does not exist."; }
+if(!is_bool_token(sd[o+5])) { col=o+5; return "the move on x value must be true or false."; }
+if(!is_bool_token(sd[o+6])) { col=o+6; return "the move on y value must be true or false."; }
+if(is3d)
+{
+if(!is_bool_token(sd[o+7])) { col=o+7; return "the move on z value must be true or false."; }
+}
+return "";
+}
 
 void write_wind(double x, double y, double windrange, double windrange2, double speed, string windtype, bool moveable, bool moveable2, int direction, double push, double windhealth, double z=0, double windrange3=0, bool moveable3=false)
 {

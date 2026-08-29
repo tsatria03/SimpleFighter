@@ -326,6 +326,41 @@ double camxp = stn(sd[o+4]);
 string camtype = sd[o+5];
 spawn_camera(camx, cammy, cammer, cammer2, camdir, camtime, camhp, camhp, camlev, camxp, camtype, cammz, cammer3);
 }
+/* Tier 2 semantic check: camera is a position, per-axis seeing ranges, a direction (1-2), a speed,
+health/level/experience numbers, and a camera sound (or "none"). Uses the correct length (11 flat,
+13 in 3d) — note read_camera's own is_3d test is off by one (checks 12), a separate parser bug. */
+string camera_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (sd.length() == 13);
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the x range must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the y range must be a number."; }
+if(is3d)
+{
+if(!is_number_token(sd[o+2])) { col=o+2; return "the z range must be a number."; }
+o += 3;
+}
+else o += 2;
+string de = dir_id_error(sd[o], 1, 2);
+if(de != "") { col=o; return "the direction "+de+"."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the speed must be a number."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the health must be a number."; }
+if(!is_number_token(sd[o+3])) { col=o+3; return "the level must be a number."; }
+if(!is_number_token(sd[o+4])) { col=o+4; return "the experience must be a number."; }
+string ctype = sd[o+5];
+if(ctype != "none" && !name_exists("builder/traps/security cameras/*", ctype)) { col=o+5; return "the camera sound '"+ctype+"' does not exist."; }
+return "";
+}
 
 void write_camera(int x, int y, int camrange, int camrange2, int direction, int speed, double hp, double level, double xp, string camtype, int z=0, int camrange3=0)
 {

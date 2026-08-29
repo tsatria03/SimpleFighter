@@ -567,6 +567,56 @@ bool pf = string_to_bool(sd[o+7]);
 bool su = string_to_bool(sd[o+8]);
 spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, 0, z, mnz, mxz);
 }
+/* Tier 2 semantic check: projectile is a start position, a travel box (ranged), a direction (0-7
+flat, 0-9 in 3d), health/damage/speed numbers, a projectile sound (or "none"), and four flags. */
+string projectile_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (mode == "3d");
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+e = coord_token_error(sd[o], "x", mode);
+if(e != "") { col=o; return "the minimum x "+e+"."; }
+e = coord_token_error(sd[o+1], "x", mode);
+if(e != "") { col=o+1; return "the maximum x "+e+"."; }
+if(range_token_error(sd[o], sd[o+1]) != "") { col=o+1; return "the maximum x is less than the minimum x."; }
+e = coord_token_error(sd[o+2], "y", mode);
+if(e != "") { col=o+2; return "the minimum y "+e+"."; }
+e = coord_token_error(sd[o+3], "y", mode);
+if(e != "") { col=o+3; return "the maximum y "+e+"."; }
+if(range_token_error(sd[o+2], sd[o+3]) != "") { col=o+3; return "the maximum y is less than the minimum y."; }
+if(is3d)
+{
+e = coord_token_error(sd[o+4], "z", mode);
+if(e != "") { col=o+4; return "the minimum z "+e+"."; }
+e = coord_token_error(sd[o+5], "z", mode);
+if(e != "") { col=o+5; return "the maximum z "+e+"."; }
+if(range_token_error(sd[o+4], sd[o+5]) != "") { col=o+5; return "the maximum z is less than the minimum z."; }
+o += 6;
+}
+else o += 4;
+int dmax = is3d ? 9 : 7;
+string de = dir_id_error(sd[o], 0, dmax);
+if(de != "") { col=o; return "the direction "+de+"."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the health must be a number."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the damage must be a number."; }
+if(!is_number_token(sd[o+3])) { col=o+3; return "the speed must be a number."; }
+string pt = sd[o+4];
+if(pt != "none" && !name_exists("builder/kombat/projectiles/*", pt)) { col=o+4; return "the projectile sound '"+pt+"' does not exist."; }
+if(!is_bool_token(sd[o+5])) { col=o+5; return "the bounce value must be true or false."; }
+if(!is_bool_token(sd[o+6])) { col=o+6; return "the destroyable value must be true or false."; }
+if(!is_bool_token(sd[o+7])) { col=o+7; return "the fireable value must be true or false."; }
+if(!is_bool_token(sd[o+8])) { col=o+8; return "the single use value must be true or false."; }
+return "";
+}
 
 void write_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int z=0, double mnz=0, double mxz=0)
 {
