@@ -32,8 +32,10 @@ Almost pure reuse. Only TWO files change.
 **Function `download_map()`** — lives in **`updater.nvgt`** (home of `downloadsounds()`, the analogous download FLOW; NOT downloaderfuncts.nvgt, which is helpers like `beep_percentage`; `dl_file` itself is in `downloader.nvgt`). A one-line base-URL global sits at the top of `updater.nvgt` so the domain lives in ONE place: `string map_server_url = "http://reality-breaker-studios.net";`. Flow:
 1. `url_get(map_server_url + "/index.txt")` → on "" or an HTML error page (`string_contains(.,"<!DOCTYPE",1) > -1`, the updater's own guard) alert + bail.
 2. Parse with `clean_lines_from_text()` (extrafuncts — trims, drops blanks) → a menu of the `.map` filenames (shown with extension).
-3. On pick: if `file_exists("data/builder/maps/compiled/"+name)`, confirm overwrite via `question(...)` (returns 1 = yes) BEFORE replacing — never silent (dev-agreed). Then `dl_file(map_server_url + "/maps/" + name, "data/builder/maps/compiled/" + name)` (the existing progress-beep downloader; returns "finished"/"canceled").
-4. Success → alert that it's downloadable from **load map → compiled maps**.
+3. On pick: if `file_exists("data/builder/maps/compiled/"+name)`, confirm overwrite BEFORE replacing — never silent (dev-agreed). Uses a **menu** (`m.add_item("yes")`/`m.add_item("no")` — LOWERCASE, yes first, `intro_text = "This map already exists. Do you want to overwrite it?"`), NOT the visual `question()` dialog (dev-requested 2026-08-29). Both the wording and the lowercase labels deliberately match `compile_map`'s own overwrite menu — the dev explicitly chose lowercase here to match that sibling tool, overriding the capitalized-label default in [[feedback_yes_no_menu_labels]] for local consistency. `conf = m.run()`; anything but index 0 (no, or escape's -1) speaks "canceled" and `continue`s back to the list. Then `dl_file(map_server_url + "/maps/" + name, "data/builder/maps/compiled/" + name)` (the existing progress-beep downloader; returns "finished"/"canceled").
+4. Success → alert "Download complete" / "<name> has been downloaded. You can now play it from the compiled maps menu." (dev-worded 2026-08-29).
+
+The whole pick→download is wrapped in a **`while(true)` loop** (modeled on `compile_map`/`decompile_map` in `packfuncts.nvgt`, dev-requested 2026-08-29): the index is fetched ONCE up front, then the menu re-presents after each download so the player can grab several maps in a row. Escape or the "back" item is the only exit (speaks "canceled"); overwrite-decline and download-failure `continue` back to the list rather than returning. Function is `void`, so the while(true)-with-returns has no "not all paths return" issue ([[project_angelscript_while_true_return]] applies only to value-returning funcs).
 
 **Playback needs NO wiring:** compiled maps are listed by `find_files("data/builder/maps/compiled/*.map")` (`map_menu.nvgt` ~:670), so a downloaded pack auto-appears in load map → compiled maps and plays via `load_map(name, owner, force_compiled:true, force_spawned:true)`. Local compiled path is `data/builder/maps/compiled/<name>.map` (cwd `sf/`, see `packfuncts.nvgt:18`).
 
@@ -41,7 +43,7 @@ Almost pure reuse. Only TWO files change.
 
 ## Sections to build (game side)
 - **§1 — `download_map()` + `map_server_url`** in `updater.nvgt`. **BUILT 2026-08-29** (uncommitted at time of writing). Needs dev compile-check.
-- **§2 — menu item + handler** in `mapmenu()` (`map_menu.nvgt`), "download map" after "new map". NOT yet built.
+- **§2 — menu item + handler** in `mapmenu()` (`map_menu.nvgt`), "download map" after "new map". **BUILT 2026-08-29** — `m.add_item("download map", "dlmap");` after the "new map" item, and an `if(buildem=="dlmap") { m.fade_music(); download_map(); continue; }` branch after the "nm" handler. Feature is now live end-to-end (dev compile-check pending). Only §3 docs remain.
 - **§3 — docs (last, per standing rule):** changelog entry + a short mention in the maps help topic ([[feedback_changelog_rules]], [[feedback_update_build_version_txt]]).
 
 ## Future phase — upload (NOT designed)

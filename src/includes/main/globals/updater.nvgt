@@ -142,9 +142,10 @@ alert("extraction_error", "Error occurred during extraction.");
 return;
 }
 
-// Phase-1 map downloader: fetch the map server's index, let the player pick a
-// compiled map, and download it into the compiled-maps folder so it appears in
-// load map, then compiled maps. Overwriting an existing copy asks first.
+// Phase-1 map downloader: fetch the map server's index, then loop a menu so the
+// player can download one map after another into the compiled-maps folder (where
+// they appear under load map, then compiled maps). Overwriting an existing copy
+// asks first; escape or back exits. Modeled on compile_map/decompile_map's loop.
 void download_map()
 {
 string index = url_get(map_server_url + "/index.txt");
@@ -159,6 +160,8 @@ if(maps.length() == 0)
 alert("No maps", "There are no maps available to download right now.");
 return;
 }
+while(true)
+{
 setupmenu();
 for(uint i = 0; i < maps.length(); i++)
 m.add_item(maps[i], maps[i]);
@@ -181,10 +184,15 @@ directory_create("data/builder/maps/compiled");
 string local = "data/builder/maps/compiled/" + choice;
 if(file_exists(local))
 {
-if(question("Overwrite map", "You already have " + choice + ". Download it again and overwrite your copy?") != 1)
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = "This map already exists. Do you want to overwrite it?";
+int conf = m.run();
+if(conf != 0)
 {
 speak("canceled");
-return;
+continue;
 }
 }
 string result = dl_file(map_server_url + "/maps/" + choice, local);
@@ -192,7 +200,8 @@ if(result != "finished")
 {
 if(result == "canceled" && file_exists(local)) file_delete(local);
 alert("Download failed", "The map could not be downloaded.");
-return;
+continue;
 }
-alert("Download complete", choice + " has been downloaded. You can now play it from load map, then compiled maps.");
+alert("Download complete", choice + " has been downloaded. You can now play it from the compiled maps menu.");
+}
 }
