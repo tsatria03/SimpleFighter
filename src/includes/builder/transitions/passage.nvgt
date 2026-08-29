@@ -506,6 +506,43 @@ remove_platform(pid);
 passages.resize(0);
 }
 
+/* Tier 2 semantic check. A passage is a start point, a direction, a length and width (plus a height
+in 3d), a walkable tile, a passage sound folder, a lock mode, a quoted item id and password, then the
+open/close times and a flag. The quoted fields and the numeric tail are lenient, so only the start
+point, direction, dimensions, tile, sound, and lock mode are judged. The tile may be "air". */
+string passage_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (mode == "3d");
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the starting x "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the starting y "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the starting z "+e+"."; }
+o = 4;
+}
+e = dir_id_error(sd[o], 1, is3d ? 3 : 2);
+if(e != "") { col=o; return "the direction "+e+"."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the length must be a number."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the width must be a number."; }
+if(is3d)
+{
+if(!is_number_token(sd[o+3])) { col=o+3; return "the height must be a number."; }
+o += 4;
+}
+else o += 3;
+string tile = sd[o];
+if(!tile_exists(tile)) { col=o; return "the tile '"+tile+"' does not exist."; }
+string ptype = sd[o+1];
+if(ptype != "none" && !name_exists("builder/transitions/doors/*", ptype)) { col=o+1; return "the passage sound '"+ptype+"' does not exist."; }
+string lkmode = sd[o+2];
+if(!array_contains(door_lockmodes, lkmode)) { col=o+2; return "the lock mode '"+lkmode+"' is not valid."; }
+return "";
+}
+
 void read_passage(string[] sd)
 {
 int sx=stn(sd[1]);

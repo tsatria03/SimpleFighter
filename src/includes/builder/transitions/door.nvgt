@@ -746,6 +746,83 @@ return;
 }
 }
 
+/* The lock/use modes a door or passage can carry on disk (regular doors write none/key/password,
+item doors write give/take/givepass/takepass). Shared by the door and passage semantic checks. */
+string[] door_lockmodes = {"none", "key", "password", "give", "take", "givepass", "takepass"};
+/* Tier 2 semantic check. A door is a start point (single) or a box (ranged), then a destination
+point, health, speed, a door sound folder, a lock mode, a quoted item id and password, and flags.
+Mirrors read_door / read_ranged_door's quote-position shape detection. The quoted id/password and the
+trailing flags are free/lenient, so only the coords, numbers, sound, and lock mode are judged. */
+string door_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (mode == "3d");
+int qidx = -1;
+for(uint i=1; i<sd.length(); i++)
+if(sd[i].length() > 0 && sd[i].substr(0,1) == "\"") { qidx = int(i); break; }
+bool ranged = false;
+if(qidx != -1)
+{
+int numcount = qidx - 1;
+ranged = is3d ? (numcount >= 11) : (numcount >= 9);
+}
+int o;
+if(ranged)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the minimum x "+e+"."; }
+e = coord_token_error(sd[2], "x", mode);
+if(e != "") { col=2; return "the maximum x "+e+"."; }
+if(range_token_error(sd[1], sd[2]) != "") { col=2; return "the maximum x is less than the minimum x."; }
+e = coord_token_error(sd[3], "y", mode);
+if(e != "") { col=3; return "the minimum y "+e+"."; }
+e = coord_token_error(sd[4], "y", mode);
+if(e != "") { col=4; return "the maximum y "+e+"."; }
+if(range_token_error(sd[3], sd[4]) != "") { col=4; return "the maximum y is less than the minimum y."; }
+o = 5;
+if(is3d)
+{
+e = coord_token_error(sd[5], "z", mode);
+if(e != "") { col=5; return "the minimum z "+e+"."; }
+e = coord_token_error(sd[6], "z", mode);
+if(e != "") { col=6; return "the maximum z "+e+"."; }
+if(range_token_error(sd[5], sd[6]) != "") { col=6; return "the maximum z is less than the minimum z."; }
+o = 7;
+}
+}
+else
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the starting x "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the starting y "+e+"."; }
+o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the starting z "+e+"."; }
+o = 4;
+}
+}
+string e = coord_token_error(sd[o], "x", mode);
+if(e != "") { col=o; return "the destination x "+e+"."; }
+e = coord_token_error(sd[o+1], "y", mode);
+if(e != "") { col=o+1; return "the destination y "+e+"."; }
+if(is3d)
+{
+e = coord_token_error(sd[o+2], "z", mode);
+if(e != "") { col=o+2; return "the destination z "+e+"."; }
+o += 3;
+}
+else o += 2;
+if(!is_number_token(sd[o])) { col=o; return "the health must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the speed must be a number."; }
+string dtype = sd[o+2];
+if(dtype != "none" && !name_exists("builder/transitions/doors/*", dtype)) { col=o+2; return "the door sound '"+dtype+"' does not exist."; }
+string lkmode = sd[o+3];
+if(!array_contains(door_lockmodes, lkmode)) { col=o+3; return "the lock mode '"+lkmode+"' is not valid."; }
+return "";
+}
+
 void read_door(string[] sd)
 {
 int qidx = -1;
