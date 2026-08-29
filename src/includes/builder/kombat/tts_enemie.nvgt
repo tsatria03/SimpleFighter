@@ -231,6 +231,40 @@ if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file)
 ttsenemies.resize(0);
 }
 
+/* Tier 2 semantic check. A tts enemy is a position, five numbers (health, attack, defense, fire time,
+speed), four quoted strings (taunt, hurt, death, voice), then three numbers (rate, pitch, volume).
+Mirrors read_ttsenemie's shape. The spoken text is free-form and the voice name is system-dependent
+(the game falls back when it's missing), so neither is judged. This keyword has no structural length
+floor, so a truncated line is left alone rather than indexed. */
+string ttsenemie_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (mode == "3d");
+int o = is3d ? 4 : 3;
+if(int(sd.length()) <= o+4) return "";
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+}
+string[] statnames = {"health", "attack", "defense", "fire time", "speed"};
+for(int i=0; i<5; i++)
+if(!is_number_token(sd[o+i])) { col=o+i; return "the "+statnames[i]+" must be a number."; }
+string combined = join_string_array(sd, o+5, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() < 4) { col=o+5; return "the taunt, hurt, death, and voice must each be wrapped in double quotes."; }
+array<string> parts = string_split(string_trim_sides(remainder), " ");
+if(parts.length() < 3) { col=-1; return "the rate, pitch, and volume are missing."; }
+if(!is_number_token(parts[0])) { col=-1; return "the rate must be a number."; }
+if(!is_number_token(parts[1])) { col=-1; return "the pitch must be a number."; }
+if(!is_number_token(parts[2])) { col=-1; return "the volume must be a number."; }
+return "";
+}
+
 void read_ttsenemie(string[] sd)
 {
 int x = stn(sd[1]);
