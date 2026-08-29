@@ -378,6 +378,27 @@ string botype=sd[5];
 spawn_bomb(x, y, dmg, sp, botype, 0);
 }
 }
+/* Tier 2 semantic check: bomb is coordinates, a damage number, a speed, and a bomb sound (or
+"none"; length-keyed z). */
+string bomb_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(sd.length() == 7)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the damage must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the speed must be a number."; }
+string btype = sd[o+2];
+if(btype != "none" && !name_exists("builder/traps/bombs/*", btype)) { col=o+2; return "the bomb sound '"+btype+"' does not exist."; }
+return "";
+}
 
 void write_bomb(int x, int y, int damage, int speed, string bombtype, int z=0)
 {
