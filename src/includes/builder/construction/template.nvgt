@@ -411,6 +411,29 @@ string[] gsd = string_split(string_trim_sides(placed[i]), " ", true);
 dispatch_entity_line(gsd);
 }
 }
+/* Tier 2 semantic check: a tpl reference is an anchor position, a path (global/map/any), and a
+category + subtype that must resolve to a real template. template_dir mirrors how load resolves it
+(map-first-then-global), returning "" when nothing is found. */
+string template_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(mode == "3d")
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+string path = sd[o];
+if(path != "global" && path != "map" && path != "any") { col=o; return "the path must be global, map, or any."; }
+string category = sd[o+1];
+string subtype = sd[o+2];
+if(template_dir(path, category, subtype) == "") { col=o+1; return "the template '"+category+"/"+subtype+"' was not found."; }
+return "";
+}
 
 // Write a tpl reference line to the current map's main.sif (used by placement, §4).
 void write_template(double x, double y, string path, string category, string subtype, double z = 0)
