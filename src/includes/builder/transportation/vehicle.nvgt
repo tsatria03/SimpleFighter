@@ -462,6 +462,31 @@ string vehtyp=sd[o+5];
 bool fb=string_to_bool(sd[o+6]);
 spawn_vehicle(x, y, hp, hp, dmg, sp, sp2, sp3, vehtyp, fb, z);
 }
+/* Tier 2 semantic check: vehicle is coordinates, health, attack, three speeds, a vehicle type
+folder (or "none"), and a hit-others flag (length-keyed z). */
+string vehicle_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(sd.length() == 11)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the health must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the attack must be a number."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the base speed must be a number."; }
+if(!is_number_token(sd[o+3])) { col=o+3; return "the accel speed must be a number."; }
+if(!is_number_token(sd[o+4])) { col=o+4; return "the brake speed must be a number."; }
+string vtype = sd[o+5];
+if(vtype != "none" && !name_exists("builder/transportation/vehicles/*", vtype)) { col=o+5; return "the vehicle type '"+vtype+"' does not exist."; }
+if(!is_bool_token(sd[o+6])) { col=o+6; return "the hit other entities value must be true or false."; }
+return "";
+}
 
 void write_vehicle(int x, int y, double hp, int damage, int speed, int speed2, int speed3, string vehtype, bool fireable, int z=0)
 {
