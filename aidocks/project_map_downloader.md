@@ -1,6 +1,6 @@
 ---
 name: project_map_downloader
-description: Phase-1 map downloader — in-game download of compiled .map packs from the dev's VPS (reality-breaker-studios.net) served by Caddy. Server side BUILT & proven 2026-08-29; the game-side download_map() flow is PLANNED (not yet coded). Upload is a deliberately-separate later phase.
+description: Phase-1 map downloader — in-game download of compiled .map packs from the dev's VPS (reality-breaker-studios.net) served by Caddy. COMPLETE 2026-08-29 (server + game-side download_map() §1-§3, ships in 14.4). Upload is a deliberately-separate un-started future phase.
 metadata:
   type: project
 ---
@@ -44,7 +44,9 @@ The whole pick→download is wrapped in a **`while(true)` loop** (modeled on `co
 ## Sections to build (game side)
 - **§1 — `download_map()` + `map_server_url`** in `updater.nvgt`. **BUILT 2026-08-29** (uncommitted at time of writing). Needs dev compile-check.
 - **§2 — menu item + handler** in `mapmenu()` (`map_menu.nvgt`), "download map" after "new map". **BUILT 2026-08-29** — `m.add_item("download map", "dlmap");` after the "new map" item, and an `if(buildem=="dlmap") { m.fade_music(); download_map(); continue; }` branch after the "nm" handler. Feature is now live end-to-end (dev compile-check pending). Only §3 docs remain.
-- **§3 — docs (last, per standing rule):** changelog entry + a short mention in the maps help topic ([[feedback_changelog_rules]], [[feedback_update_build_version_txt]]).
+- **§3 — docs — BUILT 2026-08-29.** Changelog: one entry at the top of the existing **14.4** block ("You can now download maps from the game's server…") — NO version bump, the downloader ships in the same already-open 14.4 as the map-error/template work ([[feedback_changelog_rules]], [[feedback_update_build_version_txt]]). Help: a new "Downloading maps." section added to `sf/docks/builder/maps.txt` (before "A note on the meta file."), covering the download map menu, progress beeps, play-from-compiled-maps, the download-several-in-a-row loop, the overwrite confirm, and the internet requirement — observable behavior only, no server/URL internals ([[feedback_tp_prose]]).
+
+**PHASE 1 COMPLETE 2026-08-29** — the download side is fully built (§1 updater.nvgt, §2 map_menu.nvgt, §3 docs) and committed through §2; only the §3 docs commit remains. Drop this to changelog/todo history once 14.4 ships. Upload is still the un-started future phase below.
 
 ## Future phase — upload (NOT designed)
 Would need a receive endpoint (a small server-side handler or FTP/SFTP — Caddy static can't accept), a client-side send (bundle `curl.exe`, `run()` it like `7zr.exe`), and an auth/abuse decision (token baked in client = slows casual abuse only; size cap + `.map`-only check server-side). A **moderated** variant (players submit, dev curates into the public folder) sidesteps the open-write abuse surface and keeps download trivial.
