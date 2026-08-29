@@ -384,6 +384,55 @@ int sp=stn(sd[o+1]);
 string forcetype=sd[o+2];
 spawn_forcefield(mx, mx2, my, my2, dmg, sp, forcetype, mnz, mxz, true);
 }
+/* Tier 2 semantic check: force_field is single (6/7) or ranged (8/10), each with damage, speed, and
+a force-field sound (or "none"). Keyed on length. */
+string force_field_semantic_error(string[] sd, string mode, int &out col)
+{
+uint L = sd.length();
+int o = 3;
+if(L==6 || L==7)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+o = 3;
+if(L==7)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+}
+else
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the minimum x "+e+"."; }
+e = coord_token_error(sd[2], "x", mode);
+if(e != "") { col=2; return "the maximum x "+e+"."; }
+if(range_token_error(sd[1], sd[2]) != "") { col=2; return "the maximum x is less than the minimum x."; }
+e = coord_token_error(sd[3], "y", mode);
+if(e != "") { col=3; return "the minimum y "+e+"."; }
+e = coord_token_error(sd[4], "y", mode);
+if(e != "") { col=4; return "the maximum y "+e+"."; }
+if(range_token_error(sd[3], sd[4]) != "") { col=4; return "the maximum y is less than the minimum y."; }
+o = 5;
+if(L==10)
+{
+e = coord_token_error(sd[5], "z", mode);
+if(e != "") { col=5; return "the minimum z "+e+"."; }
+e = coord_token_error(sd[6], "z", mode);
+if(e != "") { col=6; return "the maximum z "+e+"."; }
+if(range_token_error(sd[5], sd[6]) != "") { col=6; return "the maximum z is less than the minimum z."; }
+o = 7;
+}
+}
+if(!is_number_token(sd[o])) { col=o; return "the damage must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the speed must be a number."; }
+string ftype = sd[o+2];
+if(ftype != "none" && !name_exists("builder/traps/force fields/*", ftype)) { col=o+2; return "the force field sound '"+ftype+"' does not exist."; }
+return "";
+}
 
 void write_ranged_forcefield(double x1, double x2, double y1, double y2, int damage, int speed, string forcetype, double minz=0, double maxz=0)
 {

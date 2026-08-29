@@ -412,6 +412,28 @@ string timbotype=sd[o+2];
 bool lps=string_to_bool(sd[o+3]);
 spawn_timebomb(x, y, dmg, sp, timbotype, z, lps);
 }
+/* Tier 2 semantic check: time_bomb is coordinates, a damage number, a speed, a time-bomb sound (or
+"none"), and a looping flag (length-keyed z). */
+string time_bomb_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(sd.length() == 8)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the damage must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the speed must be a number."; }
+string ttype = sd[o+2];
+if(ttype != "none" && !name_exists("builder/traps/time bombs/*", ttype)) { col=o+2; return "the time bomb sound '"+ttype+"' does not exist."; }
+if(!is_bool_token(sd[o+3])) { col=o+3; return "the looping value must be true or false."; }
+return "";
+}
 
 void write_timebomb(int x, int y, int damage, int speed, string timbombtype, int z=0, bool looping=false)
 {

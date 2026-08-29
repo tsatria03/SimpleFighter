@@ -285,6 +285,41 @@ bool mb3 = false;
 if(is_3d) mb3 = string_to_bool(sd[o+4]);
 spawn_fire(sx, sy, firerange, firerange2, sp, firetype, mb, mb2, sz_v, firerange3, mb3);
 }
+/* Tier 2 semantic check: fire has a position, per-axis seeing ranges (numbers, not coordinates), a
+speed, a fire sound (or "none"), and move-on-axis flags. Keyed on length (9 = 2d, 12 = 3d). */
+string fire_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (sd.length() == 12);
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the x range must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the y range must be a number."; }
+int p = o + 2;
+if(is3d)
+{
+if(!is_number_token(sd[o+2])) { col=o+2; return "the z range must be a number."; }
+p = o + 3;
+}
+if(!is_number_token(sd[p])) { col=p; return "the speed must be a number."; }
+string ftype = sd[p+1];
+if(ftype != "none" && !name_exists("builder/traps/fires/*", ftype)) { col=p+1; return "the fire sound '"+ftype+"' does not exist."; }
+if(!is_bool_token(sd[p+2])) { col=p+2; return "the move on x value must be true or false."; }
+if(!is_bool_token(sd[p+3])) { col=p+3; return "the move on y value must be true or false."; }
+if(is3d)
+{
+if(!is_bool_token(sd[p+4])) { col=p+4; return "the move on z value must be true or false."; }
+}
+return "";
+}
 
 void write_fire(int x, int y, int firerange, int firerange2, int speed, string firetype, bool moveable, bool moveable2, int z=0, int firerange3=0, bool moveable3=false)
 {
