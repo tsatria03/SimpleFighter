@@ -315,6 +315,55 @@ if(is_3d) { mb3=string_to_bool(sd[o+4]); o+=5; } else o+=4;
 bool ss=string_to_bool(sd[o]);
 spawn_teleporter(sx, sy, sx2, sy2, telrange, telrange2, sp, teltype, mb, mb2, ss, sz_v, sz2, telrange3, mb3);
 }
+/* Tier 2 semantic check: teleporter has a source position, a destination position, per-axis seek
+ranges, a speed, a teleporter sound (or "none"), move-on-axis flags, and a single-use flag. */
+string teleporter_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (mode == "3d");
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the source x "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the source y "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the source z "+e+"."; }
+o = 4;
+}
+e = coord_token_error(sd[o], "x", mode);
+if(e != "") { col=o; return "the destination x "+e+"."; }
+e = coord_token_error(sd[o+1], "y", mode);
+if(e != "") { col=o+1; return "the destination y "+e+"."; }
+if(is3d)
+{
+e = coord_token_error(sd[o+2], "z", mode);
+if(e != "") { col=o+2; return "the destination z "+e+"."; }
+o += 3;
+}
+else o += 2;
+if(!is_number_token(sd[o])) { col=o; return "the x range must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the y range must be a number."; }
+if(is3d)
+{
+if(!is_number_token(sd[o+2])) { col=o+2; return "the z range must be a number."; }
+o += 3;
+}
+else o += 2;
+if(!is_number_token(sd[o])) { col=o; return "the speed must be a number."; }
+string ttype = sd[o+1];
+if(ttype != "none" && !name_exists("builder/transitions/teleporters/*", ttype)) { col=o+1; return "the teleporter sound '"+ttype+"' does not exist."; }
+if(!is_bool_token(sd[o+2])) { col=o+2; return "the move on x value must be true or false."; }
+if(!is_bool_token(sd[o+3])) { col=o+3; return "the move on y value must be true or false."; }
+if(is3d)
+{
+if(!is_bool_token(sd[o+4])) { col=o+4; return "the move on z value must be true or false."; }
+o += 5;
+}
+else o += 4;
+if(!is_bool_token(sd[o])) { col=o; return "the single use value must be true or false."; }
+return "";
+}
 
 void write_teleporter(int x, int y, int x2, int y2, int telrange, int telrange2, int speed, string teltype, bool moveable, bool moveable2, bool singleuse, int z=0, int z2=0, int telrange3=0, bool moveable3=false)
 {
