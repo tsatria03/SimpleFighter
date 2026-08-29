@@ -282,6 +282,26 @@ int desty=(tail.length() >= 2) ? int(stn(tail[1])) : 0;
 int destz=(mapmode == "3d" && tail.length() >= 3) ? int(stn(tail[2])) : 0;
 spawn_travelpoint(minx, maxx, miny, maxy, destmap, destx, desty, endtext, minz, maxz, destz, true);
 }
+/* Tier 2 semantic check: travelpoint is a single/ranged trigger region, a quoted destination map
+name (which must exist), an optional quoted arrival text, and the destination coordinates in that
+other map (number-checked only — they belong to the destination, not this map). */
+string travelpoint_semantic_error(string[] sd, string mode, int &out col)
+{
+int text_start = 0;
+string r = quoted_coords_error(sd, mode, col, text_start);
+if(r != "") return r;
+string combined = join_string_array(sd, text_start, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+string destmap = (quoted.length() >= 1) ? quoted[0] : "";
+if(destmap == "") { col = -1; return "the destination map is missing."; }
+if(!map_exists(destmap)) { col = -1; return "the destination map '"+destmap+"' does not exist."; }
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+if(tail.length() >= 1 && tail[0] != "" && !is_number_token(tail[0])) { col = -1; return "the destination x must be a number."; }
+if(tail.length() >= 2 && tail[1] != "" && !is_number_token(tail[1])) { col = -1; return "the destination y must be a number."; }
+if(mode == "3d" && tail.length() >= 3 && tail[2] != "" && !is_number_token(tail[2])) { col = -1; return "the destination z must be a number."; }
+return "";
+}
 
 void write_travelpoint(double x, double y, string destmap, int destx, int desty, string endtext, double z=0, int destz=0)
 {

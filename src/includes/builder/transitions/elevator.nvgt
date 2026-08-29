@@ -339,6 +339,33 @@ bool mv=(tail.length() >= 4) ? string_to_bool(tail[3]) : true;
 bool fsp=(tail.length() >= 5) ? string_to_bool(tail[4]) : false;
 spawn_elevator(x, y, sp, txt, elvtype, bp, lp, mv, fsp, z);
 }
+/* Tier 2 semantic check: elevator is a position, a speed, a quoted menu text, then an elevator sound
+(or "none") and four flags. The speed sits before the quote; the sound leads the tail. Mirrors
+read_elevator. */
+string elevator_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (mode == "3d");
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the speed must be a number."; }
+string combined = join_string_array(sd, o+1, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() < 1) { col=o+1; return "the text must be wrapped in double quotes."; }
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+if(tail.length() >= 1 && tail[0] != "" && tail[0] != "none" && !name_exists("builder/transitions/elevators/*", tail[0]))
+{ col=-1; return "the elevator sound '"+tail[0]+"' does not exist."; }
+return "";
+}
 
 void write_elevator(int x, int y, int speed, string txt, string elvtype, bool beeping, bool looping, bool moving, bool floorspeak, int z=0)
 {
