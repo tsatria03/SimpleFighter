@@ -403,6 +403,27 @@ bool tg=string_to_bool(sd[5]);
 spawn_mine(x, y, dmg, minetype, tg, 0);
 }
 }
+/* Tier 2 semantic check: mine is coordinates, an attack number, a mine sound (or "none"), and an
+auto-activate flag (length-keyed z). */
+string mine_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col = 1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col = 2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(sd.length() == 7)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col = 3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col = o; return "the attack must be a number."; }
+string mtype = sd[o+1];
+if(mtype != "none" && !name_exists("builder/traps/mines/*", mtype)) { col = o+1; return "the mine sound '"+mtype+"' does not exist."; }
+if(!is_bool_token(sd[o+2])) { col = o+2; return "the auto activate value must be true or false."; }
+return "";
+}
 
 void write_mine(int x, int y, int damage, string minetype, bool triggered, int z=0)
 {

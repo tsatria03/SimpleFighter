@@ -146,6 +146,25 @@ string floorbtype=sd[3];
 spawn_floorbreaker(x, y, floorbtype, 0);
 }
 }
+/* Tier 2 semantic check: floor_breaker is coordinates plus a sound folder name (length-keyed z, or
+"none" for silent). */
+string floor_breaker_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col = 1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col = 2; return "the y coordinate "+e+"."; }
+int t = 3;
+if(sd.length() == 5)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col = 3; return "the z coordinate "+e+"."; }
+t = 4;
+}
+string ftype = sd[t];
+if(ftype != "none" && !name_exists("builder/traps/floor breakers/*", ftype)) { col = t; return "the floor breaker sound '"+ftype+"' does not exist."; }
+return "";
+}
 
 void write_floor_breaker(int x, int y, string breakertype, int z=0)
 {
