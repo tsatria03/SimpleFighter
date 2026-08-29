@@ -497,6 +497,42 @@ menu_name=sd[7];
 }
 spawn_menuzone(mx, mx2, my, my2, mnz, mxz, menu_name);
 }
+/* Tier 2 semantic check: menu_zone is an x range and a y range (z range on 3d), plus an optional
+menu name that must be one of the known menus (menu_zone_ids). No disk lookup — a fixed-list enum. */
+string menu_zone_semantic_error(string[] sd, string mode, int &out col)
+{
+uint L = sd.length();
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the minimum x "+e+"."; }
+e = coord_token_error(sd[2], "x", mode);
+if(e != "") { col=2; return "the maximum x "+e+"."; }
+if(range_token_error(sd[1], sd[2]) != "") { col=2; return "the maximum x is less than the minimum x."; }
+e = coord_token_error(sd[3], "y", mode);
+if(e != "") { col=3; return "the minimum y "+e+"."; }
+e = coord_token_error(sd[4], "y", mode);
+if(e != "") { col=4; return "the maximum y "+e+"."; }
+if(range_token_error(sd[3], sd[4]) != "") { col=4; return "the maximum y is less than the minimum y."; }
+int menu_idx = -1;
+if(L == 6) menu_idx = 5;
+else if(L == 7 || L == 8)
+{
+e = coord_token_error(sd[5], "z", mode);
+if(e != "") { col=5; return "the minimum z "+e+"."; }
+e = coord_token_error(sd[6], "z", mode);
+if(e != "") { col=6; return "the maximum z "+e+"."; }
+if(range_token_error(sd[5], sd[6]) != "") { col=6; return "the maximum z is less than the minimum z."; }
+if(L == 8) menu_idx = 7;
+}
+if(menu_idx >= 0)
+{
+string mname = sd[menu_idx];
+bool found = false;
+for(uint i=0; i<menu_zone_ids.length(); i++)
+if(menu_zone_ids[i]==mname) { found=true; break; }
+if(!found) { col = menu_idx; return "the menu '"+mname+"' is not a valid menu."; }
+}
+return "";
+}
 
 void write_menu_zone(double x1, double x2, double y1, double y2, double minz=0, double maxz=0, string menu_name="default")
 {
