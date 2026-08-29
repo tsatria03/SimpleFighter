@@ -84,6 +84,47 @@ void destroy_all_npc_zones()
 npc_zones.resize(0);
 }
 
+/* Tier 2 semantic check. An npc_zone is an x span, a y (single, or a min/max span in topdown and 3d),
+an optional z, a spawn time, a scale level, a lookup path, a category, and a subtype. Mirrors
+read_npc_zone's length- and mode-keyed shape for where the y-max and z sit. The subtype must resolve
+to a real npc pack (or be "none"/"random"). Shares the path/category lists and lookup with npc. */
+string npc_zone_semantic_error(string[] sd, string mode, int &out col)
+{
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the minimum x "+e+"."; }
+e = coord_token_error(sd[2], "x", mode);
+if(e != "") { col=2; return "the maximum x "+e+"."; }
+if(range_token_error(sd[1], sd[2]) != "") { col=2; return "the maximum x is less than the minimum x."; }
+int o = 4;
+int y2_idx = -1;
+int z_idx = -1;
+if(mode == "topdown" && sd.length() == 10) { y2_idx = 4; o = 5; }
+else if(mode == "3d" && sd.length() == 10) { z_idx = 4; o = 5; }
+else if(mode == "3d" && sd.length() == 11) { y2_idx = 4; z_idx = 5; o = 6; }
+e = coord_token_error(sd[3], "y", mode);
+if(e != "") { col=3; return (y2_idx != -1 ? "the minimum y " : "the y coordinate ")+e+"."; }
+if(y2_idx != -1)
+{
+e = coord_token_error(sd[y2_idx], "y", mode);
+if(e != "") { col=y2_idx; return "the maximum y "+e+"."; }
+if(range_token_error(sd[3], sd[y2_idx]) != "") { col=y2_idx; return "the maximum y is less than the minimum y."; }
+}
+if(z_idx != -1)
+{
+e = coord_token_error(sd[z_idx], "z", mode);
+if(e != "") { col=z_idx; return "the z coordinate "+e+"."; }
+}
+if(!is_number_token(sd[o])) { col=o; return "the spawn time must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the scale level must be a number."; }
+string path = sd[o+2];
+if(!array_contains(npc_paths, path)) { col=o+2; return "the path must be any, global, or map."; }
+string category = sd[o+3];
+if(!array_contains(npc_categories, category)) { col=o+3; return "the category '"+category+"' is not valid."; }
+string subtype = sd[o+4];
+if(subtype != "random" && !npc_subtype_exists(path, category, subtype)) { col=o+4; return "the npc '"+subtype+"' does not exist."; }
+return "";
+}
+
 void read_npc_zone(string[] sd)
 {
 double mx = stn(sd[1]);

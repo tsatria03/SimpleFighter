@@ -673,6 +673,39 @@ destroy_npc_bullets();
 npcs.resize(0);
 }
 
+/* The npc lookup paths and the full set of npc categories, shared by the npc and npc_zone semantic
+checks. npc_zone's build form offers only a subset of these categories, but a hand-authored zone that
+names bosses or helpers still spawns correctly, so the wider set is used for both to avoid false
+warnings. */
+string[] npc_paths = {"any", "global", "map"};
+string[] npc_categories = {"animals", "bosses", "helpers", "humans", "robots", "specials", "zombies"};
+/* Tier 2 semantic check. An npc is a position, a scale level, a lookup path, a category, and a
+subtype. The subtype must resolve to a real npc pack for the chosen path and category (or be "none").
+Mirrors read_npc's length-keyed shape: an 8-token line carries a z, a 7-token line does not. */
+string npc_semantic_error(string[] sd, string mode, int &out col)
+{
+bool has_z = (sd.length() == 8);
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(has_z)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the scale level must be a number."; }
+string path = sd[o+1];
+if(!array_contains(npc_paths, path)) { col=o+1; return "the path must be any, global, or map."; }
+string category = sd[o+2];
+if(!array_contains(npc_categories, category)) { col=o+2; return "the category '"+category+"' is not valid."; }
+string subtype = sd[o+3];
+if(!npc_subtype_exists(path, category, subtype)) { col=o+3; return "the npc '"+subtype+"' does not exist."; }
+return "";
+}
+
 void read_npc(string[] sd)
 {
 int x = stn(sd[1]);
