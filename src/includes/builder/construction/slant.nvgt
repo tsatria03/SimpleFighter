@@ -301,6 +301,44 @@ double tvol=stn(sd[o+7]);
 double tpit=stn(sd[o+8]);
 spawn_slant(mnx, mxx, mny, mxy, base, sh, dir, btile, bvol, bpit, ttile, tvol, tpit);
 }
+/* Tier 2 semantic check: slant has an x range (plus a y range on 3d), a base elevation, a direction
+word, a slope amount, and two tile groups (bottom + top, each a tile-or-"none" with volume/pitch).
+Length 12 (2d) / 14 (3d). The direction is a word like right_up; comparisons strip underscores. */
+string slant_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (sd.length() == 14);
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the minimum x "+e+"."; }
+e = coord_token_error(sd[2], "x", mode);
+if(e != "") { col=2; return "the maximum x "+e+"."; }
+if(range_token_error(sd[1], sd[2]) != "") { col=2; return "the maximum x is less than the minimum x."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "y", mode);
+if(e != "") { col=3; return "the minimum y "+e+"."; }
+e = coord_token_error(sd[4], "y", mode);
+if(e != "") { col=4; return "the maximum y "+e+"."; }
+if(range_token_error(sd[3], sd[4]) != "") { col=4; return "the maximum y is less than the minimum y."; }
+o = 5;
+}
+e = coord_token_error(sd[o], is3d ? "z" : "y", mode);
+if(e != "") { col=o; return "the base height "+e+"."; }
+string dstrip = string_replace(sd[o+1], "_", "", true);
+bool validdir = (dstrip=="leftup"||dstrip=="leftdown"||dstrip=="rightup"||dstrip=="rightdown");
+if(is3d) validdir = validdir || (dstrip=="forwardup"||dstrip=="forwarddown"||dstrip=="backwardup"||dstrip=="backwarddown");
+if(!validdir) { col=o+1; return "the direction '"+sd[o+1]+"' is not a valid slant direction."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the slope amount must be a number."; }
+string btile = sd[o+3];
+if(btile != "none" && !name_exists("builder/construction/platforms/*", btile)) { col=o+3; return "the bottom tile '"+btile+"' does not exist."; }
+if(!is_number_token(sd[o+4])) { col=o+4; return "the bottom volume must be a number."; }
+if(!is_number_token(sd[o+5])) { col=o+5; return "the bottom pitch must be a number."; }
+string ttile = sd[o+6];
+if(ttile != "none" && !name_exists("builder/construction/platforms/*", ttile)) { col=o+6; return "the top tile '"+ttile+"' does not exist."; }
+if(!is_number_token(sd[o+7])) { col=o+7; return "the top volume must be a number."; }
+if(!is_number_token(sd[o+8])) { col=o+8; return "the top pitch must be a number."; }
+return "";
+}
 
 void write_slant(double mnx, double mxx, double mny, double mxy, double base, double sh, string dir, string btile, double bvol, double bpit, string ttile, double tvol, double tpit)
 {
