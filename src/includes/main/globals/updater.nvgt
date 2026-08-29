@@ -1,3 +1,7 @@
+// Base URL of the map server (the dev's VPS). Downloads fetch the index at
+// <map_server_url>/index.txt and each pack at <map_server_url>/maps/<name>.map.
+string map_server_url = "http://reality-breaker-studios.net";
+
 bool check_for_updates(string old_version, string projectname, bool precheck = false)
 {
 if (precheck)
@@ -136,4 +140,59 @@ return;
 }
 alert("extraction_error", "Error occurred during extraction.");
 return;
+}
+
+// Phase-1 map downloader: fetch the map server's index, let the player pick a
+// compiled map, and download it into the compiled-maps folder so it appears in
+// load map, then compiled maps. Overwriting an existing copy asks first.
+void download_map()
+{
+string index = url_get(map_server_url + "/index.txt");
+if(index == "" || string_contains(index, "<!DOCTYPE", 1) > -1)
+{
+alert("Error", "Could not reach the map server. Please check your internet connection and try again.");
+return;
+}
+string[] maps = clean_lines_from_text(index);
+if(maps.length() == 0)
+{
+alert("No maps", "There are no maps available to download right now.");
+return;
+}
+setupmenu();
+for(uint i = 0; i < maps.length(); i++)
+m.add_item(maps[i], maps[i]);
+m.add_item("back", "back");
+m.intro_text = "Download map menu";
+int res = m.run();
+if(res < 0)
+{
+speak("canceled");
+return;
+}
+string choice = m.selected_item_id;
+if(choice == "back")
+{
+speak("canceled");
+return;
+}
+if(!directory_exists("data/builder/maps/compiled"))
+directory_create("data/builder/maps/compiled");
+string local = "data/builder/maps/compiled/" + choice;
+if(file_exists(local))
+{
+if(question("Overwrite map", "You already have " + choice + ". Download it again and overwrite your copy?") != 1)
+{
+speak("canceled");
+return;
+}
+}
+string result = dl_file(map_server_url + "/maps/" + choice, local);
+if(result != "finished")
+{
+if(result == "canceled" && file_exists(local)) file_delete(local);
+alert("Download failed", "The map could not be downloaded.");
+return;
+}
+alert("Download complete", choice + " has been downloaded. You can now play it from load map, then compiled maps.");
 }
