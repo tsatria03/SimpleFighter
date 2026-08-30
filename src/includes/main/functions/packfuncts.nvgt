@@ -381,6 +381,8 @@ string temp_mode = read_map_mode_decompiled(folder_name);
 uint64 bytes = get_directory_size("data/builder/maps/decompiled/" + folder_name);
 m.add_item(folder_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), folder_name);
 }
+// Sentinel id can't collide with a map name: '*' is illegal in a folder name, so find_directories never returns one.
+m.add_item("back", "*back*");
 m.intro_text = "Choose a map to compile";
 int mres = m.run();
 if (mres < 0)
@@ -389,6 +391,11 @@ speak("canceled");
 return;
 }
 string chosen = m.selected_item_id;
+if (chosen == "*back*")
+{
+speak("canceled");
+return;
+}
 string full_output_path = "data/builder/maps/compiled/" + chosen + ".map";
 if (file_exists(full_output_path))
 {
@@ -469,6 +476,8 @@ string temp_mode = read_map_mode_compiled(map_path);
 uint64 bytes = file_get_size(map_path);
 m.add_item(base_name + ", " + temp_mode + " map, total size, " + measure_file_size(bytes), base_name);
 }
+// Sentinel id can't collide with a map name: '*' is illegal in a folder name, so find_files never returns one.
+m.add_item("back", "*back*");
 m.intro_text = "Choose a map to decompile";
 int mres = m.run();
 if (mres < 0)
@@ -477,6 +486,11 @@ speak("canceled");
 return;
 }
 string chosen = m.selected_item_id;
+if (chosen == "*back*")
+{
+speak("canceled");
+return;
+}
 string base_dir = "data/builder/maps/decompiled/" + chosen;
 if (directory_exists(base_dir))
 {
@@ -553,6 +567,7 @@ string pack_name = available[i];
 uint64 bytes = get_directory_size("sounds/decompiled/" + pack_name);
 m.add_item(pack_name + ", total size, " + measure_file_size(bytes), pack_name);
 }
+m.add_item("back", "back");
 m.intro_text = "Choose a sound pack to compile";
 int mres = m.run();
 if (mres < 0)
@@ -561,6 +576,11 @@ speak("canceled");
 return;
 }
 string chosen = m.selected_item_id;
+if (chosen == "back")
+{
+speak("canceled");
+return;
+}
 string full_output_path = "sounds/compiled/" + chosen + ".spack";
 if (file_exists(full_output_path))
 {
@@ -639,6 +659,7 @@ string base_name = string_replace(spack_filename, ".spack", "", true);
 uint64 bytes = file_get_size(spack_path);
 m.add_item(base_name + ", total size, " + measure_file_size(bytes), base_name);
 }
+m.add_item("back", "back");
 m.intro_text = "Choose a sound pack to decompile";
 int mres = m.run();
 if (mres < 0)
@@ -647,6 +668,11 @@ speak("canceled");
 return;
 }
 string chosen = m.selected_item_id;
+if (chosen == "back")
+{
+speak("canceled");
+return;
+}
 string base_dir = "sounds/decompiled/" + chosen;
 if (directory_exists(base_dir))
 {

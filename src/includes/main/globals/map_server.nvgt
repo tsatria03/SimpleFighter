@@ -6,6 +6,40 @@ string map_upload_token = "vIOmjLLpBhn2J6aLoDcAVL8jNfY9e6nLVbYyEzwov8onZCa7McywB
 
 int64 map_upload_max = int64(2) * 1024 * 1024 * 1024; // 2 GB, matches the server's cap
 
+// Did the map server actually answer a GET of url, whatever the HTTP status? Used
+// only to tell an EMPTY index (server up, no maps approved yet) apart from a real
+// connection failure, since url_get returns "" for both and never exposes the
+// status. Uses the same Poco http_client path as ul_file; any reply (even a 404)
+// means we reached the server, a thrown request means we didn't.
+bool map_server_reachable(string url)
+{
+string rest = url;
+rest = string_replace(rest, "https://", "", true);
+rest = string_replace(rest, "http://", "", true);
+int slash = rest.find("/");
+string hostport = (slash >= 0) ? rest.substr(0, slash) : rest;
+string path = (slash >= 0) ? rest.substr(slash) : "/";
+uint16 port = 80;
+int colon = hostport.find(":");
+string host = hostport;
+if(colon >= 0) { host = hostport.substr(0, colon); port = uint16(string_to_number(hostport.substr(colon+1))); }
+try
+{
+http_client@ session = http_client(host, port);
+http_request@ req = http_request(HTTP_GET, path);
+req.host = host;
+session.send_request(req);
+http_response@ resp = http_response();
+session.receive_response(resp);
+return int(resp.status) > 0;
+}
+catch
+{
+return false;
+}
+return false;
+}
+
 // Phase-1 map downloader: fetch the map server's index, then loop a menu so the
 // player can download one map after another into the compiled-maps folder (where
 // they appear under load map, then compiled maps). Overwriting an existing copy
@@ -14,7 +48,12 @@ int64 map_upload_max = int64(2) * 1024 * 1024 * 1024; // 2 GB, matches the serve
 void download_map()
 {
 string index = url_get(map_server_url + "/public_index.txt");
-if(index == "" || string_contains(index, "<!DOCTYPE", 1) > -1)
+// An empty reply is ambiguous: the server may be up with no maps approved yet, or
+// unreachable. Only call it a connection error if it's an HTML error page, or if a
+// reachability probe confirms the server didn't answer; an empty-but-reachable
+// index falls through to the "no maps" message below instead of falsely blaming
+// the player's internet.
+if(string_contains(index, "<!DOCTYPE", 1) > -1 || (index == "" && !map_server_reachable(map_server_url + "/public_index.txt")))
 {
 alert("Error", "Could not reach the map server. Please check your internet connection and try again.");
 return;
@@ -37,7 +76,8 @@ if(parts.length() >= 3)
 display = fname + ", " + parts[1] + " map, total size, " + measure_file_size(int64(string_to_number(parts[2])));
 m.add_item(display, fname);
 }
-m.add_item("back", "back");
+// Sentinel id can't collide with a server map name: '*' is illegal in a map filename.
+m.add_item("back", "*back*");
 m.intro_text = "Choose a map to download";
 int res = m.run();
 if(res < 0)
@@ -46,7 +86,7 @@ speak("canceled");
 return;
 }
 string choice = m.selected_item_id;
-if(choice == "back")
+if(choice == "*back*")
 {
 speak("canceled");
 return;
@@ -113,12 +153,13 @@ string mode = read_map_mode_compiled(mpath);
 int64 bytes = file_get_size(mpath);
 m.add_item(base + ", " + mode + " map, total size, " + measure_file_size(bytes), maps[i]);
 }
-m.add_item("back", "back");
+// Sentinel id can't collide with a map name: '*' is illegal in a map filename.
+m.add_item("back", "*back*");
 m.intro_text = "Choose a map to upload";
 int res = m.run();
 if(res < 0) { speak("canceled"); return; }
 string choice = m.selected_item_id;
-if(choice == "back") { speak("canceled"); return; }
+if(choice == "*back*") { speak("canceled"); return; }
 string local = "data/builder/maps/compiled/" + choice;
 if(file_get_size(local) > map_upload_max)
 {
