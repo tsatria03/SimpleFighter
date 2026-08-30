@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimpleFighter map approver</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff; --fg: #14161a; --muted: #55606e;
+  --border: #c3cad4; --field-bg: #ffffff;
+  --accent: #1d6fe0; --accent-fg: #ffffff;
+  --danger: #b5261e; --danger-fg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c; --fg: #eef1f5; --muted: #9aa4b2;
+    --border: #39414d; --field-bg: #1c2027;
+    --accent: #4c93ff; --accent-fg: #0a0d12;
+    --danger: #ff6b60; --danger-fg: #1a0605;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 1.5rem;
+  font: 1rem/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg); color: var(--fg);
+}
+main { max-width: 40rem; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+p.intro { color: var(--muted); margin: 0 0 1.5rem; }
+.field { margin: 0 0 1.25rem; }
+label { display: block; font-weight: 600; margin: 0 0 .35rem; }
+select {
+  width: 100%; padding: .55rem .6rem; font-size: 1rem;
+  color: var(--fg); background: var(--field-bg);
+  border: 1px solid var(--border); border-radius: .4rem;
+}
+.actions { display: flex; flex-wrap: wrap; gap: .6rem; margin: 0 0 1.25rem; }
+button {
+  font-size: 1rem; font-weight: 600; padding: .55rem 1rem;
+  border: 1px solid var(--border); border-radius: .4rem;
+  background: var(--field-bg); color: var(--fg); cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button.danger { background: var(--danger); color: var(--danger-fg); border-color: var(--danger); }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.status {
+  min-height: 1.5rem; margin: 0; padding: .6rem .75rem;
+  border: 1px solid var(--border); border-radius: .4rem;
+  background: var(--field-bg);
+}
+</style>
+</head>
+<body>
+<main>
+<h1>SimpleFighter map approver</h1>
+<p class="intro">Review the maps players have uploaded. Approving a map publishes it to the public download list; rejecting one deletes it.</p>
+
+<div class="field">
+<label for="maps">Maps waiting for approval</label>
+<select id="maps" aria-describedby="status"></select>
+</div>
+
+<div class="actions">
+<button id="approve" type="button" class="primary">Approve selected map</button>
+<button id="reject" type="button" class="danger">Reject selected map</button>
+<button id="refresh" type="button">Refresh list</button>
+</div>
+
+<p id="status" class="status" role="status" aria-live="polite">Loading&hellip;</p>
+</main>
+
+<script>
+"use strict";
+var maps = document.getElementById("maps");
+var approveBtn = document.getElementById("approve");
+var rejectBtn = document.getElementById("reject");
+var refreshBtn = document.getElementById("refresh");
+var statusEl = document.getElementById("status");
+
+function say(msg) { statusEl.textContent = msg; }
+
+function humanSize(bytes) {
+  var n = Number(bytes);
+  if (!isFinite(n)) return "unknown size";
+  var units = ["bytes", "KB", "MB", "GB"];
+  for (var i = 0; i < units.length; i++) {
+    if (n < 1024 || i === units.length - 1) {
+      return i === 0 ? (n + " bytes") : (n.toFixed(2) + " " + units[i]);
+    }
+    n /= 1024;
+  }
+}
+
+function setBusy(busy) {
+  approveBtn.disabled = busy || maps.options.length === 0;
+  rejectBtn.disabled = busy || maps.options.length === 0;
+  refreshBtn.disabled = busy;
+  maps.disabled = busy || maps.options.length === 0;
+}
+
+async function loadPending() {
+  setBusy(true);
+  say("Loading the review queue…");
+  maps.innerHTML = "";
+  try {
+    var res = await fetch("/admin/pending", { headers: { "Accept": "text/plain" } });
+    if (res.status === 401 || res.status === 403) {
+      say("Not authorized. Reload the page to sign in again.");
+      return;
+    }
+    if (!res.ok) { say("Could not load the queue (server said " + res.status + ")."); return; }
+    var text = await res.text();
+    var lines = text.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    if (lines.length === 0) {
+      say("There are no maps waiting for approval right now.");
+      setBusy(false);
+      return;
+    }
+    lines.forEach(function (line) {
+      var parts = line.split("|");
+      var base = parts[0];
+      var mode = parts[1] || "unknown";
+      var size = parts[2];
+      var opt = document.createElement("option");
+      opt.value = base;
+      opt.textContent = base + " — " + mode + " map, " + humanSize(size);
+      maps.appendChild(opt);
+    });
+    setBusy(false);
+    maps.selectedIndex = 0;
+    say(lines.length + (lines.length === 1 ? " map is" : " maps are") + " waiting for approval.");
+    maps.focus();
+  } catch (e) {
+    say("Could not reach the server. Check your connection and try again.");
+  }
+}
+
+async function moderate(action) {
+  if (maps.options.length === 0) { say("There are no maps to act on."); return; }
+  var base = maps.value;
+  var question = (action === "approve")
+    ? 'Approve "' + base + '"? It will become downloadable by everyone.'
+    : 'Reject "' + base + '"? This deletes the uploaded map and cannot be undone.';
+  if (!window.confirm(question)) { say("Canceled."); return; }
+  setBusy(true);
+  say((action === "approve" ? "Approving " : "Rejecting ") + base + "…");
+  try {
+    var url = "/admin/" + action + "?name=" + encodeURIComponent(base + ".map");
+    var res = await fetch(url, { method: "POST" });
+    if (res.status === 401 || res.status === 403) { say("Not authorized. Reload the page to sign in again."); return; }
+    if (res.status === 404) { say('"' + base + '" is no longer in the pending queue.'); await loadPending(); return; }
+    if (!res.ok) { say("The action failed (server said " + res.status + ")."); setBusy(false); return; }
+    say((action === "approve" ? "Approved " : "Rejected ") + base + ".");
+    await loadPending();
+  } catch (e) {
+    say("Could not reach the server. Check your connection and try again.");
+    setBusy(false);
+  }
+}
+
+approveBtn.addEventListener("click", function () { moderate("approve"); });
+rejectBtn.addEventListener("click", function () { moderate("reject"); });
+refreshBtn.addEventListener("click", loadPending);
+loadPending();
+</script>
+</body>
+</html>

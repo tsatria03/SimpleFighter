@@ -17,6 +17,7 @@ ADMIN_TOKEN = "y1nIO3RowtqLThgHzrXSjB9TaNLzwdNBxrLzB7w4v5T0kXhQFmc0UfF1uuMW6aPru
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024               # 2 GB per uploaded map
 # ---------------------------------------------------------------------------
 
+import base64
 import os
 import re
 import sys
@@ -188,16 +189,50 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass  # the client hung up mid-download; nothing to do
 
-    def _admin_ok(self, params):
-        """True only if the caller sent the (non-empty) admin token. Gates moderation."""
-        token = (params.get("token") or [""])[0]
-        return bool(ADMIN_TOKEN) and token == ADMIN_TOKEN
+    def _basic_auth_ok(self):
+        """True if the request carries HTTP Basic Auth whose password equals the admin
+        token (username ignored). This is how the browser admin panel authenticates -
+        the browser prompts once and re-sends the credentials on every request."""
+        if not ADMIN_TOKEN:
+            return False
+        hdr = self.headers.get("Authorization", "")
+        if not hdr.startswith("Basic "):
+            return False
+        try:
+            decoded = base64.b64decode(hdr[6:]).decode("utf-8", "replace")
+        except Exception:
+            return False
+        _, _, password = decoded.partition(":")
+        return password == ADMIN_TOKEN
 
-    # --- Downloads + admin queue listing -----------------------------------
+    def _admin_ok(self, params):
+        """Gate for moderation: accept EITHER the ?token= query (the in-game client)
+        OR HTTP Basic Auth (the browser panel). Both check against the admin token."""
+        token = (params.get("token") or [""])[0]
+        if bool(ADMIN_TOKEN) and token == ADMIN_TOKEN:
+            return True
+        return self._basic_auth_ok()
+
+    def _require_basic_auth(self):
+        """Send a 401 that makes the browser show its native login dialog."""
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="SimpleFighter map approver"')
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    # --- Downloads (public) + admin panel/queue (auth-gated) ---------------
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
-        if path in ("/", "/public_index.txt"):
+        # The admin panel is the site root. It sits behind Basic Auth, so a visitor
+        # without the password never even sees it (the browser blocks them at 401).
+        if path in ("/", "/index.html"):
+            if not self._basic_auth_ok():
+                return self._require_basic_auth()
+            return self._serve_file(os.path.join(ROOT, "index.html"), "text/html; charset=utf-8")
+        # Download list + packs stay PUBLIC (players need them; no auth).
+        if path == "/public_index.txt":
             return self._serve_file(INDEX_FILE, "text/plain")
         if path.startswith("/maps/public/"):
             name = safe_map_name(urllib.parse.unquote(path[len("/maps/public/"):]))
