@@ -230,3 +230,90 @@ else
 alert("Upload failed", "The map could not be uploaded. Please check your internet connection and try again.");
 }
 }
+
+// In-game map moderation (source builds only, gated by map_admin_token; reached from
+// the outer main menu's "server menu"). Lets the dev approve or reject uploaded maps
+// from within the game instead of on the VPS, via the server's admin endpoints.
+void servermenu()
+{
+while(true)
+{
+setupmenu(true);
+m.add_item("approve maps", "approve");
+m.add_item("reject maps", "reject");
+m.add_item("back", "back");
+m.intro_text = "Server menu";
+int mres = m.run();
+if(mres < 0) return;
+string sel = m.selected_item_id;
+if(sel == "back") return;
+if(sel == "approve") { m.fade_music(); moderate_maps("approve"); }
+else if(sel == "reject") { m.fade_music(); moderate_maps("reject"); }
+}
+}
+
+// Shared approve/reject flow: fetch the pending queue, list it (name, mode, size),
+// let the dev pick a map, confirm, and call the matching admin endpoint. action is
+// "approve" or "reject". Loops so several maps can be handled in a row.
+void moderate_maps(string action)
+{
+while(true)
+{
+string body;
+int status = admin_http("GET", map_server_url + "/admin/pending?token=" + map_admin_token, body);
+if(status == 403)
+{
+alert("Not authorized", "The map server did not accept your admin token. Set it again in preferences under set map server token.");
+return;
+}
+if(status != 200)
+{
+alert("Error", "Could not reach the map server. Please check your internet connection and try again.");
+return;
+}
+string[] maps = clean_lines_from_text(body);
+if(maps.length() == 0)
+{
+alert("No maps", "There are no maps waiting for approval right now.");
+return;
+}
+setupmenu();
+for(uint i = 0; i < maps.length(); i++)
+{
+string[] parts = string_split(maps[i], "|", true);
+string base = parts[0];
+string display = base;
+if(parts.length() >= 3)
+display = base + ", " + parts[1] + " map, total size, " + measure_file_size(int64(string_to_number(parts[2])));
+m.add_item(display, base);
+}
+m.add_item("back", "*back*");
+m.intro_text = (action == "approve") ? "Choose a map to approve" : "Choose a map to reject";
+int mres = m.run();
+if(mres < 0) { speak("canceled"); return; }
+string choice = m.selected_item_id;
+if(choice == "*back*") { speak("canceled"); return; }
+setupmenu();
+m.add_item("yes");
+m.add_item("no");
+m.intro_text = (action == "approve") ? ("Approve " + choice + "? It will become downloadable by everyone.") : ("Reject " + choice + "? This deletes the uploaded map and cannot be undone.");
+int conf = m.run();
+if(conf != 0) { speak("canceled"); continue; }
+// The pending list carries bare names; re-append .map for the endpoint (server sanitises it).
+string fileword = choice;
+if(fileword.length() < 4 || fileword.substr(fileword.length() - 4) != ".map") fileword += ".map";
+string rbody;
+int rstatus = admin_http("POST", map_server_url + "/admin/" + action + "?token=" + map_admin_token + "&name=" + fileword, rbody);
+if(rstatus == 200)
+alert((action == "approve") ? "Approved" : "Rejected", (action == "approve") ? (choice + " is now downloadable from the map server.") : (choice + " has been rejected and deleted."));
+else if(rstatus == 403)
+{
+alert("Not authorized", "The map server did not accept your admin token.");
+return;
+}
+else if(rstatus == 404)
+alert("Not found", "That map is no longer in the pending queue.");
+else
+alert("Error", "The action could not be completed. Please check your internet connection and try again.");
+}
+}
