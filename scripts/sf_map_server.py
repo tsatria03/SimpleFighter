@@ -20,8 +20,8 @@ MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024               # 2 GB per uploaded map
 # visiting the panel over http then redirects to https. Leave BLANK to run HTTP only.
 # A self-signed cert is fine here since only your own browser uses the panel:
 #   openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 3650 -nodes -subj "/CN=reality-breaker-studios.net"
-CERT_FILE = ""                                          # e.g. r"C:\Users\Administrator\Desktop\SimpleFighter\cert.pem"
-KEY_FILE = ""                                           # e.g. r"C:\Users\Administrator\Desktop\SimpleFighter\key.pem"
+CERT_FILE = r"C:\Users\Administrator\Desktop\SimpleFighter\certs\reality-breaker-studios.net-chain.pem"  # fullchain (cert + intermediates)
+KEY_FILE = r"C:\Users\Administrator\Desktop\SimpleFighter\certs\reality-breaker-studios.net-key.pem"      # private key
 HTTPS_PORT = 443
 # ---------------------------------------------------------------------------
 
