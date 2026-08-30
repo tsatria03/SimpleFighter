@@ -13,6 +13,7 @@
 ROOT = r"C:\Users\Administrator\Desktop\SimpleFighter"  # the folder holding index.txt and the maps folder
 PORT = 80                                               # 80 is the normal web port
 UPLOAD_TOKEN = "vIOmjLLpBhn2J6aLoDcAVL8jNfY9e6nLVbYyEzwov8onZCa7McywBa78BzDzzgbJs3RAxmRlW3VRvy0T6j36zXtnWCjWpfQt0EIUWsqxjWhYlRQqP7vScI8Ptm1ChYPOCPgfZCsbLWr6fcdzlY0K10DGNA"                        # shared secret an uploading game must send - CHANGE THIS
+ADMIN_TOKEN = "y1nIO3RowtqLThgHzrXSjB9TaNLzwdNBxrLzB7w4v5T0kXhQFmc0UfF1uuMW6aPruGmNT1baRoQwydGhIRuru8wsQv9bMcadfXKxc0BjYian0SvNlEC7nawYfGMZm8JhbeEk7iOXs5gL9bNBJH7EqQNfOeS3fvSUdh7HrlsVLFEduXryZpCUng5o4EOghutE7F1YQP52gcyPYHN2f3Dc2PGpCEvoLBuDRJoyquBJenEwzcT46weijDmYTaCx2EsrT"  # SEPARATE, private admin secret for approving/rejecting maps - never put this in any src/*.nvgt file
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024               # 2 GB per uploaded map
 # ---------------------------------------------------------------------------
 
@@ -44,23 +45,115 @@ def safe_map_name(raw):
     return name
 
 
+# --- index file helpers (name|mode|bytes lines, CRLF) ----------------------
+def read_index_lines(path):
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return [ln.strip() for ln in f.read().splitlines() if ln.strip()]
+
+
+def write_index_lines(path, lines):
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write("\r\n".join(lines))
+
+
+def _base_of(line):
+    return line.split("|", 1)[0]
+
+
+def index_upsert(lines, base, mode, size):
+    """Replace any existing line for base, then append base|mode|size."""
+    kept = [ln for ln in lines if _base_of(ln) != base]
+    kept.append("%s|%s|%s" % (base, mode, size))
+    return kept
+
+
+def index_remove(lines, base):
+    return [ln for ln in lines if _base_of(ln) != base]
+
+
+def index_lookup(lines):
+    """base -> (mode, size) from name|mode|bytes lines."""
+    out = {}
+    for ln in lines:
+        parts = ln.split("|")
+        base = parts[0]
+        mode = parts[1] if len(parts) > 1 else ""
+        size = parts[2] if len(parts) > 2 else ""
+        out[base] = (mode, size)
+    return out
+
+
 def update_pending_index(base, mode, size):
     """Add or refresh this map's line in pending_index.txt as name|mode|bytes - the
     review-queue mirror of the public index (same format the game's index uses; the
     name carries no .map). Re-uploading the same name replaces its line. Locked so
     simultaneous uploads don't clobber the file."""
-    path = PENDING_INDEX_FILE
     with INDEX_LOCK:
-        kept = []
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                for line in f.read().splitlines():
-                    line = line.strip()
-                    if line and line.split("|", 1)[0] != base:
-                        kept.append(line)
-        kept.append(base + "|" + mode + "|" + str(size))
-        with open(path, "w", encoding="utf-8", newline="") as f:
-            f.write("\r\n".join(kept))
+        lines = read_index_lines(PENDING_INDEX_FILE)
+        write_index_lines(PENDING_INDEX_FILE, index_upsert(lines, base, mode, str(size)))
+
+
+# --- moderation (admin-only: list the queue, approve into public, reject) ---
+def list_pending_maps():
+    """The review queue as name|mode|bytes lines, built off the REAL .map files in
+    pending (authoritative - a missing or stale index line can't hide a map). Mode
+    comes from pending_index.txt, size from disk."""
+    if not os.path.isdir(PENDING_DIR):
+        return []
+    idx = index_lookup(read_index_lines(PENDING_INDEX_FILE))
+    out = []
+    for fname in sorted(os.listdir(PENDING_DIR)):
+        if not SAFE_NAME.match(fname):
+            continue  # skip the index or any stray non-map file
+        path = os.path.join(PENDING_DIR, fname)
+        if not os.path.isfile(path):
+            continue
+        base = fname[:-4]
+        mode = idx.get(base, ("", ""))[0]
+        try:
+            size = os.path.getsize(path)
+        except OSError:
+            size = 0
+        out.append("%s|%s|%s" % (base, mode, size))
+    return out
+
+
+def approve_map(base):
+    """Move pending/<base>.map into public and its line into public_index.txt.
+    Returns True on success, False if the pending map isn't there."""
+    src = os.path.join(PENDING_DIR, base + ".map")
+    dest = os.path.join(PUBLIC_DIR, base + ".map")
+    if not os.path.isfile(src):
+        return False
+    os.makedirs(PUBLIC_DIR, exist_ok=True)
+    with INDEX_LOCK:
+        mode = index_lookup(read_index_lines(PENDING_INDEX_FILE)).get(base, ("", ""))[0]
+        try:
+            size = os.path.getsize(src)
+        except OSError:
+            size = 0
+        # Move the file first; only touch the indexes once the map is safely in public.
+        os.replace(src, dest)
+        write_index_lines(INDEX_FILE, index_upsert(read_index_lines(INDEX_FILE), base, mode, str(size)))
+        write_index_lines(PENDING_INDEX_FILE, index_remove(read_index_lines(PENDING_INDEX_FILE), base))
+    return True
+
+
+def reject_map(base):
+    """Delete pending/<base>.map and drop it from the review queue. Returns True if
+    the map existed, False if there was nothing to reject."""
+    src = os.path.join(PENDING_DIR, base + ".map")
+    existed = os.path.isfile(src)
+    with INDEX_LOCK:
+        if existed:
+            try:
+                os.remove(src)
+            except OSError:
+                return False
+        write_index_lines(PENDING_INDEX_FILE, index_remove(read_index_lines(PENDING_INDEX_FILE), base))
+    return existed
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -95,9 +188,15 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass  # the client hung up mid-download; nothing to do
 
-    # --- Downloads ---------------------------------------------------------
+    def _admin_ok(self, params):
+        """True only if the caller sent the (non-empty) admin token. Gates moderation."""
+        token = (params.get("token") or [""])[0]
+        return bool(ADMIN_TOKEN) and token == ADMIN_TOKEN
+
+    # --- Downloads + admin queue listing -----------------------------------
     def do_GET(self):
-        path = urllib.parse.urlparse(self.path).path
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
         if path in ("/", "/public_index.txt"):
             return self._serve_file(INDEX_FILE, "text/plain")
         if path.startswith("/maps/public/"):
@@ -105,15 +204,39 @@ class Handler(BaseHTTPRequestHandler):
             if name is None:
                 return self._reply(404, "Not found")
             return self._serve_file(os.path.join(PUBLIC_DIR, name), "application/octet-stream")
+        if path == "/admin/pending":
+            if not self._admin_ok(urllib.parse.parse_qs(parsed.query)):
+                return self._reply(403, "Invalid admin token.")
+            return self._reply(200, "\r\n".join(list_pending_maps()))
         # Note: /maps/pending/ is deliberately NOT served - pending uploads are private until approved.
         return self._reply(404, "Not found")
+
+    # --- Admin moderation (approve/reject, admin token required) ------------
+    def _admin_action(self, params, action):
+        if not self._admin_ok(params):
+            return self._reply(403, "Invalid admin token.")
+        sname = safe_map_name((params.get("name") or [""])[0])
+        if sname is None:
+            return self._reply(400, "Invalid map name.")
+        base = sname[:-4]
+        if action == "approve":
+            ok = approve_map(base)
+        else:
+            ok = reject_map(base)
+        if not ok:
+            return self._reply(404, "That map is not in the pending queue.")
+        return self._reply(200, "OK")
 
     # --- Uploads (moderated: land in pending, never auto-published) ---------
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        if parsed.path == "/admin/approve":
+            return self._admin_action(params, "approve")
+        if parsed.path == "/admin/reject":
+            return self._admin_action(params, "reject")
         if parsed.path != "/upload":
             return self._reply(404, "Not found")
-        params = urllib.parse.parse_qs(parsed.query)
         token = (params.get("token") or [""])[0]
         name = (params.get("name") or [""])[0]
         mode = (params.get("mode") or [""])[0]
