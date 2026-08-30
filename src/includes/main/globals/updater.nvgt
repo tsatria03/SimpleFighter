@@ -1,6 +1,9 @@
 // Base URL of the map server (the dev's VPS). Downloads fetch the index at
 // <map_server_url>/index.txt and each pack at <map_server_url>/maps/<name>.map.
 string map_server_url = "http://reality-breaker-studios.net";
+// Uploads: map_upload_token MUST match the server's UPLOAD_TOKEN or every upload is rejected.
+string map_upload_token = "vIOmjLLpBhn2J6aLoDcAVL8jNfY9e6nLVbYyEzwov8onZCa7McywBa78BzDzzgbJs3RAxmRlW3VRvy0T6j36zXtnWCjWpfQt0EIUWsqxjWhYlRQqP7vScI8Ptm1ChYPOCPgfZCsbLWr6fcdzlY0K10DGNA";
+int64 map_upload_max = int64(2) * 1024 * 1024 * 1024; // 2 GB, matches the server's cap
 
 bool check_for_updates(string old_version, string projectname, bool precheck = false)
 {
@@ -222,5 +225,125 @@ alert("Download failed", "That map isn't available on the server right now.");
 continue;
 }
 alert("Download complete", fileword + " has been downloaded. You can now play it from the compiled maps menu.");
+}
+}
+
+// Upload twin of dl_file: POST a local file to url with a chunked, script-driven
+// body write so we get the same live progress screen as a download (1/2/3 for
+// sizes, space for percent, h for help, m to mute beeps, escape to cancel). Uses
+// NVGT's native Poco http client, no external tools. Returns "finished",
+// "canceled", "token", "toobig", or "failed".
+string ul_file(string url, string disk_file, bool quiet=false, string msg="Uploading. Press Space for percentage, 1 2 and 3 keys for detailed progress, or escape to cancel. Press m to mute or unmute progress beeps. Press h to read this help message again.")
+{
+string rest = url;
+bool is_https = string_starts_with(rest, "https://");
+rest = string_replace(rest, "https://", "", true);
+rest = string_replace(rest, "http://", "", true);
+int slash = rest.find("/");
+string hostport = (slash >= 0) ? rest.substr(0, slash) : rest;
+string path = (slash >= 0) ? rest.substr(slash) : "/";
+uint16 port = is_https ? 443 : 80;
+int colon = hostport.find(":");
+string host = hostport;
+if(colon >= 0) { host = hostport.substr(0, colon); port = uint16(string_to_number(hostport.substr(colon+1))); }
+int64 total = file_get_size(disk_file);
+if(total <= 0) return "failed";
+file f;
+if(!f.open(disk_file, "rb")) return "failed";
+if(!quiet) speak(msg);
+int progbeeps = 1;
+double last_percentage = 0;
+int64 sent = 0;
+try
+{
+http_client_session@ session = http_client_session(host, port);
+http_request@ req = http_request(HTTP_POST, path);
+req.content_length = total;
+datastream@ body = session.send_request(req);
+while(sent < total)
+{
+string chunk = f.read(65536);
+if(chunk == "") break;
+body.write(chunk);
+sent += chunk.length();
+double pct = (double(sent) / double(total)) * 100;
+if(pct - last_percentage >= 1)
+{
+if(progbeeps == 1) beep_percentage(pct);
+last_percentage = pct;
+}
+if(key_pressed(KEY_ESCAPE)) { session.abort(); f.close(); speak("canceled"); return "canceled"; }
+if(key_pressed(KEY_1)) speak("File size: " + round(double(total)/1024/1024, 0) + " MB");
+if(key_pressed(KEY_2)) speak("Total uploaded: " + round(double(sent)/1024/1024, 0) + " MB");
+if(key_pressed(KEY_3)) speak("Total remaining: " + (round(double(total)/1024/1024, 0) - round(double(sent)/1024/1024, 0)) + " MB");
+if(key_pressed(KEY_H)) speak(msg);
+if(key_pressed(KEY_M))
+{
+if(progbeeps == 1) { progbeeps = 0; speak("Progress beeps muted."); }
+else { progbeeps = 1; speak("Progress beeps unmuted."); }
+}
+if(key_pressed(KEY_SPACE)) speak(round(pct, 0) + " percent uploaded");
+}
+f.close();
+http_response@ resp = http_response();
+datastream@ rs = session.receive_response(resp);
+int status = int(resp.status);
+if(status == 200) return "finished";
+if(status == 403) return "token";
+if(status == 413) return "toobig";
+return "failed";
+}
+catch
+{
+f.close();
+return "failed";
+}
+return "failed";
+}
+
+// Upload a compiled map to the server's pending folder for the dev to review.
+// Mirrors the download menu: lists your compiled maps (name, mode, size), pick
+// one, and it uploads with the same live progress screen. The map lands in
+// pending and appears in the download list only once the dev approves it.
+void upload_map()
+{
+string[] maps = find_files("data/builder/maps/compiled/*.map");
+if(maps.length() == 0)
+{
+alert("No maps", "You have no compiled maps to upload. Compile a map first.");
+return;
+}
+while(true)
+{
+setupmenu();
+for(uint i = 0; i < maps.length(); i++)
+{
+string mpath = "data/builder/maps/compiled/" + maps[i];
+string base = string_replace(maps[i], ".map", "", true);
+string mode = read_map_mode_compiled(mpath);
+int64 bytes = file_get_size(mpath);
+m.add_item(base + ", " + mode + " map, total size, " + measure_file_size(bytes), maps[i]);
+}
+m.add_item("back", "back");
+m.intro_text = "Choose a map to upload";
+int res = m.run();
+if(res < 0) { speak("canceled"); return; }
+string choice = m.selected_item_id;
+if(choice == "back") { speak("canceled"); return; }
+string local = "data/builder/maps/compiled/" + choice;
+if(file_get_size(local) > map_upload_max)
+{
+alert("Too large", "That map is larger than the 2 GB upload limit, so it can't be uploaded.");
+continue;
+}
+string result = ul_file(map_server_url + "/upload?token=" + map_upload_token + "&name=" + choice, local);
+if(result == "finished")
+alert("Upload complete", choice + " has been submitted. It will appear in the download list once it has been approved.");
+else if(result == "toobig")
+alert("Upload failed", "That map is larger than the server allows.");
+else if(result == "canceled")
+speak("canceled");
+else if(result != "canceled")
+alert("Upload failed", "The map could not be uploaded. Please check your internet connection and try again.");
 }
 }
