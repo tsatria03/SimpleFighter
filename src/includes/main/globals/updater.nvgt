@@ -212,6 +212,15 @@ if(result == "canceled" && file_exists(local)) file_delete(local);
 alert("Download failed", "The map could not be downloaded.");
 continue;
 }
+// A missing file on the server still "downloads" (the server's 404 page lands in
+// the file), so confirm it's a real map pack before calling it a success; if not,
+// bin the junk and report it rather than leaving an unplayable file behind.
+if(read_map_mode_compiled(local) == "")
+{
+if(file_exists(local)) file_delete(local);
+alert("Download failed", "That map isn't available on the server right now.");
+continue;
+}
 alert("Download complete", fileword + " has been downloaded. You can now play it from the compiled maps menu.");
 }
 }
