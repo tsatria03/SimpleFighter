@@ -15,11 +15,20 @@ PORT = 80                                               # 80 is the normal web p
 UPLOAD_TOKEN = "vIOmjLLpBhn2J6aLoDcAVL8jNfY9e6nLVbYyEzwov8onZCa7McywBa78BzDzzgbJs3RAxmRlW3VRvy0T6j36zXtnWCjWpfQt0EIUWsqxjWhYlRQqP7vScI8Ptm1ChYPOCPgfZCsbLWr6fcdzlY0K10DGNA"                        # shared secret an uploading game must send - CHANGE THIS
 ADMIN_TOKEN = "y1nIO3RowtqLThgHzrXSjB9TaNLzwdNBxrLzB7w4v5T0kXhQFmc0UfF1uuMW6aPruGmNT1baRoQwydGhIRuru8wsQv9bMcadfXKxc0BjYian0SvNlEC7nawYfGMZm8JhbeEk7iOXs5gL9bNBJH7EqQNfOeS3fvSUdh7HrlsVLFEduXryZpCUng5o4EOghutE7F1YQP52gcyPYHN2f3Dc2PGpCEvoLBuDRJoyquBJenEwzcT46weijDmYTaCx2EsrT"  # SEPARATE, private admin secret for approving/rejecting maps - never put this in any src/*.nvgt file
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024               # 2 GB per uploaded map
+# HTTPS for the ADMIN PANEL only (downloads/uploads stay on plain HTTP). Point these
+# at a certificate + private key (PEM) and the panel is served over HTTPS on 443;
+# visiting the panel over http then redirects to https. Leave BLANK to run HTTP only.
+# A self-signed cert is fine here since only your own browser uses the panel:
+#   openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 3650 -nodes -subj "/CN=reality-breaker-studios.net"
+CERT_FILE = ""                                          # e.g. r"C:\Users\Administrator\Desktop\SimpleFighter\cert.pem"
+KEY_FILE = ""                                           # e.g. r"C:\Users\Administrator\Desktop\SimpleFighter\key.pem"
+HTTPS_PORT = 443
 # ---------------------------------------------------------------------------
 
 import base64
 import os
 import re
+import ssl
 import sys
 import threading
 import urllib.parse
@@ -225,9 +234,26 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        # Let's Encrypt (win-acme) HTTP-01 validation: serve the challenge files it
+        # drops in ROOT\.well-known\acme-challenge\. Public, HTTP, no redirect - this
+        # is how the cert gets issued and auto-renewed without stopping the server.
+        if path.startswith("/.well-known/acme-challenge/"):
+            token = path[len("/.well-known/acme-challenge/"):]
+            if not re.match(r"^[A-Za-z0-9_-]+$", token):
+                return self._reply(404, "Not found")
+            return self._serve_file(os.path.join(ROOT, ".well-known", "acme-challenge", token), "text/plain")
         # The admin panel is the site root. It sits behind Basic Auth, so a visitor
         # without the password never even sees it (the browser blocks them at 401).
         if path in ("/", "/index.html"):
+            # When HTTPS is configured, the panel is HTTPS-only: bounce an http visit
+            # to https so the login is never sent in the clear.
+            if getattr(self.server, "https_enabled", False) and not getattr(self.server, "is_tls", False):
+                host = self.headers.get("Host", "").split(":")[0]
+                self.send_response(301)
+                self.send_header("Location", "https://" + host + self.path)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             if not self._basic_auth_ok():
                 return self._require_basic_auth()
             return self._serve_file(os.path.join(ROOT, "index.html"), "text/html; charset=utf-8")
@@ -331,16 +357,37 @@ def set_window_title(title):
         pass
 
 
+def make_server(port, https_enabled, is_tls):
+    srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+    srv.daemon_threads = True    # HTTP/1.1 keep-alive holds worker threads open; make them daemon so
+    srv.block_on_close = False   # closing the window (or Ctrl+C) kills the process instead of hanging on them
+    srv.https_enabled = https_enabled  # whether an HTTPS panel exists (drives the http->https redirect)
+    srv.is_tls = is_tls                # whether THIS listener is the TLS one
+    return srv
+
+
 def main():
     set_window_title("SimpleFighter map server")
     os.makedirs(PUBLIC_DIR, exist_ok=True)
     os.makedirs(PENDING_DIR, exist_ok=True)
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    server.daemon_threads = True    # HTTP/1.1 keep-alive holds worker threads open; make them daemon so
-    server.block_on_close = False   # closing the window (or Ctrl+C) kills the process instead of hanging on them
+
+    https_enabled = bool(CERT_FILE) and bool(KEY_FILE) and os.path.isfile(CERT_FILE) and os.path.isfile(KEY_FILE)
+
+    server = make_server(PORT, https_enabled, is_tls=False)
     print("SimpleFighter map server running on port %d." % PORT)
     print("Serving downloads from %s" % PUBLIC_DIR)
     print("Accepting uploads into  %s" % PENDING_DIR)
+
+    if https_enabled:
+        https_server = make_server(HTTPS_PORT, https_enabled, is_tls=True)
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(CERT_FILE, KEY_FILE)
+        https_server.socket = ctx.wrap_socket(https_server.socket, server_side=True)
+        threading.Thread(target=https_server.serve_forever, daemon=True).start()
+        print("Admin panel available over HTTPS on port %d (http visits redirect to https)." % HTTPS_PORT)
+    else:
+        print("Admin panel over HTTP only (set CERT_FILE and KEY_FILE to enable HTTPS for it).")
+
     print("Leave this window open. Press Ctrl+C to stop.")
     try:
         server.serve_forever()
