@@ -19,8 +19,11 @@ MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024               # 2 GB per uploaded map
 import os
 import re
 import sys
+import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+INDEX_LOCK = threading.Lock()  # guards writes to pending/index.txt against concurrent uploads
 
 PUBLIC_DIR = os.path.join(ROOT, "maps", "public")    # live, downloadable maps
 PENDING_DIR = os.path.join(ROOT, "maps", "pending")  # uploads waiting for your approval
@@ -38,6 +41,25 @@ def safe_map_name(raw):
     if not SAFE_NAME.match(name):
         return None
     return name
+
+
+def update_pending_index(base, mode, size):
+    """Add or refresh this map's line in pending/index.txt as name|mode|bytes - the
+    review-queue mirror of the public index (same format the game's index uses; the
+    name carries no .map). Re-uploading the same name replaces its line. Locked so
+    simultaneous uploads don't clobber the file."""
+    path = os.path.join(PENDING_DIR, "index.txt")
+    with INDEX_LOCK:
+        kept = []
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f.read().splitlines():
+                    line = line.strip()
+                    if line and line.split("|", 1)[0] != base:
+                        kept.append(line)
+        kept.append(base + "|" + mode + "|" + str(size))
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            f.write("\r\n".join(kept))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -93,6 +115,9 @@ class Handler(BaseHTTPRequestHandler):
         params = urllib.parse.parse_qs(parsed.query)
         token = (params.get("token") or [""])[0]
         name = (params.get("name") or [""])[0]
+        mode = (params.get("mode") or [""])[0]
+        if mode not in ("2d", "topdown", "3d"):
+            mode = ""  # unknown mode stored blank; the dev can still approve it
         if token != UPLOAD_TOKEN:
             return self._reply(403, "Invalid upload token.")
         sname = safe_map_name(name)
@@ -131,6 +156,7 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             return self._reply(500, "Upload failed.")
 
+        update_pending_index(sname[:-4], mode, written)
         return self._reply(200, "OK")
 
     def log_message(self, fmt, *args):
