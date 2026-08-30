@@ -164,9 +164,16 @@ while(true)
 {
 setupmenu();
 for(uint i = 0; i < maps.length(); i++)
-m.add_item(maps[i], maps[i]);
+{
+string[] parts = string_split(maps[i], "|", true);
+string fname = parts[0];
+string display = fname;
+if(parts.length() >= 3)
+display = fname + ", " + parts[1] + " map, total size, " + measure_file_size(parse_int(parts[2]));
+m.add_item(display, fname);
+}
 m.add_item("back", "back");
-m.intro_text = "Download map menu";
+m.intro_text = "Choose a map to download";
 int res = m.run();
 if(res < 0)
 {
@@ -179,9 +186,12 @@ if(choice == "back")
 speak("canceled");
 return;
 }
+// The index carries bare map names (no .map); re-append it, tolerating either form.
+string fileword = choice;
+if(fileword.length() < 4 || fileword.substr(fileword.length() - 4) != ".map") fileword += ".map";
 if(!directory_exists("data/builder/maps/compiled"))
 directory_create("data/builder/maps/compiled");
-string local = "data/builder/maps/compiled/" + choice;
+string local = "data/builder/maps/compiled/" + fileword;
 if(file_exists(local))
 {
 setupmenu();
@@ -195,13 +205,13 @@ speak("canceled");
 continue;
 }
 }
-string result = dl_file(map_server_url + "/maps/" + choice, local);
+string result = dl_file(map_server_url + "/maps/" + fileword, local);
 if(result != "finished")
 {
 if(result == "canceled" && file_exists(local)) file_delete(local);
 alert("Download failed", "The map could not be downloaded.");
 continue;
 }
-alert("Download complete", choice + " has been downloaded. You can now play it from the compiled maps menu.");
+alert("Download complete", fileword + " has been downloaded. You can now play it from the compiled maps menu.");
 }
 }
