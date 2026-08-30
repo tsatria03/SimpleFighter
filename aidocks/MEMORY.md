@@ -24,6 +24,7 @@
 - [NVGT sound preload cache](project_nvgt_sound_preload_cache.md) — sound.load caches decoded audio by filename; regenerating audio into a reused path replays the old clip — use a fresh name or allow_preloads=false.
 - [Sound device indexing](project_sound_device_indexing.md) — Device list is index 0 "No sound", 1 "Default", 2+ named; SF trims index 0 and stores sound_output_device = trimmed_index+1. Don't add a synthetic Default item.
 - [Dialog conventions](project_dialog_conventions.md) — dlg() for everyday spoken player dialogs, dlgmessage() only for story-zone --paged text, alert() for visual/pre-init/tooling notices; don't blanket-convert between them.
+- [Error dlg sound](feedback_error_dlg_sound.md) — Error dlg() dialogs (message starts with "Error") pass dlgsound:true so the themed error.ogg plays; apply to new ones too.
 - [Confirm before implementing](feedback_confirm_before_implementing.md) — User has repeatedly flagged Claude over-implementing despite CLAUDE.md rules; plan mode was tried and disabled, so the rule rests on instruction-following alone — vigilance matters more.
 - [List modified files](feedback_list_modified_files.md) — End every turn that edited files with an explicit "Files changed:" list naming each touched file.
 - [No CRLF normalization](feedback_no_crlf_normalization.md) — Don't run post-edit CRLF normalizer passes; git handles line endings at commit time.
