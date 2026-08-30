@@ -50,5 +50,20 @@ The whole pick→download is wrapped in a **`while(true)` loop** (modeled on `co
 
 **PHASE 1 COMPLETE 2026-08-29** — the download side is fully built (§1 updater.nvgt, §2 map_menu.nvgt, §3 docs) and committed through §2; only the §3 docs commit remains. Drop this to changelog/todo history once 14.4 ships. Upload is still the un-started future phase below.
 
-## Future phase — upload (NOT designed)
-Would need a receive endpoint (a small server-side handler or FTP/SFTP — Caddy static can't accept), a client-side send (bundle `curl.exe`, `run()` it like `7zr.exe`), and an auth/abuse decision (token baked in client = slows casual abuse only; size cap + `.map`-only check server-side). A **moderated** variant (players submit, dev curates into the public folder) sidesteps the open-write abuse surface and keeps download trivial.
+## Phase 2 — upload (IN PROGRESS 2026-08, moderated)
+Dev chose the **moderated** model and reorganized the VPS into `maps\public\` (live) + `maps\pending\` (uploads awaiting approval).
+
+**Server — BUILT 2026-08: `sf_map_server.py`** (repo `sf/`, stdlib-only, Python 3.14 on the VPS). **Replaces Caddy entirely** (dev deleted Caddy) — one program does BOTH:
+- **Serves downloads (GET):** `/index.txt` and `/maps/public/<name>.map` only (pending is deliberately NOT served — private until approved; stricter than Caddy which served the whole root).
+- **Accepts uploads (POST `/upload?token=&name=&mode=`, raw `.map` bytes as body):** checks the shared token, sanitizes the name (`^[A-Za-z0-9_.\-]+\.map$`, no spaces/`..`/path parts), enforces the size cap while **streaming to disk in 64 KB chunks** (never loads a 2 GB file into RAM), saves to `maps\pending\<name>.map` + a sidecar `maps\pending\<name>.meta` holding the `name|mode|bytes` index line (bytes = server's real count; mode = client-declared, since Python can't read an NVGT pack). Never touches the public index → moderated.
+- **Config knobs at top:** `ROOT` (the SimpleFighter folder), `PORT` (80), `UPLOAD_TOKEN` (ships as placeholder `CHANGE_ME_TOKEN` — DEV MUST CHANGE), `MAX_UPLOAD_BYTES` (**2 GB** — dev-chosen; the builder decompiled sounds folder alone is ~1.95 GB, so a map embedding a full custom sound set can approach 2 GB). `ThreadingHTTPServer` so a download and an upload don't block each other. Pauses on exit (`input()`) so double-clicking is safe/readable. **Max pending COUNT = unlimited** (dev-chosen; backstop is VPS disk + the dev clearing pending during moderation — a count cap is a one-line server add if ever abused). Runs as Administrator so binding port 80 is fine.
+- The old Caddy launcher `sf_map_server.bat` is retired/gone.
+
+**Client/abuse split (established):** any limit over SHARED state (pending count, total disk, rate) MUST be server-side — the client only sees its own upload and can't be trusted (a modified client bypasses client checks). The size cap is server-enforced but the client can do a **courtesy pre-check** (warn before a doomed 2 GB transfer). The game just relays the server's rejection message.
+
+**64-bit size fix (2026-08):** the download menu's size display now uses `int64(string_to_number(...))` instead of `parse_int(...)` — `parse_int` is 32-bit and overflows right at 2 GB, so a ~2 GB map would have shown a garbage size.
+
+**STILL TO BUILD:**
+- **In-game upload flow** — an "upload map" entry that lets the player pick one of their compiled maps, reads its mode+size, and sends it. NVGT is GET-only, so the send **bundles/uses `curl.exe`** (`run()` it like `7zr.exe`; Windows 10+ ships curl in System32) POSTing to `/upload?token=&name=&mode=` with the `.map` as the body. Client courtesy size pre-check + relay the server's reply.
+- **Approve step** — a small tool the dev runs ON the VPS (local, no network auth needed) to move a `maps\pending\<name>.map` into `maps\public\` and append its `.meta` line to `index.txt`, then delete the sidecar. Likely a second little Python/batch script (keeps an admin endpoint off the network).
+- **Docs + changelog** when the upload half ships (its own version/section, separate from the 14.4 download feature).
