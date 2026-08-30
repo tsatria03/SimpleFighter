@@ -3,6 +3,10 @@
 string map_server_url = "http://reality-breaker-studios.net";
 // Uploads: map_upload_token MUST match the server's UPLOAD_TOKEN or every upload is rejected.
 string map_upload_token = "vIOmjLLpBhn2J6aLoDcAVL8jNfY9e6nLVbYyEzwov8onZCa7McywBa78BzDzzgbJs3RAxmRlW3VRvy0T6j36zXtnWCjWpfQt0EIUWsqxjWhYlRQqP7vScI8Ptm1ChYPOCPgfZCsbLWr6fcdzlY0K10DGNA";
+// Moderation: the admin token that gates approve/reject. Deliberately NOT hard-coded here
+// (that would ship in the compiled game) - the dev types it into the "set map server token"
+// setting and it persists in settings.spf. Empty means no in-game moderation is configured.
+string map_admin_token = "";
 
 int64 map_upload_max = int64(2) * 1024 * 1024 * 1024; // 2 GB, matches the server's cap
 
@@ -38,6 +42,52 @@ catch
 return false;
 }
 return false;
+}
+
+// Send an admin request (moderation) and return its HTTP status, capturing the
+// response body into resp_body. method is "GET" or "POST". Returns the status
+// (200 ok, 403 bad token, 404 not in queue), or -1 if the server couldn't be
+// reached at all. Same Poco http_client path as ul_file; the status is read
+// before the body so a body-read hiccup can't lose it.
+int admin_http(string method, string url, string &out resp_body)
+{
+resp_body = "";
+string rest = url;
+rest = string_replace(rest, "https://", "", true);
+rest = string_replace(rest, "http://", "", true);
+int slash = rest.find("/");
+string hostport = (slash >= 0) ? rest.substr(0, slash) : rest;
+string path = (slash >= 0) ? rest.substr(slash) : "/";
+uint16 port = 80;
+int colon = hostport.find(":");
+string host = hostport;
+if(colon >= 0) { host = hostport.substr(0, colon); port = uint16(string_to_number(hostport.substr(colon+1))); }
+try
+{
+http_client@ session = http_client(host, port);
+http_request@ req = http_request((method == "POST") ? HTTP_POST : HTTP_GET, path);
+req.host = host;
+if(method == "POST") req.content_length = 0;
+session.send_request(req);
+http_response@ resp = http_response();
+datastream@ rs = session.receive_response(resp);
+int status = int(resp.status);
+if(rs !is null)
+{
+while(true)
+{
+string chunk = rs.read(65536);
+if(chunk == "") break;
+resp_body += chunk;
+}
+}
+return status;
+}
+catch
+{
+return -1;
+}
+return -1;
 }
 
 // Phase-1 map downloader: fetch the map server's index, then loop a menu so the

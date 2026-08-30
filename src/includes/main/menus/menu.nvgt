@@ -890,7 +890,7 @@ int tab_keyboard = ingame ? -1 : 2;
 int tab_menu = ingame ? 1 : 3;
 int tab_sound = ingame ? -1 : 4;
 int tab_speech = ingame ? 2 : 5;
-int slt=-1, slk=-1, sln=-1, sdm=-1, defmap=-1, hid=-1;
+int slt=-1, slk=-1, sln=-1, sdm=-1, defmap=-1, hid=-1, servertok=-1;
 if (!ingame)
 {
 if (chartype == "")
@@ -910,6 +910,13 @@ sln = form.create_button("Select &menu theme. Currently set to " + menutype);
 form.assign_to_tab(sln, tabs, tab_general);
 defmap = form.create_button("Set default &owner for new maps. Currently set to " + defowner);
 form.assign_to_tab(defmap, tabs, tab_general);
+// Map-server moderation: source builds only (SCRIPT_COMPILED is false from source),
+// so the admin token field never ships in a release. See map_server.nvgt.
+if (!SCRIPT_COMPILED)
+{
+servertok = form.create_button("Set map server &token");
+form.assign_to_tab(servertok, tabs, tab_general);
+}
 hid = form.create_button("Sho&w or hide main menu items");
 form.assign_to_tab(hid, tabs, tab_general);
 }
@@ -1007,6 +1014,19 @@ continue;
 }
 defowner = mowner;
 dlg("Map owner set. Press enter to continue.");
+break;
+}
+if (!ingame && !SCRIPT_COMPILED && form.is_pressed(servertok))
+{
+vd.set_disallowed_chars("", false, "This character is not allowed.");
+string tok = vd.input_box("Server token", "Enter the map server admin token used to approve or reject uploaded maps.", map_admin_token);
+if (tok == "")
+{
+speak("canceled");
+continue;
+}
+map_admin_token = string_trim_sides(tok);
+dlg("Map server token set. Press enter to continue.");
 break;
 }
 if (!ingame && form.is_pressed(hid))
