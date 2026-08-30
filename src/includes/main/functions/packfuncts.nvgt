@@ -529,53 +529,6 @@ show_window("Simple fighter, version "+version);
 }
 }
 
-// Dev tool: write the download index (index.txt) for the map server from the
-// local compiled maps. Each line is "filename|mode|bytes"; the in-game download
-// menu reads it to show each map's mode and size. The written index.txt lands in
-// the maps folder; upload it to the map server's root folder.
-void generate_compiled_map_index()
-{
-string[] maps = find_files("data/builder/maps/compiled/*.map");
-if(maps.length() == 0)
-{
-alert("Error", "There are no compiled maps to index.");
-return;
-}
-if(file_exists("data/builder/maps/index.txt"))
-{
-setupmenu();
-m.add_item("yes");
-m.add_item("no");
-m.intro_text = "The index file already exists. Do you want to overwrite it?";
-int conf = m.run();
-if(conf != 0)
-{
-speak("canceled");
-return;
-}
-}
-string body = "";
-for(uint i = 0; i < maps.length(); i++)
-{
-string map_filename = maps[i];
-string map_path = "data/builder/maps/compiled/" + map_filename;
-string base_name = string_replace(map_filename, ".map", "", true);
-string mode = read_map_mode_compiled(map_path);
-uint64 bytes = file_get_size(map_path);
-if(i > 0) body += "\r\n";
-body += base_name + "|" + mode + "|" + bytes;
-}
-file f;
-if(!f.open("data/builder/maps/index.txt", "wb"))
-{
-alert("Error", "Could not write the index file.");
-return;
-}
-f.write(body);
-f.close();
-alert("Success", "Indexed " + maps.length() + " maps to maps/index.txt");
-}
-
 void compile_sound_pack()
 {
 while(true)
