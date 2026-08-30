@@ -25,9 +25,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 INDEX_LOCK = threading.Lock()  # guards writes to pending/index.txt against concurrent uploads
 
-PUBLIC_DIR = os.path.join(ROOT, "maps", "public")    # live, downloadable maps
-PENDING_DIR = os.path.join(ROOT, "maps", "pending")  # uploads waiting for your approval
-INDEX_FILE = os.path.join(ROOT, "index.txt")         # the download list
+PUBLIC_DIR = os.path.join(ROOT, "maps", "public")                    # live, downloadable maps
+PENDING_DIR = os.path.join(ROOT, "maps", "pending")                  # uploads waiting for your approval
+INDEX_FILE = os.path.join(ROOT, "maps", "public_index.txt")          # the download list (served to players)
+PENDING_INDEX_FILE = os.path.join(ROOT, "maps", "pending_index.txt") # the review queue (never served)
 
 # A safe map filename: letters, digits, underscore, dot, dash; ends in .map; no spaces or path parts.
 SAFE_NAME = re.compile(r"^[A-Za-z0-9_.\-]+\.map$")
@@ -44,11 +45,11 @@ def safe_map_name(raw):
 
 
 def update_pending_index(base, mode, size):
-    """Add or refresh this map's line in pending/index.txt as name|mode|bytes - the
+    """Add or refresh this map's line in pending_index.txt as name|mode|bytes - the
     review-queue mirror of the public index (same format the game's index uses; the
     name carries no .map). Re-uploading the same name replaces its line. Locked so
     simultaneous uploads don't clobber the file."""
-    path = os.path.join(PENDING_DIR, "index.txt")
+    path = PENDING_INDEX_FILE
     with INDEX_LOCK:
         kept = []
         if os.path.exists(path):
@@ -97,7 +98,7 @@ class Handler(BaseHTTPRequestHandler):
     # --- Downloads ---------------------------------------------------------
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
-        if path in ("/", "/index.txt"):
+        if path in ("/", "/public_index.txt"):
             return self._serve_file(INDEX_FILE, "text/plain")
         if path.startswith("/maps/public/"):
             name = safe_map_name(urllib.parse.unquote(path[len("/maps/public/"):]))
