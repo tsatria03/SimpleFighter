@@ -1,0 +1,75 @@
+// Upload twin of dl_file: POST a local file to url with a chunked, script-driven
+// body write so we get the same live progress screen as a download (1/2/3 for
+// sizes, space for percent, h for help, m to mute beeps, escape to cancel). Uses
+// NVGT's native Poco http client, no external tools. Returns "finished",
+// "canceled", "token", "toobig", or "failed".
+
+string ul_file(string url, string disk_file, bool quiet=false, string msg="Uploading. Press Space for percentage, 1 2 and 3 keys for detailed progress, or escape to cancel. Press m to mute or unmute progress beeps. Press h to read this help message again.")
+{
+string rest = url;
+bool is_https = string_starts_with(rest, "https://");
+rest = string_replace(rest, "https://", "", true);
+rest = string_replace(rest, "http://", "", true);
+int slash = rest.find("/");
+string hostport = (slash >= 0) ? rest.substr(0, slash) : rest;
+string path = (slash >= 0) ? rest.substr(slash) : "/";
+uint16 port = is_https ? 443 : 80;
+int colon = hostport.find(":");
+string host = hostport;
+if(colon >= 0) { host = hostport.substr(0, colon); port = uint16(string_to_number(hostport.substr(colon+1))); }
+int64 total = file_get_size(disk_file);
+if(total <= 0) return "failed";
+file f;
+if(!f.open(disk_file, "rb")) return "failed";
+if(!quiet) speak(msg);
+int progbeeps = 1;
+double last_percentage = 0;
+int64 sent = 0;
+try
+{
+http_client@ session = http_client(host, port);
+http_request@ req = http_request(HTTP_POST, path);
+req.host = host;
+req.content_type = "application/octet-stream";
+req.content_length = total;
+datastream@ body = session.send_request(req);
+while(sent < total)
+{
+string chunk = f.read(65536);
+if(chunk == "") break;
+body.write(chunk);
+sent += chunk.length();
+double pct = (double(sent) / double(total)) * 100;
+if(pct - last_percentage >= 1)
+{
+if(progbeeps == 1) beep_percentage(pct);
+last_percentage = pct;
+}
+if(key_pressed(KEY_ESCAPE)) { session.abort(); f.close(); speak("canceled"); return "canceled"; }
+if(key_pressed(KEY_1)) speak("File size: " + round(double(total)/1024/1024, 0) + " MB");
+if(key_pressed(KEY_2)) speak("Total uploaded: " + round(double(sent)/1024/1024, 0) + " MB");
+if(key_pressed(KEY_3)) speak("Total remaining: " + (round(double(total)/1024/1024, 0) - round(double(sent)/1024/1024, 0)) + " MB");
+if(key_pressed(KEY_H)) speak(msg);
+if(key_pressed(KEY_M))
+{
+if(progbeeps == 1) { progbeeps = 0; speak("Progress beeps muted."); }
+else { progbeeps = 1; speak("Progress beeps unmuted."); }
+}
+if(key_pressed(KEY_SPACE)) speak(round(pct, 0) + " percent uploaded");
+}
+f.close();
+http_response@ resp = http_response();
+datastream@ rs = session.receive_response(resp);
+int status = int(resp.status);
+if(status == 200) return "finished";
+if(status == 403) return "token";
+if(status == 413) return "toobig";
+return "failed";
+}
+catch
+{
+f.close();
+return "failed";
+}
+return "failed";
+}

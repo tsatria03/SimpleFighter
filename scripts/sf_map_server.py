@@ -42,6 +42,7 @@ def safe_map_name(raw):
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "SFMapServer/1.0"
+    protocol_version = "HTTP/1.1"  # every response sets Content-Length, so keep-alive is safe; Poco's http client wants 1.1
 
     def _reply(self, code, body=b"", ctype="text/plain"):
         if isinstance(body, str):
@@ -150,6 +151,8 @@ def main():
     os.makedirs(PUBLIC_DIR, exist_ok=True)
     os.makedirs(PENDING_DIR, exist_ok=True)
     server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    server.daemon_threads = True    # HTTP/1.1 keep-alive holds worker threads open; make them daemon so
+    server.block_on_close = False   # closing the window (or Ctrl+C) kills the process instead of hanging on them
     print("SimpleFighter map server running on port %d." % PORT)
     print("Serving downloads from %s" % PUBLIC_DIR)
     print("Accepting uploads into  %s" % PENDING_DIR)
