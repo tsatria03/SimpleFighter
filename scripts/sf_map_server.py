@@ -14,6 +14,7 @@ ROOT = r"C:\Users\Administrator\Desktop\SimpleFighter"  # the folder holding ind
 PORT = 80                                               # 80 is the normal web port
 UPLOAD_TOKEN = "vIOmjLLpBhn2J6aLoDcAVL8jNfY9e6nLVbYyEzwov8onZCa7McywBa78BzDzzgbJs3RAxmRlW3VRvy0T6j36zXtnWCjWpfQt0EIUWsqxjWhYlRQqP7vScI8Ptm1ChYPOCPgfZCsbLWr6fcdzlY0K10DGNA"                        # shared secret an uploading game must send - CHANGE THIS
 ADMIN_TOKEN = "y1nIO3RowtqLThgHzrXSjB9TaNLzwdNBxrLzB7w4v5T0kXhQFmc0UfF1uuMW6aPruGmNT1baRoQwydGhIRuru8wsQv9bMcadfXKxc0BjYian0SvNlEC7nawYfGMZm8JhbeEk7iOXs5gL9bNBJH7EqQNfOeS3fvSUdh7HrlsVLFEduXryZpCUng5o4EOghutE7F1YQP52gcyPYHN2f3Dc2PGpCEvoLBuDRJoyquBJenEwzcT46weijDmYTaCx2EsrT"  # SEPARATE, private admin secret for approving/rejecting maps - never put this in any src/*.nvgt file
+ADMIN_USER = "administrator"                            # the ONLY username the browser panel's login accepts (case-insensitive); the password is ADMIN_TOKEN
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024               # 2 GB per uploaded map
 # HTTPS for the ADMIN PANEL only (downloads/uploads stay on plain HTTP). Point these
 # at a certificate + private key (PEM) and the panel is served over HTTPS on 443;
@@ -199,9 +200,10 @@ class Handler(BaseHTTPRequestHandler):
             pass  # the client hung up mid-download; nothing to do
 
     def _basic_auth_ok(self):
-        """True if the request carries HTTP Basic Auth whose password equals the admin
-        token (username ignored). This is how the browser admin panel authenticates -
-        the browser prompts once and re-sends the credentials on every request."""
+        """True if the request carries HTTP Basic Auth whose username is ADMIN_USER
+        (case-insensitive) AND whose password equals the admin token. This is how the
+        browser admin panel authenticates - the browser prompts once and re-sends the
+        credentials on every request."""
         if not ADMIN_TOKEN:
             return False
         hdr = self.headers.get("Authorization", "")
@@ -211,8 +213,8 @@ class Handler(BaseHTTPRequestHandler):
             decoded = base64.b64decode(hdr[6:]).decode("utf-8", "replace")
         except Exception:
             return False
-        _, _, password = decoded.partition(":")
-        return password == ADMIN_TOKEN
+        username, _, password = decoded.partition(":")
+        return username.lower() == ADMIN_USER.lower() and password == ADMIN_TOKEN
 
     def _admin_ok(self, params):
         """Gate for moderation: accept EITHER the ?token= query (the in-game client)
