@@ -111,7 +111,7 @@ return;
 string[] maps = clean_lines_from_text(index);
 if(maps.length() == 0)
 {
-alert("No maps", "There are no maps available to download right now.");
+alert("Error", "There are no maps available to download right now.");
 return;
 }
 while(true)
@@ -164,7 +164,7 @@ string result = dl_file(map_server_url + "/maps/public/" + fileword, local);
 if(result != "finished")
 {
 if(result == "canceled" && file_exists(local)) file_delete(local);
-alert("Download failed", "The map could not be downloaded.");
+alert("Error", "The map could not be downloaded.");
 continue;
 }
 // A missing file on the server still "downloads" (the server's 404 page lands in
@@ -173,7 +173,7 @@ continue;
 if(read_map_mode_compiled(local) == "")
 {
 if(file_exists(local)) file_delete(local);
-alert("Download failed", "That map isn't available on the server right now.");
+alert("Error", "That map isn't available on the server right now.");
 continue;
 }
 alert("Download complete", fileword + " has been downloaded. You can now play it from the compiled maps menu.");
@@ -189,7 +189,7 @@ void upload_map()
 string[] maps = find_files("data/builder/maps/compiled/*.map");
 if(maps.length() == 0)
 {
-alert("No maps", "You have no compiled maps to upload. Compile a map first.");
+alert("Error", "You have no compiled maps to upload. Compile a map first.");
 return;
 }
 while(true)
@@ -213,7 +213,7 @@ if(choice == "*back*") { speak("canceled"); return; }
 string local = "data/builder/maps/compiled/" + choice;
 if(file_get_size(local) > map_upload_max)
 {
-alert("Too large", "That map is larger than the 2 GB upload limit, so it can't be uploaded.");
+alert("Error", "That map is larger than the 2 GB upload limit, so it can't be uploaded.");
 continue;
 }
 string mode = read_map_mode_compiled(local);
@@ -221,13 +221,13 @@ string result = ul_file(map_server_url + "/upload?token=" + map_upload_token + "
 if(result == "finished")
 alert("Upload complete", choice + " has been submitted. It will appear in the download list once it has been approved.");
 else if(result == "toobig")
-alert("Upload failed", "That map is larger than the server allows.");
+alert("Error", "That map is larger than the server allows.");
 else if(result == "token")
-alert("Upload failed", "The server did not accept the upload. Please try again later.");
+alert("Error", "The server did not accept the upload. Please try again later.");
 else if(result == "canceled")
 speak("canceled");
 else
-alert("Upload failed", "The map could not be uploaded. Please check your internet connection and try again.");
+alert("Error", "The map could not be uploaded. Please check your internet connection and try again.");
 }
 }
 
@@ -263,7 +263,7 @@ string body;
 int status = admin_http("GET", map_server_url + "/admin/pending?token=" + map_admin_token, body);
 if(status == 403)
 {
-alert("Not authorized", "The map server did not accept your admin token. Set it again in preferences under set map server token.");
+alert("Error", "The map server did not accept your admin token. Set it again in preferences under set map server token.");
 return;
 }
 if(status != 200)
@@ -274,7 +274,7 @@ return;
 string[] maps = clean_lines_from_text(body);
 if(maps.length() == 0)
 {
-alert("No maps", "There are no maps waiting for approval right now.");
+alert("Error", "There are no maps waiting for approval right now.");
 return;
 }
 setupmenu();
@@ -308,11 +308,11 @@ if(rstatus == 200)
 alert((action == "approve") ? "Approved" : "Rejected", (action == "approve") ? (choice + " is now downloadable from the map server.") : (choice + " has been rejected and deleted."));
 else if(rstatus == 403)
 {
-alert("Not authorized", "The map server did not accept your admin token.");
+alert("Error", "The map server did not accept your admin token.");
 return;
 }
 else if(rstatus == 404)
-alert("Not found", "That map is no longer in the pending queue.");
+alert("Error", "That map is no longer in the pending queue.");
 else
 alert("Error", "The action could not be completed. Please check your internet connection and try again.");
 }
