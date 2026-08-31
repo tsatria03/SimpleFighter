@@ -31,11 +31,11 @@ NVGT    = _tools["tools"]["nvgt"]  # shared across all the legacy-engine games; 
 SEVENZIP = _tools["tools"]["sevenzip"]
 GH      = _tools["tools"]["gh"]
 
-WIN_SOURCE   = os.path.join(REPO_DIR, "releases", "windows", f"{GAME}_windows_portable_password_is_{PASSWORD}", NVGT_OUT)
+WIN_SOURCE   = os.path.join(REPO_DIR, "releases", "windows", f"{GAME}_password_is_{PASSWORD}", NVGT_OUT)
 ARCHIVE_DIR  = os.path.join(REPO_DIR, "releases", "archives")
-ARCHIVE_NAME = f"{GAME}_windows_portable_password_is_{PASSWORD}.7z"
+ARCHIVE_NAME = f"{GAME}_password_is_{PASSWORD}.7z"
 ARCHIVE      = os.path.join(ARCHIVE_DIR, ARCHIVE_NAME)
-RELEASE_DIR  = os.path.join(REPO_DIR, "releases", "windows", f"{GAME}_windows_portable_password_is_{PASSWORD}")
+RELEASE_DIR  = os.path.join(REPO_DIR, "releases", "windows", f"{GAME}_password_is_{PASSWORD}")
 
 SKIP = 0
 DO = 1
@@ -436,7 +436,7 @@ def run_release(skip_compile, skip_package, skip_release, skip_website, skip_emp
         if not os.path.exists(WIN_SOURCE):
             print("ERROR: cst folder not found in release directory. Please compile the full project first.")
             return
-        print("Building Windows portable 7z archive...")
+        print("Building Windows 7z archive...")
         if os.path.exists(ARCHIVE):
             os.remove(ARCHIVE)
         os.makedirs(ARCHIVE_DIR, exist_ok=True)
