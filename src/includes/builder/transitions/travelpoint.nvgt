@@ -39,7 +39,12 @@ me.y=travelpoints[i].desty;
 if(mapmode == "3d") me.z = travelpoints[i].destz;
 if(map_exists(travelpoints[i].destmap)) travelpoints[i].travsound=travpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*finish*"),false);
 speak(travelpoints[i].endtext);
-load_map(travelpoints[i].destmap,mapowner);
+// When the current map is playing from a compiled pack, prefer the compiled copy of the
+// destination too, so a travelpoint out of a compiled map doesn't drop you into the
+// decompiled version. Only force it if that .map actually exists; otherwise fall back to
+// the normal decompiled-first load so a compiled map can still reach a decompiled-only map.
+bool dest_compiled = map_is_compiled && file_exists("data/builder/maps/compiled/"+travelpoints[i].destmap+".map");
+load_map(travelpoints[i].destmap,mapowner,force_compiled:dest_compiled);
 }
 }
 }
