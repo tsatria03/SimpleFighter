@@ -413,12 +413,25 @@ form.set_list_position(bike_list, 0, false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(mx);
+// Bike ride-surface preview state (secondary axis on the bike sound list).
+string[] bike_surfaces;
+int bike_surface_idx = 0;
+int bike_surface_pos = -2;
 while(true)
 {
 wait(5);
 form.monitor();
 int cur_focus = form.get_current_focus();
-if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+// Keep the ride-surface list in sync with the focused bike.
+int cur_bpos = (cur_focus == bike_list) ? form.get_list_position(bike_list) : -1;
+if(cur_bpos != bike_surface_pos)
+{
+bike_surface_pos = cur_bpos;
+bike_surface_idx = 0;
+bike_surfaces.resize(0);
+if(cur_bpos > 0) bike_surfaces = get_map_sound_folders("builder/transportation/bikes/"+bikes_l[cur_bpos-1]+"/platforms/*");
+}
+if(!control_is_down() && key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
 {
 t.destroy_sound(prevslot);
 if(cur_focus == bike_list)
@@ -444,6 +457,46 @@ if(p > 0)
 {
 t.destroy_sound(prevslot);
 prevslot = t.play_stationary(get_map_sound("builder/transportation/bikes/"+bikes_l[p-1]+"/misc/*death*"), false);
+}
+}
+// Ride surfaces (secondary axis): Ctrl+' / Ctrl+; cycle the focused bike's surface, Ctrl+Space/K/J
+// play its move/land/fall, any arrow snaps back to the first surface. Arrows use key_down so the
+// menu keeps navigating (key_repeating would consume them).
+if(cur_focus == bike_list && bike_surfaces.length() > 0)
+{
+int spos = form.get_list_position(bike_list);
+if(spos > 0)
+{
+if(key_down(KEY_UP) || key_down(KEY_DOWN) || key_down(KEY_LEFT) || key_down(KEY_RIGHT)) bike_surface_idx = 0;
+if(control_is_down() && key_pressed(KEY_APOSTROPHE))
+{
+bike_surface_idx = (bike_surface_idx + 1) % int(bike_surfaces.length());
+t.destroy_sound(prevslot);
+speak(bike_surfaces[bike_surface_idx]);
+}
+else if(control_is_down() && key_pressed(KEY_SEMICOLON))
+{
+bike_surface_idx = (bike_surface_idx - 1 + int(bike_surfaces.length())) % int(bike_surfaces.length());
+t.destroy_sound(prevslot);
+speak(bike_surfaces[bike_surface_idx]);
+}
+string ssbase = "builder/transportation/bikes/"+bikes_l[spos-1]+"/platforms/"+bike_surfaces[bike_surface_idx]+"/";
+if(control_is_down() && key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound(ssbase+"*move*"), false);
+keytimer.restart();
+}
+if(control_is_down() && key_repeating(KEY_K))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound(ssbase+"*land*"), false);
+}
+if(control_is_down() && key_repeating(KEY_J))
+{
+t.destroy_sound(prevslot);
+prevslot = t.play_stationary(get_map_sound(ssbase+"*fall*"), false);
+}
 }
 }
 if(key_pressed(KEY_ESCAPE))
