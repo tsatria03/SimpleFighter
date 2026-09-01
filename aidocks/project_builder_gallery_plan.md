@@ -1,6 +1,6 @@
 ---
-name: project_sound_gallery_plan
-description: Design/plan for the builder-menu "sound gallery" — a browse-only preview of every builder element's sounds (folder tree + per-type clip keys), built category by category. NOT STARTED.
+name: project_builder_gallery_plan
+description: Design/build record for the builder gallery — the build-menu "gallery" that browse-previews every builder element's sounds (folder tree + per-type clip keys). All 8 categories live + bike-surface secondary axis; deferred = exposing untapped extra clips.
 metadata:
   type: project
 ---
@@ -92,7 +92,7 @@ Level 3 needs live key handling during navigation, so it is a single-list form d
 
 ## Confirmed decisions (2026-08-31)
 
-- **Host menu**: the tabbed **build menu** (`buildmenu` in `map_menu.nvgt`). The "sound gallery" entry is added to **every tab**, positioned **immediately before the "template" item** (`m.add_item_to_tab(t_idx, "template", "template")` at map_menu.nvgt:589), so it's reachable no matter which category tab you're on — same pattern as `template`.
+- **Host menu**: the tabbed **build menu** (`buildmenu` in `map_menu.nvgt`). The "gallery" entry is added to **every tab**, positioned **immediately before the "template" item** (`m.add_item_to_tab(t_idx, "template", "template")` at map_menu.nvgt:589), so it's reachable no matter which category tab you're on — same pattern as `template`.
 - **Undeclared types are hidden** — the type menu lists only types with a spec'd clip table.
 - **No volume/pitch controls** in the preview.
 - **Quiet gallery** (dev decision 2026-09-01): the browser speaks only the category name on open — NO spoken key tutorial ("arrow keys to move, space to play…" was removed). Matches the build forms, which never announce their preview keys either. The keys are documented in the readme/help instead. (Cycle/selection feedback like speaking the focused surface name stays — that's item feedback, not instruction.)
