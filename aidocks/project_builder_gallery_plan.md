@@ -121,7 +121,7 @@ Every distinct sound the shipped content includes for each element, with **numbe
 - belts: loop [loop] → none
 - checkpoints: get, loop [get, loop] → none
 - moving platforms: loop [loop] → none
-- platforms: death, fall, hurt, land, step [step, land, fall] → **hurt, death**
+- platforms: death, fall, hurt, land, step [step, land, fall, death, hurt] → none (exposed 2026-09-01: Ctrl+D death, Ctrl+U hurt, in platform form + gallery + help; both played on platform damage/destroy. NOTE: only the platform form was extended, not the moving-platform form's tile list.)
 - vanishing platforms: loop [loop] → none
 - walls: bump, death, hurt [bump, hurt, death] → none
 
@@ -135,7 +135,7 @@ Every distinct sound the shipped content includes for each element, with **numbe
 
 **kombat**
 - npc: death, heal, hit, hurt, launch, life, remove, spawn, step, taunt, tel [hurt, taunt, death] → **heal, hit, launch, life, remove, spawn, step, tel** (`remove` ships only for the helpers category; hit/step absent from a few categories like humans/zombies)
-- projectiles: death, hit, hurt, life, loop [hit, loop, death] → **hurt, life**
+- projectiles: death, hit, hurt, life, loop [hit, loop, death, hurt, life] → none (exposed 2026-09-01: Ctrl+U hurt, Ctrl+I life, in projectile form + gallery + help)
 
 **transitions**
 - doors: close, death, deny, grant, hurt, jam, loop, move, open, step [loop, move, close, open, death, hurt, deny, grant] → jam, step — BUT both are referenced NOWHERE in code (dead files) — do NOT expose
@@ -156,10 +156,10 @@ Every distinct sound the shipped content includes for each element, with **numbe
 - floor breakers: remove, spawn [remove, spawn] → none (swapped 2026-09-01: Space=remove, Ctrl+L=spawn, in form + gallery + help; remove played at floor_breaker.nvgt:34)
 - force fields: hit, off, on [hit, on, off] → none
 - hazards: fall, loop [fall, loop] → none
-- mines: explode, hit, light, loop, spawn [spawn, loop, explode] → **hit, light**
-- security cameras: alarm, alert, death, hurt, turn [hurt, turn, alert] → **alarm, death**
+- mines: explode, hit, light, loop, spawn [spawn, explode, loop, hit, light] → none (remapped 2026-09-01: Space spawn, Ctrl+E explode, Ctrl+L loop, Ctrl+H hit, Ctrl+I light, in mine form + gallery + help; explode moved off Ctrl+H to Ctrl+E)
+- security cameras: alarm, alert, death, hurt, turn [hurt, death, alert, alarm, turn] → none (remapped 2026-09-01: Space hurt, Ctrl+H death, Ctrl+L alert, Ctrl+M alarm, Ctrl+U turn, in camera form + gallery + help; all five shipped clips exposed. Cameras don't attack — no hit clip. turn/alert/alarm/death played in security_camera.nvgt; hurt at bullet.nvgt:602/1062)
 - spikes: death, hit, hurt, loop [hit, loop, death, hurt] → none (hurt exposed 2026-09-01: Ctrl+U in form + gallery + help; used at bullet.nvgt:497/1044)
-- time bombs: drop, hit, land, tick [land, tick] → **drop, hit**
+- time bombs: drop, hit, land, tick [tick, land, drop] → hit still untapped (remapped 2026-09-01: Space tick, Ctrl+L land, Ctrl+D drop, in timebomb form + gallery + bombs.txt help; dev did not map hit, and the stock timebomb variant ships no hit file anyway — hit is used at runtime though, timebomb.nvgt:60)
 - winds: hit, loop [hit, loop] → none
 
 **zones**
