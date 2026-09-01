@@ -35,22 +35,33 @@ label = the_label;
 /* One type within a category (e.g. audio's "musics"). folder is its on-disk name; subpath is an
    extra folder between the variant and its clips ("general" for npc, "misc" for bikes, empty for
    most); two_step marks types that nest an extra sub-category level (items, npc), expanded into one
-   tab per sub-category. clips lists the previewable sounds, main first. */
+   tab per sub-category. clips lists the previewable sounds, main first.
+   Optional secondary "surface" axis (bikes only): if surface_folder is set, each variant ALSO has a
+   sub-list of surfaces at <variant>/<surface_folder>/<surface>/, which the player cycles with
+   Ctrl+; / Ctrl+' and previews with surface_clips - a second sound set on the same tab item without
+   its own list. */
 class gallery_type
 {
 string folder;
 string subpath;
 bool two_step;
 gallery_clip@[] clips;
+string surface_folder;
+gallery_clip@[] surface_clips;
 gallery_type(string the_folder, string the_subpath = "", bool is_two_step = false)
 {
 folder = the_folder;
 subpath = the_subpath;
 two_step = is_two_step;
+surface_folder = "";
 }
 void add(int the_key, bool needs_ctrl, string the_glob, string the_label)
 {
 clips.insert_last(gallery_clip(the_key, needs_ctrl, the_glob, the_label));
+}
+void add_surface(int the_key, bool needs_ctrl, string the_glob, string the_label)
+{
+surface_clips.insert_last(gallery_clip(the_key, needs_ctrl, the_glob, the_label));
 }
 }
 
@@ -65,13 +76,18 @@ string name;
 string path;
 string subpath;
 gallery_clip@[] clips;
+string surface_folder;
+gallery_clip@[] surface_clips;
 }
 
 /* Browse state read by the background_callback (funcdefs can't capture locals). gallery_browse
-   fills g_tabs before each run; the callback indexes it by the menu's active tab. */
+   fills g_tabs before each run; the callback indexes it by the menu's active tab. g_surfaces /
+   g_surface_idx track the focused bike's surface list and which one is selected. */
 gallery_tab@[] g_tabs;
 int g_last_tab = -999;
 int g_last_idx = -999;
+string[] g_surfaces;
+int g_surface_idx = 0;
 
 /* The declared types for a category, main clip first. An empty result hides the category from the
    menu and skips it in browse, so undeclared categories stay hidden until spec'd. Fill this in one
@@ -199,6 +215,12 @@ gallery_type bikes("bikes", "misc");
 bikes.add(KEY_SPACE, false, "*hurt*", "");
 bikes.add(KEY_L, true, "*beacon*", "beacon");
 bikes.add(KEY_H, true, "*death*", "death");
+// Each bike's ride surfaces (bikes/<variant>/platforms/<surface>/) are a secondary axis on this
+// same tab: Ctrl+' / Ctrl+; cycle the surface, Ctrl+Space/K/J play its move/land/fall.
+bikes.surface_folder = "platforms";
+bikes.add_surface(KEY_SPACE, true, "*move*", "move");
+bikes.add_surface(KEY_K, true, "*land*", "land");
+bikes.add_surface(KEY_J, true, "*fall*", "fall");
 types.insert_last(bikes);
 gallery_type vehicles("vehicles");
 vehicles.add(KEY_SPACE, false, "*motor*", "");
@@ -271,39 +293,21 @@ types.insert_last(story_zones);
 return types;
 }
 
-/* Runs every monitor() tick while the variant browser is open. Stops the preview when the cursor
-   moves, then plays the focused variant's clip for whichever preview key is down. */
-void gallery_callback(form_menu@ m, string data)
+/* Play one clip out of the folder `base` (ends with "/") if its key is currently pressed. A ctrl
+   clip needs control held; a Space clip (with or without ctrl) is level-triggered and throttled by
+   keytimer; a ctrl+letter clip uses key_repeating. A plain (non-ctrl) clip requires control to be
+   UP, so Ctrl+Space (a surface's move) never also triggers a plain-Space main clip. */
+void gallery_try_clip(gallery_clip@ c, const string&in base)
 {
-int tab = m.active_tab;
-int idx = m.focused_item;
-if(tab < 0 || tab >= int(g_tabs.length())) return;
-if(idx < 0) return;
-if(tab != g_last_tab || idx != g_last_idx)
-{
-t.destroy_sound(prevslot);
-prevslot = -1;
-g_last_tab = tab;
-g_last_idx = idx;
-}
-string variant = m.get_item_id(idx);
-if(variant == "") return;
-gallery_tab@ tb = g_tabs[tab];
-string base = "builder/" + tb.path + "/" + variant + "/";
-if(tb.subpath != "") base += tb.subpath + "/";
-for(uint i = 0; i < tb.clips.length(); i++)
-{
-gallery_clip@ c = tb.clips[i];
-bool play = false;
+bool pressed;
 if(c.ctrl)
 {
-if(control_is_down() && key_repeating(c.key)) play = true;
+if(!control_is_down()) return;
+pressed = (c.key == KEY_SPACE) ? (key_down(c.key) && keytimer.elapsed >= keytime) : key_repeating(c.key);
 }
 else
-{
-if(key_down(c.key) && keytimer.elapsed >= keytime) play = true;
-}
-if(!play) continue;
+pressed = !control_is_down() && key_down(c.key) && keytimer.elapsed >= keytime;
+if(!pressed) return;
 t.destroy_sound(prevslot);
 string clip = get_map_sound(base + c.glob);
 if(clip == "")
@@ -313,8 +317,68 @@ speak("No " + missing_name + " sound specified.");
 }
 else
 prevslot = t.play_stationary(clip, false);
-if(!c.ctrl) keytimer.restart();
+if(c.key == KEY_SPACE) keytimer.restart();
 }
+
+/* Runs every monitor() tick while the variant browser is open. Stops the preview when the cursor
+   moves, plays the focused variant's clips, and (for a type with a surface axis, i.e. bikes) lets
+   Ctrl+; / Ctrl+' cycle the focused variant's surfaces while Ctrl+Space/K/J preview them. */
+void gallery_callback(form_menu@ m, string data)
+{
+int tab = m.active_tab;
+int idx = m.focused_item;
+if(tab < 0 || tab >= int(g_tabs.length())) return;
+if(idx < 0) return;
+gallery_tab@ tb = g_tabs[tab];
+string variant = m.get_item_id(idx);
+if(variant == "") return;
+if(tab != g_last_tab || idx != g_last_idx)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+g_last_tab = tab;
+g_last_idx = idx;
+// Rebuild the surface list for the newly focused variant, if this tab has a surface axis.
+g_surface_idx = 0;
+g_surfaces.resize(0);
+if(tb.surface_folder != "")
+g_surfaces = get_map_sound_folders("builder/" + tb.path + "/" + variant + "/" + tb.surface_folder + "/*");
+}
+// Secondary surface axis (bikes): cycle with Ctrl+' (next) / Ctrl+; (prev), preview with the
+// surface clips. key_pressed advances one surface per press.
+if(tb.surface_folder != "" && g_surfaces.length() > 0)
+{
+// Any arrow (list navigation, with or without control) snaps the surface selection back to the
+// first one. Use key_down (a side-effect-free state query) NOT key_repeating here: key_repeating
+// consumes the repeat event, which would starve the form's own list navigation and freeze the arrows.
+if(key_down(KEY_UP) || key_down(KEY_DOWN) || key_down(KEY_LEFT) || key_down(KEY_RIGHT))
+g_surface_idx = 0;
+bool cycled = false;
+if(control_is_down() && key_pressed(KEY_APOSTROPHE))
+{
+g_surface_idx = (g_surface_idx + 1) % int(g_surfaces.length());
+cycled = true;
+}
+else if(control_is_down() && key_pressed(KEY_SEMICOLON))
+{
+g_surface_idx = (g_surface_idx - 1 + int(g_surfaces.length())) % int(g_surfaces.length());
+cycled = true;
+}
+if(cycled)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+speak(g_surfaces[g_surface_idx]);
+}
+string sbase = "builder/" + tb.path + "/" + variant + "/" + tb.surface_folder + "/" + g_surfaces[g_surface_idx] + "/";
+for(uint si = 0; si < tb.surface_clips.length(); si++)
+gallery_try_clip(tb.surface_clips[si], sbase);
+}
+// Main clips (the element's own sounds).
+string base = "builder/" + tb.path + "/" + variant + "/";
+if(tb.subpath != "") base += tb.subpath + "/";
+for(uint i = 0; i < tb.clips.length(); i++)
+gallery_try_clip(tb.clips[i], base);
 }
 
 /* The variant browser for one category: a tabbed menu, one tab per declared type, each listing
@@ -327,9 +391,11 @@ if(types.length() == 0) return;
 /* Expand the authored types into concrete tabs. A single-level type is one tab; a two-step type
    (items, npc) becomes one tab per sub-category folder found on disk. */
 g_tabs.resize(0);
+bool any_surfaces = false;
 for(uint i = 0; i < types.length(); i++)
 {
 gallery_type@ ty = types[i];
+if(ty.surface_folder != "") any_surfaces = true;
 if(!ty.two_step)
 {
 gallery_tab tab;
@@ -337,6 +403,8 @@ tab.name = ty.folder;
 tab.path = category + "/" + ty.folder;
 tab.subpath = ty.subpath;
 tab.clips = ty.clips;
+tab.surface_folder = ty.surface_folder;
+tab.surface_clips = ty.surface_clips;
 g_tabs.insert_last(tab);
 }
 else
@@ -349,6 +417,8 @@ tab.name = ty.folder + " " + subs[s];
 tab.path = category + "/" + ty.folder + "/" + subs[s];
 tab.subpath = ty.subpath;
 tab.clips = ty.clips;
+tab.surface_folder = ty.surface_folder;
+tab.surface_clips = ty.surface_clips;
 g_tabs.insert_last(tab);
 }
 }
@@ -364,7 +434,7 @@ while(true)
 setupmenu();
 @m.background_callback = @gallery_callback;
 m.tab_caption = "Category";
-m.intro_text = first ? (category + " sounds. Arrow keys to move, space to play a sound, control plus a letter for extra sounds, escape to go back.") : "";
+m.intro_text = first ? (category + " sounds. Arrow keys to move, space to play a sound, control plus a letter for extra sounds." + (any_surfaces ? " A bike's ride surfaces cycle with control apostrophe and semicolon, and play with control space, k, and j for move, land, and fall." : "") + " Press escape to go back.") : "";
 for(uint i = 0; i < g_tabs.length(); i++)
 {
 int t_idx = m.add_tab(g_tabs[i].name);

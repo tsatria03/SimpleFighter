@@ -72,7 +72,7 @@ Level 3 needs live key handling during navigation, so it is a single-list form d
 - `trampolines`: main `*land*`; Ctrl+L `*rise*` ("rise"); Ctrl+H `*spawn*` ("spawn").
 **6. TRANSPORTATION — DONE (all 3).**
 - `aircrafts`: single-level (`aircrafts/<variant>/`). main `*flight*`; Ctrl+L `*loop*` ("loop"); Ctrl+H `*death*` ("death"). Large extra set (alarm, appear, beacon, change, crash, engin, enter, gear, hurt, land, pass, start, turn) — SEE DEFERRED.
-- `bikes`: clips nest under a `misc/` subfolder — path `bikes/<variant>/misc/*<clip>*`. main `*hurt*`; Ctrl+L `*beacon*` ("beacon"); Ctrl+H `*death*` ("death"). Big extra set in `misc/` (bell, change, crash, plummet, radar, speed, start, stop, stuck, turn) — SEE DEFERRED. NOTE: each bike ALSO has a `platforms/` subtree of bike-specific ride surfaces (ash, dirt, grass… each with fall/land/move) — deliberately NOT in the gallery (the bike form never previewed them). A bike-surfaces gallery type was built and then removed 2026-08-31; the misc set is a single leaf per variant (best as the consolidated bikes tab), while surfaces are per-variant lists, so grouping them didn't fit cleanly.
+- `bikes`: clips nest under a `misc/` subfolder — path `bikes/<variant>/misc/*<clip>*`. main `*hurt*`; Ctrl+L `*beacon*` ("beacon"); Ctrl+H `*death*` ("death"). Big extra set in `misc/` (bell, change, crash, plummet, radar, speed, start, stop, stuck, turn) — SEE DEFERRED. NOTE: each bike ALSO has a `platforms/` subtree of bike-specific ride surfaces (ash, dirt, grass… each with fall/land/move). These are now in the gallery as a **secondary "surface" axis on the same bikes tab** (added 2026-09-01) — no separate tab. On a focused bike: **Ctrl+'** next surface / **Ctrl+;** previous surface (announces the surface name), then **Ctrl+Space** move, **Ctrl+K** land, **Ctrl+J** fall for the selected surface. Engine support: `gallery_type.surface_folder` + `surface_clips` (the ONLY bike-specific logic in the callback); a plain-Space clip requires control UP so Ctrl+Space never also fires the bike's own hurt. Pressing any arrow (navigating bikes, with or without control) snaps the surface back to the first one — detected with key_down, never key_repeating, so it doesn't steal the arrows from the menu. (An earlier attempt to make surfaces their own tabs was removed first — surfaces are per-variant lists while misc is a single leaf, so tabs didn't group cleanly; the secondary-axis approach solves that.)
 - `vehicles`: single-level (`vehicles/<variant>/`). main `*motor*`; Ctrl+L `*beacon*` ("beacon"); Ctrl+H `*death*` ("death"). Extras (hit, horn, hurt, turn) — SEE DEFERRED; note `hurt` IS used (played from `bullet.nvgt:525` on vehicle damage) even though the form doesn't preview it.
 **7. TRAPS — DONE (all 10).** All single-level (`traps/<type>/<variant>/`).
 - `bombs`: main `*land*`; Ctrl+L `*fall*` ("fall").
@@ -98,11 +98,71 @@ Level 3 needs live key handling during navigation, so it is a single-list form d
 
 ## Deferred enhancements (agreed, do later)
 
+The complete, per-element list of untapped clips is in the **Full shipped-sound inventory** section just below — that is the authoritative to-do source for expanding the gallery (and matching build forms). The bullets here are the original notes. **Caveat before exposing any untapped clip: verify it is actually used** (runtime playback and/or the build form) — some shipped files are dead (e.g. door `jam`/`step` are referenced nowhere), while others are used but just not form-previewed (spike `hurt`, vehicle `hurt` via `bullet.nvgt`). Confirm per clip the way we did for door `hurt`.
+
 - **Expose items' extra clips in BOTH the item build form AND the gallery** (dev decision 2026-08-31). The item leaf carries `drop`, `fire`, `hit`, and `break1..6` in addition to `get*` + `loop`, but the item build form only previews get + loop. Later: add preview keys for drop/fire/hit/break to `item.nvgt`'s form, and mirror the same expanded set in the gallery's `items` type. (Not blocking the initial gallery.)
 - **Expose npc's extra clips in BOTH the npc build form AND the gallery** (dev decision 2026-08-31, same treatment as items). The `general/` folder carries `step`, `hit`, `spawn`, `launch`, `life`, `heal`, and `tel` beyond the form's `hurt`/`taunt`/`death`. Later: add preview keys for those to `npc.nvgt`'s form, and mirror the expanded set in the gallery's `npc` type. (Not blocking the initial gallery.)
 - **Expose projectiles' extra clips** (`hurt`, `life`) in both the projectile form and the gallery, same policy as items/npc. The form previews only `hit`/`loop`/`death`.
 - **Expose transportation extra clips** in both forms and gallery, same policy. `aircrafts` and `bikes` carry large extra sets (bikes under `misc/`); `vehicles` extras include `hit`, `horn`, `hurt`, `turn` — and `hurt` is already used at runtime (`bullet.nvgt:525`) though the form doesn't preview it. (The per-bike `platforms/` ride-surface subtree is deliberately NOT in the gallery — the bike build form never previewed it, so the gallery, which mirrors the forms, omits it too. Dev decision 2026-08-31.)
 - **Expose traps' extra clips** in both forms and gallery, same policy: floor breakers `remove`; mines `hit`, `light`; security cameras `alarm`, `death`; spikes `hurt`. Spike `hurt` is already used at runtime (`bullet.nvgt:497/1044`), just not form-previewed. (story zones `copy` — clipboard feedback — also sits here, minor.)
+
+## Full shipped-sound inventory per element (cataloged 2026-08-31)
+
+Every distinct sound the shipped content includes for each element, with **numbered variants collapsed** (step1/step2 → step; a user may add their own variants). Format: `element: <all shipped sounds> [gallery plays: <current>] → untapped: <not yet in gallery>`. "untapped" = shipped but the gallery doesn't preview it yet (a deferred-exposure candidate, subject to the used-clip caveat above). Cataloged by unioning one clip of each type across all variants of each element under `sf/sounds/decompiled/builder/`.
+
+**audio**
+- musics: loop [loop] → none
+- sources: loop [loop] → none
+
+**construction**
+- belts: loop [loop] → none
+- checkpoints: get, loop [get, loop] → none
+- moving platforms: loop [loop] → none
+- platforms: death, fall, hurt, land, step [step, land, fall] → **hurt, death**
+- vanishing platforms: loop [loop] → none
+- walls: bump, death, hurt [bump, hurt, death] → none
+
+**interaction**
+- calendars: break, loop, press [press, loop] → **break**
+- clocks: break, loop, press [press, loop] → **break**
+- items: break, drop, fire, get, healstart, healstop, hit, loop, place, scanning, scanstart, scanstop [get, loop] → **break, drop, fire, healstart, healstop, hit, place, scanning, scanstart, scanstop** (several are category-specific — e.g. healstart/healstop on health items, scan* on others)
+- sensors: off, on [gallery main is loop + on/off] → none untapped; NOTE stock ships NO loop (only on/off), so Space says "No loop sound specified" until a custom sensor adds loop (the entity supports it)
+- signs: break, loop, press, step [press, loop, break] → **step**
+- switches: loop, press [press, loop] → none
+
+**kombat**
+- npc: death, heal, hit, hurt, launch, life, remove, spawn, step, taunt, tel [hurt, taunt, death] → **heal, hit, launch, life, remove, spawn, step, tel** (`remove` ships only for the helpers category; hit/step absent from a few categories like humans/zombies)
+- projectiles: death, hit, hurt, life, loop [hit, loop, death] → **hurt, life**
+
+**transitions**
+- doors: close, death, deny, grant, hurt, jam, loop, move, open, step [loop, move, close, open, death, hurt, deny, grant] → jam, step — BUT both are referenced NOWHERE in code (dead files) — do NOT expose
+- elevators: beep, close, loop, move, open [loop, move, close, open, beep] → none
+- lifts: loop [loop] → none
+- teleporters: loop, move [move, loop] → none
+- trampolines: land, rise, spawn [land, rise, spawn] → none
+
+**transportation**
+- aircrafts: alarm, appear, beacon, change, crash, death, engin, enter, flight, gear, hurt, land, loop, pass, start, turn [flight, loop, death] → **alarm, appear, beacon, change, crash, engin, enter, gear, hurt, land, pass, start, turn**
+- bikes (own/misc): beacon, bell, change, crash, death, hurt, plummet, radar, speed, start, stop, stuck, turn [hurt, beacon, death] → **bell, change, crash, plummet, radar, speed, start, stop, stuck, turn**
+- bikes (ride surfaces, `platforms/<surface>/`): fall, land, move — IN the gallery via the bikes tab's secondary surface axis (Ctrl+'/Ctrl+; to cycle, Ctrl+Space/K/J for move/land/fall); see the transportation note above
+- vehicles: beacon, death, hit, horn, hurt, motor, turn [motor, beacon, death] → **hit, horn, hurt, turn**
+
+**traps**
+- bombs: fall, land [land, fall] → none
+- fires: hit, loop [hit, loop] → none
+- floor breakers: remove, spawn [spawn] → **remove**
+- force fields: hit, off, on [hit, on, off] → none
+- hazards: fall, loop [fall, loop] → none
+- mines: explode, hit, light, loop, spawn [spawn, loop, explode] → **hit, light**
+- security cameras: alarm, alert, death, hurt, turn [hurt, turn, alert] → **alarm, death**
+- spikes: death, hit, hurt, loop [hit, loop, death] → **hurt**
+- time bombs: drop, hit, land, tick [land, tick] → **drop, hit**
+- winds: hit, loop [hit, loop] → none
+
+**zones**
+- heal zones: heal, take [heal, take] → none
+- safe zones: in, out [out, in] → none
+- story zones: close, copy, open, scroll [scroll, open, close] → **copy**
 
 ## Implementation notes (mechanics confirmed 2026-08-31)
 
