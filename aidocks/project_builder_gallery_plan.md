@@ -126,11 +126,11 @@ Every distinct sound the shipped content includes for each element, with **numbe
 - walls: bump, death, hurt [bump, hurt, death] → none
 
 **interaction**
-- calendars: break, loop, press [press, loop] → **break**
-- clocks: break, loop, press [press, loop] → **break**
+- calendars: break, loop, press [press, loop, break] → none (break exposed 2026-09-01: Ctrl+H in form + gallery + help; used at projectile/bomb/mine/timebomb/bullet destroy)
+- clocks: break, loop, press [press, loop, break] → none (break exposed 2026-09-01: Ctrl+H, same as calendars)
 - items: break, drop, fire, get, healstart, healstop, hit, loop, place, scanning, scanstart, scanstop [get, loop] → **break, drop, fire, healstart, healstop, hit, place, scanning, scanstart, scanstop** (several are category-specific — e.g. healstart/healstop on health items, scan* on others)
 - sensors: off, on [gallery main is loop + on/off] → none untapped; NOTE stock ships NO loop (only on/off), so Space says "No loop sound specified" until a custom sensor adds loop (the entity supports it)
-- signs: break, loop, press, step [press, loop, break] → **step**
+- signs: break, loop, press, step [press, loop, break, step] → none (step exposed 2026-09-01: Ctrl+S in form + gallery + help; used as footstep in map.nvgt:633)
 - switches: loop, press [press, loop] → none
 
 **kombat**
@@ -153,19 +153,19 @@ Every distinct sound the shipped content includes for each element, with **numbe
 **traps**
 - bombs: fall, land [land, fall] → none
 - fires: hit, loop [hit, loop] → none
-- floor breakers: remove, spawn [spawn] → **remove**
+- floor breakers: remove, spawn [remove, spawn] → none (swapped 2026-09-01: Space=remove, Ctrl+L=spawn, in form + gallery + help; remove played at floor_breaker.nvgt:34)
 - force fields: hit, off, on [hit, on, off] → none
 - hazards: fall, loop [fall, loop] → none
 - mines: explode, hit, light, loop, spawn [spawn, loop, explode] → **hit, light**
 - security cameras: alarm, alert, death, hurt, turn [hurt, turn, alert] → **alarm, death**
-- spikes: death, hit, hurt, loop [hit, loop, death] → **hurt**
+- spikes: death, hit, hurt, loop [hit, loop, death, hurt] → none (hurt exposed 2026-09-01: Ctrl+U in form + gallery + help; used at bullet.nvgt:497/1044)
 - time bombs: drop, hit, land, tick [land, tick] → **drop, hit**
 - winds: hit, loop [hit, loop] → none
 
 **zones**
 - heal zones: heal, take [heal, take] → none
 - safe zones: in, out [out, in] → none
-- story zones: close, copy, open, scroll [scroll, open, close] → **copy**
+- story zones: close, copy, open, scroll [scroll, open, close, copy] → none (copy exposed 2026-09-01: Ctrl+C in form + gallery + help; clipboard-copy feedback at dlg.nvgt:14)
 
 ## Implementation notes (mechanics confirmed 2026-08-31)
 
