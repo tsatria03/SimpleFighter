@@ -1,0 +1,198 @@
+/* gallery.nvgt - builder sound gallery.
+ *
+ * A browse-only preview of every builder element's sounds, opened from the build menu (the
+ * "sound gallery" entry sits on every tab, just before "template"). Three levels: category ->
+ * type -> variant, with a live audio preview on each variant. No placing, no volume/pitch
+ * controls.
+ *
+ * Every folder list is read from disk with get_map_sound_folders, so new variants and a map's
+ * own custom sounds appear automatically. The only authored data is the per-type clip table in
+ * gallery_types_for() below; a category with no declared types is hidden, and we fill the table
+ * in one category at a time. Full per-category clip tables live in aidocks/project_sound_gallery_plan.md.
+ *
+ * Preview reuses the global preview pool t (dec.nvgt) with prevslot / keytimer, exactly like the
+ * build forms and weaponsmenu: Space plays a type's main clip, Ctrl+<letter> plays its extras,
+ * and moving the cursor stops the current clip. The background_callback drives all of this; it is
+ * a free function, so it reads the current browse state from the module-level globals below.
+*/
+
+/* One previewable clip: the key that plays it, whether Ctrl must be held, the glob used to find
+   the file, and the spoken label (empty for the Space/main clip, which isn't announced). */
+class gallery_clip
+{
+int key;
+bool ctrl;
+string glob;
+string label;
+gallery_clip(int the_key, bool needs_ctrl, string the_glob, string the_label)
+{
+key = the_key;
+ctrl = needs_ctrl;
+glob = the_glob;
+label = the_label;
+}
+}
+
+/* One type within a category (e.g. audio's "musics"). folder is its on-disk name; subpath is an
+   extra folder between the variant and its clips ("general" for npc, "misc" for bikes, empty for
+   most); two_step marks types that nest an extra category level (items, npc) - stored for later,
+   not handled until those categories are built. clips lists the previewable sounds, main first. */
+class gallery_type
+{
+string folder;
+string subpath;
+bool two_step;
+gallery_clip@[] clips;
+gallery_type(string the_folder, string the_subpath = "", bool is_two_step = false)
+{
+folder = the_folder;
+subpath = the_subpath;
+two_step = is_two_step;
+}
+void add(int the_key, bool needs_ctrl, string the_glob, string the_label)
+{
+clips.insert_last(gallery_clip(the_key, needs_ctrl, the_glob, the_label));
+}
+}
+
+/* Browse state read by the background_callback (funcdefs can't capture locals). gallery_browse
+   sets these before each run; the callback indexes g_types by the menu's active tab. */
+gallery_type@[] g_types;
+string g_category;
+int g_last_tab = -999;
+int g_last_idx = -999;
+
+/* The declared types for a category, main clip first. An empty result hides the category from the
+   menu and skips it in browse, so undeclared categories stay hidden until spec'd. Fill this in one
+   category at a time - see the plan memory for the remaining clip tables. */
+gallery_type@[] gallery_types_for(string category)
+{
+gallery_type@[] types;
+if(category == "audio")
+{
+gallery_type musics("musics");
+musics.add(KEY_SPACE, false, "*loop*", "");
+types.insert_last(musics);
+gallery_type sources("sources");
+sources.add(KEY_SPACE, false, "*loop*", "");
+types.insert_last(sources);
+}
+return types;
+}
+
+/* Runs every monitor() tick while the variant browser is open. Stops the preview when the cursor
+   moves, then plays the focused variant's clip for whichever preview key is down. */
+void gallery_callback(form_menu@ m, string data)
+{
+int tab = m.active_tab;
+int idx = m.focused_item;
+if(tab < 0 || tab >= int(g_types.length())) return;
+if(idx < 0) return;
+if(tab != g_last_tab || idx != g_last_idx)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
+g_last_tab = tab;
+g_last_idx = idx;
+}
+string variant = m.get_item_id(idx);
+if(variant == "") return;
+gallery_type@ ty = g_types[tab];
+string base = "builder/" + g_category + "/" + ty.folder + "/" + variant + "/";
+if(ty.subpath != "") base += ty.subpath + "/";
+for(uint i = 0; i < ty.clips.length(); i++)
+{
+gallery_clip@ c = ty.clips[i];
+bool play = false;
+if(c.ctrl)
+{
+if(control_is_down() && key_repeating(c.key)) play = true;
+}
+else
+{
+if(key_down(c.key) && keytimer.elapsed >= keytime) play = true;
+}
+if(!play) continue;
+t.destroy_sound(prevslot);
+string clip = get_map_sound(base + c.glob);
+if(clip == "")
+speak("no " + (c.label == "" ? "sound" : c.label) + " sound");
+else
+prevslot = t.play_stationary(clip, false);
+if(!c.ctrl) keytimer.restart();
+}
+}
+
+/* The variant browser for one category: a tabbed menu, one tab per declared type, each listing
+   the type's variants from disk. Escape (or the OK button) returns to the category menu; the
+   preview is driven by gallery_callback. */
+void gallery_browse(string category)
+{
+g_category = category;
+g_types = gallery_types_for(category);
+if(g_types.length() == 0) return;
+g_last_tab = -999;
+g_last_idx = -999;
+int saved_tab = 0;
+int saved_pos = 0;
+bool first = true;
+while(true)
+{
+setupmenu();
+@m.background_callback = @gallery_callback;
+m.tab_caption = "Category";
+m.intro_text = first ? (category + " sounds. Arrow keys to move, space to play a sound, control plus a letter for extra sounds, escape to go back.") : "";
+for(uint i = 0; i < g_types.length(); i++)
+{
+int t_idx = m.add_tab(g_types[i].folder);
+string[] variants = get_map_sound_folders("builder/" + category + "/" + g_types[i].folder + "/*");
+for(uint j = 0; j < variants.length(); j++)
+m.add_item_to_tab(t_idx, variants[j], variants[j]);
+}
+if(saved_tab >= 0 && saved_tab < int(g_types.length())) m.set_active_tab_silent(saved_tab);
+int mres = m.run(saved_pos, true, false);
+if(m.active_tab >= 0) saved_tab = m.active_tab;
+if(mres >= 0) saved_pos = mres;
+t.destroy_sound(prevslot);
+prevslot = -1;
+if(mres < 0) return;
+first = false;
+}
+}
+
+/* Entry point, dispatched from buildobj on the "sound gallery" build-menu item. Pools are already
+   paused by the build-menu handler, so resume only on the final exit. Lists the categories that
+   have at least one declared type, then hands off to the browser. */
+void sound_gallery()
+{
+string[] categories = get_map_sound_folders("builder/*");
+while(true)
+{
+setupmenu();
+m.intro_text = "Sound gallery. Choose a category.";
+int shown = 0;
+for(uint i = 0; i < categories.length(); i++)
+{
+if(gallery_types_for(categories[i]).length() > 0)
+{
+m.add_item(categories[i], categories[i]);
+shown++;
+}
+}
+if(shown == 0)
+{
+resume_pools();
+dlg("Error. There are no sound categories available to view. Press enter to continue.", dlgsound:true);
+return;
+}
+m.add_item("back", "*gallery_back*");
+int mres = m.run(-1, true, false);
+if(mres < 0 || m.selected_item_id == "*gallery_back*")
+{
+resume_pools();
+speak("canceled");
+return;
+}
+gallery_browse(m.selected_item_id);
+}
+}

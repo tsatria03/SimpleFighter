@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-**Status: DESIGN, not started. All 8 categories' clip tables are now complete (2026-08-31) — ready to build when the dev gives the go-ahead.** A living spec built up one category at a time. Related: [[project_audio_model]], [[project_sound_assets_layout]], [[feedback_menus_say_canceled]].
+**Status: BUILDING — engine + AUDIO implemented (2026-08-31), remaining 7 categories wired one at a time.** All 8 clip tables below are designed; the engine lives in `src/includes/builder/misc/gallery.nvgt` and is wired into the build menu (`map_menu.nvgt`: "sound gallery" item on every tab before "template"; `buildobj` dispatch). To add a category, extend `gallery_types_for()` in gallery.nvgt with its types/clips from the table below — nothing else. AUDIO is live; construction/interaction/kombat/transitions/transportation/traps/zones are DESIGNED-not-yet-wired. Related: [[project_audio_model]], [[project_sound_assets_layout]], [[feedback_menus_say_canceled]].
 
 ## Purpose
 
