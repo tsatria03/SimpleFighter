@@ -1,9 +1,8 @@
 /* gallery.nvgt - builder sound gallery.
  *
  * A browse-only preview of every builder element's sounds, opened from the build menu (the
- * "sound gallery" entry sits on every tab, just before "template"). Three levels: category ->
- * type -> variant, with a live audio preview on each variant. No placing, no volume/pitch
- * controls.
+ * "gallery" entry sits on every tab, just before "template"). Three levels: category -> type ->
+ * variant, with a live audio preview on each variant. No placing, no volume/pitch controls.
  *
  * Every folder list is read from disk with get_map_sound_folders, so new variants and a map's
  * own custom sounds appear automatically. The only authored data is the per-type clip table in
@@ -55,10 +54,22 @@ clips.insert_last(gallery_clip(the_key, needs_ctrl, the_glob, the_label));
 }
 }
 
+/* One resolved tab in the browser: its label, the folder that directly holds the variants (a
+   category/type, or category/type/sub-category for a two-step type), an optional subpath after
+   the variant ("general" for npc, "misc" for bikes, empty for most), and the clips. gallery_browse
+   expands the authored gallery_types into these, so a single-level type makes one tab and a
+   two-step type makes one tab per sub-category. */
+class gallery_tab
+{
+string name;
+string path;
+string subpath;
+gallery_clip@[] clips;
+}
+
 /* Browse state read by the background_callback (funcdefs can't capture locals). gallery_browse
-   sets these before each run; the callback indexes g_types by the menu's active tab. */
-gallery_type@[] g_types;
-string g_category;
+   fills g_tabs before each run; the callback indexes it by the menu's active tab. */
+gallery_tab@[] g_tabs;
 int g_last_tab = -999;
 int g_last_idx = -999;
 
@@ -103,6 +114,35 @@ walls.add(KEY_L, true, "*hurt*", "hit");
 walls.add(KEY_H, true, "*death*", "death");
 types.insert_last(walls);
 }
+else if(category == "interaction")
+{
+gallery_type calendars("calendars");
+calendars.add(KEY_SPACE, false, "*press*", "");
+calendars.add(KEY_L, true, "*loop*", "loop");
+types.insert_last(calendars);
+gallery_type clocks("clocks");
+clocks.add(KEY_SPACE, false, "*press*", "");
+clocks.add(KEY_L, true, "*loop*", "loop");
+types.insert_last(clocks);
+gallery_type items("items", "", true);
+items.add(KEY_SPACE, false, "*get*", "");
+items.add(KEY_L, true, "*loop*", "loop");
+types.insert_last(items);
+gallery_type sensors("sensors");
+sensors.add(KEY_SPACE, false, "*loop*", "");
+sensors.add(KEY_N, true, "*on*", "on");
+sensors.add(KEY_O, true, "*off*", "off");
+types.insert_last(sensors);
+gallery_type signs("signs");
+signs.add(KEY_SPACE, false, "*press*", "");
+signs.add(KEY_L, true, "*loop*", "loop");
+signs.add(KEY_H, true, "*break*", "break");
+types.insert_last(signs);
+gallery_type switches("switches");
+switches.add(KEY_SPACE, false, "*press*", "");
+switches.add(KEY_L, true, "*loop*", "loop");
+types.insert_last(switches);
+}
 return types;
 }
 
@@ -112,7 +152,7 @@ void gallery_callback(form_menu@ m, string data)
 {
 int tab = m.active_tab;
 int idx = m.focused_item;
-if(tab < 0 || tab >= int(g_types.length())) return;
+if(tab < 0 || tab >= int(g_tabs.length())) return;
 if(idx < 0) return;
 if(tab != g_last_tab || idx != g_last_idx)
 {
@@ -123,12 +163,12 @@ g_last_idx = idx;
 }
 string variant = m.get_item_id(idx);
 if(variant == "") return;
-gallery_type@ ty = g_types[tab];
-string base = "builder/" + g_category + "/" + ty.folder + "/" + variant + "/";
-if(ty.subpath != "") base += ty.subpath + "/";
-for(uint i = 0; i < ty.clips.length(); i++)
+gallery_tab@ tb = g_tabs[tab];
+string base = "builder/" + tb.path + "/" + variant + "/";
+if(tb.subpath != "") base += tb.subpath + "/";
+for(uint i = 0; i < tb.clips.length(); i++)
 {
-gallery_clip@ c = ty.clips[i];
+gallery_clip@ c = tb.clips[i];
 bool play = false;
 if(c.ctrl)
 {
@@ -142,7 +182,10 @@ if(!play) continue;
 t.destroy_sound(prevslot);
 string clip = get_map_sound(base + c.glob);
 if(clip == "")
-speak("no " + (c.label == "" ? "sound" : c.label) + " sound");
+{
+string missing_name = c.label != "" ? c.label : string_replace(c.glob, "*", "", true);
+speak("No " + missing_name + " sound specified.");
+}
 else
 prevslot = t.play_stationary(clip, false);
 if(!c.ctrl) keytimer.restart();
@@ -154,9 +197,38 @@ if(!c.ctrl) keytimer.restart();
    preview is driven by gallery_callback. */
 void gallery_browse(string category)
 {
-g_category = category;
-g_types = gallery_types_for(category);
-if(g_types.length() == 0) return;
+gallery_type@[] types = gallery_types_for(category);
+if(types.length() == 0) return;
+/* Expand the authored types into concrete tabs. A single-level type is one tab; a two-step type
+   (items, npc) becomes one tab per sub-category folder found on disk. */
+g_tabs.resize(0);
+for(uint i = 0; i < types.length(); i++)
+{
+gallery_type@ ty = types[i];
+if(!ty.two_step)
+{
+gallery_tab tab;
+tab.name = ty.folder;
+tab.path = category + "/" + ty.folder;
+tab.subpath = ty.subpath;
+tab.clips = ty.clips;
+g_tabs.insert_last(tab);
+}
+else
+{
+string[] subs = get_map_sound_folders("builder/" + category + "/" + ty.folder + "/*");
+for(uint s = 0; s < subs.length(); s++)
+{
+gallery_tab tab;
+tab.name = ty.folder + " " + subs[s];
+tab.path = category + "/" + ty.folder + "/" + subs[s];
+tab.subpath = ty.subpath;
+tab.clips = ty.clips;
+g_tabs.insert_last(tab);
+}
+}
+}
+if(g_tabs.length() == 0) return;
 g_last_tab = -999;
 g_last_idx = -999;
 int saved_tab = 0;
@@ -168,14 +240,14 @@ setupmenu();
 @m.background_callback = @gallery_callback;
 m.tab_caption = "Category";
 m.intro_text = first ? (category + " sounds. Arrow keys to move, space to play a sound, control plus a letter for extra sounds, escape to go back.") : "";
-for(uint i = 0; i < g_types.length(); i++)
+for(uint i = 0; i < g_tabs.length(); i++)
 {
-int t_idx = m.add_tab(g_types[i].folder);
-string[] variants = get_map_sound_folders("builder/" + category + "/" + g_types[i].folder + "/*");
+int t_idx = m.add_tab(g_tabs[i].name);
+string[] variants = get_map_sound_folders("builder/" + g_tabs[i].path + "/*");
 for(uint j = 0; j < variants.length(); j++)
 m.add_item_to_tab(t_idx, variants[j], variants[j]);
 }
-if(saved_tab >= 0 && saved_tab < int(g_types.length())) m.set_active_tab_silent(saved_tab);
+if(saved_tab >= 0 && saved_tab < int(g_tabs.length())) m.set_active_tab_silent(saved_tab);
 int mres = m.run(saved_pos, true, false);
 if(m.active_tab >= 0) saved_tab = m.active_tab;
 if(mres >= 0) saved_pos = mres;
