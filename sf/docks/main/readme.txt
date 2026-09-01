@@ -270,7 +270,7 @@ Escape. Exit the current map and return to the last menu.
 
 Macros (script keys).
 
-The macro system gives you 42 keyboard slots that each fire a slash command, with optional cooldown and spoken confirmation.
+The macro system gives you 42 keyboard slots that each fire a slash command, with an optional cooldown and an optional spoken notice when a press is blocked by that cooldown.
 
 Backtick, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, minus, equals, backspace. Bank 1 (14 slots).
 Shift plus any of the above. Bank 2 (14 slots).

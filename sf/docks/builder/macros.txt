@@ -1,0 +1,39 @@
+Macros.
+
+A macro is a keyboard slot that fires a slash command the moment you press its key, so a command you would otherwise type into the command console becomes a single keystroke during play. There are forty-two macro slots, and each one holds its own command, an optional cooldown, and a choice of whether a blocked press speaks a notice. Macros are grouped into swappable packs, so you can keep one set of shortcuts for building, another for combat, and switch between them without re-typing anything. Macros run only during play and can be turned off entirely with /scriptmode (or /sm) when you want the keys back for something else.
+
+The macro keys.
+
+The forty-two slots are laid out across three banks of fourteen keys each. The fourteen keys in a bank are, in order, grave (the backtick key to the left of the 1 key), then 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, minus, equals, and backspace. Bank one is those keys pressed on their own. Bank two is shift plus any of those keys. Bank three is shift plus alt plus any of those keys. So grave fires the first macro, shift plus grave fires the fifteenth, and shift plus alt plus grave fires the twenty-ninth, and the same pattern runs across the row for the rest. A macro fires while its key is held, repeating as long as you hold it (subject to any cooldown you set), so a held key can repeat a command rather than needing a fresh press each time.
+
+Choosing a macro pack.
+
+Use /macset (or /mc) to change which pack is active. Macro packs are organized in two levels: a category folder, and a pack folder inside it. Typing /mc on its own opens a menu of categories, then a menu of packs inside the category you pick. Typing /mc followed by a category name skips straight to the pack menu for that category. Typing /mc followed by both a category name and a pack name sets that pack directly with no menu, which is what you would bind to a switch or another macro that jumps to a known pack. The game ships with the category default and the pack classic active, so /mc default classic returns you to the starting set. After you edit a pack's file by hand, /relscripts (or /rt) reloads it so your changes take effect without leaving the map.
+
+Where macro packs live.
+
+Each pack is a plain text file named info.sif inside data/main/macros/, under its category folder and then its pack folder. The starting pack is data/main/macros/default/classic/info.sif. To make a new pack, create a category folder (or reuse an existing one), create a pack folder inside it, and put an info.sif file there. To make a new category, just create a new folder directly under data/main/macros/ and put pack folders inside it. The folder names are the names you type after /mc, so keep them short and without spaces.
+
+How a macro file is written.
+
+Every line in the file defines one macro slot, and the lines are read in order: the first line is the first slot (grave), the second line is the second slot (the 1 key), and so on up the row and across the banks. Blank lines are skipped rather than counted, so an empty line does not reserve or skip a slot; it simply shifts every macro below it up by one. Because of that, keep the lines packed with no gaps and let each command's position in the file decide which key fires it.
+
+Each macro line has the following:
+
+Cooldown (optional number). A count of milliseconds that must pass before the macro can fire again. Write it as a plain whole number at the very start of the line, for example 2000 for a two second cooldown. Use 0, or leave it off entirely, for a macro that can fire as fast as you press it.
+
+Speak flag (optional true or false). Controls what happens when you press a macro that is still cooling down. When it is true, an early press speaks a short notice that the command cannot be used yet. When it is false, the early press is ignored silently. This flag only affects the cooldown notice; it does not announce successful firings, and it has no effect on a macro with no cooldown.
+
+Command (required). The slash command to run, written exactly as you would type it after the slash in the command console, for example /draw pistol or /cm reload 10 10. This is the rest of the line after the optional cooldown and speak flag. The leading slash is optional; it is added for you if you leave it off.
+
+Stacking, delays, and random values.
+
+A macro command is a full command line, so everything the command console supports works here too. You can stack several commands in one macro by separating them with semicolons, give any step an optional millisecond delay by writing a number before it, and use random(low,high) in place of any number to roll a fresh value each time the macro fires. See the commands help topic for the full description of stacking, delays, and random values.
+
+A worked example.
+
+A line reading 4000 true /rt is the reload-macros command on a four second cooldown that speaks the notice if you press it again too soon. A line reading 500 true /rc reloads your character on a half second cooldown with the same spoken notice. A line reading 0 false /rm is the reload-map command with no cooldown and no spoken notice, so it fires instantly and stays quiet if somehow repeated. Read together, those three lines would sit on the first three keys of bank one, on grave, 1, and 2.
+
+Things to know.
+
+Only the first forty-two lines can ever be reached, because there are only forty-two keys. Extra lines below the forty-second load but have no key to fire them, so treat forty-two as the ceiling for a pack. Macros do not fire while macros are turned off with /scriptmode, and they do not fire inside the arcade arena, where the whole key row is taken over to quick-draw weapons instead. Everywhere else in normal play the row is yours to bind. If a bound command fails to run for any reason, the macro gives no error back, the same as typing a bad command into the console, so test a command in the console once before you bind it to be sure it does what you expect.
