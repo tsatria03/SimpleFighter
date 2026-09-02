@@ -345,9 +345,11 @@ return types;
 
 /* Play one clip out of the folder `base` (ends with "/") if its key is currently pressed. A ctrl
    clip needs control held; a Space clip (with or without ctrl) is level-triggered and throttled by
-   keytimer; a ctrl+letter clip uses key_repeating. A plain (non-ctrl) clip requires control to be
-   UP, so Ctrl+Space (a surface's move) never also triggers a plain-Space main clip. */
-void gallery_try_clip(gallery_clip@ c, const string&in base)
+   keytimer; a ctrl+letter clip uses key_repeating. A plain (non-ctrl) clip normally requires control
+   to be UP, so on a type with a surface axis (bikes) Ctrl+Space stays reserved for the surface's move
+   preview. For every other type, allow_ctrl_space lets Ctrl+Space play the main clip too, exactly like
+   plain Space, as a convenience. */
+void gallery_try_clip(gallery_clip@ c, const string&in base, bool allow_ctrl_space = false)
 {
 bool pressed;
 if(c.ctrl)
@@ -355,6 +357,8 @@ if(c.ctrl)
 if(!control_is_down()) return;
 pressed = (c.key == KEY_SPACE) ? (key_down(c.key) && keytimer.elapsed >= keytime) : key_repeating(c.key);
 }
+else if(c.key == KEY_SPACE && allow_ctrl_space)
+pressed = key_down(c.key) && keytimer.elapsed >= keytime;
 else
 pressed = !control_is_down() && key_down(c.key) && keytimer.elapsed >= keytime;
 if(!pressed) return;
@@ -376,17 +380,28 @@ if(c.key == KEY_SPACE) keytimer.restart();
 void gallery_callback(form_menu@ m, string data)
 {
 int tab = m.active_tab;
-int idx = m.focused_item;
 if(tab < 0 || tab >= int(g_tabs.length())) return;
-if(idx < 0) return;
-gallery_tab@ tb = g_tabs[tab];
-string variant = m.get_item_id(idx);
-if(variant == "") return;
-if(tab != g_last_tab || idx != g_last_idx)
+// Stop any playing preview the moment the tab changes, BEFORE the guards below. A tab whose list
+// hasn't been focused yet reports focused_item == -1, so if we waited until after the idx/variant
+// checks the sound would keep playing forever on such a tab (the tab-switch bug).
+if(tab != g_last_tab)
 {
 t.destroy_sound(prevslot);
 prevslot = -1;
 g_last_tab = tab;
+g_last_idx = -999;
+g_surface_idx = 0;
+g_surfaces.resize(0);
+}
+int idx = m.focused_item;
+if(idx < 0) return;
+gallery_tab@ tb = g_tabs[tab];
+string variant = m.get_item_id(idx);
+if(variant == "") return;
+if(idx != g_last_idx)
+{
+t.destroy_sound(prevslot);
+prevslot = -1;
 g_last_idx = idx;
 // Rebuild the surface list for the newly focused variant, if this tab has a surface axis.
 g_surface_idx = 0;
@@ -424,11 +439,13 @@ string sbase = "builder/" + tb.path + "/" + variant + "/" + tb.surface_folder + 
 for(uint si = 0; si < tb.surface_clips.length(); si++)
 gallery_try_clip(tb.surface_clips[si], sbase);
 }
-// Main clips (the element's own sounds).
+// Main clips (the element's own sounds). On a type WITHOUT a surface axis, Ctrl+Space plays the
+// main clip too (same as plain Space); bikes keep Ctrl+Space reserved for the surface move.
 string base = "builder/" + tb.path + "/" + variant + "/";
 if(tb.subpath != "") base += tb.subpath + "/";
+bool allow_ctrl_space = (tb.surface_folder == "");
 for(uint i = 0; i < tb.clips.length(); i++)
-gallery_try_clip(tb.clips[i], base);
+gallery_try_clip(tb.clips[i], base, allow_ctrl_space);
 }
 
 /* The variant browser for one category: a tabbed menu, one tab per declared type, each listing

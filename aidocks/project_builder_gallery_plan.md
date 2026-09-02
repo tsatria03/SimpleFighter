@@ -36,7 +36,7 @@ Level 3 needs live key handling during navigation, so it is a single-list form d
 
 ## Key convention (uniform — matches every existing form)
 
-- **Space** (no modifier) = the main clip.
+- **Space** (no modifier) = the main clip. **Ctrl+Space also plays the main clip** (dev request 2026-09-01), for every type EXCEPT those with a surface axis (bikes), where Ctrl+Space stays the surface's move preview. Implemented via `gallery_try_clip`'s `allow_ctrl_space` param, set true only when `tb.surface_folder == ""`.
 - **Ctrl+<letter>** = each extra clip, gated on the list being focused. Letters reuse the element's existing form keys so muscle memory carries over. Confirmed 2026-08-31: every form already uses Ctrl+letter (the `control_is_down()` sits once at the top of the key block, wrapping all letters — door/elevator/passage included), so there is NOTHING to normalize.
 - **Loop-promotion rule**: a few forms (doors, elevators) have NO bare-Space clip — they put the ambient `loop` on Ctrl+L along with everything else. The gallery promotes that `loop` to **Space** (its main clip) and drops the redundant Ctrl+L, so Space always plays something and `loop` stays the main/ambient clip as it is for every other type.
 
@@ -89,6 +89,10 @@ Level 3 needs live key handling during navigation, so it is a single-list form d
 - `heal zones`: main `*heal*`; Ctrl+L `*take*` ("take"). Both leaf clips covered.
 - `safe zones`: main `*out*`; Ctrl+L `*in*` ("in"). Both leaf clips covered. (Form order is out on Space, in on Ctrl+L.)
 - `story zones`: main `*scroll*`; Ctrl+L `*open*` ("open"); Ctrl+H `*close*` ("close"). Leaf also has `copy` (clipboard-copy feedback), not previewed by the form — deferred.
+
+## Bug fixes
+
+- **Tab-switch didn't stop the preview (fixed 2026-09-01).** `gallery_callback` returned at `if(idx < 0) return;` before it could stop the sound — and a tab whose content list hasn't been focused yet reports `focused_item == -1`, so switching to such a tab left the previous clip playing forever (noticed on moving platforms' loop). Fix: split the callback's change-detection so a **tab change stops the preview first, before the idx/variant guards**; the per-item stop+surface-rebuild then runs only when idx is valid.
 
 ## Confirmed decisions (2026-08-31)
 
