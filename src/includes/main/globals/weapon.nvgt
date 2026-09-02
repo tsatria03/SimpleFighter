@@ -76,6 +76,7 @@ bool is_reloading;
 double pending_ammo;
 int reload_duration;
 timer reload_timer;
+timer empty_timer;
 
 timer firetimer;
 timer firetimer2;
@@ -347,7 +348,11 @@ if(is_reloading) return false;
 double reserve = current_reserve();
 if(reserve <= 0)
 {
+if(is_player_weapon || empty_timer.elapsed >= 1000)
+{
 sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/general/*empty*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+empty_timer.restart();
+}
 return false;
 }
 double am;
@@ -370,7 +375,11 @@ void fire(int x, int y, string facing, int extra_damage, int firer_npc = -1, int
 {
 if(loaded_ammo == 0 && !is_melee())
 {
+if(is_player_weapon || empty_timer.elapsed >= 1000)
+{
 sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/general/*empty*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+empty_timer.restart();
+}
 return;
 }
 if(is_player_weapon && stamina_drain > 0)
