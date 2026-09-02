@@ -549,6 +549,15 @@ string ptype = sd[o+1];
 if(ptype != "none" && !name_exists("builder/transitions/doors/*", ptype)) { col=o+1; return "the passage sound '"+ptype+"' does not exist."; }
 string lkmode = sd[o+2];
 if(!array_contains(door_lockmodes, lkmode)) { col=o+2; return "the lock mode '"+lkmode+"' is not valid."; }
+// The trailing tokens are "id" "password" opentime closetime jamradius looping. The quoted id and
+// password may contain spaces, so the tail's exact indices vary — but looping is always last, then
+// jam radius, close time, and open time before it, so count them from the end.
+int otcol = int(sd.length()) - 4;
+int ctcol = int(sd.length()) - 3;
+int jrcol = int(sd.length()) - 2;
+if(otcol > o+2 && !is_number_token(sd[otcol])) { col=otcol; return "the open time must be a number."; }
+if(ctcol > o+2 && !is_number_token(sd[ctcol])) { col=ctcol; return "the close time must be a number."; }
+if(jrcol > o+2 && !is_number_token(sd[jrcol])) { col=jrcol; return "the jam radius must be a number."; }
 return "";
 }
 
