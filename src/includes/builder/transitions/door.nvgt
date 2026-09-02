@@ -13,13 +13,15 @@ int endx, endy, endz;
 double doorhealth;
 double doormaxhealth;
 int speed;
+int jamradius;
+timer jamtimer;
 string doorid;
 string drpass;
 string last_drpass;
 string lockmode;
 string doortype;
 timer doortimer;
-door(double mnx, double mxx, double mny, double mxy, int ex, int ey, double hp, double maxhp, int sp, string dtype, string lkmode, string did, string pass, bool dcl, bool dtb, bool lp, bool mv, bool rng, double mnz=0, double mxz=0, int ez=0)
+door(double mnx, double mxx, double mny, double mxy, int ex, int ey, double hp, double maxhp, int sp, int jr, string dtype, string lkmode, string did, string pass, bool dcl, bool dtb, bool lp, bool mv, bool rng, double mnz=0, double mxz=0, int ez=0)
 {
 minx=mnx;
 maxx=mxx;
@@ -33,6 +35,7 @@ endz=ez;
 doorhealth=hp;
 doormaxhealth=maxhp;
 speed=sp;
+jamradius=jr;
 doortype=dtype;
 lockmode=lkmode;
 doorid=did;
@@ -61,19 +64,59 @@ return input == drpass;
 }
 }
 
+// True if a player-targeting NPC sits within `radius` tiles of the box [minx..maxx, miny..maxy] (and
+// z on 3d). Distance is measured to the nearest edge of the box, so it covers single-tile and ranged
+// doors/passages alike. Uses npc_targets, so a "turned" helper counts and a non-hostile npc doesn't.
+bool hostile_npc_near(double bminx, double bmaxx, double bminy, double bmaxy, double bminz, double bmaxz, int radius)
+{
+for(uint j=0; j<npcs.length(); j++)
+{
+if(@npcs[j] == null) continue;
+if(!npc_targets(npcs[j], "player")) continue;
+double dx = 0;
+if(npcs[j].x < bminx) dx = bminx - npcs[j].x;
+else if(npcs[j].x > bmaxx) dx = npcs[j].x - bmaxx;
+double dy = 0;
+if(npcs[j].y < bminy) dy = bminy - npcs[j].y;
+else if(npcs[j].y > bmaxy) dy = npcs[j].y - bmaxy;
+double dz = 0;
+if(mapmode == "3d")
+{
+if(npcs[j].z < bminz) dz = bminz - npcs[j].z;
+else if(npcs[j].z > bmaxz) dz = npcs[j].z - bmaxz;
+}
+if(dx <= radius and dy <= radius and dz <= radius) return true;
+}
+return false;
+}
+// True (and plays the throttled jam cue) when door i has a jam radius set and a hostile npc is inside it.
+bool door_jam_blocks(int i)
+{
+if(doors[i].jamradius <= 0) return false;
+double dminz = (mapmode == "3d") ? doors[i].minz : 0;
+double dmaxz = (mapmode == "3d") ? doors[i].maxz : 0;
+if(!hostile_npc_near(doors[i].minx, doors[i].maxx, doors[i].miny, doors[i].maxy, dminz, dmaxz, doors[i].jamradius)) return false;
+if(doors[i].jamtimer.elapsed >= 1000)
+{
+doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*jam*"), false, 0, 0, 0, 100, false);
+speak("The door is jammed with something dangerous nearby!");
+doors[i].jamtimer.restart();
+}
+return true;
+}
 void doorcheck()
 {
 for(uint i=0; i<doors.length(); i++)
 {
 if(@doors[i] == null) continue;
-if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and (mapmode != "3d" or (me.z>=doors[i].minz and me.z<=doors[i].maxz)) and doors[i].automatic==true)
+if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and (mapmode != "3d" or (me.z>=doors[i].minz and me.z<=doors[i].maxz)) and doors[i].automatic==true and !door_jam_blocks(i))
 {
 doormove=true;
 doors[i].is_moving=true;
 doors[i].opensound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*open*"),false,0,0,0,100,false);
 if(doors[i].moving) doors[i].movesound=doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*move*"),true,0,0,0,100,false);
 }
-if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and (mapmode != "3d" or (me.z>=doors[i].minz and me.z<=doors[i].maxz)) and doors[i].automatic==false and controls.action_repeating("interact"))
+if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and (mapmode != "3d" or (me.z>=doors[i].minz and me.z<=doors[i].maxz)) and doors[i].automatic==false and controls.action_repeating("interact") and !door_jam_blocks(i))
 {
 if(doors[i].lockmode=="none")
 {
@@ -308,9 +351,9 @@ doors[i].is_moving=false;
 }
 }
 
-void spawn_door(double mnx, double mxx, double mny, double mxy, int ex, int ey, double hp, double maxhp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, bool ranged=false, double mnz=0, double mxz=0, int ez=0)
+void spawn_door(double mnx, double mxx, double mny, double mxy, int ex, int ey, double hp, double maxhp, int speed, int jamradius, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, bool ranged=false, double mnz=0, double mxz=0, int ez=0)
 {
-door dr1(mnx, mxx, mny, mxy, ex, ey, hp, maxhp, speed, doortype, lockmode, doorid, drpass, automatic, destroyable, looping, moving, ranged, mnz, mxz, ez);
+door dr1(mnx, mxx, mny, mxy, ex, ey, hp, maxhp, speed, jamradius, doortype, lockmode, doorid, drpass, automatic, destroyable, looping, moving, ranged, mnz, mxz, ez);
 doors.insert_last(dr1);
 }
 
@@ -346,6 +389,7 @@ string saved_ey = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_to
 string saved_ez = sel_top_set ? sel_top : "";
 string saved_hp = "1";
 string saved_sp = "";
+string saved_jr = "0";
 string saved_did = "";
 string saved_pass = "";
 string saved_mnx = sel_left_set ? sel_left : "";
@@ -363,7 +407,7 @@ bool saved_moving = false;
 bool saved_opposite = false;
 bool do_build = true;
 int last_lockmode_pos = -1;
-int fsx, fsy, fsz, fex, fey, fez, fhp, fsp;
+int fsx, fsy, fsz, fex, fey, fez, fhp, fsp, fjr;
 int fmnx, fmxx, fmny, fmxy, fmnz, fmxz;
 fsz = -1; fez = -1; fmnz = -1; fmxz = -1;
 int fdid, fpass;
@@ -391,6 +435,7 @@ saved_ey = form.get_text(fey);
 if(fez != -1) saved_ez = form.get_text(fez);
 saved_hp = form.get_text(fhp);
 saved_sp = form.get_text(fsp);
+saved_jr = form.get_text(fjr);
 if(last_mode_pos == 1)
 {
 saved_mnx = form.get_text(fmnx);
@@ -472,6 +517,7 @@ if(fez != -1) form.set_disallowed_chars(fez, disallowed_nums, false, "This chara
 }
 fhp = form.create_input_box("health", saved_hp);
 fsp = form.create_input_box("speed", saved_sp);
+fjr = form.create_input_box("jam radius", saved_jr);
 form.set_disallowed_chars(fhp, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(fsp, disallowed_nums, false, "This character is not allowed.");
 lockmode_list = form.create_list(item_mode ? "use mode" : "lock mode");
@@ -696,6 +742,7 @@ bmnx = bsx; bmxx = bsx; bmny = bsy; bmxy = bsy; bmnz = bsz; bmxz = bsz;
 }
 double bhp = string_to_number(form.get_text(fhp) != "" ? form.get_text(fhp) : "1");
 double bsp = string_to_number(form.get_text(fsp));
+int bjr = int(string_to_number(form.get_text(fjr)));
 string lkmode = "none";
 string did = "none";
 string pass = "none";
@@ -726,22 +773,22 @@ t.destroy_sound(prevslot);
 resume_pools();
 if(ranged)
 {
-write_ranged_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bmnz, bmxz, bez);
-spawn_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, true, bmnz, bmxz, bez);
+write_ranged_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bmnz, bmxz, bez);
+spawn_door(bmnx, bmxx, bmny, bmxy, bex, bey, bhp, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, true, bmnz, bmxz, bez);
 if(opposite)
 {
-write_ranged_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bmnz, bmxz, bsz);
-spawn_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, true, bmnz, bmxz, bsz);
+write_ranged_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bmnz, bmxz, bsz);
+spawn_door(bmnx, bmxx, bmny, bmxy, bsx, bsy, bhp, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, true, bmnz, bmxz, bsz);
 }
 }
 else
 {
-write_door(bsx, bsy, bex, bey, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bsz, bez);
-spawn_door(bsx, bsx, bsy, bsy, bex, bey, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, false, bsz, bsz, bez);
+write_door(bsx, bsy, bex, bey, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bsz, bez);
+spawn_door(bsx, bsx, bsy, bsy, bex, bey, bhp, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, false, bsz, bsz, bez);
 if(opposite)
 {
-write_door(bex, bey, bsx, bsy, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bez, bsz);
-spawn_door(bex, bex, bey, bey, bsx, bsy, bhp, bhp, bsp, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, false, bez, bez, bsz);
+write_door(bex, bey, bsx, bsy, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, bez, bsz);
+spawn_door(bex, bex, bey, bey, bsx, bsy, bhp, bhp, bsp, bjr, bdoortyp, lkmode, did, pass, bdmt, bdmd, blooping, bmoving, false, bez, bez, bsz);
 }
 }
 load_map(mapname, mapowner);
@@ -856,9 +903,10 @@ int ey=stn(sd[o+1]);
 if(mapmode == "3d") { ez_v=stn(sd[o+2]); o+=3; } else o+=2;
 double hp=stn(sd[o]);
 int sp=stn(sd[o+1]);
-string dtype=sd[o+2];
-string lkmode=sd[o+3];
-string combined=join_string_array(sd, o+4, sd.length());
+int jr=stn(sd[o+2]);
+string dtype=sd[o+3];
+string lkmode=sd[o+4];
+string combined=join_string_array(sd, o+5, sd.length());
 string remainder;
 array<string> quoted=extract_quoted(combined, remainder);
 string did=(quoted.length() >= 1) ? quoted[0] : "none";
@@ -868,7 +916,7 @@ bool amt=(tail.length() >= 1) ? string_to_bool(tail[0]) : false;
 bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
 bool lp=(tail.length() >= 3) ? string_to_bool(tail[2]) : true;
 bool mv=(tail.length() >= 4) ? string_to_bool(tail[3]) : true;
-spawn_door(sx, sx, sy, sy, ex, ey, hp, hp, sp, dtype, lkmode, did, pass, amt, dbl, lp, mv, false, sz_v, sz_v, ez_v);
+spawn_door(sx, sx, sy, sy, ex, ey, hp, hp, sp, jr, dtype, lkmode, did, pass, amt, dbl, lp, mv, false, sz_v, sz_v, ez_v);
 }
 
 void read_ranged_door(string[] sd)
@@ -890,9 +938,10 @@ int ey=stn(sd[o+1]);
 if(mapmode == "3d") { ez_v=stn(sd[o+2]); o+=3; } else o+=2;
 double hp=stn(sd[o]);
 int sp=stn(sd[o+1]);
-string dtype=sd[o+2];
-string lkmode=sd[o+3];
-string combined=join_string_array(sd, o+4, sd.length());
+int jr=stn(sd[o+2]);
+string dtype=sd[o+3];
+string lkmode=sd[o+4];
+string combined=join_string_array(sd, o+5, sd.length());
 string remainder;
 array<string> quoted=extract_quoted(combined, remainder);
 string did=(quoted.length() >= 1) ? quoted[0] : "none";
@@ -902,10 +951,10 @@ bool amt=(tail.length() >= 1) ? string_to_bool(tail[0]) : false;
 bool dbl=(tail.length() >= 2) ? string_to_bool(tail[1]) : false;
 bool lp=(tail.length() >= 3) ? string_to_bool(tail[2]) : true;
 bool mv=(tail.length() >= 4) ? string_to_bool(tail[3]) : true;
-spawn_door(mnx, mxx, mny, mxy, ex, ey, hp, hp, sp, dtype, lkmode, did, pass, amt, dbl, lp, mv, true, mnz_v, mxz_v, ez_v);
+spawn_door(mnx, mxx, mny, mxy, ex, ey, hp, hp, sp, jr, dtype, lkmode, did, pass, amt, dbl, lp, mv, true, mnz_v, mxz_v, ez_v);
 }
 
-void write_door(double x, double y, double x2, double y2, double hp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, double z=0, double z2=0)
+void write_door(double x, double y, double x2, double y2, double hp, int speed, int jamradius, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, double z=0, double z2=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
@@ -915,12 +964,12 @@ string dst = x2+" "+y2;
 if(mapmode == "3d") dst += " "+z2;
 string clean_did=string_replace(doorid, "\"", "", true);
 string clean_pass=string_replace(drpass, "\"", "", true);
-mapper.write("\r\n"+"door "+src+" "+dst+" "+hp+" "+speed+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable+" "+looping+" "+moving);
+mapper.write("\r\n"+"door "+src+" "+dst+" "+hp+" "+speed+" "+jamradius+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable+" "+looping+" "+moving);
 mapper.close();
 bump_map_modified();
 }
 
-void write_ranged_door(double mnx, double mxx, double mny, double mxy, int ex, int ey, double hp, int speed, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, double mnz=0, double mxz=0, int ez=0)
+void write_ranged_door(double mnx, double mxx, double mny, double mxy, int ex, int ey, double hp, int speed, int jamradius, string doortype, string lockmode, string doorid, string drpass, bool automatic, bool destroyable, bool looping, bool moving, double mnz=0, double mxz=0, int ez=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
@@ -930,7 +979,7 @@ string dst = ex+" "+ey;
 if(mapmode == "3d") dst += " "+ez;
 string clean_did=string_replace(doorid, "\"", "", true);
 string clean_pass=string_replace(drpass, "\"", "", true);
-mapper.write("\r\n"+"door "+zone+" "+dst+" "+hp+" "+speed+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable+" "+looping+" "+moving);
+mapper.write("\r\n"+"door "+zone+" "+dst+" "+hp+" "+speed+" "+jamradius+" "+doortype+" "+lockmode+" \""+clean_did+"\" \""+clean_pass+"\" "+automatic+" "+destroyable+" "+looping+" "+moving);
 mapper.close();
 bump_map_modified();
 }

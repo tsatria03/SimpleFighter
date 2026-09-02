@@ -21,6 +21,7 @@ Coordinates. A single door takes a starting x and y (and z on 3d maps) for the t
 
 Health. The amount of damage the door can absorb before it's destroyed, relevant only when destroyable is checked. A destroyed door stops working and plays its death sound.
 Speed. Milliseconds between each step of the player's travel to the destination, or -1 for an instant jump.
+Jam radius. The number of tiles around the door within which a nearby enemy jams it shut. At 0, the default, the door has no jam behavior and works exactly as it always has. With a positive value, the door refuses to open while any creature that would attack you is within that many tiles of it — an automatic door won't carry you across and a manual door won't respond to the interact key — and it plays its jam clip with a spoken warning instead. Clear the nearby threats and the door works again. A helper that is set to protect you doesn't count, but one that isn't does.
 
 Lock mode (none, key, or password). Controls what the player must satisfy before the door opens:
 
@@ -30,7 +31,7 @@ password: the door prompts the player to type a password. A correct entry grants
 
 Item id / password required. The extra text field that appears when lock mode is key (the required item id) or password (the required password). The item id may include a count, written as the item name followed by a number, to require more than one.
 
-Door sound (a folder name from the door sounds list, or none). The audio theme the door uses; every clip the door plays is pulled from this one bundle. Pick none for a completely silent door. The bundle supplies an open clip (on trigger), a close clip (on arrival), a move clip (during travel), a loop clip (ambient hum while the door exists), a step clip (a footstep-style cue played as you enter the door when looping is off), a death clip (when destroyed), a hurt clip (when damaged), a grant clip (lock satisfied), and a deny clip (lock refused).
+Door sound (a folder name from the door sounds list, or none). The audio theme the door uses; every clip the door plays is pulled from this one bundle. Pick none for a completely silent door. The bundle supplies an open clip (on trigger), a close clip (on arrival), a move clip (during travel), a loop clip (ambient hum while the door exists), a step clip (a footstep-style cue played as you enter the door when looping is off), a death clip (when destroyed), a hurt clip (when damaged), a grant clip (lock satisfied), a deny clip (lock refused), and a jam clip (played when a nearby enemy blocks the door from opening, if a jam radius is set).
 
 Automatic (checkbox). Fire on contact instead of on a key press, as described above.
 Destroyable (checkbox). When checked, the door can be damaged by weapons, bombs, and other attacks; once its health reaches zero it's destroyed, plays its death clip, and no longer transports anyone. Leave it unchecked for an indestructible transition.
@@ -60,8 +61,8 @@ While the door sound list is focused in the builder form, hold control and press
 
 Authoring doors by hand.
 
-If you edit main.sif directly, a single door line is: door x y x2 y2 health speed doortype lockmode "itemid" "password" automatic destroyable looping moving — where x y is the trigger tile and x2 y2 the destination. On 3d maps a z is inserted after each coordinate pair: door x y z x2 y2 z2 health speed doortype lockmode "itemid" "password" automatic destroyable looping moving.
+If you edit main.sif directly, a single door line is: door x y x2 y2 health speed jamradius doortype lockmode "itemid" "password" automatic destroyable looping moving — where x y is the trigger tile and x2 y2 the destination. On 3d maps a z is inserted after each coordinate pair: door x y z x2 y2 z2 health speed jamradius doortype lockmode "itemid" "password" automatic destroyable looping moving.
 
-A ranged door replaces the single trigger tile with min and max pairs: door minx maxx miny maxy x2 y2 health speed doortype lockmode "itemid" "password" automatic destroyable looping moving, and on 3d maps inserts min and max z after the y pair and a single z after the destination y. Both forms share the one door name; the game reads a line as ranged when there are more coordinate values before the door sound than a single door would have.
+A ranged door replaces the single trigger tile with min and max pairs: door minx maxx miny maxy x2 y2 health speed jamradius doortype lockmode "itemid" "password" automatic destroyable looping moving, and on 3d maps inserts min and max z after the y pair and a single z after the destination y. Both forms share the one door name; the game reads a line as ranged when there are more coordinate values before the door sound than a single door would have.
 
 The item id and password are always double-quoted so they may contain spaces; write "none" when a field is unused. The four bool fields are the literal words true or false. The door sound must match a folder name in the door sounds set, or the literal word none. Doors and passages draw their sound bundles from the same set of folders, so a theme placed there is available to both; only doors use the move clip from it.
