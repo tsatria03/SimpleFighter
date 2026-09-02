@@ -262,6 +262,17 @@ class form_menu {
 		if (list < 0) return false;
 		return form.set_list_position(list, index, speak_change);
 	}
+	// Move the cursor to `index` in the active list and give the SAME audible feedback as arrow
+	// navigation: a panned menu click plus the spoken item (with position). Programmatic moves via
+	// set_focused_item are silent about the click because they don't fire the audio_form's navigation
+	// event, so use this for scripted jumps like the gallery's first-letter search.
+	void navigate_to(int index) {
+		int list = active_list();
+		if (list < 0) return;
+		form.set_list_position(list, index, false);
+		play_at_cursor(click_sound);
+		speak_with_position(form, list, false);
+	}
 	string get_item_id(int index) {
 		int list = active_list();
 		if (list < 0) return "";

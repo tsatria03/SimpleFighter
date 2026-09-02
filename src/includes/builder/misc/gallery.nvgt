@@ -439,6 +439,60 @@ string sbase = "builder/" + tb.path + "/" + variant + "/" + tb.surface_folder + 
 for(uint si = 0; si < tb.surface_clips.length(); si++)
 gallery_try_clip(tb.surface_clips[si], sbase);
 }
+// First-letter navigation: typing a plain letter or digit jumps to the next variant whose name
+// starts with it, wrapping around, so the gallery's lists behave like the build forms' lists. The
+// tabbed browser's built-in list nav doesn't receive these characters, so drive the cursor here;
+// get_characters() drains the typed-character buffer and plain letters are otherwise unused by the
+// gallery. This always targets the active tab's content list, whichever control the form focuses.
+string typed = get_characters();
+if(typed.length() > 0 && !control_is_down() && !key_down(KEY_LALT) && !key_down(KEY_RALT))
+{
+string ch = typed.substr(0, 1).lower();
+if(ch.is_alphabetic() || ch.is_digits())
+{
+int count = m.item_count;
+// Strip the prefix shared by EVERY variant in this tab so a letter jumps on the character AFTER
+// the shared prefix, exactly like the wall build form (all walls start with "wall", so D lands on
+// walldirt). Tabs whose names share no prefix (platforms: 8bit, admin...) strip nothing and jump
+// on the raw first letter. Computed only on a keypress, so the per-item scan is cheap.
+string prefix = count > 0 ? m.get_item_id(0) : "";
+for(int i = 1; i < count && prefix.length() > 0; i++)
+{
+string nm = m.get_item_id(i);
+uint pl = 0;
+while(pl < prefix.length() && pl < nm.length() && prefix.substr(pl, 1) == nm.substr(pl, 1)) pl++;
+prefix = prefix.substr(0, pl);
+}
+// Only strip when it actually helps: the characters after the shared prefix must be alphabetic and
+// varied (walls: dirt, brick, bank...). Numbered sets like doors (door10, door100) or switches
+// (switch2, switch3) leave digits after the prefix, so we DON'T strip them — they keep matching on
+// their raw first letter exactly as before.
+if(prefix.length() > 0)
+{
+string seen = "";
+for(int i = 0; i < count; i++)
+{
+string nm = m.get_item_id(i);
+if(nm.length() <= prefix.length()) continue;
+string c0 = nm.substr(prefix.length(), 1).lower();
+if(c0.is_alphabetic() && seen.find(c0) < 0) seen += c0;
+}
+if(seen.length() < 2) prefix = "";
+}
+uint plen = prefix.length();
+for(int off = 1; off <= count; off++)
+{
+int cand = (idx + off) % count;
+string nm = m.get_item_id(cand);
+string rest = nm.length() > plen ? nm.substr(plen) : "";
+if(rest.length() > 0 && rest.substr(0, 1).lower() == ch)
+{
+m.navigate_to(cand);
+break;
+}
+}
+}
+}
 // Main clips (the element's own sounds). On a type WITHOUT a surface axis, Ctrl+Space plays the
 // main clip too (same as plain Space); bikes keep Ctrl+Space reserved for the surface move.
 string base = "builder/" + tb.path + "/" + variant + "/";
