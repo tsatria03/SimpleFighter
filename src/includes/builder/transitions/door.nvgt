@@ -5,7 +5,7 @@ door@[]doors(0);
 
 class door
 {
-bool automatic, destroyable, is_moving, is_ranged, looping, moving, was_inside;
+bool automatic, destroyable, is_moving, is_ranged, looping, moving, was_inside, jam_inside;
 int locksound, closesound, defsound, destsound, doorsound, hurtsound, movesound, opensound;
 double minx, maxx, miny, maxy;
 double minz, maxz;
@@ -14,7 +14,6 @@ double doorhealth;
 double doormaxhealth;
 int speed;
 int jamradius;
-timer jamtimer;
 string doorid;
 string drpass;
 string last_drpass;
@@ -48,6 +47,7 @@ is_ranged=rng;
 last_drpass="";
 is_moving=false;
 was_inside=false;
+jam_inside=false;
 movesound=-1;
 double sz = (mapmode == "3d") ? minz : 0;
 double zr = (mapmode == "3d") ? (maxz-minz) : 0;
@@ -89,18 +89,20 @@ if(dx <= radius and dy <= radius and dz <= radius) return true;
 }
 return false;
 }
-// True (and plays the throttled jam cue) when door i has a jam radius set and a hostile npc is inside it.
+// True when door i has a jam radius set and a hostile npc is inside it, meaning the door won't open.
+// Also plays the jam cue: a manual door announces on every interact attempt; an automatic door
+// announces only on entry (once) and re-arms when you step off, tracked by jam_inside (set each frame
+// in doorcheck), the same one-shot pattern story zones use.
 bool door_jam_blocks(int i)
 {
 if(doors[i].jamradius <= 0) return false;
 double dminz = (mapmode == "3d") ? doors[i].minz : 0;
 double dmaxz = (mapmode == "3d") ? doors[i].maxz : 0;
 if(!hostile_npc_near(doors[i].minx, doors[i].maxx, doors[i].miny, doors[i].maxy, dminz, dmaxz, doors[i].jamradius)) return false;
-if(doors[i].jamtimer.elapsed >= 1000)
+if(!doors[i].automatic or !doors[i].jam_inside)
 {
 doorpool.play_stationary_extended(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*jam*"), false, 0, 0, 0, 100, false);
 speak("The door is jammed with something dangerous nearby!");
-doors[i].jamtimer.restart();
 }
 return true;
 }
@@ -109,6 +111,7 @@ void doorcheck()
 for(uint i=0; i<doors.length(); i++)
 {
 if(@doors[i] == null) continue;
+bool jam_in_area = (me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and (mapmode != "3d" or (me.z>=doors[i].minz and me.z<=doors[i].maxz)));
 if(me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy and (mapmode != "3d" or (me.z>=doors[i].minz and me.z<=doors[i].maxz)) and doors[i].automatic==true and !door_jam_blocks(i))
 {
 doormove=true;
@@ -289,6 +292,7 @@ doorpool.resume_sound(doors[i].doorsound);
 }
 }
 }
+doors[i].jam_inside = jam_in_area;
 if(doors[i].doorhealth<=0)
 {
 doorpool.destroy_sound(doors[i].hurtsound);
@@ -816,7 +820,7 @@ bool ranged = false;
 if(qidx != -1)
 {
 int numcount = qidx - 1;
-ranged = is3d ? (numcount >= 11) : (numcount >= 9);
+ranged = is3d ? (numcount >= 12) : (numcount >= 10);
 }
 int o;
 if(ranged)
@@ -869,10 +873,11 @@ o += 3;
 else o += 2;
 if(!is_number_token(sd[o])) { col=o; return "the health must be a number."; }
 if(!is_number_token(sd[o+1])) { col=o+1; return "the speed must be a number."; }
-string dtype = sd[o+2];
-if(dtype != "none" && !name_exists("builder/transitions/doors/*", dtype)) { col=o+2; return "the door sound '"+dtype+"' does not exist."; }
-string lkmode = sd[o+3];
-if(!array_contains(door_lockmodes, lkmode)) { col=o+3; return "the lock mode '"+lkmode+"' is not valid."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the jam radius must be a number."; }
+string dtype = sd[o+3];
+if(dtype != "none" && !name_exists("builder/transitions/doors/*", dtype)) { col=o+3; return "the door sound '"+dtype+"' does not exist."; }
+string lkmode = sd[o+4];
+if(!array_contains(door_lockmodes, lkmode)) { col=o+4; return "the lock mode '"+lkmode+"' is not valid."; }
 return "";
 }
 
@@ -886,7 +891,7 @@ if(sd[i].length() > 0 && sd[i].substr(0,1) == "\"") { qidx = i; break; }
 if(qidx != -1)
 {
 int numcount = qidx - 1;
-bool ranged_shape = (mapmode == "3d") ? (numcount >= 11) : (numcount >= 9);
+bool ranged_shape = (mapmode == "3d") ? (numcount >= 12) : (numcount >= 10);
 if(ranged_shape) { read_ranged_door(sd); return; }
 }
 int sx=stn(sd[1]);
