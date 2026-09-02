@@ -635,6 +635,41 @@ signpool.update_sound_range_3d(signs[i].signsound, 0, signs[i].maxx-signs[i].min
 }
 signs[i].was_inside = inside;
 }
+// Doors with looping off play their step clip once as you enter the door's tile/area, staying quiet
+// while you're inside until you leave and come back (mirrors the sign step behavior). A dedicated
+// local handle keeps this one-shot out of the door's loop/open/close sound management.
+for(uint i=0; i<doors.length(); i++)
+{
+if(@doors[i] == null) continue;
+bool inside = me.x>=doors[i].minx and me.x<=doors[i].maxx and me.y>=doors[i].miny and me.y<=doors[i].maxy;
+if(mapmode == "3d") inside = inside and me.z>=doors[i].minz and me.z<=doors[i].maxz;
+if(jumping==0 and doors[i].looping==false and (!inside or !doors[i].was_inside))
+{
+double dsz = (mapmode == "3d") ? doors[i].minz : 0;
+int dss = doorpool.play_extended_3d(get_map_sound("builder/transitions/doors/"+doors[i].doortype+"/*step*"),me.x,me.y,me.z,doors[i].minx,doors[i].miny,dsz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+doorpool.update_sound_range_3d(dss, 0, doors[i].maxx-doors[i].minx, 0, doors[i].maxy-doors[i].miny, 0, (mapmode=="3d")?(doors[i].maxz-doors[i].minz):0);
+}
+doors[i].was_inside = inside;
+}
+// Passages get the same step-on-entry treatment when looping is off. Their footprint comes from the
+// passage's own get_* accessors (start/direction/length), and they draw the clip from the shared door folders.
+for(uint i=0; i<passages.length(); i++)
+{
+if(@passages[i] == null) continue;
+int px1 = passages[i].get_xstart();
+int px2 = passages[i].get_xend();
+int py1 = passages[i].get_ystart();
+int py2 = passages[i].get_yend();
+bool inside = me.x>=px1 and me.x<=px2 and me.y>=py1 and me.y<=py2;
+if(mapmode == "3d") inside = inside and me.z>=passages[i].get_zstart() and me.z<=passages[i].get_zend();
+if(jumping==0 and passages[i].looping==false and (!inside or !passages[i].was_inside))
+{
+double psz = (mapmode == "3d") ? passages[i].get_zstart() : 0;
+int pss = passagepool.play_extended_3d(get_map_sound("builder/transitions/doors/"+passages[i].passagetype+"/*step*"),me.x,me.y,me.z,px1,py1,psz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+passagepool.update_sound_range_3d(pss, 0, px2-px1, 0, py2-py1, 0, (mapmode=="3d")?(passages[i].get_zend()-passages[i].get_zstart()):0);
+}
+passages[i].was_inside = inside;
+}
 if(!glider_engine_on)
 {
 if(forcefield_check()) return;
