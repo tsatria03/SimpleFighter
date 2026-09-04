@@ -216,3 +216,51 @@ void destroy_all_instruments()
 	instpool.destroy_all();
 	instruments.resize(0);
 }
+
+// A single instrument is one tile (x y [z]); a ranged one is an area (minx maxx miny maxy [minz maxz]).
+// The line is pure coordinates, so the numeric count alone tells single from ranged.
+void read_instrument(string[] sd)
+{
+	int numcount = int(sd.length()) - 1;
+	bool ranged_shape = (mapmode == "3d") ? (numcount == 6) : (numcount == 4);
+	if(ranged_shape) { read_ranged_instrument(sd); return; }
+	double x = stn(sd[1]);
+	double y = stn(sd[2]);
+	double z = (mapmode == "3d") ? stn(sd[3]) : 0;
+	spawn_instrument(x, x, y, y, z, z, false);
+}
+
+void read_ranged_instrument(string[] sd)
+{
+	double mnx = stn(sd[1]);
+	double mxx = stn(sd[2]);
+	double mny = stn(sd[3]);
+	double mxy = stn(sd[4]);
+	double mnz = 0, mxz = 0;
+	if(mapmode == "3d") { mnz = stn(sd[5]); mxz = stn(sd[6]); }
+	spawn_instrument(mnx, mxx, mny, mxy, mnz, mxz, true);
+}
+
+void write_instrument(double x, double y, double z=0)
+{
+	mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+	mapdata=mapper.read();
+	if(mapmode == "3d")
+	mapper.write("\r\n"+"instrument "+x+" "+y+" "+z);
+	else
+	mapper.write("\r\n"+"instrument "+x+" "+y);
+	mapper.close();
+	bump_map_modified();
+}
+
+void write_ranged_instrument(double mnx, double mxx, double mny, double mxy, double mnz=0, double mxz=0)
+{
+	mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+	mapdata=mapper.read();
+	if(mapmode == "3d")
+	mapper.write("\r\n"+"instrument "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz);
+	else
+	mapper.write("\r\n"+"instrument "+mnx+" "+mxx+" "+mny+" "+mxy);
+	mapper.close();
+	bump_map_modified();
+}
