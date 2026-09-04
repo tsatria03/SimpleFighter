@@ -199,10 +199,10 @@ Letter, G plus letter K. Set a backward (or bottom, on 2d) selection marker.
 Letter, G plus shift plus letter I. Set a top selection marker on the z axis (3d maps only).
 Letter, G plus shift plus letter K. Set a bottom selection marker on the z axis (3d maps only).
 
-Letter, G plus letter M. Toggle mfwc mode (camera focus).
+Letter, G plus letter M. Toggle move focus with camera, keeping the camera's tile sound centered in your head instead of fading as you aim the camera further away.
 Letter, G plus letter Y. Toggle dexterity mode (camera responds without holding G).
 Letter, G plus letter R. Announce the tile, hazard, player presence, coordinates, and direction at the camera's current position.
-Letter, G plus letter T. Play the tile sound at the camera's current position.
+Letter, G plus letter T. Play the tile sound at the camera's current position, relative to where you are, for remembering a spot.
 Letter, G plus semicolon. Speak all selection markers that have been set.
 Letter, G plus apostrophe. Clear all selection markers.
 
