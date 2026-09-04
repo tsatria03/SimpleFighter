@@ -447,6 +447,7 @@ floor breakers (builder/traps/floor breakers/): remove, spawn.
 force fields (builder/traps/force fields/): hit, off, on.
 hazards (builder/traps/hazards/): fall, loop.
 heal zones (builder/zones/heal zones/): heal, take.
+instruments (builder/interaction/instruments/): three category folders, pianos, drums, and others, each holding one folder per instrument. A piano or others instrument names its notes p1 through p36; a drum kit names them d1 through d36. Add a folder to a category to add an instrument to that category's list; a note a folder doesn't provide is simply silent on that key.
 lifts (builder/transitions/lifts/): loop.
 mines (builder/traps/mines/): explode, hit, light, loop, spawn.
 moving platforms (builder/construction/moving platforms/): loop.
