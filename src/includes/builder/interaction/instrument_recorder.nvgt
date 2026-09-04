@@ -1,3 +1,7 @@
+/* Records a performance played on an instrument and plays it back within the session. It captures note-ons
+(with the category and starting pitch), note-offs, and pitch bends, each stamped with the gap since the last
+event, so articulation and bends reproduce on playback. Recordings are session-only: there is no save or load. */
+
 class inst_recorder
 {
     bool recording = false;
@@ -6,22 +10,16 @@ class inst_recorder
     dictionary record;
     int counter = 0;
     timer recordtimer;
-    string recordings_dir = "data/recordings/";
-    string recordings_key = "SA97K3Wb2galMsyqvX53BoAX9xLrR4eFbMWetCK4JUkSmpBTeyFE7qgsrwNPmqg8tVGJyC9oBG3MsdTGHLJYYAc8jviof8zjgk8mmtpeFwnzQN5Sfp0H3e2owft7F0xHETIPa1NsBH29m70ta8QTGhi5KdtKipSHtLxMUNSrxdAHy1FdiJpMFdcmrqjpMcckkjCUw9Yq7V9pQnLU7FJ2fPNNC5WZvG7xCjJYcMF9Px2G";
-bool is_playing()
-{
-    return playing;
-}
-bool is_recording()
-{
-    return recording;
-}
+    bool is_playing()
+    {
+        return playing;
+    }
+    bool is_recording()
+    {
+        return recording;
+    }
     void recordcheck()
     {
-        if (!is_recording() && !is_playing() && alt_is_down() && key_pressed(KEY_L))
-            load();
-        if (!is_recording() && !is_playing() && alt_is_down() && key_pressed(KEY_S))
-            save();
         if (!is_playing() && alt_is_down() && key_pressed(KEY_P))
         {
             if (record.get_size() <= 0)
@@ -32,7 +30,7 @@ bool is_recording()
             recording = false;
             playing = true;
             speak("playing");
-            play();
+            play_record();
         }
         if (!is_recording() && alt_is_down() && key_pressed(KEY_R))
         {
@@ -42,7 +40,7 @@ bool is_recording()
                 wait(1000);
                 if (i == 1) break;
             }
-p.play_stationary("sounds/misc/pi2.ogg", false);
+            pool.play_stationary(get_pack_sound("main/misc/pi2.ogg"), false);
             speak("recording!");
             recording = true;
             playing = false;
@@ -56,8 +54,8 @@ p.play_stationary("sounds/misc/pi2.ogg", false);
             recording = false;
         }
     }
-    // Note-on: store the gap since the last event, the category (1 piano, 2 drum), the pitch the note
-    // starts at, and the clip to play.
+    // Note-on: store the gap since the last event, the category (1 piano, 2 drum, 3 other), the pitch the
+    // note starts at, and the clip to play.
     void record_note(const string &in path, int cad, int pitch)
     {
         if (!is_recording() || suppress_recording)
@@ -92,6 +90,7 @@ p.play_stationary("sounds/misc/pi2.ogg", false);
         suppress_recording = true;
         int play_pianoslot = -1;
         int play_drumslot = -1;
+        int play_otherslot = -1;
         for (int i = 1; i <= counter; i++)
         {
             string info;
@@ -108,7 +107,7 @@ p.play_stationary("sounds/misc/pi2.ogg", false);
                 wait(5);
                 if (is_playing() && (key_pressed(KEY_RETURN) || key_pressed(KEY_R)))
                 {
-                    p.destroy_all();
+                    instpool.destroy_all();
                     speak("stopped");
                     breakout = true;
                     break;
@@ -116,102 +115,49 @@ p.play_stationary("sounds/misc/pi2.ogg", false);
             }
             if (breakout)
                 break;
-            // Legacy note-on events (recorded before articulation) are just "delay:path".
-            if (parts.length() == 2)
-            {
-                p.play_stationary(parts[1], false);
-                continue;
-            }
             string type = parts[1];
-            if (type == "P" && parts.length() >= 4)
+            if (type == "P" && parts.length() >= 5)
             {
-                // New note-on is delay:P:cad:pitch:path; a 4-part form (no pitch) is an older recording.
-                int pitchval = 100;
-                string path;
-                if (parts.length() >= 5)
-                {
-                    pitchval = string_to_int(parts[3]);
-                    path = parts[4];
-                    // The clip path never contains a colon, but rejoin defensively in case a folder ever does.
-                    for (uint k = 5; k < parts.length(); k++)
-                        path += ":" + parts[k];
-                }
-                else
-                    path = parts[3];
-                int slot = p.play_stationary(path, false);
-                p.update_sound_start_values(slot, 0, 0, pitchval);
+                // Note-on: delay:P:cad:pitch:path.
+                int pitchval = string_to_int(parts[3]);
+                string path = parts[4];
+                // The clip path never contains a colon, but rejoin defensively in case a folder ever does.
+                for (uint k = 5; k < parts.length(); k++)
+                    path += ":" + parts[k];
+                int slot = instpool.play_stationary(path, false);
+                instpool.update_sound_start_values(slot, 0, 0, pitchval);
                 if (parts[2] == "1")
                     play_pianoslot = slot;
-                else
+                else if (parts[2] == "2")
                     play_drumslot = slot;
+                else
+                    play_otherslot = slot;
             }
             else if (type == "S" && parts.length() >= 3)
             {
                 if (parts[2] == "1")
                 {
-                    if (play_pianoslot != -1)
-                    {
-                        p.destroy_sound(play_pianoslot);
-                        play_pianoslot = -1;
-                    }
+                    if (play_pianoslot != -1) { instpool.destroy_sound(play_pianoslot); play_pianoslot = -1; }
+                }
+                else if (parts[2] == "2")
+                {
+                    if (play_drumslot != -1) { instpool.destroy_sound(play_drumslot); play_drumslot = -1; }
                 }
                 else
                 {
-                    if (play_drumslot != -1)
-                    {
-                        p.destroy_sound(play_drumslot);
-                        play_drumslot = -1;
-                    }
+                    if (play_otherslot != -1) { instpool.destroy_sound(play_otherslot); play_otherslot = -1; }
                 }
             }
             else if (type == "B" && parts.length() >= 3)
             {
                 // Apply the recorded pitch to whatever notes are currently ringing, as the live bend did.
                 int pitchval = string_to_int(parts[2]);
-                if (play_pianoslot != -1)
-                    p.update_sound_start_values(play_pianoslot, 0, 0, pitchval);
-                if (play_drumslot != -1)
-                    p.update_sound_start_values(play_drumslot, 0, 0, pitchval);
+                if (play_pianoslot != -1) instpool.update_sound_start_values(play_pianoslot, 0, 0, pitchval);
+                if (play_drumslot != -1) instpool.update_sound_start_values(play_drumslot, 0, 0, pitchval);
+                if (play_otherslot != -1) instpool.update_sound_start_values(play_otherslot, 0, 0, pitchval);
             }
         }
         suppress_recording = false;
         playing = false;
-    }
-    void save_record()
-    {
-        if (record.get_size() <= 0)
-        {
-            alert("Error", "Nothing to save. Please record something first.");
-            return;
-        }
-        if (!directory_exists(recordings_dir))
-            directory_create(recordings_dir);
-        string fn = input_box("app recorder", "please type a name for this recording");
-        if (fn == "")
-            return;
-        file savefile;
-        savefile.open(recordings_dir + fn + ".rec", "wb");
-        savefile.write(string_encrypt(serialize(record), recordings_key));
-        savefile.close();
-        speak("saved");
-    }
-    void load_record()
-    {
-        record.delete_all();
-        counter = 0;
-        string fn = loadfilesmenu("Please select a recording to load", recordings_dir, ".rec");
-        if (fn == "0")
-        {
-            alert("Error", "No recordings found");
-            return;
-        }
-        if (fn == "")
-            return;
-        file loadfile;
-        loadfile.open(recordings_dir + fn, "rb");
-        record = deserialize(string_decrypt(loadfile.read(), recordings_key));
-        loadfile.close();
-        counter = int(record.get_size());
-        speak("loaded");
     }
 }

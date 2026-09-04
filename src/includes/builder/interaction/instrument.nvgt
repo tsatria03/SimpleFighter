@@ -13,15 +13,16 @@ instrument@[] instruments(0);
 
 class instrument
 {
-	int instcad = 1;         // 1 = pianos, 2 = drums
-	int overlap = 0;         // 0 = cut the previous note, 1 = let notes ring together
-	int staccato = 0;        // 1 = cut a note when its key is released
-	int pitchable = 1;       // whether the pitch bend is allowed
-	int pitchtime = 50;      // milliseconds between pitch-bend steps
-	int pianoslot, drumslot; // the currently ringing note for each category
+	int instcad = 1;                     // 1 = pianos, 2 = drums, 3 = others
+	int overlap = 0;                     // 0 = cut the previous note, 1 = let notes ring together
+	int staccato = 0;                    // 1 = cut a note when its key is released
+	int pitchable = 1;                   // whether the pitch bend is allowed
+	int pitchtime = 50;                  // milliseconds between pitch-bend steps
+	int pianoslot, drumslot, otherslot;  // the currently ringing note for each category
 	double pitch = 100;
 	string piano = "classical grand";
 	string drum = "acoustic";
+	string other = "acoustic guitar";
 	timer pitchtimer;
 
 	instrument()
@@ -54,44 +55,45 @@ class instrument
 		string path;
 		if(instcad==1)
 		{
-			path="sounds/instruments/pianos/"+piano+"/p"+idx+".ogg";
-			if(overlap==0) { instpool.destroy_sound(pianoslot); rec.record_stop(1); }
+			path=get_map_sound("builder/interaction/instruments/pianos/"+piano+"/p"+idx+".ogg");
+			if(overlap==0) { instpool.destroy_sound(pianoslot); instrec.record_stop(1); }
 			pianoslot=instpool.play_stationary(path,false);
 			instpool.update_sound_start_values(pianoslot,0,0,pitch);
 		}
-		else
+		else if(instcad==2)
 		{
-			path="sounds/instruments/drums/"+drum+"/d"+idx+".wav";
-			if(overlap==0) { instpool.destroy_sound(drumslot); rec.record_stop(2); }
+			path=get_map_sound("builder/interaction/instruments/drums/"+drum+"/d"+idx+".wav");
+			if(overlap==0) { instpool.destroy_sound(drumslot); instrec.record_stop(2); }
 			drumslot=instpool.play_stationary(path,false);
 			instpool.update_sound_start_values(drumslot,0,0,pitch);
 		}
-		rec.record_note(path, instcad, pitch);
+		else
+		{
+			path=get_map_sound("builder/interaction/instruments/others/"+other+"/p"+idx+".ogg");
+			if(overlap==0) { instpool.destroy_sound(otherslot); instrec.record_stop(3); }
+			otherslot=instpool.play_stationary(path,false);
+			instpool.update_sound_start_values(otherslot,0,0,pitch);
+		}
+		instrec.record_note(path, instcad, int(pitch));
 	}
 
 	// Staccato cutoff: stop the current instrument's ringing note, and record the note-off so the
 	// cutoff is reproduced on playback.
 	void stop_note()
 	{
-		if(instcad==1)
-		{
-			instpool.destroy_sound(pianoslot);
-			instpool.update_sound_start_values(pianoslot,0,0,pitch);
-		}
-		else
-		{
-			instpool.destroy_sound(drumslot);
-			instpool.update_sound_start_values(drumslot,0,0,pitch);
-		}
-		rec.record_stop(instcad);
+		if(instcad==1) instpool.destroy_sound(pianoslot);
+		else if(instcad==2) instpool.destroy_sound(drumslot);
+		else instpool.destroy_sound(otherslot);
+		instrec.record_stop(instcad);
 	}
 
-	// Tab: switch between the piano and drum categories.
+	// Tab: cycle through the piano, drum, and other categories.
 	void cycle_category()
 	{
 		instpool.destroy_all();
-		pool.play_stationary("sounds/misc/medalbutton"+random(1,3)+".ogg",false);
+		pool.play_stationary(get_pack_sound("main/misc/medalbutton"+random(1,3)+".ogg"),false);
 		if(instcad==1) { instcad=2; speak("drums, currently on "+drum); }
+		else if(instcad==2) { instcad=3; speak("others, currently on "+other); }
 		else { instcad=1; speak("pianos, currently on "+piano); }
 	}
 
@@ -99,25 +101,26 @@ class instrument
 	void cycle_instrument(int dir)
 	{
 		instpool.destroy_all();
-		pool.play_stationary("sounds/misc/medalbutton"+random(1,3)+".ogg",false);
-		if(instcad==1) { piano=get_new_mallit(piano,dir); speak(piano); }
-		else { drum=get_new_perc(drum,dir); speak(drum); }
+		pool.play_stationary(get_pack_sound("main/misc/medalbutton"+random(1,3)+".ogg"),false);
+		if(instcad==1) { piano=cycle_instrument_folder("pianos", piano, dir); speak(piano); }
+		else if(instcad==2) { drum=cycle_instrument_folder("drums", drum, dir); speak(drum); }
+		else { other=cycle_instrument_folder("others", other, dir); speak(other); }
 	}
 
 	// Enter: toggle whether new notes overlap the ringing one or cut it off.
 	void toggle_overlap()
 	{
 		instpool.destroy_all();
-		if(overlap==0) { pool.play_stationary("sounds/misc/switchon.ogg",false); speak("overlap enabled"); overlap=1; }
-		else { pool.play_stationary("sounds/misc/switchoff.ogg",false); speak("overlap disabled"); overlap=0; }
+		if(overlap==0) { pool.play_stationary(get_pack_sound("main/misc/switchon.ogg"),false); speak("overlap enabled"); overlap=1; }
+		else { pool.play_stationary(get_pack_sound("main/misc/switchoff.ogg"),false); speak("overlap disabled"); overlap=0; }
 	}
 
 	// Backslash: toggle staccato, so held notes are cut on release instead of ringing on.
 	void toggle_staccato()
 	{
 		instpool.destroy_all();
-		if(staccato==0) { pool.play_stationary("sounds/misc/toggleon.ogg",false); speak("staccato enabled"); staccato=1; }
-		else { pool.play_stationary("sounds/misc/toggleoff.ogg",false); speak("staccato disabled"); staccato=0; }
+		if(staccato==0) { pool.play_stationary(get_pack_sound("main/misc/toggleon.ogg"),false); speak("staccato enabled"); staccato=1; }
+		else { pool.play_stationary(get_pack_sound("main/misc/toggleoff.ogg"),false); speak("staccato disabled"); staccato=0; }
 	}
 
 	// Up and down arrows held: bend the live pitch one step (dir is 1 up or -1 down).
@@ -126,7 +129,8 @@ class instrument
 		pitch+=dir;
 		instpool.update_sound_start_values(pianoslot,0,0,pitch);
 		instpool.update_sound_start_values(drumslot,0,0,pitch);
-		rec.record_bend(pitch);
+		instpool.update_sound_start_values(otherslot,0,0,pitch);
+		instrec.record_bend(int(pitch));
 		pitchtimer.restart();
 	}
 
@@ -136,8 +140,26 @@ class instrument
 		pitch=100;
 		instpool.update_sound_start_values(pianoslot,0,0,pitch);
 		instpool.update_sound_start_values(drumslot,0,0,pitch);
-		rec.record_bend(pitch);
+		instpool.update_sound_start_values(otherslot,0,0,pitch);
+		instrec.record_bend(int(pitch));
 	}
+}
+
+// Step to the previous (dir 1) or next (dir 2) instrument folder within a category, wrapping around the
+// list. Folders are discovered from the map's assets and the shipped sounds, so custom instruments show up.
+string cycle_instrument_folder(string category, string current, int dir)
+{
+	string[] folders=get_map_sound_folders("builder/interaction/instruments/"+category+"/*");
+	if(folders.length()==0) return current;
+	int idx=-1;
+	for(uint i=0; i<folders.length(); i++)
+	{
+		if(current==folders[i]) { idx=int(i); break; }
+	}
+	if(idx==-1) return current;
+	if(dir==1) { idx--; if(idx<0) idx=int(folders.length())-1; }
+	else if(dir==2) { idx++; if(idx>=int(folders.length())) idx=0; }
+	return folders[idx];
 }
 
 // Run every spawned instrument's per-frame handling.
@@ -150,77 +172,6 @@ void instloop()
 	}
 }
 
-string get_new_perc(string perc,int direction)
-{
-string[] percussion=find_directories("sounds/instruments/drums/*");
-int percindex=-1;
-for (uint i=0; i<percussion.length(); i++)
-{
-if(perc==percussion[i])
-{
-percindex=i;
-break;
-}
-}
-if(percindex==-1)
-return perc;
-if (direction==1)
-{
-if(percindex>-1)
-percindex--;
-if(percindex<0)
-percindex=percussion.length()-1;
-}
-else if (direction==2)
-{
-if(percindex>-1)
-percindex++;
-if(percindex>=percussion.length())
-percindex=0;
-}
-else if (direction==3)
-{
-if(percindex>-1)
-percindex=random(0,percussion.length()-1);
-}
-return percussion[percindex];
-}
-string get_new_mallit(string mallit,int direction)
-{
-string[] piano=find_directories("sounds/instruments/pianos/*");
-int mallitindex=-1;
-for (uint i=0; i<piano.length(); i++)
-{
-if(mallit==piano[i])
-{
-mallitindex=i;
-break;
-}
-}
-if(mallitindex==-1)
-return mallit;
-if (direction==1)
-{
-if(mallitindex>-1)
-mallitindex--;
-if(mallitindex<0)
-mallitindex=piano.length()-1;
-}
-else if (direction==2)
-{
-if(mallitindex>-1)
-mallitindex++;
-if(mallitindex>=piano.length())
-mallitindex=0;
-}
-else if (direction==3)
-{
-if(mallitindex>-1)
-mallitindex=random(0,piano.length()-1);
-}
-return piano[mallitindex];
-}
-
 void spawn_instrument()
 {
 	instrument inst1();
@@ -230,22 +181,4 @@ void spawn_instrument()
 void destroy_all_instruments()
 {
 	instruments.resize(0);
-}
-
-void instplay()
-{
-speak("Instrument simulator. Press letters and numbers to play chords, melodies, and drums on the keyboard. Press the Tab key to cycle through the instrument categories. Press Left and Right arrow keys to cycle through the instrument types. Hold Up or Down arrow keys to utilize the pitch modulator. Press the Enter key to enable or disable the overlapping pettle for the current instrument you're playing. Press the Backslash key to enable or disable the sustaining pettle for the current instrument you're playing. Press the Escape key to exit.");
-	spawn_instrument();
-	while(true)
-	{
-		wait(5);
-		rec.recordcheck();
-		instloop();
-		if(key_pressed(KEY_ESCAPE))
-		{
-			instpool.destroy_all();
-			destroy_all_instruments();
-			exit();
-		}
-	}
 }
