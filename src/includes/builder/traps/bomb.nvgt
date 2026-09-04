@@ -9,11 +9,11 @@ int fallsound, landsound;
 int bombx;
 int bomby;
 int bombz;
-int damage;
+double damage;
 int bombtime;
 string bombtype;
 timer bombtimer;
-bomb(int bx,int by,int dmg,int sp,string bt,int bz=0)
+bomb(int bx,int by,double dmg,int sp,string bt,int bz=0)
 {
 bombx=bx;
 bomby=by;
@@ -179,9 +179,9 @@ if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me.z==b
 bombpool.destroy_sound(bombs[i].fallsound);
 if(shieldpassthrough) bombs[i].landsound=bombpool.play_stationary_extended(get_map_sound("builder/traps/bombs/"+bombs[i].bombtype+"/*land*"),false,0,0,0,100,false);
 shieldslot=p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100,false);
-int sdm = max(1, (shieldcushion ? int(bombs[i].damage * 0.5) : bombs[i].damage) - (shielddefence * 3));
+double sdm = max(1, (shieldcushion ? (bombs[i].damage * 0.5) : bombs[i].damage) - (shielddefence * 3));
 shieldstrength -= sdm;
-kombatlog.insert_last(bombs[i].bombtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
+kombatlog.insert_last(bombs[i].bombtype + "'s attack took " + shieldtype + " " + round(sdm, 0) + " damage.");
 @bombs[i] = null;
 return;
 }
@@ -189,9 +189,9 @@ else if(me.x==bombs[i].bombx and me.y==bombs[i].bomby and (mapmode != "3d" or me
 {
 bombpool.destroy_sound(bombs[i].fallsound);
 bombs[i].landsound=bombpool.play_stationary_extended(get_map_sound("builder/traps/bombs/"+bombs[i].bombtype+"/*land*"),false,0,0,0,100,false);
-int dmg = max(1, (bombs[i].damage) - (defence * defmod));
+double dmg = max(1, (bombs[i].damage) - (defence * defmod));
 health -= dmg;
-kombatlog.insert_last(bombs[i].bombtype + "'s attack took you " + dmg + " damage.");
+kombatlog.insert_last(bombs[i].bombtype + "'s attack took you " + round(dmg, 0) + " damage.");
 {
 string painfile;
 int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
@@ -222,7 +222,7 @@ return;
 }
 }
 }
-void spawn_bomb(int x,int y,int dmg,int sp,string bombtype,int z=0)
+void spawn_bomb(int x,int y,double dmg,int sp,string bombtype,int z=0)
 {
 bomb b1(x,y,dmg,sp,bombtype,z);
 bombs.insert_last(b1);
