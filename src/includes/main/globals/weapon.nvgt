@@ -65,6 +65,9 @@ int swing_speed;
 int push_x;
 int push_y;
 int push_z;
+int move_x;
+int move_y;
+int move_z;
 
 int health_drain;
 
@@ -118,6 +121,9 @@ swing_speed = 0;
 push_x = 0;
 push_y = 0;
 push_z = 0;
+move_x = 0;
+move_y = 0;
+move_z = 0;
 health_drain = 0;
 life_drain = 0;
 stamina_drain = 0;
@@ -154,6 +160,9 @@ swing_speed = 0;
 push_x = 0;
 push_y = 0;
 push_z = 0;
+move_x = 0;
+move_y = 0;
+move_z = 0;
 health_drain = 0;
 life_drain = 0;
 stamina_drain = 0;
@@ -247,6 +256,9 @@ swing_speed = v;
 else if(data[0] == "push x") push_x = span_int(data[1]);
 else if(data[0] == "push y") push_y = span_int(data[1]);
 else if(data[0] == "push z") push_z = span_int(data[1]);
+else if(data[0] == "move x") move_x = span_int(data[1]);
+else if(data[0] == "move y") move_y = span_int(data[1]);
+else if(data[0] == "move z") move_z = span_int(data[1]);
 else if(data[0] == "health drain")
 {
 int v = parse_int(data[1]);
@@ -440,6 +452,8 @@ break;
 }
 }
 }
+/* Lunge first, so the fire sound and the attack itself resolve from where the firer lands. */
+if(move_x != 0 or move_y != 0 or move_z != 0) apply_self_move(x, y, z, firer_npc, facing, mapmode == "3d", move_x, move_y, move_z);
 bool player_reflecting = (wepchar.reflection && wepdef == 1);
 if(!(firer_npc != -1 && ((shieldon == 1 && !shieldpassthrough) || player_reflecting)))
 sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/general/*fire*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
@@ -1471,6 +1485,9 @@ sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/
 is_swinging = true;
 swing_timer.restart();
 pending_dmg = damage + extra_damage + int(type_bonus());
+/* Delayed melee swing bypasses fire(), so lunge here as the swing is committed; the hit resolves
+later in check_swing from the player's position at that time. */
+if(move_x != 0 or move_y != 0 or move_z != 0) apply_self_move(x, y, z, -1, facing, mapmode == "3d", move_x, move_y, move_z);
 return;
 }
 fire(x, y, facing, extra_damage, -1, z);
@@ -1638,5 +1655,34 @@ if(leftover > 0) impact += leftover * absolute(pz);
 }
 }
 return impact;
+}
+
+/* Charge / lunge: move the firer a few tiles along their own facing as they swing, per the weapon's
+move x/y/z values. move x applies while facing left or right, move y while facing forward or backward,
+and move z while facing up or down on 3d maps (facing up or down falls back to move y on 2d maps). A
+negative value recoils the opposite way. The walk stops at a wall or the map edge so nothing charges
+through them. x, y, and z are updated in place so the caller can resolve the attack from where the
+firer landed, and the firer's real position (the player or the firing npc) is moved to match. */
+void apply_self_move(int &inout x, int &inout y, int &inout z, int firer_npc, string facing, bool is_3d, int mvx, int mvy, int mvz)
+{
+int dx = 0, dy = 0, dz = 0;
+if(facing == "right") dx = mvx;
+else if(facing == "left") dx = -mvx;
+else if(facing == "forward") dy = mvy;
+else if(facing == "backward") dy = -mvy;
+else if(facing == "up") { if(is_3d) dz = mvz; else dy = mvy; }
+else if(facing == "down") { if(is_3d) dz = -mvz; else dy = -mvy; }
+if(dx == 0 and dy == 0 and dz == 0) return;
+int sx = (dx > 0) ? 1 : ((dx < 0) ? -1 : 0);
+for(int s = 0; s < absolute(dx); s++) { int nx = x + sx; if(tile_blocked(nx, y, z, is_3d)) break; x = nx; }
+int sy = (dy > 0) ? 1 : ((dy < 0) ? -1 : 0);
+for(int s = 0; s < absolute(dy); s++) { int ny = y + sy; if(tile_blocked(x, ny, z, is_3d)) break; y = ny; }
+if(is_3d)
+{
+int sz = (dz > 0) ? 1 : ((dz < 0) ? -1 : 0);
+for(int s = 0; s < absolute(dz); s++) { int nz = z + sz; if(tile_blocked(x, y, nz, is_3d)) break; z = nz; }
+}
+if(firer_npc == -1) { me.x = x; me.y = y; if(is_3d) me.z = z; }
+else if(firer_npc >= 0 and uint(firer_npc) < npcs.length()) { npcs[firer_npc].x = x; npcs[firer_npc].y = y; if(is_3d) npcs[firer_npc].z = z; }
 }
 
