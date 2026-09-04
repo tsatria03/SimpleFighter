@@ -13,6 +13,9 @@ instrument@[] instruments(0);
 
 class instrument
 {
+	bool is_ranged;                      // false = a single tile, true = a rectangular area
+	double minx, maxx, miny, maxy;       // the tile or area the player stands on to play
+	double minz, maxz;
 	int instcad = 1;                     // 1 = pianos, 2 = drums, 3 = others
 	int overlap = 0;                     // 0 = cut the previous note, 1 = let notes ring together
 	int staccato = 0;                    // 1 = cut a note when its key is released
@@ -25,8 +28,15 @@ class instrument
 	string other = "acoustic guitar";
 	timer pitchtimer;
 
-	instrument()
+	instrument(double mnx, double mxx, double mny, double mxy, double mnz=0, double mxz=0, bool rng=false)
 	{
+		minx=mnx;
+		maxx=mxx;
+		miny=mny;
+		maxy=mxy;
+		minz=mnz;
+		maxz=mxz;
+		is_ranged=rng;
 	}
 
 	// Per-frame input handling for this instrument.
@@ -143,6 +153,26 @@ class instrument
 		instpool.update_sound_start_values(otherslot,0,0,pitch);
 		instrec.record_bend(int(pitch));
 	}
+
+	// Interact opened this instrument: pause the game, capture the keyboard for playing and recording,
+	// and return to the game on Escape.
+	void play_mode()
+	{
+		pause_game();
+		string cur_cat = (instcad==1) ? "pianos" : ((instcad==2) ? "drums" : "others");
+		string cur_name = (instcad==1) ? piano : ((instcad==2) ? drum : other);
+		speak("Playing "+cur_cat+", currently on "+cur_name+".");
+		while(true)
+		{
+			wait(5);
+			instrec.recordcheck();
+			update();
+			if(key_pressed(KEY_ESCAPE)) break;
+		}
+		instpool.destroy_all();
+		resume_game();
+		speak("Stopped playing.");
+	}
 }
 
 // Step to the previous (dir 1) or next (dir 2) instrument folder within a category, wrapping around the
@@ -162,23 +192,27 @@ string cycle_instrument_folder(string category, string current, int dir)
 	return folders[idx];
 }
 
-// Run every spawned instrument's per-frame handling.
-void instloop()
+// Each frame: if the player is standing on an instrument's tile or area and presses interact, open it.
+void instrumentcheck()
 {
 	for(uint i=0; i<instruments.length(); i++)
 	{
 		if(@instruments[i] == null) continue;
-		instruments[i].update();
+		bool match = me.x>=instruments[i].minx and me.x<=instruments[i].maxx and me.y>=instruments[i].miny and me.y<=instruments[i].maxy;
+		if(mapmode == "3d") match = match and me.z>=instruments[i].minz and me.z<=instruments[i].maxz;
+		if(match and controls.action_pressed("interact"))
+			instruments[i].play_mode();
 	}
 }
 
-void spawn_instrument()
+void spawn_instrument(double mnx, double mxx, double mny, double mxy, double mnz=0, double mxz=0, bool ranged=false)
 {
-	instrument inst1();
+	instrument inst1(mnx, mxx, mny, mxy, mnz, mxz, ranged);
 	instruments.insert_last(inst1);
 }
 
 void destroy_all_instruments()
 {
+	instpool.destroy_all();
 	instruments.resize(0);
 }
