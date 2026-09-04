@@ -18,7 +18,7 @@ int hrange, vrange, zrange;
 int hsight, vsight, zsight;
 double maxhealth;
 int lives;
-int attack;
+double attack;
 int defence;
 int firetime;
 int movetime;
@@ -34,7 +34,7 @@ timer ambient_heal_timer;
 int w_hrange, w_vrange, w_zrange;
 int w_hsight, w_vsight, w_zsight;
 int w_lives;
-int w_attack;
+double w_attack;
 int w_defence;
 int w_firetime;
 int w_movetime;
@@ -43,7 +43,7 @@ double w_xpvalue;
 int h_hrange, h_vrange, h_zrange;
 int h_hsight, h_vsight, h_zsight;
 int h_lives;
-int h_attack;
+double h_attack;
 int h_defence;
 int h_firetime;
 int h_movetime;
@@ -218,7 +218,7 @@ hsight = maxx;
 vsight = maxy;
 zsight = int(maxz);
 maxhealth = xp + 1;
-attack = int(xp) + 1;
+attack = xp + 1;
 lives = 1;
 firetime = random(100, 1000);
 movetime = random(100, 1000);
@@ -484,7 +484,7 @@ else if(k == "launch category") self.launch_category = v;
 else if(k == "launch subtype") self.launch_subtype = v;
 else if(k == "launch time") self.launch_time = roll_slot_int(v);
 else if(k == "lives") parse_triple_int(v, self.lives, self.w_lives, self.h_lives);
-else if(k == "attack") parse_triple_int(v, self.attack, self.w_attack, self.h_attack);
+else if(k == "attack") parse_triple_double(v, self.attack, self.w_attack, self.h_attack);
 else if(k == "defense") parse_triple_int(v, self.defence, self.w_defence, self.h_defence);
 else if(k == "fire speed") parse_triple_int(v, self.firetime, self.w_firetime, self.h_firetime);
 else if(k == "move speed") parse_triple_int(v, self.movetime, self.w_movetime, self.h_movetime);
@@ -1111,7 +1111,7 @@ int eff_vsight = in_normal ? npcs[i].vsight : (in_wounded ? npcs[i].w_vsight : n
 int eff_zsight = in_normal ? npcs[i].zsight : (in_wounded ? npcs[i].w_zsight : npcs[i].h_zsight);
 int eff_firetime = in_normal ? npcs[i].firetime : (in_wounded ? npcs[i].w_firetime : npcs[i].h_firetime);
 int eff_movetime = in_normal ? npcs[i].movetime : (in_wounded ? npcs[i].w_movetime : npcs[i].h_movetime);
-int eff_attack = in_normal ? npcs[i].attack : (in_wounded ? npcs[i].w_attack : npcs[i].h_attack);
+double eff_attack = in_normal ? npcs[i].attack : (in_wounded ? npcs[i].w_attack : npcs[i].h_attack);
 double eff_level = in_normal ? npcs[i].level : (in_wounded ? npcs[i].w_level : npcs[i].h_level);
 int eff_lives_cap = in_normal ? npcs[i].lives : (in_wounded ? npcs[i].w_lives : npcs[i].h_lives);
 if(npcs[i].currentlives > eff_lives_cap) npcs[i].currentlives = eff_lives_cap;
@@ -1558,7 +1558,7 @@ if(shieldon == 1 and shield_blocks())
 {
 if(shieldpassthrough) npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
 shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"), false, 0, 0, 0, 100, false);
-int sdm = max(1, (shieldcushion ? int((eff_attack * eff_level) * 0.5) : (eff_attack * eff_level)) - (shielddefence * 3));
+double sdm = max(1, (shieldcushion ? (eff_attack * eff_level) * 0.5 : (eff_attack * eff_level)) - (shielddefence * 3));
 shieldstrength -= sdm;
 kombatlog.insert_last(npcs[i].subtype + "'s attack took " + shieldtype + " " + sdm + " damage.");
 try_shield_launch(int(npcs[i].x), int(npcs[i].y), int(npcs[i].z), int(eff_attack * eff_level));
@@ -1566,11 +1566,12 @@ try_shield_launch(int(npcs[i].x), int(npcs[i].y), int(npcs[i].z), int(eff_attack
 else
 {
 npcs[i].wepsound = pool.play_stationary_extended(get_map_sound(sound_base+"/*hit*"), false, 0, 0, 0, 100, false);
-int dmg = max(1, (eff_attack * eff_level) - (defence * defmod));
+double dmg = max(1, (eff_attack * eff_level) - (defence * defmod));
 health -= dmg;
 kombatlog.insert_last(npcs[i].subtype + "'s attack took you " + dmg + " damage.");
-npc_play_pain(dmg);
-npc_apply_break_charbones(dmg, npcs[i].category);
+int dmg_cue = int(min(dmg, 2000000000.0));   // pain/break helpers take an int; cap so a huge hit can't overflow the cast
+npc_play_pain(dmg_cue);
+npc_apply_break_charbones(dmg_cue, npcs[i].category);
 }
 }
 else if(target_npc != -1)
@@ -1585,7 +1586,7 @@ if(npc_below_threshold(npcs[j]))
 bool j_in_w_sight = absolute(npcs[i].x - npcs[j].x) <= npcs[j].w_hsight && absolute(npcs[i].y - npcs[j].y) <= npcs[j].w_vsight && (mapmode != "3d" || absolute(npcs[i].z - npcs[j].z) <= npcs[j].w_zsight);
 j_defence = j_in_w_sight ? npcs[j].w_defence : npcs[j].h_defence;
 }
-int dmg = max(1, (eff_attack * eff_level) - (j_defence * 3));
+double dmg = max(1, (eff_attack * eff_level) - (j_defence * 3));
 npcs[j].health -= dmg;
 kombatlog.insert_last(npcs[i].subtype + " attacked " + npcs[j].subtype + " for " + dmg + " damage.");
 }
