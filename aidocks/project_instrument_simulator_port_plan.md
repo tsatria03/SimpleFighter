@@ -7,6 +7,17 @@ metadata:
 
 The **Instrument Simulator** is back in SimpleFighter as the **instrument** builder object, shipped in **14.6**. It was once an in-builder feature (play drums and piano on the keyboard for fun); the dev removed it years ago and rebuilt it as a separate app, then ported that modernized app back in section by section (2026-09-04). The standalone app that seeded this (`C:/Users/tonys/OneDrive/Desktop/InstrumentSimulator-src/...`) has since been **deleted** by the dev — SF's copy is now the only one. This doc is the as-built record; the code is the source of truth.
 
+## History — the original, and why it was removed
+
+Instruments first appeared in **3.6** (ported in from another project "just for the hell of it") and were **removed in 4.8** (commit `f24b9644`, 2024-11-09: "Completely eliminated the instrument handler from this game."). Two reasons, and the second is the real one:
+
+1. **Wall/platform coupling bugs.** The old object spawned a bump-wall AND a platform tile in its constructor, and that geometry was fragile — a recurring wrong-height platform bug (an instrument at Y 10–13 spawned its platform at Y 24 instead of Y 14), plus back-and-forth over whether the bump-wall was even needed.
+2. **It was an unmaintainable hand-mapped mess** (the dev's stated main reason). The old script, `includes/instrument_handler.nvgt`, was **1,652 lines**: 36 note keys declared by hand as `keycheck1..keycheck36`, and **every note its own ~25-line copy-pasted `if(key_pressed(keycheckN))` block** with all four piano/drum × overlap cases spelled out inline and the clip paths hardcoded (`pianokey1.ogg`, `drum1.wav`). ~321 `if`s, 154 `play_stationary` calls, only 18 functions. Any change had to be made 36 times.
+
+The 14.6 rebuild is the deliberate inverse: a single `int[] note_keys` table + one `for` loop, `play_note(idx)` building the path once for all three categories — **~220 lines instead of 1,652**, no spawned platform/wall, no Y-offset math. That data-driven shape is why adding the "others" category was nearly free, where the old design would have meant another ~900-line copy-paste pass.
+
+Also new in the rebuild: **the original had NO recorder at all** — it was live-play only (no event-capture anywhere in the 1,652 lines). The record/playback feature (note-ons/offs, hold length, pitch bends) is entirely new to the 14.6 version.
+
 ## The deliberate scope decision (still load-bearing)
 
 **The SF instrument lets you RECORD and PLAY BACK a performance, but NOT save or load recordings. This is on purpose.** The standalone's recorder could `save()` a performance to an encrypted `.rec` file and `load()` it back through a file menu; those paths (and their Alt+S / Alt+L hotkeys, `input_box`, the recordings directory, and the encryption key) were **dropped**. What shipped: **Alt+R** to record (after a 3-2-1 countdown + beep), **Alt+Return** to stop, **Alt+P** to play back, **Return/R** to stop playback. A recording lives only until you leave the map or record over it — no files land in SF's data.
