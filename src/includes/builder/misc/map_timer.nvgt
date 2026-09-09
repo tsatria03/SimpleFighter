@@ -106,3 +106,57 @@ if(map_timer_period > 0 and remaining < map_timer_total and (remaining % map_tim
 if(map_timer_period_cmd != "") comstack(expand_time_tokens(map_timer_period_cmd, remaining));
 }
 }
+
+void build_map_timer()
+{
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("map timer", false, true, false);
+int time_box = form.create_input_box("time: total seconds on the clock", "60");
+int timecmd_box = form.create_input_box("time command: runs when the clock reaches zero, leave blank to skip", "");
+int period_box = form.create_input_box("period: seconds between announcements, 0 to disable", "0");
+int periodcmd_box = form.create_input_box("period command: runs at each announcement, leave blank to skip", "");
+int count_box = form.create_input_box("count: seconds of final countdown, 0 to disable", "0");
+int countcmd_box = form.create_input_box("count command: runs each second of the countdown, leave blank to skip", "");
+form.set_disallowed_chars(time_box, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(period_box, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(count_box, disallowed_nums, false, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(time_box);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(time_box) == "") { speak("Time is required."); form.focus(time_box); continue; }
+int b_time = string_to_number(form.get_text(time_box));
+if(b_time <= 0) { speak("Time must be greater than zero."); form.focus(time_box); continue; }
+int b_period = (form.get_text(period_box) == "") ? 0 : string_to_number(form.get_text(period_box));
+int b_count = (form.get_text(count_box) == "") ? 0 : string_to_number(form.get_text(count_box));
+string b_timecmd = form.get_text(timecmd_box);
+string b_periodcmd = form.get_text(periodcmd_box);
+string b_countcmd = form.get_text(countcmd_box);
+resume_pools();
+write_map_timer(b_timecmd, b_periodcmd, b_countcmd, b_time, b_period, b_count);
+arm_map_timer(b_timecmd, b_periodcmd, b_countcmd, b_time, b_period, b_count);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
