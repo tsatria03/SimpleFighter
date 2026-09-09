@@ -5,14 +5,13 @@ class menu_input
 double minx, maxx;
 double miny, maxy;
 double minz, maxz;
-string title;
 string prompt;
 string options;
 string submit_command;
 string cancel_command;
 bool allow_cancel;
 bool singleuse;
-menu_input(double mnx, double mxx, double mny, double mxy, string ttl, string prmt, string opts, string submit, string cancel, bool allowcancel, bool sgl, double mnz=0, double mxz=0)
+menu_input(double mnx, double mxx, double mny, double mxy, string prmt, string opts, string submit, string cancel, bool allowcancel, bool sgl, double mnz=0, double mxz=0)
 {
 minx=mnx;
 maxx=mxx;
@@ -20,7 +19,6 @@ miny=mny;
 maxy=mxy;
 minz=mnz;
 maxz=mxz;
-title=ttl;
 prompt=prmt;
 options=opts;
 submit_command=submit;
@@ -30,9 +28,9 @@ singleuse=sgl;
 }
 }
 
-void spawn_menu_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, double mnz=0, double mxz=0)
+void spawn_menu_input(double mnx, double mxx, double mny, double mxy, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, double mnz=0, double mxz=0)
 {
-menu_input mi1(mnx, mxx, mny, mxy, title, prompt, options, submit_command, cancel_command, allow_cancel, singleuse, mnz, mxz);
+menu_input mi1(mnx, mxx, mny, mxy, prompt, options, submit_command, cancel_command, allow_cancel, singleuse, mnz, mxz);
 menu_inputs.insert_last(mi1);
 }
 
@@ -54,7 +52,6 @@ string saved_mny = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bot
 string saved_mxy = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
 string saved_mnz = sel_bottom_set ? sel_bottom : "";
 string saved_mxz = sel_top_set ? sel_top : "";
-string saved_title = "";
 string saved_prompt = "";
 string saved_options = "";
 string saved_submit = "";
@@ -64,7 +61,7 @@ bool saved_single = false;
 int saved_mode_pos = 0;
 int last_mode_pos = -2;
 bool do_build = true;
-int mode_list=-1, mx=-1, my=-1, mz=-1, mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1, title_box=-1, prompt_box=-1, options_box=-1, submit_box=-1, cancel_box=-1, allow_cb=-1, single_cb=-1, ok=-1, cn=-1;
+int mode_list=-1, mx=-1, my=-1, mz=-1, mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1, prompt_box=-1, options_box=-1, submit_box=-1, cancel_box=-1, allow_cb=-1, single_cb=-1, ok=-1, cn=-1;
 while(true)
 {
 if(do_build)
@@ -72,7 +69,6 @@ if(do_build)
 do_build = false;
 if(last_mode_pos != -2)
 {
-saved_title = form.get_text(title_box);
 saved_prompt = form.get_text(prompt_box);
 saved_options = form.get_text(options_box);
 saved_submit = form.get_text(submit_box);
@@ -120,7 +116,6 @@ mx = form.create_input_box("x", saved_x);
 my = form.create_input_box("y", saved_y);
 if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
 }
-title_box = form.create_input_box("title", saved_title);
 prompt_box = form.create_input_box("prompt: spoken when the menu opens", saved_prompt);
 options_box = form.create_input_box("options: comma separated, each label or label=command", saved_options);
 submit_box = form.create_input_box("submit command: runs for a bare label, leave blank to skip", saved_submit);
@@ -205,7 +200,6 @@ bx = string_to_number(form.get_text(mx));
 by = string_to_number(form.get_text(my));
 bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
 }
-string b_title = form.get_text(title_box);
 string b_prompt = form.get_text(prompt_box);
 string b_options = form.get_text(options_box);
 string b_submit = form.get_text(submit_box);
@@ -215,13 +209,13 @@ bool b_single = form.is_checked(single_cb);
 resume_pools();
 if(ranged)
 {
-write_ranged_menu_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bmnz, bmxz);
-spawn_menu_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bmnz, bmxz);
+write_ranged_menu_input(bmnx, bmxx, bmny, bmxy, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bmnz, bmxz);
+spawn_menu_input(bmnx, bmxx, bmny, bmxy, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bmnz, bmxz);
 }
 else
 {
-write_menu_input(bx, by, b_title, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bz);
-spawn_menu_input(bx, bx, by, by, b_title, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bz, bz);
+write_menu_input(bx, by, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bz);
+spawn_menu_input(bx, bx, by, by, b_prompt, b_options, b_submit, b_cancel, b_allow, b_single, bz, bz);
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
@@ -260,28 +254,26 @@ mny=stn(sd[2]); mxy=mny;
 o=3;
 if(mapmode == "3d") { mnz=stn(sd[3]); mxz=mnz; o=4; }
 }
-string title="", prompt="", options="", submit="", cancel="";
+string prompt="", options="", submit="", cancel="";
 bool allow_cancel=true, singleuse=false;
 string combined = join_string_array(sd, o, sd.length());
 string remainder;
 array<string> quoted = extract_quoted(combined, remainder);
-if(quoted.length() >= 1) title = quoted[0];
-if(quoted.length() >= 2) prompt = quoted[1];
-if(quoted.length() >= 3) options = quoted[2];
-if(quoted.length() >= 4) submit = quoted[3];
-if(quoted.length() >= 5) cancel = quoted[4];
+if(quoted.length() >= 1) prompt = quoted[0];
+if(quoted.length() >= 2) options = quoted[1];
+if(quoted.length() >= 3) submit = quoted[2];
+if(quoted.length() >= 4) cancel = quoted[3];
 array<string> tail = string_split(string_trim_sides(remainder), " ");
 if(tail.length() >= 2)
 {
 allow_cancel = string_to_bool(tail[0]);
 singleuse = string_to_bool(tail[1]);
 }
-spawn_menu_input(mnx, mxx, mny, mxy, title, prompt, options, submit, cancel, allow_cancel, singleuse, mnz, mxz);
+spawn_menu_input(mnx, mxx, mny, mxy, prompt, options, submit, cancel, allow_cancel, singleuse, mnz, mxz);
 }
 
-void write_menu_input(int x, int y, string title, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, int z=0)
+void write_menu_input(int x, int y, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, int z=0)
 {
-string ct = string_replace(title, "\"", "", true);
 string cp = string_replace(prompt, "\"", "", true);
 string co = string_replace(options, "\"", "", true);
 string cs = string_replace(submit_command, "\"", "", true);
@@ -289,16 +281,15 @@ string cc = string_replace(cancel_command, "\"", "", true);
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"menu_input "+x+" "+y+" "+z+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+mapper.write("\r\n"+"menu_input "+x+" "+y+" "+z+" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
 else
-mapper.write("\r\n"+"menu_input "+x+" "+y+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+mapper.write("\r\n"+"menu_input "+x+" "+y+" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
 mapper.close();
 bump_map_modified();
 }
 
-void write_ranged_menu_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, double mnz=0, double mxz=0)
+void write_ranged_menu_input(double mnx, double mxx, double mny, double mxy, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, double mnz=0, double mxz=0)
 {
-string ct = string_replace(title, "\"", "", true);
 string cp = string_replace(prompt, "\"", "", true);
 string co = string_replace(options, "\"", "", true);
 string cs = string_replace(submit_command, "\"", "", true);
@@ -306,9 +297,9 @@ string cc = string_replace(cancel_command, "\"", "", true);
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
-mapper.write("\r\n"+"menu_input "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+mapper.write("\r\n"+"menu_input "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
 else
-mapper.write("\r\n"+"menu_input "+mnx+" "+mxx+" "+mny+" "+mxy+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+mapper.write("\r\n"+"menu_input "+mnx+" "+mxx+" "+mny+" "+mxy+" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
 mapper.close();
 bump_map_modified();
 }
