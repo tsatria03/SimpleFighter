@@ -40,3 +40,85 @@ void destroy_all_menu_inputs()
 {
 menu_inputs.resize(0);
 }
+
+void read_menu_input(string[] sd)
+{
+int qidx = -1;
+for(uint i=1; i<sd.length(); i++)
+if(sd[i].length() > 0 && sd[i].substr(0,1) == "\"") { qidx = int(i); break; }
+bool ranged = false;
+if(qidx != -1)
+{
+int numcount = qidx - 1;
+ranged = (mapmode == "3d") ? (numcount >= 5) : (numcount >= 4);
+}
+double mnx=0, mxx=0, mny=0, mxy=0, mnz=0, mxz=0;
+int o;
+if(ranged)
+{
+mnx=stn(sd[1]);
+mxx=stn(sd[2]);
+mny=stn(sd[3]);
+mxy=stn(sd[4]);
+o=5;
+if(mapmode == "3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); o=7; }
+}
+else
+{
+mnx=stn(sd[1]); mxx=mnx;
+mny=stn(sd[2]); mxy=mny;
+o=3;
+if(mapmode == "3d") { mnz=stn(sd[3]); mxz=mnz; o=4; }
+}
+string title="", prompt="", options="", submit="", cancel="";
+bool allow_cancel=true, singleuse=false;
+string combined = join_string_array(sd, o, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() >= 1) title = quoted[0];
+if(quoted.length() >= 2) prompt = quoted[1];
+if(quoted.length() >= 3) options = quoted[2];
+if(quoted.length() >= 4) submit = quoted[3];
+if(quoted.length() >= 5) cancel = quoted[4];
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+if(tail.length() >= 2)
+{
+allow_cancel = string_to_bool(tail[0]);
+singleuse = string_to_bool(tail[1]);
+}
+spawn_menu_input(mnx, mxx, mny, mxy, title, prompt, options, submit, cancel, allow_cancel, singleuse, mnz, mxz);
+}
+
+void write_menu_input(int x, int y, string title, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, int z=0)
+{
+string ct = string_replace(title, "\"", "", true);
+string cp = string_replace(prompt, "\"", "", true);
+string co = string_replace(options, "\"", "", true);
+string cs = string_replace(submit_command, "\"", "", true);
+string cc = string_replace(cancel_command, "\"", "", true);
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"menu_input "+x+" "+y+" "+z+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+else
+mapper.write("\r\n"+"menu_input "+x+" "+y+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_menu_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string options, string submit_command, string cancel_command, bool allow_cancel, bool singleuse, double mnz=0, double mxz=0)
+{
+string ct = string_replace(title, "\"", "", true);
+string cp = string_replace(prompt, "\"", "", true);
+string co = string_replace(options, "\"", "", true);
+string cs = string_replace(submit_command, "\"", "", true);
+string cc = string_replace(cancel_command, "\"", "", true);
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"menu_input "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+else
+mapper.write("\r\n"+"menu_input "+mnx+" "+mxx+" "+mny+" "+mxy+" \""+ct+"\" \""+cp+"\" \""+co+"\" \""+cs+"\" \""+cc+"\" "+allow_cancel+" "+singleuse);
+mapper.close();
+bump_map_modified();
+}
