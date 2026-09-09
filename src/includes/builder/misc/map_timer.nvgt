@@ -107,6 +107,38 @@ if(map_timer_period_cmd != "") comstack(expand_time_tokens(map_timer_period_cmd,
 }
 }
 
+/* Tier 2 semantic check for a map_timer line. Mirrors read_map_timer's parse: the three commands
+are quoted and the three numbers (time, period, count) are the bare tail after them. Each number
+must be a whole, non-negative value (a random(...) token is accepted as-is since it can't be
+evaluated statically). Returns "" if the line is fine, else a plain-english reason. */
+string map_timer_semantic_error(string[] sd, string mode, int &out col)
+{
+string combined = join_string_array(sd, 1, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+if(tail.length() < 3)
+{
+col = int(sd.length()) - 1;
+return "the map timer needs a time, a period, and a count value after its commands.";
+}
+int base = int(sd.length()) - 3;
+if(base < 1) base = 1;
+string[] names = {"time", "period", "count"};
+for(uint i = 0; i < 3; i++)
+{
+string tok = tail[i];
+col = base + int(i);
+if(!is_number_token(tok)) return "the "+names[i]+" must be a number.";
+if(tok.substr(0,7) != "random(")
+{
+if(tok.find(".") >= 0) return "the "+names[i]+" must be a whole number.";
+if(tok.substr(0,1) == "-") return "the "+names[i]+" cannot be negative.";
+}
+}
+return "";
+}
+
 int map_timer_remaining()
 {
 if(!map_timer_active) return 0;
