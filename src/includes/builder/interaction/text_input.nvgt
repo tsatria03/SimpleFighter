@@ -61,6 +61,234 @@ void destroy_all_text_inputs()
 text_inputs.resize(0);
 }
 
+void build_text_input()
+{
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+bool y_uses_back_front = mapmode != "2d";
+string saved_x = sel_left_set ? sel_left : "";
+string saved_y = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_z = sel_bottom_set ? sel_bottom : "";
+string saved_mnx = sel_left_set ? sel_left : "";
+string saved_mxx = sel_right_set ? sel_right : "";
+string saved_mny = y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : "");
+string saved_mxy = y_uses_back_front ? (sel_front_set ? sel_front : "") : (sel_top_set ? sel_top : "");
+string saved_mnz = sel_bottom_set ? sel_bottom : "";
+string saved_mxz = sel_top_set ? sel_top : "";
+string saved_title = "";
+string saved_prompt = "";
+string saved_answer = "";
+string saved_maxatt = "0";
+string saved_maxlen = "0";
+string saved_filter = "";
+string saved_submit = "";
+string saved_incorrect = "";
+string saved_exhausted = "";
+string saved_cancel = "";
+int saved_escape_pos = 0;
+bool saved_wl = false;
+bool saved_secure = false;
+bool saved_case = false;
+bool saved_single = false;
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+bool do_build = true;
+int mode_list=-1, mx=-1, my=-1, mz=-1, mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1, title_box=-1, prompt_box=-1, answer_box=-1, maxatt_box=-1, maxlen_box=-1, filter_box=-1, submit_box=-1, incorrect_box=-1, exhausted_box=-1, cancel_box=-1, escape_list=-1, wl_cb=-1, secure_cb=-1, case_cb=-1, single_cb=-1, ok=-1, cn=-1;
+while(true)
+{
+if(do_build)
+{
+do_build = false;
+if(last_mode_pos != -2)
+{
+saved_title = form.get_text(title_box);
+saved_prompt = form.get_text(prompt_box);
+saved_answer = form.get_text(answer_box);
+saved_maxatt = form.get_text(maxatt_box);
+saved_maxlen = form.get_text(maxlen_box);
+saved_filter = form.get_text(filter_box);
+saved_submit = form.get_text(submit_box);
+saved_incorrect = form.get_text(incorrect_box);
+saved_exhausted = form.get_text(exhausted_box);
+saved_cancel = form.get_text(cancel_box);
+saved_escape_pos = form.get_list_position(escape_list);
+saved_wl = form.is_checked(wl_cb);
+saved_secure = form.is_checked(secure_cb);
+saved_case = form.is_checked(case_cb);
+saved_single = form.is_checked(single_cb);
+if(last_mode_pos == 1)
+{
+saved_mnx = form.get_text(mnx);
+saved_mxx = form.get_text(mxx);
+saved_mny = form.get_text(mny);
+saved_mxy = form.get_text(mxy);
+if(mnz != -1) saved_mnz = form.get_text(mnz);
+if(mxz != -1) saved_mxz = form.get_text(mxz);
+}
+else
+{
+saved_x = form.get_text(mx);
+saved_y = form.get_text(my);
+if(mz != -1) saved_z = form.get_text(mz);
+}
+}
+form.reset();
+form.create_window("text input", false, true, last_mode_pos != -2);
+mode_list = form.create_list("build mode");
+form.add_list_item(mode_list, "single - one tile at a single position", "single");
+form.add_list_item(mode_list, "ranged - a rectangular area between a minimum and maximum axes", "ranged");
+form.set_list_position(mode_list, saved_mode_pos, false);
+mx = -1; my = -1; mz = -1; mnx = -1; mxx = -1; mny = -1; mxy = -1; mnz = -1; mxz = -1;
+if(saved_mode_pos == 1)
+{
+mnx = form.create_input_box("minimum x", saved_mnx);
+mxx = form.create_input_box("maximum x", saved_mxx);
+mny = form.create_input_box("minimum y", saved_mny);
+mxy = form.create_input_box("maximum y", saved_mxy);
+if(mapmode == "3d")
+{
+mnz = form.create_input_box("minimum z", saved_mnz);
+mxz = form.create_input_box("maximum z", saved_mxz);
+}
+}
+else
+{
+mx = form.create_input_box("x", saved_x);
+my = form.create_input_box("y", saved_y);
+if(mapmode == "3d") mz = form.create_input_box("z", saved_z);
+}
+title_box = form.create_input_box("title: shown on the input box, leave blank to skip", saved_title);
+prompt_box = form.create_input_box("prompt", saved_prompt);
+answer_box = form.create_input_box("answer: leave blank for no grading", saved_answer);
+maxatt_box = form.create_input_box("max attempts: 0 for unlimited", saved_maxatt);
+maxlen_box = form.create_input_box("max length: 0 for no limit", saved_maxlen);
+filter_box = form.create_input_box("character filter: characters to allow or block, leave blank for no restriction", saved_filter);
+submit_box = form.create_input_box("submit command: runs on submit or a correct answer, leave blank to skip", saved_submit);
+incorrect_box = form.create_input_box("incorrect command: runs on a wrong answer, leave blank to skip", saved_incorrect);
+exhausted_box = form.create_input_box("exhausted command: runs when attempts run out, leave blank to skip", saved_exhausted);
+cancel_box = form.create_input_box("cancel command: runs if backed out, leave blank to skip", saved_cancel);
+if(saved_mode_pos == 1)
+{
+form.set_disallowed_chars(mnx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mny, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(mxy, disallowed_nums, false, "This character is not allowed.");
+if(mnz != -1) form.set_disallowed_chars(mnz, disallowed_nums, false, "This character is not allowed.");
+if(mxz != -1) form.set_disallowed_chars(mxz, disallowed_nums, false, "This character is not allowed.");
+}
+else
+{
+form.set_disallowed_chars(mx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(my, disallowed_nums, false, "This character is not allowed.");
+if(mz != -1) form.set_disallowed_chars(mz, disallowed_nums, false, "This character is not allowed.");
+}
+form.set_disallowed_chars(maxatt_box, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(maxlen_box, disallowed_nums, false, "This character is not allowed.");
+escape_list = form.create_list("escape behavior");
+form.add_list_item(escape_list, "cancel", "cancel");
+form.add_list_item(escape_list, "reopen", "reopen");
+form.set_list_position(escape_list, saved_escape_pos, false);
+wl_cb = form.create_checkbox("enable whitelist", saved_wl);
+secure_cb = form.create_checkbox("secure", saved_secure);
+case_cb = form.create_checkbox("case sensitive", saved_case);
+single_cb = form.create_checkbox("single use", saved_single);
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_mode_pos == -2) form.focus(mode_list);
+else form.focus_silently(mode_list);
+last_mode_pos = saved_mode_pos;
+}
+wait(5);
+form.monitor();
+int cur_mode_pos = form.get_list_position(mode_list);
+if(cur_mode_pos != -1 && cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+do_build = true;
+continue;
+}
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+bool ranged = (saved_mode_pos == 1);
+if(ranged)
+{
+if(form.get_text(mnx) == "") { speak("Minimum X is required."); form.focus(mnx); continue; }
+if(form.get_text(mxx) == "") { speak("Maximum X is required."); form.focus(mxx); continue; }
+if(form.get_text(mny) == "") { speak("Minimum Y is required."); form.focus(mny); continue; }
+if(form.get_text(mxy) == "") { speak("Maximum Y is required."); form.focus(mxy); continue; }
+if(mnz != -1 && form.get_text(mnz) == "") { speak("Minimum Z is required."); form.focus(mnz); continue; }
+if(mxz != -1 && form.get_text(mxz) == "") { speak("Maximum Z is required."); form.focus(mxz); continue; }
+}
+else
+{
+if(form.get_text(mx) == "") { speak("X is required."); form.focus(mx); continue; }
+if(form.get_text(my) == "") { speak("Y is required."); form.focus(my); continue; }
+if(mz != -1 && form.get_text(mz) == "") { speak("Z is required."); form.focus(mz); continue; }
+}
+if(form.get_text(prompt_box) == "") { speak("Prompt is required."); form.focus(prompt_box); continue; }
+int bx = 0, by = 0, bz = 0;
+double bmnx = 0, bmxx = 0, bmny = 0, bmxy = 0, bmnz = 0, bmxz = 0;
+if(ranged)
+{
+bmnx = string_to_number(form.get_text(mnx));
+bmxx = string_to_number(form.get_text(mxx));
+bmny = string_to_number(form.get_text(mny));
+bmxy = string_to_number(form.get_text(mxy));
+bmnz = (mnz != -1) ? string_to_number(form.get_text(mnz)) : 0;
+bmxz = (mxz != -1) ? string_to_number(form.get_text(mxz)) : 0;
+}
+else
+{
+bx = string_to_number(form.get_text(mx));
+by = string_to_number(form.get_text(my));
+bz = (mz != -1) ? string_to_number(form.get_text(mz)) : 0;
+}
+string b_title = form.get_text(title_box);
+string b_prompt = form.get_text(prompt_box);
+string b_answer = form.get_text(answer_box);
+int b_maxatt = (form.get_text(maxatt_box) == "") ? 0 : string_to_number(form.get_text(maxatt_box));
+int b_maxlen = (form.get_text(maxlen_box) == "") ? 0 : string_to_number(form.get_text(maxlen_box));
+string b_filter = form.get_text(filter_box);
+string b_submit = form.get_text(submit_box);
+string b_incorrect = form.get_text(incorrect_box);
+string b_exhausted = form.get_text(exhausted_box);
+string b_cancel = form.get_text(cancel_box);
+int ep = form.get_list_position(escape_list);
+string b_escape = (ep == 1) ? "reopen" : "cancel";
+bool b_wl = form.is_checked(wl_cb);
+bool b_secure = form.is_checked(secure_cb);
+bool b_case = form.is_checked(case_cb);
+bool b_single = form.is_checked(single_cb);
+resume_pools();
+if(ranged)
+{
+write_ranged_text_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bmnz, bmxz);
+spawn_text_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bmnz, bmxz);
+}
+else
+{
+write_text_input(bx, by, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bz);
+spawn_text_input(bx, bx, by, by, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bz, bz);
+}
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
+
 void read_text_input(string[] sd)
 {
 int qidx = -1;
