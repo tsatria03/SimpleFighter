@@ -31,6 +31,7 @@
 - [Confirm before implementing](feedback_confirm_before_implementing.md) — User has repeatedly flagged Claude over-implementing despite CLAUDE.md rules; plan mode was tried and disabled, so the rule rests on instruction-following alone — vigilance matters more.
 - [List modified files](feedback_list_modified_files.md) — End every turn that edited files with an explicit "Files changed:" list naming each touched file.
 - [Describe, don't show code](feedback_describe_dont_show_code.md) — When building section by section, state the section count and name the classes/functions to be added with prose explanations of what each does; never paste the actual class/function code into chat (the dev reads the files directly).
+- [Spier/obscurity/object-menu gating](feedback_spier_obscurity_objectmenu_gating.md) — Only wire spier + obscurity for entities with a sound theme; only add entities with health to the object menu. Soundless entities (e.g. menu_input) get neither — don't reflexively copy switch/instrument.
 - [No CRLF normalization](feedback_no_crlf_normalization.md) — Don't run post-edit CRLF normalizer passes; git handles line endings at commit time.
 - [CLAUDE.md length limit](feedback_claudemd_length.md) — Keep CLAUDE.md under 40,000 characters; move content to memory files rather than expanding inline.
 - [Changelog rules](feedback_changelog_rules.md) — Sentence caps, per-version entry limits (20 for .0, 10 for minors), version bump requirement, reverse-chronological order; a changelog is a record, not a manual.
