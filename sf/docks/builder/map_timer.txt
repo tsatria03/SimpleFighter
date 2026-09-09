@@ -1,0 +1,41 @@
+Map timers.
+
+A map timer puts a countdown on the whole map. You give it a length in seconds, and when the map loads the clock starts running down. The timer has no position — it applies to the entire map, and there is only ever one of them; if a map has more than one, the last one takes effect. It does nothing on its own: a map timer is silent unless you give it commands to run, so every announcement, beep, and consequence is a slash command you write, the same kind a switch or the command console uses.
+
+Completing a map in time.
+
+The point of a timer is usually to reach an exit before it runs out, and an exit is a travelpoint. Because stepping onto a travelpoint sends the player to another map, it ends the current map and its timer automatically — so beating the clock needs no special setup: reach any travelpoint before zero and you are gone before the timer can act. The timer only matters when the player fails to leave in time.
+
+The fields.
+
+A map timer has three numbers and three commands.
+
+Time (number, seconds). The total length of the countdown. The clock starts here when the map loads and counts down to zero.
+
+Time command (text, leave blank to skip). A slash command that runs once, the moment the clock reaches zero. This is the consequence of running out — end the player with suicide, send them to a losing map with changemap, spawn something dangerous, or anything else. Leave it blank and nothing happens at zero; the clock simply ends.
+
+Period (number, seconds). How often a progress announcement fires, counting down. With a period of thirty on a ninety second timer, the period command runs at sixty seconds left and again at thirty. Set it to zero for no periodic announcements.
+
+Period command (text, leave blank to skip). The command run at each period interval, where you announce the time left. It never fires at the very start or at zero.
+
+Count (number, seconds). The length of a final countdown. When this many seconds remain, the count command starts firing once per second down to one. Set it to zero for no countdown. While the countdown is running the periodic announcements pause, so the two never overlap.
+
+Count command (text, leave blank to skip). The command run each second of the final countdown, usually a short beep with play or a spoken number.
+
+The clock freezes whenever the game is paused, so a menu or dialog does not eat into the time.
+
+Announcing the time.
+
+Because the numbers never speak on their own, the period and count commands are how the player hears the time, and they can drop the current time into what they say using placeholders. A placeholder is a word wrapped in percent signs that is replaced with a number when the command runs.
+
+The plural placeholders are the whole remaining time in one unit: %seconds% is the total seconds left, %minutes% the total minutes, and %hours% the total hours. The singular placeholders are the leftover pieces of a clock reading: %second% is the seconds after the whole minutes are removed, %minute% the minutes after the whole hours are removed, and %hour% the hours. So with ninety seconds left, %seconds% is 90 while %second% is 30. Use a plural alone to say a single unit, like speak %seconds% seconds remaining, and use the singular pieces together to read a full clock, like speak %minute% minutes and %second% seconds remaining. The placeholders work in all three commands.
+
+Take care not to use a singular placeholder on its own where you mean the whole amount, because it under-reports once the time passes its next unit up. Writing speak %seconds% seconds remaining always names the true total, while speak %second% seconds remaining would say twenty at eighty seconds left on a timer longer than a minute, since %second% counts only the seconds within the current minute.
+
+Checking the time.
+
+The player can hear how much time is left at any moment with the maptime command, or its short form mt. It speaks the remaining time in plain language, such as one minute and thirty seconds remaining, or says there is no timer when the map has none.
+
+Authoring a map timer by hand.
+
+If you prefer to edit main.sif directly, a map timer line is written as: map_timer "time command" "period command" "count command" time period count. The three commands come first, each wrapped in double quotes, followed by the three numbers. A command that itself contains double quotes escapes each inner quote as a backslash followed by a quote, the same as any other command field. The line can sit anywhere in the file, and if more than one is present the last one takes effect.
