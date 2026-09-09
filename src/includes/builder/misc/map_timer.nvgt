@@ -107,6 +107,37 @@ if(map_timer_period_cmd != "") comstack(expand_time_tokens(map_timer_period_cmd,
 }
 }
 
+int map_timer_remaining()
+{
+if(!map_timer_active) return 0;
+int remaining = map_timer_total - int(map_timer_elapsed / 1000);
+if(remaining < 0) remaining = 0;
+return remaining;
+}
+
+/* Builds a natural spoken phrase for the /maptime command, e.g. "1 minute and 30 seconds"
+or "1 hour, 2 minutes, and 5 seconds". Zero units are dropped, units are pluralized, and
+seconds always show when nothing else does so a bare "0 seconds" is still spoken. */
+string map_timer_time_phrase(int remaining)
+{
+if(remaining < 0) remaining = 0;
+int h = remaining / 3600;
+int m = (remaining / 60) % 60;
+int s = remaining % 60;
+string[] parts;
+if(h > 0) parts.insert_last("" + h + (h == 1 ? " hour" : " hours"));
+if(m > 0) parts.insert_last("" + m + (m == 1 ? " minute" : " minutes"));
+if(s > 0 or parts.length() == 0) parts.insert_last("" + s + (s == 1 ? " second" : " seconds"));
+string result = "";
+for(uint i = 0; i < parts.length(); i++)
+{
+if(i == 0) result = parts[i];
+else if(i == parts.length() - 1) result += (parts.length() > 2 ? ", and " : " and ") + parts[i];
+else result += ", " + parts[i];
+}
+return result;
+}
+
 void build_map_timer()
 {
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
