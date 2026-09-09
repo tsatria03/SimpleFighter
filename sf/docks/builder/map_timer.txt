@@ -12,15 +12,15 @@ A map timer has three numbers and three commands.
 
 Time (number, seconds). The total length of the countdown. The clock starts here when the map loads and counts down to zero.
 
-Time command (text, leave blank to skip). A slash command that runs once, the moment the clock reaches zero. This is the consequence of running out — end the player with suicide, send them to a losing map with changemap, spawn something dangerous, or anything else. Leave it blank and nothing happens at zero; the clock simply ends.
+Time command (text, optional). A slash command that runs once, the moment the clock reaches zero. This is the consequence of running out — end the player with suicide, send them to a losing map with changemap, spawn something dangerous, or anything else. Leave it blank and nothing happens at zero; the clock simply ends.
 
 Period (number, seconds). How often a progress announcement fires, counting down. With a period of thirty on a ninety second timer, the period command runs at sixty seconds left and again at thirty. Set it to zero for no periodic announcements.
 
-Period command (text, leave blank to skip). The command run at each period interval, where you announce the time left. It never fires at the very start or at zero.
+Period command (text, optional). The command run at each period interval, where you announce the time left. It never fires at the very start or at zero.
 
 Count (number, seconds). The length of a final countdown. When this many seconds remain, the count command starts firing once per second down to one. Set it to zero for no countdown. While the countdown is running the periodic announcements pause, so the two never overlap.
 
-Count command (text, leave blank to skip). The command run each second of the final countdown, usually a short beep with play or a spoken number.
+Count command (text, optional). The command run each second of the final countdown, usually a short beep with play or a spoken number.
 
 The clock freezes whenever the game is paused, so a menu or dialog does not eat into the time.
 
@@ -34,8 +34,18 @@ Take care not to use a singular placeholder on its own where you mean the whole 
 
 Checking the time.
 
-The player can hear how much time is left at any moment with the maptime command, or its short form mt. It speaks the remaining time in plain language, such as one minute and thirty seconds remaining, or says there is no timer when the map has none.
+The player can hear how much time is left at any moment with the maptime command, or its short form mt. It speaks the remaining time in plain language, such as you have one minute and thirty seconds to complete this map, or says there is no timer when the map has none.
+
+Because maptime is an ordinary slash command, you can also give it to a switch or a sensor. Put maptime in a switch's on command and pressing the switch speaks the time left, so you can build a clock panel the player consults by hand; put it on a sensor instead and the player hears the time automatically as they cross its area, like a checkpoint that calls out how long remains. It works from a macro key the same way, letting the player check from anywhere.
+
+Combining with inputs.
+
+Because a map timer, a switch, a sensor, and the menu and text inputs all run the same slash commands, they combine into timed challenges. The most common is a timed lock: a map timer counts down with its time command set to the failure, such as suicide or a change to a losing map, while a text input keypad or a menu input guards the way out. Solving the input before the clock runs out fires a command that sends the player onward, usually onto a travelpoint, which ends the map and stops the timer — so reaching the exit in time is the win and running out is the loss. The two need no wiring between them; whichever fires first decides the outcome.
+
+You can also let an input report the time. Putting maptime in one of an input's commands announces the time left as part of the response — a wrong answer whose incorrect command reads speak wrong;maptime both scolds the player and reminds them of the clock, and a menu choice tied to maptime becomes a check-the-time option. On a decompiled map an input can even start or extend a timer by spawning a fresh map timer from one of its commands, though like all spawning that only works while the map is decompiled, not once it is compiled and shipped.
 
 Authoring a map timer by hand.
 
 If you prefer to edit main.sif directly, a map timer line is written as: map_timer "time command" "period command" "count command" time period count. The three commands come first, each wrapped in double quotes, followed by the three numbers. A command that itself contains double quotes escapes each inner quote as a backslash followed by a quote, the same as any other command field. The line can sit anywhere in the file, and if more than one is present the last one takes effect.
+
+For example: map_timer "play radar;speak times up!" "play radar;speak %seconds% seconds remaining" "play radar;speak %seconds%" 60 10 5. This is a sixty second timer that, every ten seconds, plays a radar sound and speaks how many seconds are left; over each of the final five seconds plays radar and speaks the number; and when the clock reaches zero plays radar and says times up. Each command stacks two steps with a semicolon, and the seconds are spoken with the plural %seconds% placeholder so the count stays correct at any length.
