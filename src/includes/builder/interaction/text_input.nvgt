@@ -19,10 +19,11 @@ bool whitelist;
 bool secure;
 bool case_sensitive;
 string escape_behavior;
+string exhaust_behavior;
 bool singleuse;
 int attempts_used;
 bool spent;
-text_input(double mnx, double mxx, double mny, double mxy, string ttl, string prmt, string ans, string cfilter, string submit, string incorrect, string exhausted, string cancel, int maxatt, int maxlen, bool wl, bool sec, bool casesens, string escbehavior, bool sgl, double mnz=0, double mxz=0)
+text_input(double mnx, double mxx, double mny, double mxy, string ttl, string prmt, string ans, string cfilter, string submit, string incorrect, string exhausted, string cancel, int maxatt, int maxlen, bool wl, bool sec, bool casesens, string escbehavior, string exhbehavior, bool sgl, double mnz=0, double mxz=0)
 {
 minx=mnx;
 maxx=mxx;
@@ -44,15 +45,16 @@ whitelist=wl;
 secure=sec;
 case_sensitive=casesens;
 escape_behavior=escbehavior;
+exhaust_behavior=exhbehavior;
 singleuse=sgl;
 attempts_used=0;
 spent=false;
 }
 }
 
-void spawn_text_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, bool singleuse, double mnz=0, double mxz=0)
+void spawn_text_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, string exhaust_behavior, bool singleuse, double mnz=0, double mxz=0)
 {
-text_input ti1(mnx, mxx, mny, mxy, title, prompt, answer, char_filter, submit_command, incorrect_command, exhausted_command, cancel_command, max_attempts, max_length, whitelist, secure, case_sensitive, escape_behavior, singleuse, mnz, mxz);
+text_input ti1(mnx, mxx, mny, mxy, title, prompt, answer, char_filter, submit_command, incorrect_command, exhausted_command, cancel_command, max_attempts, max_length, whitelist, secure, case_sensitive, escape_behavior, exhaust_behavior, singleuse, mnz, mxz);
 text_inputs.insert_last(ti1);
 }
 
@@ -113,6 +115,9 @@ if(text_inputs[i].max_attempts >= 1 and text_inputs[i].attempts_used >= text_inp
 {
 if(text_inputs[i].exhausted_command != "")
 comstack(expand_input_tokens(text_inputs[i].exhausted_command, typed, "", -1));
+if(text_inputs[i].exhaust_behavior == "reset")
+text_inputs[i].attempts_used = 0;
+else
 text_inputs[i].spent = true;
 }
 if(text_inputs[i].singleuse) @text_inputs[i] = null;
@@ -144,6 +149,7 @@ string saved_incorrect = "";
 string saved_exhausted = "";
 string saved_cancel = "";
 int saved_escape_pos = 0;
+int saved_exhaust_pos = 0;
 bool saved_wl = false;
 bool saved_secure = false;
 bool saved_case = false;
@@ -151,7 +157,7 @@ bool saved_single = false;
 int saved_mode_pos = 0;
 int last_mode_pos = -2;
 bool do_build = true;
-int mode_list=-1, mx=-1, my=-1, mz=-1, mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1, title_box=-1, prompt_box=-1, answer_box=-1, maxatt_box=-1, maxlen_box=-1, filter_box=-1, submit_box=-1, incorrect_box=-1, exhausted_box=-1, cancel_box=-1, escape_list=-1, wl_cb=-1, secure_cb=-1, case_cb=-1, single_cb=-1, ok=-1, cn=-1;
+int mode_list=-1, mx=-1, my=-1, mz=-1, mnx=-1, mxx=-1, mny=-1, mxy=-1, mnz=-1, mxz=-1, title_box=-1, prompt_box=-1, answer_box=-1, maxatt_box=-1, maxlen_box=-1, filter_box=-1, submit_box=-1, incorrect_box=-1, exhausted_box=-1, cancel_box=-1, escape_list=-1, exhaust_list=-1, wl_cb=-1, secure_cb=-1, case_cb=-1, single_cb=-1, ok=-1, cn=-1;
 while(true)
 {
 if(do_build)
@@ -170,6 +176,7 @@ saved_incorrect = form.get_text(incorrect_box);
 saved_exhausted = form.get_text(exhausted_box);
 saved_cancel = form.get_text(cancel_box);
 saved_escape_pos = form.get_list_position(escape_list);
+saved_exhaust_pos = form.get_list_position(exhaust_list);
 saved_wl = form.is_checked(wl_cb);
 saved_secure = form.is_checked(secure_cb);
 saved_case = form.is_checked(case_cb);
@@ -246,6 +253,10 @@ escape_list = form.create_list("escape behavior");
 form.add_list_item(escape_list, "cancel", "cancel");
 form.add_list_item(escape_list, "reopen", "reopen");
 form.set_list_position(escape_list, saved_escape_pos, false);
+exhaust_list = form.create_list("exhaust behavior");
+form.add_list_item(exhaust_list, "lock", "lock");
+form.add_list_item(exhaust_list, "reset", "reset");
+form.set_list_position(exhaust_list, saved_exhaust_pos, false);
 wl_cb = form.create_checkbox("enable whitelist", saved_wl);
 secure_cb = form.create_checkbox("secure", saved_secure);
 case_cb = form.create_checkbox("case sensitive", saved_case);
@@ -325,6 +336,8 @@ string b_exhausted = form.get_text(exhausted_box);
 string b_cancel = form.get_text(cancel_box);
 int ep = form.get_list_position(escape_list);
 string b_escape = (ep == 1) ? "reopen" : "cancel";
+int xp = form.get_list_position(exhaust_list);
+string b_exhaust = (xp == 1) ? "reset" : "lock";
 bool b_wl = form.is_checked(wl_cb);
 bool b_secure = form.is_checked(secure_cb);
 bool b_case = form.is_checked(case_cb);
@@ -332,13 +345,13 @@ bool b_single = form.is_checked(single_cb);
 resume_pools();
 if(ranged)
 {
-write_ranged_text_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bmnz, bmxz);
-spawn_text_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bmnz, bmxz);
+write_ranged_text_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_exhaust, b_single, bmnz, bmxz);
+spawn_text_input(bmnx, bmxx, bmny, bmxy, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_exhaust, b_single, bmnz, bmxz);
 }
 else
 {
-write_text_input(bx, by, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bz);
-spawn_text_input(bx, bx, by, by, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_single, bz, bz);
+write_text_input(bx, by, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_exhaust, b_single, bz);
+spawn_text_input(bx, bx, by, by, b_title, b_prompt, b_answer, b_filter, b_submit, b_incorrect, b_exhausted, b_cancel, b_maxatt, b_maxlen, b_wl, b_secure, b_case, b_escape, b_exhaust, b_single, bz, bz);
 }
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
@@ -381,6 +394,7 @@ string title="", prompt="", answer="", char_filter="", submit="", incorrect="", 
 int max_attempts=0, max_length=0;
 bool whitelist=false, secure=false, case_sensitive=false, singleuse=false;
 string escape_behavior="cancel";
+string exhaust_behavior="lock";
 string combined = join_string_array(sd, o, sd.length());
 string remainder;
 array<string> quoted = extract_quoted(combined, remainder);
@@ -393,7 +407,18 @@ if(quoted.length() >= 6) incorrect = quoted[5];
 if(quoted.length() >= 7) exhausted = quoted[6];
 if(quoted.length() >= 8) cancel = quoted[7];
 array<string> tail = string_split(string_trim_sides(remainder), " ");
-if(tail.length() >= 7)
+if(tail.length() >= 8)
+{
+max_attempts = stn(tail[0]);
+max_length = stn(tail[1]);
+whitelist = string_to_bool(tail[2]);
+secure = string_to_bool(tail[3]);
+case_sensitive = string_to_bool(tail[4]);
+escape_behavior = tail[5];
+exhaust_behavior = tail[6];
+singleuse = string_to_bool(tail[7]);
+}
+else if(tail.length() >= 7)
 {
 max_attempts = stn(tail[0]);
 max_length = stn(tail[1]);
@@ -403,10 +428,10 @@ case_sensitive = string_to_bool(tail[4]);
 escape_behavior = tail[5];
 singleuse = string_to_bool(tail[6]);
 }
-spawn_text_input(mnx, mxx, mny, mxy, title, prompt, answer, char_filter, submit, incorrect, exhausted, cancel, max_attempts, max_length, whitelist, secure, case_sensitive, escape_behavior, singleuse, mnz, mxz);
+spawn_text_input(mnx, mxx, mny, mxy, title, prompt, answer, char_filter, submit, incorrect, exhausted, cancel, max_attempts, max_length, whitelist, secure, case_sensitive, escape_behavior, exhaust_behavior, singleuse, mnz, mxz);
 }
 
-void write_text_input(int x, int y, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, bool singleuse, int z=0)
+void write_text_input(int x, int y, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, string exhaust_behavior, bool singleuse, int z=0)
 {
 string c_title = string_replace(title, "\"", "", true);
 string c_prompt = string_replace(prompt, "\"", "", true);
@@ -417,7 +442,7 @@ string c_incorrect = string_replace(incorrect_command, "\"", "", true);
 string c_exhausted = string_replace(exhausted_command, "\"", "", true);
 string c_cancel = string_replace(cancel_command, "\"", "", true);
 string quoted = " \""+c_title+"\" \""+c_prompt+"\" \""+c_answer+"\" \""+c_filter+"\" \""+c_submit+"\" \""+c_incorrect+"\" \""+c_exhausted+"\" \""+c_cancel+"\"";
-string tail = " "+max_attempts+" "+max_length+" "+whitelist+" "+secure+" "+case_sensitive+" "+escape_behavior+" "+singleuse;
+string tail = " "+max_attempts+" "+max_length+" "+whitelist+" "+secure+" "+case_sensitive+" "+escape_behavior+" "+exhaust_behavior+" "+singleuse;
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
@@ -428,7 +453,7 @@ mapper.close();
 bump_map_modified();
 }
 
-void write_ranged_text_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, bool singleuse, double mnz=0, double mxz=0)
+void write_ranged_text_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, string exhaust_behavior, bool singleuse, double mnz=0, double mxz=0)
 {
 string c_title = string_replace(title, "\"", "", true);
 string c_prompt = string_replace(prompt, "\"", "", true);
@@ -439,7 +464,7 @@ string c_incorrect = string_replace(incorrect_command, "\"", "", true);
 string c_exhausted = string_replace(exhausted_command, "\"", "", true);
 string c_cancel = string_replace(cancel_command, "\"", "", true);
 string quoted = " \""+c_title+"\" \""+c_prompt+"\" \""+c_answer+"\" \""+c_filter+"\" \""+c_submit+"\" \""+c_incorrect+"\" \""+c_exhausted+"\" \""+c_cancel+"\"";
-string tail = " "+max_attempts+" "+max_length+" "+whitelist+" "+secure+" "+case_sensitive+" "+escape_behavior+" "+singleuse;
+string tail = " "+max_attempts+" "+max_length+" "+whitelist+" "+secure+" "+case_sensitive+" "+escape_behavior+" "+exhaust_behavior+" "+singleuse;
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 if(mapmode == "3d")
