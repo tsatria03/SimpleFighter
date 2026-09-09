@@ -1,0 +1,75 @@
+Inputs: menu inputs and text inputs.
+
+An input is an interactive entity the player opens by pressing the interact key while standing in it. When opened it asks the player something and then runs a slash command in response, using the same command system that switches and sensors use. There are two kinds. A menu input offers a list of choices you wrote and runs the command tied to whichever one the player picks. A text input asks the player to type an answer and runs a command based on what they typed, optionally grading it against a correct answer. Both build as a single tile or a ranged area, both share the common behavior described next, and each also has fields of its own.
+
+How an input works.
+
+Both kinds share the following:
+
+Build mode and coordinates. Either can be a single tile the player must stand on, or a ranged rectangular area they can open it from anywhere inside. On 3d maps the area spans height too, between its minimum and maximum z.
+
+Commands. Whatever an input runs is an ordinary slash command, exactly as a switch runs one — you can stack several with semicolons, delay a step with a leading number of milliseconds, and use random(low,high) in place of any number. The full command vocabulary and its limits live in the switches and command console help topics.
+
+Escape behavior (list). What pressing escape does. Cancel, the default, closes the input without a response, speaks canceled, and runs the cancel command if one is set. Reopen instead reopens the input, so the player cannot leave without responding.
+
+Cancel command (text, optional). A slash command run when the player backs out under the cancel escape behavior. Leave it blank for nothing to happen on a cancel.
+
+Single use (checkbox). When set, the input is used up after the first response and cannot be opened again for the rest of the map visit.
+
+Menu inputs.
+
+A menu input opens a menu of choices when the player presses interact, and runs a command for the one they pick. On top of the shared fields above, the menu input adds the following:
+
+Prompt (text, optional). Spoken when the menu opens, before the choices are read. Leave it blank to open straight to the choices.
+
+Options (text, required). The list of choices, separated by commas, for example: play, settings, exit. Each choice is either a plain label, or a label joined to its own command with an equals sign, such as heal=healbones. Choosing a label that has its own command runs that command; choosing a plain label runs the menu's submit command instead. You can mix both forms in one list. A choice's command may itself be a stack of commands separated by semicolons, just like a switch. A label or command that needs a literal comma writes it as a backslash then a comma, and the first equals sign is what splits a choice's label from its command.
+
+Submit command (text, optional). A slash command run when the player picks a plain label that has no command of its own. The picked label can be dropped into it with the placeholder %choice%, and the choice's position in the list, counting from zero, with %index%.
+
+Text inputs.
+
+A text input opens a box the player types into, then runs a command based on what they entered — optionally grading it against a correct answer and limiting the number of tries. On top of the shared fields above, the text input adds the following:
+
+Title (text, optional). The window title of the box that opens.
+
+Prompt (text, required). The label on the box, telling the player what to type.
+
+Answer (text, optional). The correct answer to grade against. Leave it blank and the input simply collects text and runs the submit command; set it and the submit command runs only on a correct answer, while the incorrect command runs on a wrong one.
+
+Character filter (text, optional). A set of characters the box restricts typing to. Leave it blank for no restriction. By default the listed characters are blocked; turn on Enable whitelist to instead allow only them, which is handy for a digits-only answer.
+
+Submit command (text, optional). Runs when an answer is given, or only on a correct answer when one is set. What the player typed can be dropped into it with the placeholder %answer%.
+
+Incorrect command (text, optional). Runs on a wrong answer; only reached when an answer is set.
+
+Exhausted command (text, optional). Runs when the player uses up the last of a limited number of attempts; only reached when max attempts is one or more.
+
+Max attempts (number). How many tries the player gets to match the answer before the exhaust behavior takes over. Use 0 for unlimited.
+
+Max length (number). The longest answer the box accepts. Use 0 for no limit.
+
+Enable whitelist (checkbox). Flips the character filter from blocking the listed characters to allowing only them.
+
+Secure (checkbox). Hides what the player types, for a password.
+
+Case sensitive (checkbox). When set, the answer must match capitalization exactly; off by default. Only matters when an answer is set.
+
+Exhaust behavior (list). What happens when the last attempt is used up. Lock, the default, locks the input so it will not open again, replaying the exhausted command if the player tries. Reset instead clears the tally so the player can open it and try the whole thing again. The exhausted command fires once either way; this only decides whether the input then locks or resets.
+
+Placeholders.
+
+A placeholder lets a command react to what the player did, filled in the moment the command runs. A menu input offers %choice%, the text of the picked label, and %index%, its position in the list counting from zero. A text input offers %answer%, the text the player typed. They apply only to that input's own commands, and a label can itself be a number, so a menu of 10, 20, 50 with a submit command of give bullets %choice% gives that many.
+
+Relationship to switches and sensors.
+
+Inputs run slash commands through the same system switches and sensors use, so everything those understand works here too — the same command names, stacking, delays, the random value token, and the same limits, including which commands open a blocking dialog or only work on a decompiled map. For the full description read the switches help topic and the command console help topic; the sensors help topic covers the contact-triggered relative. An input differs only in that it asks the player something first, then runs the command.
+
+Authoring inputs by hand.
+
+If you prefer to edit main.sif directly:
+
+A menu input is written as: menu_input x y "prompt" "options" "submit command" "cancel command" escape_behavior single_use. On 3d maps insert z after y. The ranged form replaces the single coordinates with minimum and maximum pairs: menu_input minx maxx miny maxy "prompt" "options" "submit command" "cancel command" escape_behavior single_use, with minimum and maximum z after max y on 3d maps.
+
+A text input is written as: text_input x y "title" "prompt" "answer" "character filter" "submit command" "incorrect command" "exhausted command" "cancel command" max_attempts max_length whitelist secure case_sensitive escape_behavior exhaust_behavior single_use. On 3d maps insert z after y, and the ranged form uses minimum and maximum coordinate pairs the same way the menu input does.
+
+For both, the text fields are wrapped in double quotes so the spaces and commas inside them are preserved, and the line is read as ranged when it carries the extra minimum and maximum coordinates. Escape behavior is the word cancel or reopen, exhaust behavior is the word lock or reset, and the remaining flags are the words true or false. Hand-authored lines load the same as builder-authored ones.
