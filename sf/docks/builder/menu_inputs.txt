@@ -1,0 +1,32 @@
+Menu inputs.
+
+A menu input is an interactive entity that opens a menu of choices when the player steps into its area and presses enter. Each choice can run a slash command, so a single menu input can offer the player a list of actions, destinations, or settings and act on whichever one they pick. It is the menu-driven cousin of the switch: where a switch fires a fixed command on a toggle, a menu input asks the player to choose first, then fires the command tied to that choice.
+
+Menu inputs come in two builder variants: the standard menu input (a single tile the player must stand on) and the ranged menu input (a rectangular area the player can open it from anywhere inside). Both share the same fields and behavior; only the coordinate footprint differs. Each menu input lives as a single line in the map's main.sif.
+
+Menu input components.
+
+Prompt (text, optional). Spoken when the menu opens, before the choices are read, so the player knows what they are choosing. Leave it blank for a menu that opens straight to its options with no spoken introduction.
+
+Options (text, required). The list of choices, separated by commas, for example: play, settings, exit. Each choice is written in one of two forms. The first is a plain label, such as play; choosing it runs the menu's submit command described below. The second is a label joined to its own command with an equals sign, such as heal=healbones; choosing it runs that command directly and ignores the submit command. You can mix both forms in one list, for example: heal=healbones, play, exit=cm hub 5 5. A choice's command may itself be a stack of commands separated by semicolons, exactly like a switch's command, so open=speak opening;1000 play door is one choice that speaks and then, a second later, plays a sound. Because commas separate the choices, a label or command that needs a literal comma writes it as a backslash followed by a comma, and the first equals sign in a choice is what splits its label from its command.
+
+Submit command (text, optional). A slash command run when the player picks a plain label that has no command of its own. Choices written with their own command never touch it. The label picked can be dropped into this command with the placeholder %choice%, and its position in the list (counting from zero) with %index%. So a menu whose options are theme, battle, boss and whose submit command is play music/%choice% plays music/theme, music/battle, or music/boss depending on the pick.
+
+Cancel command (text, optional). A slash command run if the player backs out of the menu without choosing. Leave it blank for nothing to happen on a cancel.
+
+Allow cancel (checkbox). When checked, the default, the player can press escape to leave without choosing, and the game says canceled. When unchecked, the menu cannot be escaped: backing out simply reopens it, forcing the player to pick something. Use this for a decision the player must make before moving on.
+
+Single use (checkbox). When checked, the menu input is used up the first time a choice is made and cannot be opened again for the rest of the map visit. Use this for a one-time decision.
+
+Placeholders.
+
+Two placeholders let the submit command react to which choice was made. %choice% is replaced by the exact text of the label the player picked, and %index% by its position in the list, counting from zero. They matter only for plain labels routed through the submit command; a choice written with its own command already names its action and has no need of them. A label can itself be a number, so options of 10, 20, 50 with a submit command of give bullets %choice% gives that many bullets, while %index% would instead hand over the slot number 0, 1, or 2.
+
+Relationship to switches and sensors.
+
+A menu input runs slash commands through the same system that switches and sensors use, so everything the command console understands works here too: the same command names, the same stacking with semicolons and optional millisecond delays before each stacked command, the same random value token for numbers, and the same practical limits. For the full description of what you can bind, how stacking and delays behave, and which commands open a blocking dialog or only work while a map is decompiled, read the switches help topic and the command console help topic. The sensors help topic covers the contact-triggered cousin that fires automatically when you walk into it. A menu input differs from those two only in that it asks the player to choose from a list first, then runs the command for that choice.
+
+Authoring menu inputs by hand.
+
+If you prefer to edit main.sif directly, the on-disk format for a standard menu input line is: menu_input x y "prompt" "options" "submit command" "cancel command" allow_cancel single_use
+For 3d maps insert z right after y. The ranged form replaces the single coordinates with min and max pairs: menu_input minx maxx miny maxy "prompt" "options" "submit command" "cancel command" allow_cancel single_use, with min and max z inserted after max y on 3d maps. The four text fields are each wrapped in double quotes, so spaces and commas inside them are preserved; the game reads the line as ranged when four coordinate values sit before the first quoted field instead of two (six instead of three on 3d maps). The two flags are written as the literal words true or false. Hand-authored lines load the same as builder-authored ones.
