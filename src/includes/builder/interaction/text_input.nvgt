@@ -61,6 +61,65 @@ void destroy_all_text_inputs()
 text_inputs.resize(0);
 }
 
+void text_input_loop()
+{
+for(uint i=0; i<text_inputs.length(); i++)
+{
+if(@text_inputs[i] == null) continue;
+bool inside = text_inputs[i].minx<=me.x and text_inputs[i].maxx>=me.x and text_inputs[i].miny<=me.y and text_inputs[i].maxy>=me.y;
+if(mapmode == "3d") inside = inside and me.z >= text_inputs[i].minz and me.z <= text_inputs[i].maxz;
+if(!(inside and controls.action_repeating("interact"))) continue;
+if(text_inputs[i].spent)
+{
+if(text_inputs[i].exhausted_command != "")
+comstack(expand_input_tokens(text_inputs[i].exhausted_command, "", "", -1));
+return;
+}
+pause_pools();
+vd.set_disallowed_chars(text_inputs[i].char_filter, text_inputs[i].whitelist, "This character is not allowed.");
+string typed;
+while(true)
+{
+typed = vd.input_box(text_inputs[i].title, text_inputs[i].prompt, "", "", "This character is not allowed.", 0, text_inputs[i].secure, text_inputs[i].max_length);
+if(typed == "" and text_inputs[i].escape_behavior == "reopen") continue;
+break;
+}
+resume_pools();
+if(typed == "")
+{
+speak("canceled");
+if(text_inputs[i].cancel_command != "")
+comstack(expand_input_tokens(text_inputs[i].cancel_command, "", "", -1));
+return;
+}
+bool graded = (text_inputs[i].answer != "");
+bool correct = false;
+if(graded)
+{
+if(text_inputs[i].case_sensitive) correct = (typed == text_inputs[i].answer);
+else correct = (typed.lower() == text_inputs[i].answer.lower());
+}
+if(!graded or correct)
+{
+if(text_inputs[i].submit_command != "")
+comstack(expand_input_tokens(text_inputs[i].submit_command, typed, "", -1));
+if(text_inputs[i].singleuse) @text_inputs[i] = null;
+return;
+}
+if(text_inputs[i].incorrect_command != "")
+comstack(expand_input_tokens(text_inputs[i].incorrect_command, typed, "", -1));
+text_inputs[i].attempts_used += 1;
+if(text_inputs[i].max_attempts >= 1 and text_inputs[i].attempts_used >= text_inputs[i].max_attempts)
+{
+if(text_inputs[i].exhausted_command != "")
+comstack(expand_input_tokens(text_inputs[i].exhausted_command, typed, "", -1));
+text_inputs[i].spent = true;
+}
+if(text_inputs[i].singleuse) @text_inputs[i] = null;
+return;
+}
+}
+
 void build_text_input()
 {
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
