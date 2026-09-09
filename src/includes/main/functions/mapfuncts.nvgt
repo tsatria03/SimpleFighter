@@ -1,14 +1,31 @@
+/* Find the next double quote at or after start that is NOT escaped with a
+preceding backslash, so a \" inside a field's text is skipped rather than
+treated as the field delimiter. Returns -1 if none remain. */
+int find_unescaped_quote(const string&in source, int start)
+{
+int p = start;
+while(true)
+{
+int q = source.find_first_of("\"", p);
+if(q == -1) return -1;
+if(q == 0 or source.substr(q - 1, 1) != "\\") return q;
+p = q + 1;
+}
+return -1;
+}
 array<string> extract_quoted(const string&in source, string&out remainder)
 {
 array<string> fields;
 int pos = 0;
 while(true)
 {
-int q1 = source.find_first_of("\"", pos);
+int q1 = find_unescaped_quote(source, pos);
 if(q1 == -1) break;
-int q2 = source.find_first_of("\"", q1 + 1);
+int q2 = find_unescaped_quote(source, q1 + 1);
 if(q2 == -1) break;
-fields.insert_last(source.substr(q1 + 1, q2 - q1 - 1));
+string field = source.substr(q1 + 1, q2 - q1 - 1);
+field = string_replace(field, "\\\"", "\"", true);
+fields.insert_last(field);
 pos = q2 + 1;
 }
 remainder = source.substr(pos);
