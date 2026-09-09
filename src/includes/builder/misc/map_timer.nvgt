@@ -1,0 +1,74 @@
+/* The map timer is a single, coordless, map-wide countdown. Unlike every other element it
+is not a placed object and there is only ever one active at a time (the last map_timer line
+parsed wins). It is silent on its own — all feedback comes from the three author commands,
+which fire when the clock expires, at each periodic interval, and each second of the final
+countdown. On-disk: map_timer "<time cmd>" "<period cmd>" "<count cmd>" <time> <period> <count> */
+
+bool map_timer_active = false;
+bool map_timer_done = false;
+int map_timer_total = 0;
+int map_timer_period = 0;
+int map_timer_count = 0;
+string map_timer_time_cmd = "";
+string map_timer_period_cmd = "";
+string map_timer_count_cmd = "";
+double map_timer_elapsed = 0;
+int map_timer_last_period = -1;
+int map_timer_last_count = -1;
+
+void arm_map_timer(string time_cmd, string period_cmd, string count_cmd, int total, int period, int count)
+{
+map_timer_time_cmd = time_cmd;
+map_timer_period_cmd = period_cmd;
+map_timer_count_cmd = count_cmd;
+map_timer_total = total;
+map_timer_period = period;
+map_timer_count = count;
+map_timer_elapsed = 0;
+map_timer_done = false;
+map_timer_last_period = -1;
+map_timer_last_count = -1;
+map_timer_active = (total > 0);
+}
+
+void destroy_map_timer()
+{
+map_timer_active = false;
+map_timer_done = false;
+map_timer_total = 0;
+map_timer_period = 0;
+map_timer_count = 0;
+map_timer_time_cmd = "";
+map_timer_period_cmd = "";
+map_timer_count_cmd = "";
+map_timer_elapsed = 0;
+map_timer_last_period = -1;
+map_timer_last_count = -1;
+}
+
+void read_map_timer(string[] sd)
+{
+string combined = join_string_array(sd, 1, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+string time_cmd = quoted.length() >= 1 ? quoted[0] : "";
+string period_cmd = quoted.length() >= 2 ? quoted[1] : "";
+string count_cmd = quoted.length() >= 3 ? quoted[2] : "";
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+int total = tail.length() >= 1 ? int(stn(tail[0])) : 0;
+int period = tail.length() >= 2 ? int(stn(tail[1])) : 0;
+int count = tail.length() >= 3 ? int(stn(tail[2])) : 0;
+arm_map_timer(time_cmd, period_cmd, count_cmd, total, period, count);
+}
+
+void write_map_timer(string time_cmd, string period_cmd, string count_cmd, int total, int period, int count)
+{
+string ct = escape_quotes(time_cmd);
+string cp = escape_quotes(period_cmd);
+string cc = escape_quotes(count_cmd);
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"map_timer \""+ct+"\" \""+cp+"\" \""+cc+"\" "+total+" "+period+" "+count);
+mapper.close();
+bump_map_modified();
+}
