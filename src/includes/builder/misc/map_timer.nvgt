@@ -45,6 +45,53 @@ map_timer_elapsed = 0;
 map_timer_last_sec = -1;
 }
 
+/* Resolves a duration field to whole seconds. A field may be a plain number of seconds (or a
+random(...) token), or clock notation with colons: minutes:seconds, or hours:minutes:seconds.
+Parsing is lenient — the parts are read right to left as seconds, minutes, hours and summed, so
+1:30 is 90 and 2:5:30 is 7530, and an oversized part like 1:90 simply means 150. */
+int parse_duration(string s)
+{
+s = string_trim_sides(s);
+if(s.find(":") < 0) return int(stn(s));
+array<string> parts = string_split(s, ":");
+double total = 0;
+int n = int(parts.length());
+for(int i = 0; i < n; i++)
+{
+double mult = 1;
+int power = n - 1 - i;
+for(int p = 0; p < power; p++) mult *= 60;
+total += stn(parts[i]) * mult;
+}
+return int(total);
+}
+
+/* Validates one duration field, returning "" if fine or a reason fragment. A plain field must be
+a whole, non-negative number (a random(...) token is accepted as-is). A colon field must have two
+or three parts, each a whole non-negative number. */
+string duration_token_error(string tok)
+{
+if(tok.find(":") < 0)
+{
+if(!is_number_token(tok)) return "must be a number";
+if(tok.substr(0,7) != "random(")
+{
+if(tok.find(".") >= 0) return "must be a whole number";
+if(tok.substr(0,1) == "-") return "cannot be negative";
+}
+return "";
+}
+array<string> parts = string_split(tok, ":");
+if(parts.length() < 2 or parts.length() > 3) return "must be written as seconds, minutes and seconds, or hours, minutes and seconds";
+for(uint i = 0; i < parts.length(); i++)
+{
+string p = parts[i];
+if(p.length() == 0 or !is_number_token(p) or p.substr(0,7) == "random(" or p.find(".") >= 0 or p.substr(0,1) == "-")
+return "must use whole numbers between the colons";
+}
+return "";
+}
+
 void read_map_timer(string[] sd)
 {
 string combined = join_string_array(sd, 1, sd.length());
@@ -54,13 +101,13 @@ string time_cmd = quoted.length() >= 1 ? quoted[0] : "";
 string period_cmd = quoted.length() >= 2 ? quoted[1] : "";
 string count_cmd = quoted.length() >= 3 ? quoted[2] : "";
 array<string> tail = string_split(string_trim_sides(remainder), " ");
-int total = tail.length() >= 1 ? int(stn(tail[0])) : 0;
-int period = tail.length() >= 2 ? int(stn(tail[1])) : 0;
-int count = tail.length() >= 3 ? int(stn(tail[2])) : 0;
+int total = tail.length() >= 1 ? parse_duration(tail[0]) : 0;
+int period = tail.length() >= 2 ? parse_duration(tail[1]) : 0;
+int count = tail.length() >= 3 ? parse_duration(tail[2]) : 0;
 arm_map_timer(time_cmd, period_cmd, count_cmd, total, period, count);
 }
 
-void write_map_timer(string time_cmd, string period_cmd, string count_cmd, int total, int period, int count)
+void write_map_timer(string time_cmd, string period_cmd, string count_cmd, string total, string period, string count)
 {
 string ct = escape_quotes(time_cmd);
 string cp = escape_quotes(period_cmd);
@@ -108,9 +155,9 @@ if(map_timer_period_cmd != "") comstack(expand_time_tokens(map_timer_period_cmd,
 }
 
 /* Tier 2 semantic check for a map_timer line. Mirrors read_map_timer's parse: the three commands
-are quoted and the three numbers (time, period, count) are the bare tail after them. Each number
-must be a whole, non-negative value (a random(...) token is accepted as-is since it can't be
-evaluated statically). Returns "" if the line is fine, else a plain-english reason. */
+are quoted and the three numbers (time, period, count) are the bare tail after them. Each is a
+duration — a whole non-negative number of seconds, a random(...) token, or clock notation with
+colons — validated by duration_token_error. Returns "" if the line is fine, else a reason. */
 string map_timer_semantic_error(string[] sd, string mode, int &out col)
 {
 string combined = join_string_array(sd, 1, sd.length());
@@ -129,12 +176,8 @@ for(uint i = 0; i < 3; i++)
 {
 string tok = tail[i];
 col = base + int(i);
-if(!is_number_token(tok)) return "the "+names[i]+" must be a number.";
-if(tok.substr(0,7) != "random(")
-{
-if(tok.find(".") >= 0) return "the "+names[i]+" must be a whole number.";
-if(tok.substr(0,1) == "-") return "the "+names[i]+" cannot be negative.";
-}
+string e = duration_token_error(tok);
+if(e != "") return "the "+names[i]+" "+e+".";
 }
 return "";
 }
@@ -172,18 +215,17 @@ return result;
 
 void build_map_timer()
 {
-string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
 form.reset();
 form.create_window("map timer", false, true, false);
-int time_box = form.create_input_box("time: total seconds on the clock", "60");
+int time_box = form.create_input_box("time: total time, in seconds or clock form like 1:30", "60");
 int timecmd_box = form.create_input_box("time command: runs when the clock reaches zero, leave blank to skip", "");
-int period_box = form.create_input_box("period: seconds between announcements, 0 to disable", "0");
+int period_box = form.create_input_box("period: time between announcements, in seconds or clock form, 0 to disable", "0");
 int periodcmd_box = form.create_input_box("period command: runs at each announcement, leave blank to skip", "");
-int count_box = form.create_input_box("count: seconds of final countdown, 0 to disable", "0");
+int count_box = form.create_input_box("count: length of the final countdown, in seconds or clock form, 0 to disable", "0");
 int countcmd_box = form.create_input_box("count command: runs each second of the countdown, leave blank to skip", "");
-form.set_disallowed_chars(time_box, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(period_box, disallowed_nums, false, "This character is not allowed.");
-form.set_disallowed_chars(count_box, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(time_box, "0123456789:", true, "This character is not allowed.");
+form.set_disallowed_chars(period_box, "0123456789:", true, "This character is not allowed.");
+form.set_disallowed_chars(count_box, "0123456789:", true, "This character is not allowed.");
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(time_box);
@@ -205,17 +247,23 @@ return;
 }
 if(form.is_pressed(ok))
 {
-if(form.get_text(time_box) == "") { speak("Time is required."); form.focus(time_box); continue; }
-int b_time = string_to_number(form.get_text(time_box));
-if(b_time <= 0) { speak("Time must be greater than zero."); form.focus(time_box); continue; }
-int b_period = (form.get_text(period_box) == "") ? 0 : string_to_number(form.get_text(period_box));
-int b_count = (form.get_text(count_box) == "") ? 0 : string_to_number(form.get_text(count_box));
+string s_time = form.get_text(time_box);
+if(s_time == "") { speak("Time is required."); form.focus(time_box); continue; }
+string te = duration_token_error(s_time);
+if(te != "") { speak("The time "+te+"."); form.focus(time_box); continue; }
+if(parse_duration(s_time) <= 0) { speak("Time must be greater than zero."); form.focus(time_box); continue; }
+string s_period = (form.get_text(period_box) == "") ? "0" : form.get_text(period_box);
+string pe = duration_token_error(s_period);
+if(pe != "") { speak("The period "+pe+"."); form.focus(period_box); continue; }
+string s_count = (form.get_text(count_box) == "") ? "0" : form.get_text(count_box);
+string ce = duration_token_error(s_count);
+if(ce != "") { speak("The count "+ce+"."); form.focus(count_box); continue; }
 string b_timecmd = form.get_text(timecmd_box);
 string b_periodcmd = form.get_text(periodcmd_box);
 string b_countcmd = form.get_text(countcmd_box);
 resume_pools();
-write_map_timer(b_timecmd, b_periodcmd, b_countcmd, b_time, b_period, b_count);
-arm_map_timer(b_timecmd, b_periodcmd, b_countcmd, b_time, b_period, b_count);
+write_map_timer(b_timecmd, b_periodcmd, b_countcmd, s_time, s_period, s_count);
+arm_map_timer(b_timecmd, b_periodcmd, b_countcmd, parse_duration(s_time), parse_duration(s_period), parse_duration(s_count));
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
