@@ -74,7 +74,7 @@ if(!(inside and controls.action_repeating("interact"))) continue;
 if(text_inputs[i].spent)
 {
 if(text_inputs[i].exhausted_command != "")
-comstack(expand_input_tokens(text_inputs[i].exhausted_command, "", "", -1));
+comstack(expand_input_tokens(text_inputs[i].exhausted_command, "", "", -1, text_inputs[i].attempts_used, 0));
 return;
 }
 pause_pools();
@@ -91,9 +91,16 @@ if(typed == "")
 {
 speak("canceled");
 if(text_inputs[i].cancel_command != "")
-comstack(expand_input_tokens(text_inputs[i].cancel_command, "", "", -1));
+{
+int crem = (text_inputs[i].max_attempts >= 1) ? (text_inputs[i].max_attempts - text_inputs[i].attempts_used) : 0;
+if(crem < 0) crem = 0;
+comstack(expand_input_tokens(text_inputs[i].cancel_command, "", "", -1, text_inputs[i].attempts_used, crem));
+}
 return;
 }
+int cur = text_inputs[i].attempts_used + 1;
+int rem = (text_inputs[i].max_attempts >= 1) ? (text_inputs[i].max_attempts - cur) : 0;
+if(rem < 0) rem = 0;
 bool graded = (text_inputs[i].answer != "");
 bool correct = false;
 if(graded)
@@ -104,17 +111,18 @@ else correct = (typed.lower() == text_inputs[i].answer.lower());
 if(!graded or correct)
 {
 if(text_inputs[i].submit_command != "")
-comstack(expand_input_tokens(text_inputs[i].submit_command, typed, "", -1));
+comstack(expand_input_tokens(text_inputs[i].submit_command, typed, "", -1, cur, rem));
 if(text_inputs[i].singleuse) @text_inputs[i] = null;
 return;
 }
-if(text_inputs[i].incorrect_command != "")
-comstack(expand_input_tokens(text_inputs[i].incorrect_command, typed, "", -1));
-text_inputs[i].attempts_used += 1;
-if(text_inputs[i].max_attempts >= 1 and text_inputs[i].attempts_used >= text_inputs[i].max_attempts)
+bool exhausting = (text_inputs[i].max_attempts >= 1 and cur >= text_inputs[i].max_attempts);
+if(!exhausting and text_inputs[i].incorrect_command != "")
+comstack(expand_input_tokens(text_inputs[i].incorrect_command, typed, "", -1, cur, rem));
+text_inputs[i].attempts_used = cur;
+if(exhausting)
 {
 if(text_inputs[i].exhausted_command != "")
-comstack(expand_input_tokens(text_inputs[i].exhausted_command, typed, "", -1));
+comstack(expand_input_tokens(text_inputs[i].exhausted_command, typed, "", -1, cur, rem));
 if(text_inputs[i].exhaust_behavior == "reset")
 text_inputs[i].attempts_used = 0;
 else

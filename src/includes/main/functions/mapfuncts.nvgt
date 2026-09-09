@@ -278,16 +278,20 @@ return str;
 
 /* Shared by the text_input and menu_input builder entities: substitutes the input's captured value
 into an author-written command right before it is handed to comstack(). %answer% is the text a text
-input captured, %choice% the label a menu input picked, %index% that choice's 0-based position. The
-semicolon is stripped from %answer% because it is player-typed and comstack splits on ";", so an
-unstripped answer could break the author's command out into a second stacked command. %choice% and
-%index% come from author-defined options, so they need no stripping. */
-string expand_input_tokens(string cmd, string answer, string choice, int index)
+input captured, %choice% the label a menu input picked, %index% that choice's 0-based position.
+%attempt% and %attempts% are text-input-only: the number of the try just made and the tries left after
+it; they are only substituted when a non-negative count is passed, so menu calls (which omit them) are
+unaffected. The semicolon is stripped from %answer% because it is player-typed and comstack splits on
+";", so an unstripped answer could break the author's command out into a second stacked command. The
+other tokens come from author-defined data or the engine, so they need no stripping. */
+string expand_input_tokens(string cmd, string answer, string choice, int index, int attempt = -1, int attempts_left = -1)
 {
 answer = string_replace(answer, ";", "", true);
 cmd = string_replace(cmd, "%answer%", answer, true);
 cmd = string_replace(cmd, "%choice%", choice, true);
 cmd = string_replace(cmd, "%index%", "" + index, true);
+if(attempt >= 0) cmd = string_replace(cmd, "%attempt%", "" + attempt, true);
+if(attempts_left >= 0) cmd = string_replace(cmd, "%attempts%", "" + attempts_left, true);
 return cmd;
 }
 
