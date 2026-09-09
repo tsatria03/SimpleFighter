@@ -19,7 +19,9 @@ metadata:
 - Lines beginning with `Finished.` describe things that have already shipped in past versions.
 - Lines beginning with `Unfinished.` are things that *might* be added later.
 - **Items in the Unfinished list are not commitments.** They are notes the dev wrote to themselves. Presence in the list does not mean a feature is planned, scoped, or guaranteed to land. Do not promise a player that an unfinished item will be implemented, and do not treat it as a prioritized backlog.
-- When a feature listed as Unfinished actually ships, flip the prefix to `Finished.` and leave it in the file as part of the history.
+- The prefixes are literally `****Unfinished.` (four asterisks, top group) and `**Finished.` (two asterisks, lower group), separated by a `##`/`####` header line.
+- **New entries go at the TOP of their group, newest first** — both when adding a new Unfinished idea and when moving/adding a Finished item. Never append to the bottom of either group. (Dev corrected this: an Unfinished item appended to the bottom had to be moved to the top.)
+- When a feature listed as Unfinished actually ships, flip the prefix to `Finished.` and move it to the TOP of the Finished group as part of the history.
 
 **Why:** These quirks trip up accurate answers — the readme's stale map-mode prose reads as authoritative, and the todo's Unfinished items read as promises. Neither is true.
 
