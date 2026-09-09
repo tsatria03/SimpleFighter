@@ -320,6 +320,29 @@ if(attempts_left >= 0) cmd = string_replace(cmd, "%attempts%", "" + attempts_lef
 return cmd;
 }
 
+/* Substitutes the map timer's time tokens into a command. remaining is whole seconds left.
+Plural tokens are the whole remaining time in that unit; singular tokens are the remainder
+after the next-bigger unit is removed (a clock breakdown). %hour% equals %hours% since hours
+is the largest unit. The closing % on every token keeps them independent, so replacement
+order doesn't matter (the same reason %attempt% and %attempts% coexist above). */
+string expand_time_tokens(string cmd, int remaining)
+{
+if(remaining < 0) remaining = 0;
+int total_seconds = remaining;
+int total_minutes = remaining / 60;
+int total_hours = remaining / 3600;
+int rem_seconds = remaining % 60;
+int rem_minutes = (remaining / 60) % 60;
+int rem_hours = remaining / 3600;
+cmd = string_replace(cmd, "%seconds%", "" + total_seconds, true);
+cmd = string_replace(cmd, "%second%", "" + rem_seconds, true);
+cmd = string_replace(cmd, "%minutes%", "" + total_minutes, true);
+cmd = string_replace(cmd, "%minute%", "" + rem_minutes, true);
+cmd = string_replace(cmd, "%hours%", "" + total_hours, true);
+cmd = string_replace(cmd, "%hour%", "" + rem_hours, true);
+return cmd;
+}
+
 string join_string_array(string[] arr, uint start, uint end)
 {
 string result = "";

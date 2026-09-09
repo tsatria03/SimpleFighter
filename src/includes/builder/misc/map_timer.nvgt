@@ -13,8 +13,8 @@ string map_timer_time_cmd = "";
 string map_timer_period_cmd = "";
 string map_timer_count_cmd = "";
 double map_timer_elapsed = 0;
-int map_timer_last_period = -1;
-int map_timer_last_count = -1;
+int map_timer_last_sec = -1;
+timer map_timer_tick;
 
 void arm_map_timer(string time_cmd, string period_cmd, string count_cmd, int total, int period, int count)
 {
@@ -26,8 +26,8 @@ map_timer_period = period;
 map_timer_count = count;
 map_timer_elapsed = 0;
 map_timer_done = false;
-map_timer_last_period = -1;
-map_timer_last_count = -1;
+map_timer_last_sec = -1;
+map_timer_tick.restart();
 map_timer_active = (total > 0);
 }
 
@@ -42,8 +42,7 @@ map_timer_time_cmd = "";
 map_timer_period_cmd = "";
 map_timer_count_cmd = "";
 map_timer_elapsed = 0;
-map_timer_last_period = -1;
-map_timer_last_count = -1;
+map_timer_last_sec = -1;
 }
 
 void read_map_timer(string[] sd)
@@ -71,4 +70,39 @@ mapdata=mapper.read();
 mapper.write("\r\n"+"map_timer \""+ct+"\" \""+cp+"\" \""+cc+"\" "+total+" "+period+" "+count);
 mapper.close();
 bump_map_modified();
+}
+
+/* Advances the timer once per frame while the game world is running. Lives inside game.nvgt's
+freezgame==false block, so a paused game does not tick. Each call adds the real time since the
+last call (clamped to drop any freeze gap over one second) and, when a new whole-second boundary
+is crossed, fires exactly one event: the time command at zero, a count command inside the final
+countdown zone, or a period command on an interval multiple (never at the very start, and paused
+while inside the count zone so the two don't stack). */
+void map_timer_loop()
+{
+if(!map_timer_active or map_timer_done) return;
+double d = map_timer_tick.elapsed;
+map_timer_tick.restart();
+if(d > 1000) d = 0;
+map_timer_elapsed += d;
+int remaining = map_timer_total - int(map_timer_elapsed / 1000);
+if(remaining < 0) remaining = 0;
+if(remaining == map_timer_last_sec) return;
+map_timer_last_sec = remaining;
+if(remaining <= 0)
+{
+if(map_timer_time_cmd != "") comstack(expand_time_tokens(map_timer_time_cmd, 0));
+map_timer_done = true;
+map_timer_active = false;
+return;
+}
+if(map_timer_count > 0 and remaining <= map_timer_count)
+{
+if(map_timer_count_cmd != "") comstack(expand_time_tokens(map_timer_count_cmd, remaining));
+return;
+}
+if(map_timer_period > 0 and remaining < map_timer_total and (remaining % map_timer_period) == 0)
+{
+if(map_timer_period_cmd != "") comstack(expand_time_tokens(map_timer_period_cmd, remaining));
+}
 }
