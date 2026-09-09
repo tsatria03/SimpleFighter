@@ -149,21 +149,23 @@ Distilled from an external reference game's ID-based interactable "inputs" (text
 - **door / passage** `password` lock modes open a `virtual_input_box`, capture the typed text, and grade it against the stored password — a graded text input welded to "unlock this door." Text input generalizes it to run ANY command with typed text.
 - **switch** runs arbitrary commands via `comstack()` but can't ask anything first. Inputs = switch + a prompt/capture step in front.
 
-**TEXT INPUT — build form SETTLED to the field level (2026-09).** A switch with a prompt bolted on the front; keeps the switch skeleton, drops the switch's whole audio cluster (no sound theme — dev decision 2026-09: text inputs need no sound themes; the box uses its normal open/type feedback), no auto-activate/destroying/looping. Follows [[feedback_builder_form_control_order]] (inputs → checkboxes → buttons), build-mode list leads (drives coord layout, switch precedent). 14 controls in order:
+**TEXT INPUT — build form SETTLED to the field level (2026-09).** A switch with a prompt bolted on the front; keeps the switch skeleton, drops the switch's whole audio cluster (no sound theme — dev decision 2026-09: text inputs need no sound themes; the box uses its normal open/type feedback), no auto-activate/destroying/looping. Follows [[feedback_builder_form_control_order]] (inputs → checkboxes → buttons), build-mode list leads (drives coord layout, switch precedent). 16 controls in order:
   1. build mode — list, single/ranged (shared with switch).
   2. Coordinates — input boxes (shared): single x,y[,z]; ranged min/max x, min/max y[, min/max z on 3d].
   3. title — input box (new). Window title of the box that opens (`virtual_input_box` takes both title AND prompt).
   4. prompt — input box, required (new). What the box asks.
   5. answer — input box, optional (new). Correct answer to grade against; blank = no grading (just collects text + runs submit command).
-  6. maximum length — input box, numeric, default 0 = no limit (new).
-  7. character filter — input box, optional (new). The set of characters to allow or block; blank = no restriction. Typed field (NOT a picked list) because characters have no finite set — this is the one divergence from the command/character blockers, which multiselect from a known list.
-  8. submit command — input box (switch's "on command", reworded). Runs on submit, or only on a correct answer when one is set; `%answer%` → typed text, then `comstack()`.
-  9. incorrect command — input box (switch's "off command", reworded). Runs only on a wrong answer; unreachable when no answer is set (like a single-use switch's off command).
-  10. Enable whitelist — checkbox (new). Applies to the character filter, MATCHING the `command_blocker`/`character_blocker` idiom (their exact checkbox label): unchecked blocks the listed chars (blacklist), checked allows only them (whitelist). Maps to the input box's `set_disallowed_chars(chars, use_only, …)` flag. Placed BEFORE secure (dev, 2026-09).
-  11. secure — checkbox (new). Hides typed text (password mask).
-  12. case sensitive — checkbox (new). Only relevant when an answer is set; defaults off.
-  13. single use — checkbox (shared). First submit consumes the entity.
-  14. okay / cancel — buttons (shared).
+  6. max attempts — input box, numeric, default 0 = unlimited (new, dev-approved 2026-09). Caps how many tries to match the answer before the input locks; 1+ enables the exhausted command. Only meaningful when an answer is set (no answer → every submit succeeds, nothing to count). Use this OR single use (one-and-done), not both.
+  7. maximum length — input box, numeric, default 0 = no limit (new).
+  8. character filter — input box, optional (new). The set of characters to allow or block; blank = no restriction. Typed field (NOT a picked list) because characters have no finite set — this is the one divergence from the command/character blockers, which multiselect from a known list.
+  9. submit command — input box (switch's "on command", reworded). Runs on submit, or only on a correct answer when one is set; `%answer%` → typed text, then `comstack()`.
+  10. incorrect command — input box (switch's "off command", reworded). Runs only on a wrong answer; unreachable when no answer is set (like a single-use switch's off command).
+  11. exhausted command — input box, optional (new, dev-approved 2026-09). Runs when the last attempt is spent (typically a `speak …`, but any command — play a sound, teleport, etc.). Firing model: a wrong FINAL guess runs the incorrect command THEN the exhausted command, then the input stops opening; pressing interact on a spent input replays the exhausted command so the player hears why it won't open. Empty = nothing. Only relevant when max attempts ≥ 1.
+  12. Enable whitelist — checkbox (new). Applies to the character filter, MATCHING the `command_blocker`/`character_blocker` idiom (their exact checkbox label): unchecked blocks the listed chars (blacklist), checked allows only them (whitelist). Maps to the input box's `set_disallowed_chars(chars, use_only, …)` flag. Placed BEFORE secure (dev, 2026-09).
+  13. secure — checkbox (new). Hides typed text (password mask).
+  14. case sensitive — checkbox (new). Only relevant when an answer is set; defaults off.
+  15. single use — checkbox (shared). First submit consumes the entity.
+  16. okay / cancel — buttons (shared).
 
 **MENU INPUT — build form SETTLED to the field level (2026-09).** Also switch-shaped (build mode, coords, interact, comstack); NO sound theme (uses the standard menu sounds via `form_menu`); drops the switch's audio cluster. On interact → a `form_menu` of the author's options opens → picking one runs a slash command via `comstack()`. 10 controls in order:
   1. build mode — list, single/ranged (shared with switch).
