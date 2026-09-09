@@ -276,6 +276,21 @@ start = idx + int(replacement.length());
 return str;
 }
 
+/* Shared by the text_input and menu_input builder entities: substitutes the input's captured value
+into an author-written command right before it is handed to comstack(). %answer% is the text a text
+input captured, %choice% the label a menu input picked, %index% that choice's 0-based position. The
+semicolon is stripped from %answer% because it is player-typed and comstack splits on ";", so an
+unstripped answer could break the author's command out into a second stacked command. %choice% and
+%index% come from author-defined options, so they need no stripping. */
+string expand_input_tokens(string cmd, string answer, string choice, int index)
+{
+answer = string_replace(answer, ";", "", true);
+cmd = string_replace(cmd, "%answer%", answer, true);
+cmd = string_replace(cmd, "%choice%", choice, true);
+cmd = string_replace(cmd, "%index%", "" + index, true);
+return cmd;
+}
+
 string join_string_array(string[] arr, uint start, uint end)
 {
 string result = "";
