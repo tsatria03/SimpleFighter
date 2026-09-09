@@ -60,3 +60,105 @@ void destroy_all_text_inputs()
 {
 text_inputs.resize(0);
 }
+
+void read_text_input(string[] sd)
+{
+int qidx = -1;
+for(uint i=1; i<sd.length(); i++)
+if(sd[i].length() > 0 && sd[i].substr(0,1) == "\"") { qidx = int(i); break; }
+bool ranged = false;
+if(qidx != -1)
+{
+int numcount = qidx - 1;
+ranged = (mapmode == "3d") ? (numcount >= 5) : (numcount >= 4);
+}
+double mnx=0, mxx=0, mny=0, mxy=0, mnz=0, mxz=0;
+int o;
+if(ranged)
+{
+mnx=stn(sd[1]);
+mxx=stn(sd[2]);
+mny=stn(sd[3]);
+mxy=stn(sd[4]);
+o=5;
+if(mapmode == "3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); o=7; }
+}
+else
+{
+mnx=stn(sd[1]); mxx=mnx;
+mny=stn(sd[2]); mxy=mny;
+o=3;
+if(mapmode == "3d") { mnz=stn(sd[3]); mxz=mnz; o=4; }
+}
+string title="", prompt="", answer="", char_filter="", submit="", incorrect="", exhausted="", cancel="";
+int max_attempts=0, max_length=0;
+bool whitelist=false, secure=false, case_sensitive=false, singleuse=false;
+string escape_behavior="cancel";
+string combined = join_string_array(sd, o, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() >= 1) title = quoted[0];
+if(quoted.length() >= 2) prompt = quoted[1];
+if(quoted.length() >= 3) answer = quoted[2];
+if(quoted.length() >= 4) char_filter = quoted[3];
+if(quoted.length() >= 5) submit = quoted[4];
+if(quoted.length() >= 6) incorrect = quoted[5];
+if(quoted.length() >= 7) exhausted = quoted[6];
+if(quoted.length() >= 8) cancel = quoted[7];
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+if(tail.length() >= 7)
+{
+max_attempts = stn(tail[0]);
+max_length = stn(tail[1]);
+whitelist = string_to_bool(tail[2]);
+secure = string_to_bool(tail[3]);
+case_sensitive = string_to_bool(tail[4]);
+escape_behavior = tail[5];
+singleuse = string_to_bool(tail[6]);
+}
+spawn_text_input(mnx, mxx, mny, mxy, title, prompt, answer, char_filter, submit, incorrect, exhausted, cancel, max_attempts, max_length, whitelist, secure, case_sensitive, escape_behavior, singleuse, mnz, mxz);
+}
+
+void write_text_input(int x, int y, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, bool singleuse, int z=0)
+{
+string c_title = string_replace(title, "\"", "", true);
+string c_prompt = string_replace(prompt, "\"", "", true);
+string c_answer = string_replace(answer, "\"", "", true);
+string c_filter = string_replace(char_filter, "\"", "", true);
+string c_submit = string_replace(submit_command, "\"", "", true);
+string c_incorrect = string_replace(incorrect_command, "\"", "", true);
+string c_exhausted = string_replace(exhausted_command, "\"", "", true);
+string c_cancel = string_replace(cancel_command, "\"", "", true);
+string quoted = " \""+c_title+"\" \""+c_prompt+"\" \""+c_answer+"\" \""+c_filter+"\" \""+c_submit+"\" \""+c_incorrect+"\" \""+c_exhausted+"\" \""+c_cancel+"\"";
+string tail = " "+max_attempts+" "+max_length+" "+whitelist+" "+secure+" "+case_sensitive+" "+escape_behavior+" "+singleuse;
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"text_input "+x+" "+y+" "+z+quoted+tail);
+else
+mapper.write("\r\n"+"text_input "+x+" "+y+quoted+tail);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_text_input(double mnx, double mxx, double mny, double mxy, string title, string prompt, string answer, string char_filter, string submit_command, string incorrect_command, string exhausted_command, string cancel_command, int max_attempts, int max_length, bool whitelist, bool secure, bool case_sensitive, string escape_behavior, bool singleuse, double mnz=0, double mxz=0)
+{
+string c_title = string_replace(title, "\"", "", true);
+string c_prompt = string_replace(prompt, "\"", "", true);
+string c_answer = string_replace(answer, "\"", "", true);
+string c_filter = string_replace(char_filter, "\"", "", true);
+string c_submit = string_replace(submit_command, "\"", "", true);
+string c_incorrect = string_replace(incorrect_command, "\"", "", true);
+string c_exhausted = string_replace(exhausted_command, "\"", "", true);
+string c_cancel = string_replace(cancel_command, "\"", "", true);
+string quoted = " \""+c_title+"\" \""+c_prompt+"\" \""+c_answer+"\" \""+c_filter+"\" \""+c_submit+"\" \""+c_incorrect+"\" \""+c_exhausted+"\" \""+c_cancel+"\"";
+string tail = " "+max_attempts+" "+max_length+" "+whitelist+" "+secure+" "+case_sensitive+" "+escape_behavior+" "+singleuse;
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+if(mapmode == "3d")
+mapper.write("\r\n"+"text_input "+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz+quoted+tail);
+else
+mapper.write("\r\n"+"text_input "+mnx+" "+mxx+" "+mny+" "+mxy+quoted+tail);
+mapper.close();
+bump_map_modified();
+}
