@@ -39,6 +39,96 @@ void destroy_all_menu_inputs()
 menu_inputs.resize(0);
 }
 
+/* Splits the raw options string into parallel label/command arrays. Commas separate options; a
+literal comma inside a label or command is escaped as \, and is unescaped here. Each entry splits on
+its FIRST = into label (before) and command (after); an entry with no = is a bare label with an empty
+command (it will fall back to the menu's submit command at pick time). */
+void parse_menu_options(string raw, string[]@ labels, string[]@ cmds)
+{
+labels.resize(0);
+cmds.resize(0);
+string[] parts;
+string cur = "";
+for(uint i=0; i<raw.length(); i++)
+{
+string ch = raw.substr(i, 1);
+if(ch == "\\" and i+1 < raw.length() and raw.substr(i+1, 1) == ",")
+{
+cur += ",";
+i++;
+continue;
+}
+if(ch == ",")
+{
+parts.insert_last(cur);
+cur = "";
+continue;
+}
+cur += ch;
+}
+parts.insert_last(cur);
+for(uint i=0; i<parts.length(); i++)
+{
+string entry = string_trim_sides(parts[i]);
+if(entry == "") continue;
+int eq = entry.find("=");
+string lab, cmd;
+if(eq >= 0)
+{
+lab = string_trim_sides(entry.substr(0, eq));
+cmd = string_trim_sides(entry.substr(eq+1, int(entry.length()) - eq - 1));
+}
+else
+{
+lab = entry;
+cmd = "";
+}
+if(lab == "") continue;
+labels.insert_last(lab);
+cmds.insert_last(cmd);
+}
+}
+
+void menu_input_loop()
+{
+for(uint i=0; i<menu_inputs.length(); i++)
+{
+if(@menu_inputs[i] == null) continue;
+bool inside = menu_inputs[i].minx<=me.x and menu_inputs[i].maxx>=me.x and menu_inputs[i].miny<=me.y and menu_inputs[i].maxy>=me.y;
+if(mapmode == "3d") inside = inside and me.z >= menu_inputs[i].minz and me.z <= menu_inputs[i].maxz;
+if(!(inside and controls.action_repeating("interact"))) continue;
+string[] labels;
+string[] cmds;
+parse_menu_options(menu_inputs[i].options, labels, cmds);
+if(labels.length() == 0) continue;
+pause_pools();
+int res = -1;
+while(true)
+{
+setupmenu();
+for(uint j=0; j<labels.length(); j++)
+m.add_item(labels[j], labels[j]);
+m.intro_text = menu_inputs[i].prompt;
+res = m.run();
+if(res < 0 and !menu_inputs[i].allow_cancel) continue;
+break;
+}
+resume_pools();
+if(res < 0)
+{
+if(menu_inputs[i].cancel_command != "")
+comstack(expand_input_tokens(menu_inputs[i].cancel_command, "", "", -1));
+return;
+}
+string picked_label = labels[res];
+string to_run = (cmds[res] != "") ? cmds[res] : menu_inputs[i].submit_command;
+if(menu_inputs[i].singleuse) @menu_inputs[i] = null;
+if(to_run != "")
+comstack(expand_input_tokens(to_run, "", picked_label, res));
+return;
+}
+}
+
 void build_menu_input()
 {
 string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
