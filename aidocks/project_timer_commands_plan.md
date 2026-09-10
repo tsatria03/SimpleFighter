@@ -1,23 +1,27 @@
 ---
 name: project_timer_commands_plan
-description: Sketch (not built) for slash commands that adjust a running map timer at runtime — addtime / stoptime / settime / starttime — the compiled-safe alternative to /spawn map_timer.
+description: Sketch (not built) for four slash commands that control the RUNNING map timer — addtime / subtime / settime (adjust remaining, keeping its commands) plus stoptime (silent cancel, no time command). What /spawn map_timer can't do.
 metadata:
   type: project
 ---
 
 **Problem this solves.** The map_timer ([[project_map_timer_plan]]) starts at map load. An input/switch can already START or EXTEND a timer by /spawn map_timer, but /spawn (and /build) only work on DECOMPILED maps, so dynamic time control is impossible in a compiled, shipped map. These would be ordinary commands (not builder verbs), so they work compiled or not — letting players gain, lose, or clear time mid-run in a shipped map.
 
-**Sketched commands (all operate on the single active map timer):**
-- **addtime <seconds>** — add seconds to the remaining time; a negative value subtracts (clamp remaining at 0, which would then trigger the time command on the next tick). Implementation: adjust the timer's total (remaining = total − elapsed), so `map_timer_total += seconds`. Enables "gain 30 seconds" / "penalty" pickups. No-op (silent) if no active timer.
-- **stoptime** — cancel the active timer immediately WITHOUT firing its time command (the "disarm the bomb" verb). Sets active=false, done=true. This is the missing clean cancel; today you can only end a timer by leaving the map or overriding it with a fresh spawn.
-- **settime <seconds>** — set the remaining time to an exact value (reset elapsed so remaining == seconds). For checkpoints that hand out a fixed new budget.
-- **starttime "<time cmd>" "<period cmd>" "<count cmd>" <time> <period> <count>** — the compiled-safe cousin of /spawn map_timer: arm/replace the timer from a command that also works in shipped maps. (Optional — overlaps with settime+addtime; include only if starting a brand-new timer with commands mid-map is wanted in compiled maps.)
+**Scope trimmed (dev decision):** dropped `starttime` (it just duplicates /spawn map_timer — both create/replace a whole timer; place a static map_timer line instead and adjust it) and `stoptime` (dev doesn't want it). The three keepers all ADJUST the running timer's remaining while keeping its existing commands — which /spawn cannot do (spawn wipes and restarts). They cover the shipped-map case: place a static map_timer, then adjust it live from a switch/sensor/input. Amounts accept clock notation (parse_duration).
+
+**Commands (operate on the single active map timer):** on SUCCESS they are silent (consistent with the timer being silent), but when there is NO active timer to act on they SPEAK an error (dev's call) — e.g. "There's no timer on this map." — matching /maptime rather than a silent no-op.
+- **addtime <time>** (`/att`) — add to the remaining clock. Time-bonus pickup. Impl: `map_timer_total += parse_duration(arg)`.
+- **subtime <time>** (`/sut`) — subtract from the remaining; if it reaches 0 the time command fires. Time penalty. Impl: `map_timer_total -= dur` (or add to elapsed), clamp so remaining≥0.
+- **settime <time>** (`/stt`) — set the remaining to an exact value, keeping the timer's commands. Impl: reset elapsed so remaining == dur. Checkpoint that hands out a fresh budget. NOTE: settime 0 (and subtime past zero) EXPIRE the timer WITH the time command firing — that's the failure path, not a silent cancel.
+- **stoptime** (`/spt`) — cancel the active timer WITHOUT firing its time command (silent disarm — the "defuse the bomb, no explosion" verb). Sets active=false, done=true. This is the ONLY silent cancel; add/sub/set can only end a timer by expiring it. Added back after the dev saw that expiring always fires the consequence.
+
+Aliases `/att`, `/sut`, `/stt`, `/spt` all verified FREE (no collisions). No percent flag (percent-of-what is unclear for a timer; keep time absolute).
 
 **Design notes / open questions:**
-- All are silent by default (consistent with the timer being silent — the author's own commands do the talking). Possibly a brief spoken confirmation, TBD.
+- Silent on success (the author's own commands do the talking), but speak "There's no timer on this map." when none is active — a timer must already be running (built statically or spawned) for these to have anything to act on.
 - Boundary tracking: after addtime/settime, remaining jumps; the loop's `map_timer_last_sec` guard just resumes from the new value — events for skipped seconds don't retro-fire, which is fine. Reset last_sec so the next boundary is clean.
-- **Aliases must be checked for collisions** — `/st` is TAKEN (stats), so stoptime needs another (e.g. /stt). Check /at (addtime), /set/settime, /start before use.
 - Each new command needs: command_parser branch, command-blocker allcommands entry (alphabetized), commands.txt line (alphabetized), and a note in map_timer.txt.
 - Guard on there being an active timer; decide whether these should also work while the timer is done/expired.
+- Mirror the health-command idiom the dev likes (add/sub/set), and reuse parse_duration for clock-notation amounts.
 
-STATUS: sketch only, NOT built and not scheduled — recorded at the dev's request as a future option if shipped maps ever need mid-run time control. Related: [[project_map_timer_plan]], [[feedback_alphabetize_commands]].
+STATUS: sketch only, NOT built — scope settled (addtime/subtime/settime/stoptime, aliases /att /sut /stt /spt; starttime stays dropped). Recorded as a future option for mid-run time control in shipped maps. Related: [[project_map_timer_plan]], [[feedback_alphabetize_commands]].
