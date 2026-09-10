@@ -301,6 +301,32 @@ start = idx + int(replacement.length());
 return str;
 }
 
+/* Universal state tokens, resolved for every command at execution time inside comparse -- the text
+counterpart to random(). They let any command (most usefully speak) read back the player's live stats
+and position, e.g. "speak %health% of %maxhealth%, %healthpc% percent". Because comparse runs each
+stacked step in turn, a token reads the value AFTER an earlier step in the same stack changed it, so
+"setx 50;speak %x%" says 50. Longer names are replaced before the ones they contain so no token
+clobbers another, and the percentages match the statistics screen's two-decimal rounding. */
+string expand_state_tokens(string cmd)
+{
+if(cmd.find("%") < 0) return cmd;
+cmd = string_replace(cmd, "%maxhealth%", ""+maxhealth, true);
+cmd = string_replace(cmd, "%healthpc%", ""+round(health/maxhealth*100, 2), true);
+cmd = string_replace(cmd, "%health%", ""+health, true);
+cmd = string_replace(cmd, "%maxstam%", ""+maxstamina, true);
+cmd = string_replace(cmd, "%stampc%", ""+round(stamina/maxstamina*100, 2), true);
+cmd = string_replace(cmd, "%stam%", ""+stamina, true);
+cmd = string_replace(cmd, "%level%", ""+level, true);
+cmd = string_replace(cmd, "%xp%", ""+xp, true);
+cmd = string_replace(cmd, "%points%", ""+points, true);
+cmd = string_replace(cmd, "%lives%", ""+lifecard, true);
+cmd = string_replace(cmd, "%kills%", ""+kills, true);
+cmd = string_replace(cmd, "%x%", ""+me.x, true);
+cmd = string_replace(cmd, "%y%", ""+me.y, true);
+cmd = string_replace(cmd, "%z%", ""+me.z, true);
+return cmd;
+}
+
 /* Shared by the text_input and menu_input builder entities: substitutes the input's captured value
 into an author-written command right before it is handed to comstack(). %answer% is the text a text
 input captured, %choice% the label a menu input picked, %index% that choice's 0-based position.
