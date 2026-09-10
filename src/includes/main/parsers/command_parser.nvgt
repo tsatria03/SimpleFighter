@@ -722,11 +722,27 @@ if (flag == "true") amt = maxhealth * amt / 100;
 health += amt;
 if (health > maxhealth) health = maxhealth;
 }
+else if (base_command == "alv" || base_command == "addlevel")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /addlevel amount, or /alv amount."); return; }
+level += stn(parsed[1]);
+if (level < 1) level = 1;
+xprequiered = levmod * (level * (level * 4));
+if (xp >= xprequiered) xp = xprequiered - 1;
+}
 else if (base_command == "alf" || base_command == "addlife")
 {
 if (arena_active) { speak("That command isn't available in the arena."); return; }
 if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /addlife amount, or /alf amount."); return; }
 lifecard += stn(parsed[1]);
+}
+else if (base_command == "apn" || base_command == "addpoints")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /addpoints amount, or /apn amount."); return; }
+points += stn(parsed[1]);
+if (points < 0) points = 0;
 }
 else if (base_command == "ast" || base_command == "addstam")
 {
@@ -738,6 +754,13 @@ if (flag == "true") amt = maxstamina * amt / 100;
 stamina += amt;
 if (stamina > maxstamina) stamina = maxstamina;
 }
+else if (base_command == "axp" || base_command == "addxp")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /addxp amount, or /axp amount."); return; }
+xp += stn(parsed[1]);
+if (xp < 0) xp = 0;
+}
 else if (base_command == "sht" || base_command == "subhealth")
 {
 if (arena_active) { speak("That command isn't available in the arena."); return; }
@@ -748,19 +771,36 @@ if (flag == "true") amt = maxhealth * amt / 100;
 health -= amt;
 if (health <= 0) player_lose_life();
 }
+else if (base_command == "slv" || base_command == "sublevel")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /sublevel amount, or /slv amount."); return; }
+level -= stn(parsed[1]);
+if (level < 1) level = 1;
+xprequiered = levmod * (level * (level * 4));
+if (xp >= xprequiered) xp = xprequiered - 1;
+}
 else if (base_command == "slf" || base_command == "sublife")
 {
 if (arena_active) { speak("That command isn't available in the arena."); return; }
 if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /sublife amount, or /slf amount."); return; }
-lifecard -= stn(parsed[1]);
-if (lifecard >= 1)
+double amt = stn(parsed[1]);
+lifecard -= amt;
+if (lifecard <= 0) { health = 0; playerdeath(); }
+else if (amt > 0)
 {
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*life*"), false);
 health = maxhealth;
 bonehealth = 0;
 broken_bones.delete_all();
 }
-else { health = 0; playerdeath(); }
+}
+else if (base_command == "spn" || base_command == "subpoints")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /subpoints amount, or /spn amount."); return; }
+points -= stn(parsed[1]);
+if (points < 0) points = 0;
 }
 else if (base_command == "sst" || base_command == "substam")
 {
@@ -771,6 +811,13 @@ double amt = stn(parsed[1]);
 if (flag == "true") amt = maxstamina * amt / 100;
 stamina -= amt;
 if (stamina < 0) stamina = 0;
+}
+else if (base_command == "sxp" || base_command == "subxp")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /subxp amount, or /sxp amount."); return; }
+xp -= stn(parsed[1]);
+if (xp < 0) xp = 0;
 }
 else if (base_command == "stht" || base_command == "sethealth")
 {
@@ -783,12 +830,28 @@ health = amt;
 if (health > maxhealth) health = maxhealth;
 if (health <= 0) player_lose_life();
 }
+else if (base_command == "stlv" || base_command == "setlevel")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /setlevel amount, or /stlv amount."); return; }
+level = stn(parsed[1]);
+if (level < 1) level = 1;
+xprequiered = levmod * (level * (level * 4));
+if (xp >= xprequiered) xp = xprequiered - 1;
+}
 else if (base_command == "stlf" || base_command == "setlife")
 {
 if (arena_active) { speak("That command isn't available in the arena."); return; }
 if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /setlife amount, or /stlf amount."); return; }
 lifecard = stn(parsed[1]);
 if (lifecard <= 0) { health = 0; playerdeath(); }
+}
+else if (base_command == "stpn" || base_command == "setpoints")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /setpoints amount, or /stpn amount."); return; }
+points = stn(parsed[1]);
+if (points < 0) points = 0;
 }
 else if (base_command == "stst" || base_command == "setstam")
 {
@@ -800,6 +863,13 @@ if (flag == "true") amt = maxstamina * amt / 100;
 stamina = amt;
 if (stamina > maxstamina) stamina = maxstamina;
 if (stamina < 0) stamina = 0;
+}
+else if (base_command == "stxp" || base_command == "setxp")
+{
+if (arena_active) { speak("That command isn't available in the arena."); return; }
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /setxp amount, or /stxp amount."); return; }
+xp = stn(parsed[1]);
+if (xp < 0) xp = 0;
 }
 else if (base_command == "loc")
 {
