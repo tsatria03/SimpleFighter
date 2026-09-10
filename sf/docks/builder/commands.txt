@@ -2,6 +2,8 @@ commands.
 
 The command console accepts the following commands, which can also be fired from macros and apply when building command blockers.
 
+The command console cannot be opened during an arcade arena run, so none of these commands can be typed while you're in the arena.
+
 Any numeric argument to any of these commands can be written as random(low,high) instead of a literal number, and a fresh value between low and high (inclusive) gets rolled each time the command runs. So /spawn bomb random(3,7) 0 1000 2000 bomb5 drops a bomb at a random x between 3 and 7 every time it fires, and /go random(0,100) 0 teleports you to a random horizontal tile within the named range. The token works in every numeric field of every command because the engine's string-to-number routine recognizes it, which also means it works for any numeric field in any hand-authored entity line in main.sif (coordinates, ranges, counts, speeds, healths). The roll is independent on each call, so a switch or macro that fires the same random-bearing command repeatedly gets a new value every time.
 
 Command stacking and delays.
@@ -10,13 +12,16 @@ Any place that accepts a single slash command also accepts a stack of them, sepa
 
 Stacked commands and their delays run asynchronously — the call that fires the stack returns control to you instantly, and the delayed steps fire in the background while you keep moving, fighting, and hearing the rest of the map. A multi-second narrative chain or a long ambush sequence will not freeze input, sound, or screen-reader output; the engine queues each step against its own timer and fires it when its scheduled time arrives, which also means an auto-activated switch with chained delays on its on command doesn't stall the map load. The slash at the start of each step is optional — the engine prepends one if you forget — and a malformed step fails silently the same way it would if you typed it into the console alone. The semicolon character is reserved as the stack separator, so commands whose arguments would need a literal semicolon can't be stacked unmodified.
 
-/addhealth amount, or /aht amount: Adds the amount to your character's health, up to full. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently and isn't available in the arena.
-/addlevel amount, or /alv amount: Adds the amount to your character's level, recomputing the experience needed for the next level; it does not award the usual level-up points. Runs silently and isn't available in the arena.
-/addlife amount, or /alf amount: Adds the amount to your character's remaining lives. Runs silently and isn't available in the arena.
-/addpoints amount, or /apn amount: Adds the amount to your character's points, the currency spent in the shop. Runs silently and isn't available in the arena.
-/addstam amount, or /ast amount: Adds the amount to your character's stamina, up to full. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently and isn't available in the arena.
+/addhealth amount, or /aht amount: Adds the amount to your character's health, up to full. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently.
+/addlevel amount, or /alv amount: Adds the amount to your character's level, recomputing the experience needed for the next level; it does not award the usual level-up points. Runs silently.
+/addlife amount, or /alf amount: Adds the amount to your character's remaining lives. Runs silently.
+/addpoints amount, or /apn amount: Adds the amount to your character's points, the currency spent in the shop. Runs silently.
+/addstam amount, or /ast amount: Adds the amount to your character's stamina, up to full. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently.
 /addtime time, or /att time: Adds the time to the current map timer's remaining clock. The time is a number of seconds or clock form like 1:30. Runs silently, or says there's no timer if the map has none.
-/addxp amount, or /axp amount: Adds the amount to your character's experience; earning enough levels you up normally, awarding the usual points and level-up sound. Isn't available in the arena.
+/addx amount, or /ax amount: Adds the amount to your character's x position, clamped to the map's minimum and maximum. Runs silently and works only on decompiled maps.
+/addxp amount, or /axp amount: Adds the amount to your character's experience; earning enough levels you up normally, awarding the usual points and level-up sound.
+/addy amount, or /ay amount: Adds the amount to your character's y position, clamped to the map's minimum and maximum. Runs silently and works only on decompiled maps.
+/addz amount, or /az amount: Adds the amount to your character's z position, its height on a 3d map, clamped to the map's minimum and maximum; it has no effect on 2d or topdown maps, which have no z axis. Runs silently and works only on decompiled maps.
 /build object, or /bl object: Build an object containing a specified prompt. Typing the object name alone opens the builder form for that object as before. Appending the object's fields after the name skips the form and places the object directly with those fields.
 
 For example: /build platform 0 10 0 10 0 100 marble 0 100 false false places a platform without opening any dialog. The inline form is the authoring verb: it writes the line to the map's main.sif and reloads, so the placement is permanent and survives across map loads. Use /build from a macro or the command console when you want to add content to the map that should stay there; for switch bindings that should only spawn something temporarily, use /spawn instead (described below). The order and type of the fields after the object name match the entity's on-disk line format, so a hand-authored main.sif line and a /build inline argument string are interchangeable.
@@ -41,7 +46,7 @@ The object name accepts either the friendly form (the same name the builder menu
 /kill entity id x y, or /kn entity id x y: Kills an npc at a specified coordinate on the map. This command supports killing the folowing entities. Animals, bosses, helpers, humans, robots, specials, and zombies.
 /killall, or /kl: Kills all of the npcs on the map. This command supports killing the folowing entities. Animals, bosses, helpers, humans, robots, specials, and zombies.
 /kills, or /kls: Speaks how many entities your character has killed in total, the same figure shown on the statistics screen.
-/level, or /lev: Speaks your character's current level and experience, and how much more experience the next level requires, the same as the statistics screen.
+/level, or /lv: Speaks your character's current level and experience, and how much more experience the next level requires, the same as the statistics screen.
 /loc: Speaks your character's current position, then the map's minimum and maximum along each axis. On 2d and topdown maps this reads out your x and y; on 3d maps your z, the height, is included as well. Your location comes first, followed by each axis in turn with its minimum and maximum spoken together, so you can tell at a glance where you are and the full range of the map in every direction.
 /macset category category2, or /mc category category2: Changes your current macro pack to a different one. Typing /mc with no arguments will display a menu of all available macro packs.
 /maperrors, or /ms: Checks the map you're currently on for invalid lines and lists any it finds in the map errors box, or tells you there are none. It works on any decompiled map you're standing on, no matter how you reached it, so it's the way to check a map you arrived at through a travelpoint, or to bring the error box back if you closed it before you were done. See the maps topic for what makes a line invalid and when the box appears on its own.
@@ -63,13 +68,16 @@ The object name accepts either the friendly form (the same name the builder menu
 /relscripts, or /rt: Reloads all macros.
 /relweps, or /rw: Reloads all weapons.
 /scriptmode, or /sm: toggles using macros on or off.
-/sethealth amount, or /stht amount: Sets your character's health to the amount, capped at full; setting it to zero costs a life, or ends the game on your last life. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently and isn't available in the arena.
-/setlevel amount, or /stlv amount: Sets your character's level to the amount, never below level one, recomputing the experience needed for the next level and trimming experience so the level sticks; it does not award level-up points. Runs silently and isn't available in the arena.
-/setlife amount, or /stlf amount: Sets your character's remaining lives to the amount. Runs silently unless set to zero, which ends the game. Isn't available in the arena.
-/setpoints amount, or /stpn amount: Sets your character's points to the amount, the currency spent in the shop. Runs silently and isn't available in the arena.
-/setstam amount, or /stst amount: Sets your character's stamina to the amount, capped at full. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently and isn't available in the arena.
+/sethealth amount, or /stht amount: Sets your character's health to the amount, capped at full; setting it to zero costs a life, or ends the game on your last life. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently.
+/setlevel amount, or /stlv amount: Sets your character's level to the amount, never below level one, recomputing the experience needed for the next level and trimming experience so the level sticks; it does not award level-up points. Runs silently.
+/setlife amount, or /stlf amount: Sets your character's remaining lives to the amount. Runs silently unless set to zero, which ends the game.
+/setpoints amount, or /stpn amount: Sets your character's points to the amount, the currency spent in the shop. Runs silently.
+/setstam amount, or /stst amount: Sets your character's stamina to the amount, capped at full. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently.
 /settime time, or /stt time: Sets the current map timer's remaining clock to an exact value, keeping its commands. The time is a number of seconds or clock form like 1:30; setting it to zero ends the timer and runs its time command. Runs silently, or says there's no timer if the map has none.
-/setxp amount, or /stxp amount: Sets your character's experience to the amount; setting it high enough levels you up normally, awarding the usual points and level-up sound. Isn't available in the arena.
+/setx amount, or /stx amount: Sets your character's x position to the amount, clamped to the map's minimum and maximum, teleporting you along that axis. Runs silently and works only on decompiled maps.
+/setxp amount, or /stxp amount: Sets your character's experience to the amount; setting it high enough levels you up normally, awarding the usual points and level-up sound.
+/sety amount, or /sty amount: Sets your character's y position to the amount, clamped to the map's minimum and maximum, teleporting you along that axis. Runs silently and works only on decompiled maps.
+/setz amount, or /stz amount: Sets your character's z position, its height on a 3d map, to the amount, clamped to the map's minimum and maximum; it has no effect on 2d or topdown maps, which have no z axis. Runs silently and works only on decompiled maps.
 /silence, or /si: Immediately stops every sound started by the /play command. These miscellaneous sounds can overlap and stack on top of one another, so this is a quick way to clear them all at once. Sounds that belong to the map and the game itself, such as music, entities, and your character, are left playing.
 /speak text, or /sk text: Speaks any text given by the user.
 /spawn object fields, or /sp object fields: The ephemeral cousin of /build. Takes the same arguments — the object name followed by the entity's on-disk fields — and places the entity in the map immediately.
@@ -81,13 +89,16 @@ When the object you spawn or build carries its own quoted text — a sign, a sto
 
 /stats, or /st: Brings up the statistics menu. You can also find this in the pause menu of the game.
 /stoptime, or /spt: Cancels the current map timer without running its time command — the quiet way to call off a timer, unlike letting it reach zero. Runs silently, or says there's no timer if the map has none.
-/subhealth amount, or /sht amount: Subtracts the amount from your character's health; reaching zero costs a life, or ends the game on your last life. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently and isn't available in the arena.
-/sublevel amount, or /slv amount: Subtracts the amount from your character's level, never below level one, recomputing the experience needed for the next level and trimming experience so the new level sticks; it does not remove points. Runs silently and isn't available in the arena.
-/sublife amount, or /slf amount: Subtracts the amount from your character's remaining lives; each life lost refills your health and clears broken bones with the life-lost sound, and dropping to zero ends the game on your last life. Isn't available in the arena.
-/subpoints amount, or /spn amount: Subtracts the amount from your character's points, stopping at zero. Runs silently and isn't available in the arena.
-/substam amount, or /sst amount: Subtracts the amount from your character's stamina, stopping at zero. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently and isn't available in the arena.
+/subhealth amount, or /sht amount: Subtracts the amount from your character's health; reaching zero costs a life, or ends the game on your last life. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently.
+/sublevel amount, or /slv amount: Subtracts the amount from your character's level, never below level one, recomputing the experience needed for the next level and trimming experience so the new level sticks; it does not remove points. Runs silently.
+/sublife amount, or /slf amount: Subtracts the amount from your character's remaining lives; each life lost refills your health and clears broken bones with the life-lost sound, and dropping to zero ends the game on your last life.
+/subpoints amount, or /spn amount: Subtracts the amount from your character's points, stopping at zero. Runs silently.
+/substam amount, or /sst amount: Subtracts the amount from your character's stamina, stopping at zero. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently.
 /subtime time, or /sut time: Subtracts the time from the current map timer's remaining clock; if it reaches zero the timer ends and runs its time command. The time is a number of seconds or clock form like 1:30. Runs silently, or says there's no timer if the map has none.
-/subxp amount, or /sxp amount: Subtracts the amount from your character's experience, stopping at zero; this does not lower your level. Runs silently and isn't available in the arena.
+/subx amount, or /sx amount: Subtracts the amount from your character's x position, clamped to the map's minimum and maximum. Runs silently and works only on decompiled maps.
+/subxp amount, or /sxp amount: Subtracts the amount from your character's experience, stopping at zero; this does not lower your level. Runs silently.
+/suby amount, or /sy amount: Subtracts the amount from your character's y position, clamped to the map's minimum and maximum. Runs silently and works only on decompiled maps.
+/subz amount, or /sz amount: Subtracts the amount from your character's z position, its height on a 3d map, clamped to the map's minimum and maximum; it has no effect on 2d or topdown maps, which have no z axis. Runs silently and works only on decompiled maps.
 /suicide, or /sd: Kills your character instantly, depending on how many lives it currently has.
 /take item amount, or /tk item amount: Removes a specified amount of an item from your character's inventory. This is the inverse of /give: where give adds items, take removes them, so you pass the amount as a positive number. Removing more than you currently hold simply clears that item out of your inventory.
 /takeall amount, or /ta amount: Removes the specified amount of every item type found across the health, other, and stamina item categories. This is the inverse of /giveall, so the amount is given as a positive number. Removing more than you hold of any item simply clears it out.

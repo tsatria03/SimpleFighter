@@ -190,6 +190,37 @@ speak("Unknown entity type "+id+".");
 return;
 }
 }
+/* Silently nudge or teleport the player along one axis, clamped to the map bounds -- the quiet,
+single-axis counterpart to gop, used by the add/sub/set x/y/z commands. absolute true sets the axis
+to amount; false adds amount to it. z is ignored off 3d maps, which have no vertical axis. Fall state
+is reset the way gop does so a mid-air move doesn't leave stale physics behind. */
+void move_player_axis(string axis, double amount, bool absolute)
+{
+double nx=me.x, ny=me.y, nz=me.z;
+if(axis=="x") nx = absolute ? amount : me.x+amount;
+else if(axis=="y") ny = absolute ? amount : me.y+amount;
+else if(axis=="z")
+{
+if(mapmode != "3d") return;
+nz = absolute ? amount : me.z+amount;
+}
+if(nx<minx) nx=minx;
+if(nx>maxx) nx=maxx;
+if(ny<miny) ny=miny;
+if(ny>maxy) ny=maxy;
+if(mapmode=="3d")
+{
+if(nz<minz) nz=minz;
+if(nz>maxz) nz=maxz;
+}
+me.x=nx;
+me.y=ny;
+me.z=nz;
+fallcounter=0;
+jumping=0;
+falling=false;
+p.destroy_sound(fallslot);
+}
 
 void create_map(string name, string owner, string mode, double mx, double mx2, double my, double my2, double mz=0, double mz2=0, string description="")
 {
