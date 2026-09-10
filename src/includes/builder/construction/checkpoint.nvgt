@@ -31,6 +31,26 @@ if(health<=0 and lifecard<=1)
 playerdeath();
 }
 }
+/* Take a life the way combat and hazards do: with spare lives, drop one, refill health, and clear
+broken bones with the life-lost cue; on the last life, run the normal death. Used by the /subhealth
+and /sethealth commands when they drive health to zero. */
+void player_lose_life()
+{
+if(lifecard>=2)
+{
+p.play_stationary(get_pack_sound("main/misc/*punch*"),false);
+p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*life*"),false);
+lifecard-=1;
+health=maxhealth;
+bonehealth=0;
+broken_bones.delete_all();
+}
+else
+{
+health=0;
+playerdeath();
+}
+}
 // On a MAP death or checkpoint respawn, drop the player's movement stats back to their defaults.
 // Speed and jump height can be pushed up by the player's own keys (and, once built, a tile zone's
 // per-step ramp), and charparse() -- which resets the rest of the character -- deliberately doesn't
