@@ -9,8 +9,13 @@ class pending_command
 {
 uint fire_time;
 string cmd;
+bool trusted;
 }
-void comstack(string input)
+/* trusted marks a command stack as fired by a builder element (switch, sensor, input, map timer)
+rather than typed in the console or bound to a macro. It rides along on each queued step and lets
+comparse run the element-only-on-compiled commands (spawn, go, the coord commands, gozone, suicide)
+on a compiled map, while the same command typed by the player stays blocked. */
+void comstack(string input, bool trusted=false)
 {
 string[] parts = string_split(input, ";", true);
 uint accumulated = 0;
@@ -37,6 +42,7 @@ part = "/" + part;
 pending_command pc;
 pc.fire_time = stacktimer.elapsed + accumulated;
 pc.cmd = part;
+pc.trusted = trusted;
 pending_commands.insert_last(pc);
 }
 }
@@ -48,8 +54,9 @@ while (i < pending_commands.length())
 if (stacktimer.elapsed >= pending_commands[i].fire_time)
 {
 string cmd = pending_commands[i].cmd;
+bool trusted = pending_commands[i].trusted;
 pending_commands.remove_at(i);
-comparse(cmd);
+comparse(cmd, trusted);
 }
 else
 {
