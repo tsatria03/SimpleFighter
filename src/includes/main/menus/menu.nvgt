@@ -1,16 +1,16 @@
 bool hidedocks=false, hidegames=false, hidemaps=false, hidemisc=false;   // main-menu items hidden via the preferences show/hide screen
-int mcn_last_idx = -999;   // focused item the /miscsounds preview last played, so moving the cursor stops it
+int mcs_last_idx = -999;   // focused item the /miscsounds preview last played, so moving the cursor stops it
 /* Space previews the highlighted misc sound as you browse the /miscsounds list, like the builder
    gallery: it plays the focused clip through the preview pool and stops the moment you move off it. */
 void miscsounds_callback(form_menu@ mm, string data)
 {
 int idx = mm.focused_item;
 if(idx < 0) return;
-if(idx != mcn_last_idx)
+if(idx != mcs_last_idx)
 {
 t.destroy_sound(prevslot);
 prevslot = -1;
-mcn_last_idx = idx;
+mcs_last_idx = idx;
 }
 if(!control_is_down() && key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
 {
@@ -20,7 +20,7 @@ if(clip != "") prevslot = t.play_stationary(clip, false);
 keytimer.restart();
 }
 }
-/* The /miscsounds (mcn) viewer: every misc /play sound in one list, browse to hear the name, space
+/* The /miscsounds (mcs) viewer: every misc /play sound in one list, browse to hear the name, space
    to play it, escape to close. Sources match get_pack_sound (the decompiled folder plus the main
    pack); the display drops the file extension while the item id keeps the full filename for lookup. */
 void miscsoundsmenu()
@@ -40,7 +40,7 @@ for(uint i=0;i<pf.length();i++) if(string_starts_with(pf[i],"misc/")){ string nm
 if(files.length()==0){ speak("There are no misc sounds to view."); return; }
 sort_naturally(files);
 pause_pools();
-mcn_last_idx = -999;
+mcs_last_idx = -999;
 prevslot = -1;
 int pos = 0;
 while(true)
