@@ -129,6 +129,7 @@ void mhazardcheck()
 {
 for(uint  i=0; i<moving_hazards.length(); i++)
 {
+if(@moving_hazards[i]==null) continue;
 moving_hazards[i].move();
 }
 }
@@ -136,6 +137,21 @@ void spawn_moving_hazard(double left_x,double right_x,double bottom_y,double top
 {
 moving_hazard mh1(left_x,right_x,bottom_y,top_y,x_length,y_length,direction,snap,speed,hazardtype,bottom_z,top_z,z_length);
 moving_hazards.insert_last(mh1);
+}
+/* Removes the wrapper AND its child hazard (remove_hazard stops the child's looping hazardsound and
+nulls its slot); without that the child keeps looping and hurting the player. */
+bool despawn_moving_hazard(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<moving_hazards.length(); i++)
+{
+if(@moving_hazards[i]==null) continue;
+if(!by_coord || (moving_hazards[i].minx==gx && moving_hazards[i].miny==gy && (mapmode!="3d" || moving_hazards[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+remove_hazard(moving_hazards[target].hazard_id);
+@moving_hazards[target] = null;
+return true;
 }
 void destroy_all_moving_hazards()
 {

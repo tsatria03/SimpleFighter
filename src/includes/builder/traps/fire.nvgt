@@ -108,6 +108,21 @@ void spawn_fire(int x,int y,int firerange,int firerange2,int firetime,string fir
 fire fr1(x,y,firerange,firerange2,firetime,firetype,moveable,moveable2,z,firerange3,moveable3);
 fires.insert_last(fr1);
 }
+/* firesound is a true looping crackle; stop it then null. A fire homes at runtime, so a coord match
+uses its CURRENT (possibly drifted) position -- bare form is more reliable for a moving fire. */
+bool despawn_fire(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<fires.length(); i++)
+{
+if(@fires[i]==null) continue;
+if(!by_coord || (fires[i].firex==gx && fires[i].firey==gy && (mapmode!="3d" || fires[i].firez==gz))) target = int(i);
+}
+if(target < 0) return false;
+firepool.destroy_sound(fires[target].firesound);
+@fires[target] = null;
+return true;
+}
 void destroy_all_fires()
 {
 for(uint i=0; i<fires.length(); i++)

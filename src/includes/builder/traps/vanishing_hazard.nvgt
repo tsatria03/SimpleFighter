@@ -27,6 +27,7 @@ void vhazardcheck()
 {
 for(uint i=0; i<vanishing_hazards.length(); i++)
 {
+if(@vanishing_hazards[i]==null) continue;
 if(vanishing_hazards[i].vanished==false and vanishing_hazards[i].vhazardtimer.elapsed>=vanishing_hazards[i].vhazardtime)
 {
 remove_hazard(vanishing_hazards[i].hazard_id);
@@ -45,6 +46,21 @@ void spawn_vanishing_hazard(double x1,double x2,double y1,double y2,int vhazardt
 {
 vanishing_hazard vh1(x1,x2,y1,y2,vhazardtime,vhazardtype,minz,maxz,is_ranged);
 vanishing_hazards.insert_last(vh1);
+}
+/* Removes the wrapper AND its (possibly currently-vanished) child hazard; remove_hazard guards the id,
+so it's safe whether the child is live or already gone this cycle. */
+bool despawn_vanishing_hazard(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<vanishing_hazards.length(); i++)
+{
+if(@vanishing_hazards[i]==null) continue;
+if(!by_coord || (vanishing_hazards[i].minx==gx && vanishing_hazards[i].miny==gy && (mapmode!="3d" || vanishing_hazards[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+remove_hazard(vanishing_hazards[target].hazard_id);
+@vanishing_hazards[target] = null;
+return true;
 }
 void destroy_all_vanishing_hazards()
 {

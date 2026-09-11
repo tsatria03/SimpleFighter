@@ -75,6 +75,21 @@ void spawn_wind(double x, double y, double windrange, double windrange2, double 
 wind w1(x, y, windrange, windrange2, windtime, windtype, moveable, moveable2, direction, push, windhealth, z, windrange3, moveable3);
 winds.insert_last(w1);
 }
+/* windsound is a true looping gust; stop it then null. Like fire, a wind homes at runtime, so a coord
+match uses its CURRENT position -- bare form is more reliable for a moving wind. */
+bool despawn_wind(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<winds.length(); i++)
+{
+if(@winds[i]==null) continue;
+if(!by_coord || (winds[i].windx==gx && winds[i].windy==gy && (mapmode!="3d" || winds[i].windz==gz))) target = int(i);
+}
+if(target < 0) return false;
+windpool.destroy_sound(winds[target].windsound);
+@winds[target] = null;
+return true;
+}
 void destroy_all_winds()
 {
 for(uint i=0; i<winds.length(); i++)
@@ -219,6 +234,7 @@ void windloop()
 {
 for(uint i=0; i<winds.length(); i++)
 {
+if(@winds[i]==null) continue;
 if(winds[i].windtimer.elapsed < winds[i].windtime) continue;
 if(player_in_wind_range(i)) winds[i].spotted=true;
 if(!winds[i].spotted) continue;

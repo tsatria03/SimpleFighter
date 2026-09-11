@@ -250,6 +250,20 @@ void spawn_mine(int x,int y,int damage,string minetype,bool triggered,int z=0)
 mine mine1(x,y,damage,minetype,triggered,z);
 mines.insert_last(mine1);
 }
+/* minesound is a looping armed hum on a triggered mine (harmless slot otherwise), stop it then null. */
+bool despawn_mine(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<mines.length(); i++)
+{
+if(@mines[i]==null) continue;
+if(!by_coord || (mines[i].minex==gx && mines[i].miney==gy && (mapmode!="3d" || mines[i].minez==gz))) target = int(i);
+}
+if(target < 0) return false;
+minepool.destroy_sound(mines[target].minesound);
+@mines[target] = null;
+return true;
+}
 void destroy_all_mines()
 {
 for(uint i=0; i<mines.length(); i++)

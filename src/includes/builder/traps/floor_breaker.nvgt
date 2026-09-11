@@ -8,6 +8,7 @@ int breakerx;
 int breakery;
 int breakerz;
 string breakertype;
+int platid=-1;
 floorbreaker(int fbx,int fby,string fbt,int fbz=0)
 {
 breakerx=fbx;
@@ -16,9 +17,9 @@ breakerz=fbz;
 breakertype=fbt;
 spawnsound=breakerpool.play_3d(get_map_sound("builder/traps/floor breakers/"+breakertype+"/*spawn*"),me.x,me.y,me.z,breakerx,breakery,breakerz,calculate_theta(me_rotation),false);
 if(mapmode == "3d")
-spawn_platform(breakerx, breakerx, breakery, breakery, 1, 1, "air", tilevolume, tilepitch, false, false, true, breakerz);
+platid=spawn_platform(breakerx, breakerx, breakery, breakery, 1, 1, "air", tilevolume, tilepitch, false, false, true, breakerz);
 else
-spawn_platform(breakerx, breakerx, breakery, breakery, 1, 1, "air", tilevolume, tilepitch, false, false, true);
+platid=spawn_platform(breakerx, breakerx, breakery, breakery, 1, 1, "air", tilevolume, tilepitch, false, false, true);
 }
 }
 void spawn_floorbreaker(int x,int y,string breakertype,int z=0)
@@ -26,10 +27,27 @@ void spawn_floorbreaker(int x,int y,string breakertype,int z=0)
 floorbreaker fb1(x,y,breakertype,z);
 floorbreakers.insert_last(fb1);
 }
+/* A floor breaker's whole effect is the "air" hole tile it spawns into platforms[] (its id now stored
+in platid), so despawn removes that tile too -- restoring the floor -- along with the entity. */
+bool despawn_floorbreaker(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<floorbreakers.length(); i++)
+{
+if(@floorbreakers[i]==null) continue;
+if(!by_coord || (floorbreakers[i].breakerx==gx && floorbreakers[i].breakery==gy && (mapmode!="3d" || floorbreakers[i].breakerz==gz))) target = int(i);
+}
+if(target < 0) return false;
+remove_platform(floorbreakers[target].platid);
+breakerpool.destroy_sound(floorbreakers[target].spawnsound);
+@floorbreakers[target] = null;
+return true;
+}
 void destroy_all_floorbreakers()
 {
 for(uint i=0; i<floorbreakers.length(); i++)
 {
+if(@floorbreakers[i]==null) continue;
 breakerpool.destroy_sound(floorbreakers[i].spawnsound);
 floorbreakers[i].destsound=breakerpool.play_3d(get_map_sound("builder/traps/floor breakers/"+floorbreakers[i].breakertype+"/*remove*"),me.x,me.y,me.z,floorbreakers[i].breakerx,floorbreakers[i].breakery,floorbreakers[i].breakerz,calculate_theta(me_rotation),false);
 }

@@ -266,6 +266,20 @@ void spawn_timebomb(int x,int y,int dmg,int timbombtime,string timbombtype,int z
 timebomb tb1(x,y,dmg,timbombtime,timbombtype,z,looping);
 timebombs.insert_last(tb1);
 }
+/* loopsound is a true infinite loop on a looping timebomb, so stop it before nulling. Shares bombpool. */
+bool despawn_timebomb(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<timebombs.length(); i++)
+{
+if(@timebombs[i]==null) continue;
+if(!by_coord || (timebombs[i].timbombx==gx && timebombs[i].timbomby==gy && (mapmode!="3d" || timebombs[i].timbombz==gz))) target = int(i);
+}
+if(target < 0) return false;
+bombpool.destroy_sound(timebombs[target].loopsound);
+@timebombs[target] = null;
+return true;
+}
 void destroy_all_timebombs()
 {
 for(uint i=0;i<timebombs.length();i++)

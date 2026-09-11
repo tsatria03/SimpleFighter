@@ -125,6 +125,23 @@ void spawn_camera(int cx, int cy, int cvx, int cvy, int cdir, int turntime, doub
 sucam scam1(cx, cy, cvx, cvy, cdir, turntime, chp, cmaxhp, clv, cxp, camtype, cz, cvz);
 sucams.insert_last(scam1);
 }
+/* A camera has three sound slots -- looping camsound (motor) and alarmsound, plus wornsound -- all of
+which must be stopped or they leak. Any guard NPCs it spawned into npcs[] are independent and left. */
+bool despawn_camera(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<sucams.length(); i++)
+{
+if(@sucams[i]==null) continue;
+if(!by_coord || (sucams[i].sucamx==gx && sucams[i].sucamy==gy && (mapmode!="3d" || sucams[i].sucamz==gz))) target = int(i);
+}
+if(target < 0) return false;
+sucampool.destroy_sound(sucams[target].alarmsound);
+sucampool.destroy_sound(sucams[target].camsound);
+sucampool.destroy_sound(sucams[target].wornsound);
+@sucams[target] = null;
+return true;
+}
 void destroy_all_cameras()
 {
 for(uint i = 0; i < sucams.length(); i++)

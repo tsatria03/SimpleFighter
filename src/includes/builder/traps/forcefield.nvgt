@@ -74,6 +74,7 @@ bool forcefield_check()
 {
 for(uint i=0;i<forcefields.length();i++)
 {
+if(@forcefields[i]==null) continue;
 if(forcefield_hit(i)) return true;
 }
 return false;
@@ -82,6 +83,7 @@ void forceloop()
 {
 for(uint i=0;i<forcefields.length();i++)
 {
+if(@forcefields[i]==null) continue;
 if(forcefields[i].forcefielded==false && forcefields[i].deactivetimer.elapsed>=forcefields[i].deactivetime)
 {
 forcefields[i].forcefielded=true;
@@ -107,6 +109,22 @@ void spawn_forcefield(double x1,double x2,double y1,double y2,int dmg,int sp,str
 {
 forcefield force1(x1,x2,y1,y2,dmg,sp,forcetype,minz,maxz,is_ranged);
 forcefields.insert_last(force1);
+}
+/* A force field toggles between two looping sounds (activesound/inactivesound); destroy both so
+whichever is live is stopped, then null. */
+bool despawn_forcefield(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<forcefields.length(); i++)
+{
+if(@forcefields[i]==null) continue;
+if(!by_coord || (forcefields[i].minx==gx && forcefields[i].miny==gy && (mapmode!="3d" || forcefields[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+forcepool.destroy_sound(forcefields[target].activesound);
+forcepool.destroy_sound(forcefields[target].inactivesound);
+@forcefields[target] = null;
+return true;
 }
 void destroy_all_forcefields()
 {

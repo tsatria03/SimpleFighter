@@ -123,6 +123,34 @@ hazardpool.destroy_sound(hazards[id].hazardsound);
 @hazards[id] = null;
 }
 }
+/* True if this hazards[] slot is the child owned by a moving_hazard or vanishing_hazard wrapper, so
+despawn_hazard skips it -- removing a wrapper's child would strand the live wrapper. */
+bool hazard_is_wrapped(int id)
+{
+for(uint i=0; i<moving_hazards.length(); i++)
+if(@moving_hazards[i]!=null && moving_hazards[i].hazard_id==id) return true;
+for(uint i=0; i<vanishing_hazards.length(); i++)
+if(@vanishing_hazards[i]!=null && vanishing_hazards[i].hazard_id==id) return true;
+return false;
+}
+/* Removes one plain hazard: also drops its ledge platform tiles (platid/platid2, -1 when absent, and
+remove_platform guards that), then remove_hazard stops the looping hazardsound and nulls the slot.
+Skips wrapper-owned hazards so a moving/vanishing hazard isn't stranded. */
+bool despawn_hazard(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<hazards.length(); i++)
+{
+if(@hazards[i]==null) continue;
+if(hazard_is_wrapped(int(i))) continue;
+if(!by_coord || (hazards[i].minx==gx && hazards[i].miny==gy && (mapmode!="3d" || hazards[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+remove_platform(hazards[target].platid);
+remove_platform(hazards[target].platid2);
+remove_hazard(target);
+return true;
+}
 void destroy_all_hazards()
 {
 for(uint i=0; i<hazards.length(); i++)
