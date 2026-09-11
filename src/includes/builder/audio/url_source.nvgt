@@ -39,10 +39,26 @@ void spawn_url_source(double x1,double x2,double y1,double y2,string url,double 
 url_source url1(x1,x2,y1,y2,url,soundvol,soundpitch,minz,maxz);
 url_sources.insert_last(url1);
 }
+/* Stops the looping sorcesound (the url plays straight through the pool -- no separate stream handle)
+then nulls the slot. */
+bool despawn_url_source(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<url_sources.length(); i++)
+{
+if(@url_sources[i]==null) continue;
+if(!by_coord || (url_sources[i].minx==gx && url_sources[i].miny==gy && (mapmode!="3d" || url_sources[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+urlsourcepool.destroy_sound(url_sources[target].sorcesound);
+@url_sources[target] = null;
+return true;
+}
 void destroy_all_url_sources()
 {
 for(uint i=0; i<url_sources.length(); i++)
 {
+if(@url_sources[i]==null) continue;
 urlsourcepool.destroy_sound(url_sources[i].sorcesound);
 }
 url_sources.resize(0);

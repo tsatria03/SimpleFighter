@@ -33,6 +33,7 @@ for (uint t = 0; t < tags.length(); t++)
 bool found = false;
 for (uint i = 0; i < effect_spaces.length(); i++)
 {
+if(@effect_spaces[i]==null) continue;
 if (effect_spaces[i].clear_tag != tags[t]) continue;
 if (effect_spaces[i].minx <= x && effect_spaces[i].maxx >= x && effect_spaces[i].miny <= y && effect_spaces[i].maxy >= y)
 {
@@ -110,21 +111,21 @@ if(@mines[i] != null) apply_all_effects(mines[i].minex, mines[i].miney, minepool
 for (uint i = 0; i < passages.length(); i++)
 apply_all_effects(passages[i].startx, passages[i].starty, passagepool, passages[i].z);
 for (uint i = 0; i < ambsources.length(); i++)
-apply_all_effects(ambsources[i].minx, ambsources[i].miny, sourceambpool, ambsources[i].minz);
+if(@ambsources[i] != null) apply_all_effects(ambsources[i].minx, ambsources[i].miny, sourceambpool, ambsources[i].minz);
 for (uint i = 0; i < ex_ambsources.length(); i++)
-apply_all_effects(ex_ambsources[i].minx, ex_ambsources[i].miny, exsourceambpool);
+if(@ex_ambsources[i] != null) apply_all_effects(ex_ambsources[i].minx, ex_ambsources[i].miny, exsourceambpool);
 for (uint i = 0; i < soundsources.length(); i++)
-apply_all_effects(soundsources[i].minx, soundsources[i].miny, sourcepool, soundsources[i].minz);
+if(@soundsources[i] != null) apply_all_effects(soundsources[i].minx, soundsources[i].miny, sourcepool, soundsources[i].minz);
 for (uint i = 0; i < url_sources.length(); i++)
-apply_all_effects(url_sources[i].minx, url_sources[i].miny, urlsourcepool, url_sources[i].minz);
+if(@url_sources[i] != null) apply_all_effects(url_sources[i].minx, url_sources[i].miny, urlsourcepool, url_sources[i].minz);
 for (uint i = 0; i < url_ambiences.length(); i++)
-apply_all_effects(url_ambiences[i].minx, url_ambiences[i].miny, urlambpool, url_ambiences[i].minz);
+if(@url_ambiences[i] != null) apply_all_effects(url_ambiences[i].minx, url_ambiences[i].miny, urlambpool, url_ambiences[i].minz);
 for (uint i = 0; i < ex_soundsources.length(); i++)
-apply_all_effects(ex_soundsources[i].minx, ex_soundsources[i].miny, exsourcepool);
+if(@ex_soundsources[i] != null) apply_all_effects(ex_soundsources[i].minx, ex_soundsources[i].miny, exsourcepool);
 for (uint i = 0; i < timedambs.length(); i++)
-apply_all_effects(timedambs[i].minx, timedambs[i].miny, timeambpool, timedambs[i].minz);
+if(@timedambs[i] != null) apply_all_effects(timedambs[i].minx, timedambs[i].miny, timeambpool, timedambs[i].minz);
 for (uint i = 0; i < timedsources.length(); i++)
-apply_all_effects(timedsources[i].minx, timedsources[i].miny, timesourcepool, timedsources[i].minz);
+if(@timedsources[i] != null) apply_all_effects(timedsources[i].minx, timedsources[i].miny, timesourcepool, timedsources[i].minz);
 for (uint i = 0; i < signs.length(); i++)
 if(@signs[i] != null) apply_all_effects(signs[i].signx, signs[i].signy, signpool, signs[i].signz);
 for (uint i = 0; i < spikes.length(); i++)
@@ -155,6 +156,20 @@ void spawn_effect_space(double x1, double x2, double y1, double y2, string id, s
 effect_spaces.insert_last(effect_zone(x1, x2, y1, y2, id, fx, ctag, mnz, mxz));
 }
 
+/* Owns no sound -- just null the slot. The next apply_effect_pools pass re-derives every pool's fx and
+clears the removed zone's effect automatically (self-healing), so no handle to release. */
+bool despawn_effect_space(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<effect_spaces.length(); i++)
+{
+if(@effect_spaces[i]==null) continue;
+if(!by_coord || (effect_spaces[i].minx==gx && effect_spaces[i].miny==gy && (mapmode!="3d" || effect_spaces[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@effect_spaces[target] = null;
+return true;
+}
 void destroy_all_effect_spaces()
 {
 effect_spaces.resize(0);

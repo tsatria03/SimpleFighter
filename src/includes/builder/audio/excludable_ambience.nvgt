@@ -69,17 +69,32 @@ is_muted = false;
 void update_ex_ambsources()
 {
 for (uint i = 0; i < ex_ambsources.length(); i++)
-ex_ambsources[i].update_ex_ambsource();
+if(@ex_ambsources[i]!=null) ex_ambsources[i].update_ex_ambsource();
 }
 void spawn_ex_ambsource(double x1, double x2, double y1, double y2, string sourcetype, string sourcetype2, double soundvol, double soundpitch, double zx1, double zx2, double zy1, double zy2, double mnz = 0, double mxz = 0, double ezn = 0, double ezx = 0)
 {
 ex_ambsource exsound1(x1, x2, y1, y2, sourcetype, sourcetype2, soundvol, soundpitch, zx1, zx2, zy1, zy2, mnz, mxz, ezn, ezx);
 ex_ambsources.insert_last(exsound1);
 }
+/* Stops the looping sorcesound then nulls the slot; the exclusion box is pure geometry. */
+bool despawn_excludable_ambience(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<ex_ambsources.length(); i++)
+{
+if(@ex_ambsources[i]==null) continue;
+if(!by_coord || (ex_ambsources[i].minx==gx && ex_ambsources[i].miny==gy && (mapmode!="3d" || ex_ambsources[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+exsourceambpool.destroy_sound(ex_ambsources[target].sorcesound);
+@ex_ambsources[target] = null;
+return true;
+}
 void destroy_all_ex_ambsources()
 {
 for (uint i = 0; i < ex_ambsources.length(); i++)
 {
+if(@ex_ambsources[i]==null) continue;
 exsourceambpool.destroy_sound(ex_ambsources[i].sorcesound);
 }
 ex_ambsources.resize(0);

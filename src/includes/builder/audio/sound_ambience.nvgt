@@ -57,6 +57,7 @@ void update_ambsources(double listener_x, double listener_y)
 {
 for (uint i = 0; i < ambsources.length(); i++)
 {
+if(@ambsources[i]==null) continue;
 ambsources[i].update_ambsource(listener_x, listener_y);
 }
 }
@@ -65,10 +66,25 @@ void spawn_ambsource(double x1, double x2, double y1, double y2, string sourcety
 ambsource amb1(x1, x2, y1, y2, sourcetype, sourcetype2, soundvol, soundpitch, minz, maxz);
 ambsources.insert_last(amb1);
 }
+/* Stops the looping sorcesound then nulls the slot. */
+bool despawn_sound_ambience(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<ambsources.length(); i++)
+{
+if(@ambsources[i]==null) continue;
+if(!by_coord || (ambsources[i].minx==gx && ambsources[i].miny==gy && (mapmode!="3d" || ambsources[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+sourceambpool.destroy_sound(ambsources[target].sorcesound);
+@ambsources[target] = null;
+return true;
+}
 void destroy_all_ambsources()
 {
 for (uint i = 0; i < ambsources.length(); i++)
 {
+if(@ambsources[i]==null) continue;
 sourceambpool.destroy_sound(ambsources[i].sorcesound);
 }
 ambsources.resize(0);

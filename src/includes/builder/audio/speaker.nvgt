@@ -40,6 +40,23 @@ void spawn_speaker(double lx,double ly,double rx,double ry,string sourcetype,str
 speaker speaker1(lx,ly,rx,ry,sourcetype,sourcetype2,soundvol,soundpitch,lz,rz);
 speakers.insert_last(speaker1);
 }
+/* A speaker has two emitter sides (left/right) with separate looping sounds in separate pools; stop
+both, then null. Matches on either side's placement point. */
+bool despawn_speaker(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<speakers.length(); i++)
+{
+if(@speakers[i]==null) continue;
+bool m = (speakers[i].lx==gx && speakers[i].ly==gy && (mapmode!="3d" || speakers[i].lz==gz)) || (speakers[i].rx==gx && speakers[i].ry==gy && (mapmode!="3d" || speakers[i].rz==gz));
+if(!by_coord || m) target = int(i);
+}
+if(target < 0) return false;
+speakerpool.destroy_sound(speakers[target].lsound);
+speakerpool2.destroy_sound(speakers[target].rsound);
+@speakers[target] = null;
+return true;
+}
 void destroy_all_speakers()
 {
 for(uint i=0; i<speakers.length(); i++)

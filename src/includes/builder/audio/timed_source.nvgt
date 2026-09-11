@@ -31,6 +31,7 @@ void timedsrcloop()
 {
 for(uint i=0; i<timedsources.length(); i++)
 {
+if(@timedsources[i]==null) continue;
 if(timedsources[i].sourcetimer.elapsed>=timedsources[i].sourcetime)
 {
 timesourcepool.destroy_sound(timedsources[i].sorcesound);
@@ -48,10 +49,25 @@ void spawn_timedsource(double x1,double x2,double y1,double y2,double soundvol,d
 timedsource ts1(x1,x2,y1,y2,soundvol,soundpitch,sourcetime,sourcetype,sourcetype2,minz,maxz);
 timedsources.insert_last(ts1);
 }
+/* Stops the sorcesound slot (replayed each interval) then nulls the slot. */
+bool despawn_timed_source(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<timedsources.length(); i++)
+{
+if(@timedsources[i]==null) continue;
+if(!by_coord || (timedsources[i].minx==gx && timedsources[i].miny==gy && (mapmode!="3d" || timedsources[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+timesourcepool.destroy_sound(timedsources[target].sorcesound);
+@timedsources[target] = null;
+return true;
+}
 void destroy_all_timedsources()
 {
 for(uint i=0; i<timedsources.length(); i++)
 {
+if(@timedsources[i]==null) continue;
 timesourcepool.destroy_sound(timedsources[i].sorcesound);
 }
 timedsources.resize(0);

@@ -33,6 +33,7 @@ void timedambloop()
 {
 for(uint i = 0; i < timedambs.length(); i++)
 {
+if(@timedambs[i]==null) continue;
 bool inrange=(me.x >= timedambs[i].minx && me.x <= timedambs[i].maxx && me.y >= timedambs[i].miny && me.y <= timedambs[i].maxy);
 if(mapmode == "3d") inrange = inrange && me.z >= timedambs[i].minz && me.z <= timedambs[i].maxz;
 if(inrange && timedambs[i].sourcetimer.elapsed >= timedambs[i].sourcetime)
@@ -63,10 +64,25 @@ void spawn_timedamb(double x1,double x2,double y1,double y2,double soundvol,doub
 timedamb tmb1(x1,x2,y1,y2,soundvol,soundpitch,sourcetime,sourcetype,sourcetype2,minz,maxz);
 timedambs.insert_last(tmb1);
 }
+/* Stops the sorcesound slot then nulls the slot. */
+bool despawn_timed_ambience(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<timedambs.length(); i++)
+{
+if(@timedambs[i]==null) continue;
+if(!by_coord || (timedambs[i].minx==gx && timedambs[i].miny==gy && (mapmode!="3d" || timedambs[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+timeambpool.destroy_sound(timedambs[target].sorcesound);
+@timedambs[target] = null;
+return true;
+}
 void destroy_all_timedambs()
 {
 for(uint i=0; i<timedambs.length(); i++)
 {
+if(@timedambs[i]==null) continue;
 timeambpool.destroy_sound(timedambs[i].sorcesound);
 }
 timedambs.resize(0);

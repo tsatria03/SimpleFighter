@@ -55,6 +55,7 @@ void update_url_ambiences(double listener_x, double listener_y)
 {
 for (uint i = 0; i < url_ambiences.length(); i++)
 {
+if(@url_ambiences[i]==null) continue;
 url_ambiences[i].update_url_ambience(listener_x, listener_y);
 }
 }
@@ -63,10 +64,25 @@ void spawn_url_ambience(double x1, double x2, double y1, double y2, string url, 
 url_ambience amb1(x1, x2, y1, y2, url, soundvol, soundpitch, minz, maxz);
 url_ambiences.insert_last(amb1);
 }
+/* Stops the looping sorcesound then nulls the slot. */
+bool despawn_url_ambience(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<url_ambiences.length(); i++)
+{
+if(@url_ambiences[i]==null) continue;
+if(!by_coord || (url_ambiences[i].minx==gx && url_ambiences[i].miny==gy && (mapmode!="3d" || url_ambiences[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+urlambpool.destroy_sound(url_ambiences[target].sorcesound);
+@url_ambiences[target] = null;
+return true;
+}
 void destroy_all_url_ambiences()
 {
 for (uint i = 0; i < url_ambiences.length(); i++)
 {
+if(@url_ambiences[i]==null) continue;
 urlambpool.destroy_sound(url_ambiences[i].sorcesound);
 }
 url_ambiences.resize(0);
