@@ -224,6 +224,21 @@ if (id >= 0 && id < walls.length() && @walls[id] != null)
 @walls[id] = null;
 }
 }
+/* Removes a wall and all its backing platform tiles (one per z-level, tracked in platform_ids). */
+bool despawn_wall(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<walls.length(); i++)
+{
+if(@walls[i]==null) continue;
+if(!by_coord || (walls[i].minx==gx && walls[i].miny==gy && (mapmode!="3d" || walls[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+for(int j = int(walls[target].platform_ids.length()) - 1; j >= 0; j--)
+remove_platform(walls[target].platform_ids[j]);
+@walls[target] = null;
+return true;
+}
 void destroy_all_walls()
 {
 walls.resize(0);

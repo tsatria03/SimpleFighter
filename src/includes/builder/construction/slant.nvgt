@@ -122,6 +122,23 @@ if(id >= 0 && id < slants.length() && @slants[id] != null)
 @slants[id] = null;
 }
 }
+/* Removes a slant and its backing platform tiles (slant had no teardown loop before -- it leaked);
+resets the player_slant cursor. Matches on the x/y corner (a slant's vertical is base_height). */
+bool despawn_slant(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<slants.length(); i++)
+{
+if(@slants[i]==null) continue;
+if(!by_coord || (slants[i].minx==gx && slants[i].miny==gy && (mapmode!="3d" || slants[i].base_height==gz))) target = int(i);
+}
+if(target < 0) return false;
+for(int j = int(slants[target].platform_ids.length()) - 1; j >= 0; j--)
+remove_platform(slants[target].platform_ids[j]);
+@slants[target] = null;
+player_slant = -1;
+return true;
+}
 void destroy_all_slants()
 {
 slants.resize(0);

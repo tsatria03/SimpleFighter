@@ -232,6 +232,41 @@ if (id >= 0 && id < platforms.length() && @platforms[id] != null)
 @platforms[id] = null;
 }
 }
+/* True if this platforms[] slot is a child tile owned by a wall, staircase, slant, moving platform,
+hazard (ledge), or floor breaker (air tile), so despawn_platform skips it -- pulling a composite's tile
+would break the parent. (belt and vanishing_platform backing tiles are untracked and can't be detected;
+remove those via their parent's despawn.) */
+bool platform_is_wrapped(int id)
+{
+for(uint i=0; i<walls.length(); i++)
+if(@walls[i]!=null) { for(uint j=0; j<walls[i].platform_ids.length(); j++) if(walls[i].platform_ids[j]==id) return true; }
+for(uint i=0; i<staircases.length(); i++)
+if(@staircases[i]!=null) { for(uint j=0; j<staircases[i].platform_ids.length(); j++) if(staircases[i].platform_ids[j]==id) return true; }
+for(uint i=0; i<slants.length(); i++)
+if(@slants[i]!=null) { for(uint j=0; j<slants[i].platform_ids.length(); j++) if(slants[i].platform_ids[j]==id) return true; }
+for(uint i=0; i<moving_platforms.length(); i++)
+if(@moving_platforms[i]!=null && moving_platforms[i].platform_id==id) return true;
+for(uint i=0; i<hazards.length(); i++)
+if(@hazards[i]!=null && (hazards[i].platid==id || hazards[i].platid2==id)) return true;
+for(uint i=0; i<floorbreakers.length(); i++)
+if(@floorbreakers[i]!=null && floorbreakers[i].platid==id) return true;
+return false;
+}
+/* Removes one standalone platform (skipping composite-owned child tiles), reusing remove_platform,
+which nulls the slot -- platforms[] is already a guarded nullable array. */
+bool despawn_platform(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<platforms.length(); i++)
+{
+if(@platforms[i]==null) continue;
+if(platform_is_wrapped(int(i))) continue;
+if(!by_coord || (platforms[i].minx==gx && platforms[i].miny==gy && (mapmode!="3d" || platforms[i].z==gz))) target = int(i);
+}
+if(target < 0) return false;
+remove_platform(target);
+return true;
+}
 void destroy_all_platforms()
 {
 platforms.resize(0);

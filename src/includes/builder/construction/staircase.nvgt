@@ -140,6 +140,22 @@ if (id >= 0 && id < staircases.length() && @staircases[id] != null)
 @staircases[id] = null;
 }
 }
+/* Removes a staircase and its backing platform tiles; clears onstaircase in case the player was on it. */
+bool despawn_staircase(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<staircases.length(); i++)
+{
+if(@staircases[i]==null) continue;
+if(!by_coord || (staircases[i].minx==gx && staircases[i].miny==gy && (mapmode!="3d" || staircases[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+for(int j = int(staircases[target].platform_ids.length()) - 1; j >= 0; j--)
+remove_platform(staircases[target].platform_ids[j]);
+@staircases[target] = null;
+onstaircase = false;
+return true;
+}
 void destroy_all_staircases()
 {
 staircases.resize(0);
