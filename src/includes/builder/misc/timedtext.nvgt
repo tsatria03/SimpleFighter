@@ -22,6 +22,7 @@ void timedtxtloop()
 {
 for(uint i=0; i<timedtexts.length(); i++)
 {
+if(@timedtexts[i] == null) continue;
 bool inside = timedtexts[i].minx<=me.x and timedtexts[i].maxx>=me.x and timedtexts[i].miny<=me.y and timedtexts[i].maxy>=me.y;
 if(mapmode == "3d") inside = inside and me.z >= timedtexts[i].minz and me.z <= timedtexts[i].maxz;
 if(inside and timedtexts[i].texttimer.elapsed>=timedtexts[i].texttime)
@@ -39,6 +40,22 @@ timedtexts.insert_last(td1);
 void destroy_all_timedtexts()
 {
 timedtexts.resize(0);
+}
+/* Soundless and coordinate-only. Single-placed timed texts store minx==maxx / miny==maxy, so the
+placement corner is minx/miny (min corner for a ranged one). Sentinel-null removal; timedtxtloop is
+the only loop and it now guards. */
+bool despawn_timedtext(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<timedtexts.length(); i++)
+{
+if(@timedtexts[i] == null) continue;
+bool m = by_coord ? (timedtexts[i].minx==gx && timedtexts[i].miny==gy && (mapmode!="3d" || timedtexts[i].minz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+@timedtexts[target] = null;
+return true;
 }
 
 void build_timed_text()

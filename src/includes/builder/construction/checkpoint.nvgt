@@ -148,6 +148,24 @@ checkpool.destroy_sound(checkpoints[i].checksound);
 checkpoints.resize(0);
 @last_checkpoint = null;
 }
+/* checkpoints is already nullable (acquire_checkpoint nulls the reached one), so consumers already
+guard. A checkpoint still in the array is never last_checkpoint -- acquire removes it from the array
+as it records it -- so despawn can't dangle that handle. */
+bool despawn_checkpoint(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<checkpoints.length(); i++)
+{
+if(@checkpoints[i] == null) continue;
+bool m = by_coord ? (checkpoints[i].checkx==gx && checkpoints[i].checky==gy && (mapmode!="3d" || checkpoints[i].checkz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+checkpool.destroy_sound(checkpoints[target].checksound);
+checkpool.destroy_sound(checkpoints[target].getsound);
+@checkpoints[target] = null;
+return true;
+}
 
 void build_checkpoint()
 {

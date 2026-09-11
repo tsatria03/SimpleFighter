@@ -230,6 +230,25 @@ if (file_exists(ttsenemies[i].death_file)) file_delete(ttsenemies[i].death_file)
 }
 ttsenemies.resize(0);
 }
+/* Removal mirrors destroy_all_ttsenemies' per-enemy teardown: stop the looping voice slot and delete
+the three generated TTS clips. No *remove* cue (a tts enemy has none) and no kill rewards. */
+bool despawn_ttsenemie(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<ttsenemies.length(); i++)
+{
+if(@ttsenemies[i] == null) continue;
+bool m = by_coord ? (ttsenemies[i].ttsemx==gx && ttsenemies[i].ttsemy==gy && (mapmode!="3d" || ttsenemies[i].ttsemz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+if(ttsenemies[target].ttsemsound != -1) ttsempool.destroy_sound(ttsenemies[target].ttsemsound);
+if (file_exists(ttsenemies[target].taunt_file)) file_delete(ttsenemies[target].taunt_file);
+if (file_exists(ttsenemies[target].hurt_file)) file_delete(ttsenemies[target].hurt_file);
+if (file_exists(ttsenemies[target].death_file)) file_delete(ttsenemies[target].death_file);
+@ttsenemies[target] = null;
+return true;
+}
 
 /* Tier 2 semantic check. A tts enemy is a position, five numbers (health, attack, defense, fire time,
 speed), four quoted strings (taunt, hurt, death, voice), then three numbers (rate, pitch, volume).

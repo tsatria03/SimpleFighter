@@ -383,6 +383,23 @@ projpool.destroy_sound(projectiles[i].projsound);
 }
 projectiles.resize(0);
 }
+/* projectiles is a COMPACTED array (projmove uses remove_at, and its consumers -- effect_space,
+the object menu -- assume no null slots), so despawn removes with remove_at too, NOT sentinel-null.
+Coords match the projectile's CURRENT position (it moves), so the bare newest-of-type form is the
+usual one. */
+bool despawn_projectile(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i = 0; i < projectiles.length(); i++)
+{
+bool m = by_coord ? (projectiles[i].prox==gx && projectiles[i].proy==gy && (mapmode!="3d" || projectiles[i].proz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+projpool.destroy_sound(projectiles[target].projsound);
+projectiles.remove_at(target);
+return true;
+}
 
 void build_projectile()
 {

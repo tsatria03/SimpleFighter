@@ -672,6 +672,32 @@ if(npcs[i].launchsound != -1) pool.destroy_sound(npcs[i].launchsound);
 destroy_npc_bullets();
 npcs.resize(0);
 }
+/* Removal (not a kill): mirrors destroy_all_npcs' per-npc teardown -- helpers play their *remove*
+cue, the looping/one-shot voice slots stop -- but awards no xp/kills, spawns no bodyfall, and drops
+no item. Clears just this npc's in-flight bullets and stops tracking it. */
+bool despawn_npc(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<npcs.length(); i++)
+{
+if(@npcs[i] == null) continue;
+bool m = by_coord ? (npcs[i].x==gx && npcs[i].y==gy && (mapmode!="3d" || npcs[i].z==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+sound_pool@ pool = npc_pool(npcs[target].category);
+if(npcs[target].category == "helpers")
+pool.play_3d(get_map_sound("builder/kombat/npc/helpers/"+npcs[target].subtype+"/general/*remove*"), me.x, me.y, me.z, npcs[target].x, npcs[target].y, npcs[target].z, calculate_theta(me_rotation), false);
+if(npcs[target].tauntsound != -1) pool.destroy_sound(npcs[target].tauntsound);
+if(npcs[target].spawnsound != -1) pool.destroy_sound(npcs[target].spawnsound);
+if(npcs[target].refsound != -1) pool.destroy_sound(npcs[target].refsound);
+if(npcs[target].refsound2 != -1) pool.destroy_sound(npcs[target].refsound2);
+if(npcs[target].launchsound != -1) pool.destroy_sound(npcs[target].launchsound);
+clean_dead_npc_bullets(target);
+tracking_target_died("npc", target);
+@npcs[target] = null;
+return true;
+}
 
 /* The npc lookup paths and the full set of npc categories, shared by the npc and npc_zone semantic
 checks. npc_zone's build form offers only a subset of these categories, but a hand-authored zone that
