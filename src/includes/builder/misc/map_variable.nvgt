@@ -1,0 +1,67 @@
+/*
+Map variables -- the load-time $name substitution engine (section 1).
+
+A `mapvar name value` line (friendly name: map_variable) defines a named number. Its value is frozen
+ONCE at load: a random() in the value is rolled a single time (via expand_random_tokens) and the
+result stored, so several later lines can share that one frozen value -- e.g. one random coordinate
+reused across a sign, a travelpoint, and a sound source -- which plain random() can't do because it
+rerolls every read. Any later line's `$name` is replaced with the stored value BEFORE the line is
+parsed.
+
+Rules: substitution is line-wide and textual; a name is read from `$` up to the first character that
+isn't a letter/digit/underscore, must START with a letter, and an unknown name is left literal (the
+map-error scanner warns about those -- section 3). The variable table is built top to bottom as the
+loader walks lines, so a variable must be defined ABOVE any line that uses it. This helper is SHARED
+by the map loader (load_map, map_parser.nvgt) and, later, the map-error scanner.
+*/
+
+bool mv_is_letter(string c)
+{
+return (c >= "a" and c <= "z") or (c >= "A" and c <= "Z");
+}
+bool mv_is_name_char(string c)
+{
+return mv_is_letter(c) or (c >= "0" and c <= "9") or c == "_";
+}
+
+// Replace every valid `$name` in `line` with its frozen value from `vars`. Leaves an unknown or
+// malformed reference (and a bare `$`) exactly as written.
+string substitute_map_variables(string line, dictionary@ vars)
+{
+if(string_contains(line, "$", 1) < 0) return line;   // fast path: no references on this line
+string result = "";
+int n = int(line.length());
+for(int i = 0; i < n; i++)
+{
+string ch = line.substr(i, 1);
+if(ch != "$") { result += ch; continue; }
+// Read the candidate name: the maximal letter/digit/underscore run just after the $.
+int j = i + 1;
+string name = "";
+while(j < n)
+{
+string c = line.substr(j, 1);
+if(mv_is_name_char(c)) { name += c; j++; }
+else break;
+}
+// A real reference starts with a letter and names a defined variable; otherwise the $ stays literal
+// and the name characters are copied normally on the following iterations.
+if(name.length() > 0 and mv_is_letter(name.substr(0, 1)) and vars.exists(name))
+{
+string val;
+vars.get(name, val);
+result += val;
+i = j - 1;
+}
+else
+result += ch;
+}
+return result;
+}
+
+// Freeze a map variable's value at definition time: roll any random() once, keep a plain number as
+// written. The result is stored as the variable's value and substituted verbatim thereafter.
+string freeze_map_variable_value(string raw)
+{
+return expand_random_tokens(raw);
+}
