@@ -10,6 +10,10 @@ Using a variable.
 
 Anywhere you would write a number in the map, you can instead write the variable's name with a dollar sign in front, and it is filled in with the value when the map loads. If you have a variable named spot set to thirty, then $spot means thirty. The name is read up to the first space or punctuation, so both $spot on its own and $spot in $spot, end cleanly at the variable. This lets one variable fill in a coordinate on many different objects at once.
 
+Adding a reference to an object.
+
+You do not type a reference into a build form. A build form's fields only take plain values, so you cannot put $spot into a coordinate box while first building the object. Instead you build the object normally, then add the reference to its saved line afterward. There are two ways to do that: edit the object's line through the edit a line option in the map menu and replace the number with the variable's name, or edit the map's raw data directly and change it there. Either way the reference lives in the object's line, and it is filled in the next time the map loads.
+
 Define before you use.
 
 The map is read from top to bottom, so a variable only works on the lines that come after it is defined. Build the variable first, then build the things that use it. Because building always adds to the end of the map, this happens naturally: make the variable, then make the sign, door, or sound that references it, and they will sit below it. If you reference a variable that has not been defined above the line, it is left as plain text and the map errors box warns you that the variable is not defined, so a typo in a name is easy to spot.
@@ -22,6 +26,61 @@ Naming a coordinate once.
 
 A variable is also handy for a position you might move later. If an object spans several lines, or several objects share a location, putting that coordinate in a variable means you change it in one place instead of hunting down every line. Set home_x and home_y once, use $home_x and $home_y everywhere the spot is needed, and moving the whole thing later is a single edit.
 
+Showing a variable's value in text.
+
+Because a reference is filled in everywhere on a line, you can put one inside the text an object speaks, not just in its coordinates. A sign whose message names a variable will read the number aloud, so you can build a sign that reports where something is. This is most useful with a random value: the same variable that places an object can also be named in a sign's text, so the sign tells the truth even though the spot changes each load.
+
+For example:
+
+mapvar target random(5,40)
+sign 0 0 "the checkpoint is at $target" sign false false
+checkpoint $target 0 350 none false
+
+The variable target is rolled once when the map loads. The checkpoint is placed at $target, and the sign at the start reads "the checkpoint is at" followed by the same number, so a player standing on the sign hears exactly where to go. Because both the sign's text and the checkpoint's position use target, the hint always matches the real location, and the two move together to a new random spot each time the map loads. The same works in any spoken text, such as a story zone's message or a clock's lead-in.
+
+Using a variable in any field.
+
+A variable is not limited to coordinates. Because the number is filled in before the line is read, you can put a reference in any numeric field an object takes: a health, an attack, a speed, a damage, a range, a count, and so on. The field simply receives the number, exactly as if you had typed it. This makes a variable a single dial for a value shared across the whole map.
+
+For example, a shared attack strength:
+
+mapvar power 30
+vehicle 10 0 200 $power 1000 50 25 car false
+vehicle 30 0 200 $power 1000 50 25 car false
+
+Both vehicles deal power as their attack when they hit. To make the whole map harder or easier, you change mapvar power once and every object that reads it follows, instead of editing each line by hand. You can pair this with a sign that reads the same variable, like "these vehicles hit for $power", so the map even explains its own difficulty.
+
+Keep in mind that the number is still checked against the field it lands in, so a value that is not allowed there, such as a coordinate outside the map, is still flagged in the map errors box. A variable supplies the number; it does not skip the check.
+
+Map variables and slash commands.
+
+A reference works inside the slash commands you attach to an object too, such as a switch's, a sensor's, or an input's command, because those commands are part of the object's line and are filled in as the map loads. So a switch whose on command is sethealth $power sets your health to power's value, and one whose command speaks "the goal is at $target" bakes that number into what it says.
+
+This is where a map variable and the game's own percent placeholders differ, and the difference is when each is filled in. A dollar sign reference is filled in once, as the map loads, and then holds that value for the whole session, so it is a fixed number you chose. A percent placeholder, like %health% or %x%, is filled in fresh every time the command runs, so it reads the live value at that moment. A command that speaks %health% reports your health right now, while a command that speaks $target always reports the number the variable held when the map loaded.
+
+Because they are filled in at different times, one command can use both. Writing speak the exit is at $target, you are at %x% bakes in the exit's number as the map loads and reads your position live on each run, saying something like the exit is at 10, you are at 45.
+
+One limit follows from this: a dollar sign reference only works inside the map's own lines, since those are what get filled in as the map loads. It does nothing in a command you type into the console or one saved in a macro pack, because those are not part of the map, so the text is left as written. The percent placeholders work in every command, wherever it comes from.
+
 Authoring a map variable by hand.
 
 If you edit main.sif directly, a map variable line is written as: mapvar name value. For example, mapvar spot 30 defines spot as thirty, and mapvar dest random(5,40) defines dest as one frozen roll between five and forty. The line can sit anywhere in the file as long as it comes above the lines that use its name. A value is rolled fresh each time the map loads, so a random variable gives a new number on every load while staying the same everywhere within that load.
+
+Examples.
+
+A random location shared by two objects:
+
+mapvar dest random(5,40)
+sign $dest 0 "you found the exit" sign false false
+spawnpoint $dest 0
+
+The variable dest is rolled once, to a number between five and forty, the moment the map loads. Both the sign and the spawn point use $dest as their x coordinate, so they always sit on the same tile; that tile is different each time the map is loaded, but the two never drift apart. Writing random(5,40) straight into both lines instead would land them on two different tiles, because each random rolls on its own.
+
+A named position you can move in one place:
+
+mapvar gate_x 20
+mapvar gate_y 0
+sign $gate_x $gate_y "the gate is here" sign false false
+checkpoint $gate_x $gate_y 350 none false
+
+Here two variables hold a single spot, and both the sign and the checkpoint read them. To move everything to a new location later, you change the two mapvar lines once and every object that uses the names follows, instead of editing each line by hand.
