@@ -103,6 +103,21 @@ void spawn_teleporter(int x,int y,int dx,int dy,int telrange,int telrange2,int t
 teleporter tp1(x,y,dx,dy,telrange,telrange2,teltime,teltype,moveable,moveable2,singleuse,z,dz,telrange3,moveable3);
 teleporters.insert_last(tp1);
 }
+/* Non-standard coords (telx/tely/telz, int, and mutable if the teleporter drifts). Stops the
+always-looping telsound, then nulls. */
+bool despawn_teleporter(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<teleporters.length(); i++)
+{
+if(@teleporters[i]==null) continue;
+if(!by_coord || (teleporters[i].telx==gx && teleporters[i].tely==gy && (mapmode!="3d" || teleporters[i].telz==gz))) target = int(i);
+}
+if(target < 0) return false;
+telpool.destroy_sound(teleporters[target].telsound);
+@teleporters[target] = null;
+return true;
+}
 void destroy_all_teleporters()
 {
 for(uint i=0; i<teleporters.length(); i++)

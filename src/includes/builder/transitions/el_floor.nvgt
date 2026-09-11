@@ -33,6 +33,23 @@ void spawn_el_floor(double x1, double x2, int floory, string text, double miny=0
 el_floor elfr1(x1, x2, floory, text, miny, maxy, z);
 el_floors.insert_last(elfr1);
 }
+/* Silent floor-label region read by the elevator. Mode-dependent y field (floory in 2d, miny+z in 3d).
+No sound, no tiles -- just null. */
+bool despawn_el_floor(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<el_floors.length(); i++)
+{
+if(@el_floors[i]==null) continue;
+bool m;
+if(mapmode=="3d") m = (el_floors[i].minx==gx && el_floors[i].miny==gy && el_floors[i].z==gz);
+else m = (el_floors[i].minx==gx && el_floors[i].floory==gy);
+if(!by_coord || m) target = int(i);
+}
+if(target < 0) return false;
+@el_floors[target] = null;
+return true;
+}
 void destroy_all_el_floors()
 {
 el_floors.resize(0);

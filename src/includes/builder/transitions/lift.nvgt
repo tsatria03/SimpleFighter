@@ -122,6 +122,7 @@ void liftloop()
 {
 for (uint i = 0; i < lifts.length(); i++)
 {
+if(@lifts[i]==null) continue;
 lifts[i].check_player();
 lifts[i].move();
 }
@@ -131,10 +132,28 @@ void spawn_lift(double minx, double maxx, double miny, double maxy, int dir, int
 lift lt1(minx, maxx, miny, maxy, dir, lifttime, tile, tilevol, tilepitch, lifttype, liftvol, liftpitch, minz, maxz);
 lifts.insert_last(lt1);
 }
+/* Stops the always-looping liftsound, removes its single moving backing tile (platform_id), clears the
+global liftmove, then nulls. */
+bool despawn_lift(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<lifts.length(); i++)
+{
+if(@lifts[i]==null) continue;
+if(!by_coord || (lifts[i].minx==gx && lifts[i].miny==gy && (mapmode!="3d" || lifts[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+liftpool.destroy_sound(lifts[target].liftsound);
+remove_platform(lifts[target].platform_id);
+@lifts[target] = null;
+liftmove = false;
+return true;
+}
 void destroy_all_lifts()
 {
 for (uint i = 0; i < lifts.length(); i++)
 {
+if(@lifts[i]==null) continue;
 liftpool.destroy_sound(lifts[i].liftsound);
 remove_platform(lifts[i].platform_id);
 }

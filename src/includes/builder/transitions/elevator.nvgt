@@ -42,6 +42,7 @@ void elvcheck()
 {
 for (uint i = 0; i < elevators.length(); i++)
 {
+if(@elevators[i]==null) continue;
 bool on_call_point = elevators[i].startx == me.x && elevators[i].starty == me.y;
 if(mapmode == "3d") on_call_point = on_call_point && int(me.z) == elevators[i].startz;
 if (on_call_point && controls.action_repeating("interact"))
@@ -53,13 +54,17 @@ return;
 }
 elvpool.pause_sound(elevators[i].loopsound);
 setupmenu();
+int[] elf_idx;
 for (uint i2 = 0; i2 < el_floors.length(); i2++)
 {
+if(@el_floors[i2]==null) continue;
 m.add_item(el_floors[i2].text, el_floors[i2].text);
+elf_idx.insert_last(int(i2));
 }
 string current_floor_text = "an unknown floor";
 for (uint i3 = 0; i3 < el_floors.length(); i3++)
 {
+if(@el_floors[i3]==null) continue;
 if (el_floors[i3].contains(me.x, me.y, me.z))
 {
 current_floor_text = el_floors[i3].text;
@@ -74,10 +79,10 @@ elvpool.resume_sound(elevators[i].loopsound);
 speak("canceled");
 return;
 }
-if (mres >= 0 && mres < int(el_floors.length()))
+if (mres >= 0 && mres < int(elf_idx.length()))
 {
 elevator@ elv = elevators[i];
-el_floor@ target = el_floors[mres];
+el_floor@ target = el_floors[elf_idx[mres]];
 if (target.contains(me.x, me.y, me.z))
 {
 elvpool.resume_sound(elevators[i].loopsound);
@@ -116,6 +121,7 @@ void elvloop()
 {
 for (uint i = 0; i < elevators.length(); i++)
 {
+if(@elevators[i]==null) continue;
 elevator@ elv = elevators[i];
 if (elv.elevatortimer.elapsed >= elv.speed && elv.is_moving)
 {
@@ -131,6 +137,7 @@ else if (me.z > elv.endz) me.z--;
 }
 for (uint i2 = 0; i2 < el_floors.length(); i2++)
 {
+if(@el_floors[i2]==null) continue;
 if (el_floors[i2].contains(me.x, me.y, me.z))
 {
 if (int(i2) != elv.last_floor_index)
@@ -163,10 +170,29 @@ void spawn_elevator(int x, int y, int speed, string elvtext, string elvtype, boo
 elevator elv1(x, y, speed, elvtext, elvtype, beeping, looping, moving, floorspeak, z);
 elevators.insert_last(elv1);
 }
+/* Non-standard coords (startx/starty/startz, int). Stops its loop/beep/move sounds and clears the
+global elvmove if it was mid-move; no backing tile (an elevator carries the player directly). */
+bool despawn_elevator(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<elevators.length(); i++)
+{
+if(@elevators[i]==null) continue;
+if(!by_coord || (elevators[i].startx==gx && elevators[i].starty==gy && (mapmode!="3d" || elevators[i].startz==gz))) target = int(i);
+}
+if(target < 0) return false;
+elvpool.destroy_sound(elevators[target].loopsound);
+elvpool.destroy_sound(elevators[target].beepsound);
+elvpool.destroy_sound(elevators[target].movesound);
+@elevators[target] = null;
+elvmove = false;
+return true;
+}
 void destroy_all_elevators()
 {
 for (uint i = 0; i < elevators.length(); i++)
 {
+if(@elevators[i]==null) continue;
 elvpool.destroy_sound(elevators[i].loopsound);
 elvpool.destroy_sound(elevators[i].beepsound);
 elvpool.destroy_sound(elevators[i].movesound);

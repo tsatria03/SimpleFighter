@@ -361,6 +361,22 @@ door dr1(mnx, mxx, mny, mxy, ex, ey, hp, maxhp, speed, jamradius, doortype, lock
 doors.insert_last(dr1);
 }
 
+/* Stops the door's loop/move sounds and clears the global doormove if it was mid-move; then nulls. */
+bool despawn_door(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<doors.length(); i++)
+{
+if(@doors[i]==null) continue;
+if(!by_coord || (doors[i].minx==gx && doors[i].miny==gy && (mapmode!="3d" || doors[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+doorpool.destroy_sound(doors[target].doorsound);
+doorpool.destroy_sound(doors[target].movesound);
+@doors[target] = null;
+doormove = false;
+return true;
+}
 void destroy_all_doors()
 {
 for(uint i=0; i<doors.length(); i++)

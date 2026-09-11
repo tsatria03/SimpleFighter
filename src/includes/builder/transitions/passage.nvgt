@@ -470,13 +470,14 @@ update_passage_sound();
 void checkpassages()
 {
 for (uint i = 0; i < passages.length(); i++)
-passages[i].update_passage();
+if(@passages[i]!=null) passages[i].update_passage();
 }
 
 bool point_in_open_passage(double x, double y, double z)
 {
 for (uint i = 0; i < passages.length(); i++)
 {
+if(@passages[i]==null) continue;
 if (!passages[i].is_open) continue;
 int px1 = passages[i].get_xstart();
 int px2 = passages[i].get_xend();
@@ -500,10 +501,28 @@ passage pg1(x, y, dir, plength, pwidth, tile, passagetype, lockmode, doorid, psp
 passages.insert_last(pg1);
 }
 
+/* Non-standard coords (startx/starty/z, int). Stops its sounds and removes any currently-open backing
+platform tiles (a passage can be despawned while open), then nulls. */
+bool despawn_passage(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<passages.length(); i++)
+{
+if(@passages[i]==null) continue;
+if(!by_coord || (passages[i].startx==gx && passages[i].starty==gy && (mapmode!="3d" || passages[i].z==gz))) target = int(i);
+}
+if(target < 0) return false;
+passages[target].destroy_sounds();
+for(int k = int(passages[target].platform_ids.length()) - 1; k >= 0; k--)
+remove_platform(passages[target].platform_ids[k]);
+@passages[target] = null;
+return true;
+}
 void destroy_all_passages()
 {
 for (uint i = 0; i < passages.length(); i++)
 {
+if(@passages[i]==null) continue;
 passages[i].destroy_sounds();
 for(int k = int(passages[i].platform_ids.length()) - 1; k >= 0; k--)
 {

@@ -30,6 +30,7 @@ void travelcheck()
 {
 for(uint i=0; i<travelpoints.length(); i++)
 {
+if(@travelpoints[i]==null) continue;
 bool in_trigger = travelpoints[i].minx<=me.x and travelpoints[i].maxx>=me.x and travelpoints[i].miny<=me.y and travelpoints[i].maxy>=me.y;
 if(mapmode == "3d") in_trigger = in_trigger and me.z >= travelpoints[i].minz and me.z <= travelpoints[i].maxz;
 if(in_trigger and controls.action_repeating("interact"))
@@ -52,6 +53,19 @@ void spawn_travelpoint(double minx,double maxx,double miny,double maxy,string de
 {
 travelpoint tp1(minx,maxx,miny,maxy,destmap,destx,desty,endtext,mnz,mxz,dz,ranged);
 travelpoints.insert_last(tp1);
+}
+/* No looping sound, no tiles -- just null. */
+bool despawn_travelpoint(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<travelpoints.length(); i++)
+{
+if(@travelpoints[i]==null) continue;
+if(!by_coord || (travelpoints[i].minx==gx && travelpoints[i].miny==gy && (mapmode!="3d" || travelpoints[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@travelpoints[target] = null;
+return true;
 }
 void destroy_all_travelpoints()
 {
