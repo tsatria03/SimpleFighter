@@ -65,3 +65,74 @@ string freeze_map_variable_value(string raw)
 {
 return expand_random_tokens(raw);
 }
+
+// Returns "" if `name` is a valid variable name, else a one-sentence spoken reason. A name must start
+// with a letter and contain only letters, digits, and underscores. Shared by the build form and the
+// section-3 map-error check.
+string map_variable_name_error(string name)
+{
+if(name.length() == 0) return "The name is required.";
+if(!mv_is_letter(name.substr(0, 1))) return "The name must start with a letter.";
+for(uint i = 0; i < name.length(); i++)
+if(!mv_is_name_char(name.substr(i, 1))) return "The name may only contain letters, digits, and underscores.";
+return "";
+}
+
+// Append a map variable line to the current map. The value is stored raw (a random() stays literal
+// so it re-rolls once on each load); the loader freezes it at load time.
+void write_mapvar(string name, string value)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"mapvar "+name+" "+value);
+mapper.close();
+bump_map_modified();
+}
+
+/* Coordless build form (friendly name map_variable): a name and a value. Appends the mapvar line and
+reloads, so the loader picks it up -- there is no in-memory object to spawn. Because build appends,
+the variable lands at the end of the file; the workflow is to build the variable before the elements
+that reference it (define-above-use). */
+void build_map_variable()
+{
+form.reset();
+form.create_window("map variable", false, true, false);
+int name_box = form.create_input_box("name: must start with a letter, then letters, digits, and underscores only", "");
+int value_box = form.create_input_box("value: a number or a random token", "");
+form.set_disallowed_chars(name_box, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(name_box);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+string name = string_trim_sides(form.get_text(name_box));
+string ne = map_variable_name_error(name);
+if(ne != "") { speak(ne); form.focus(name_box); continue; }
+string value = string_trim_sides(form.get_text(value_box));
+if(value == "") { speak("The value is required."); form.focus(value_box); continue; }
+if(!is_number_token(value)) { speak("The value must be a number or a random token."); form.focus(value_box); continue; }
+resume_pools();
+write_mapvar(name, value);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
