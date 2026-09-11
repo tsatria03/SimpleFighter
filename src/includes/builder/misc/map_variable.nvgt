@@ -136,3 +136,50 @@ return;
 }
 }
 }
+
+/* Tier 2 semantic check for a `mapvar name value` line (section 3): the name must be a valid
+identifier and the value a number or random() token. Structural length (exactly 3) is confirmed first
+by entity_line_error. */
+string mapvar_semantic_error(string[] sd, string mode, int &out col)
+{
+if(!mv_is_letter(sd[1].substr(0, 1))) { col = 1; return "the variable name must start with a letter."; }
+for(uint i = 0; i < sd[1].length(); i++)
+if(!mv_is_name_char(sd[1].substr(i, 1))) { col = 1; return "the variable name may only contain letters, digits, and underscores."; }
+if(!is_number_token(sd[2])) { col = 2; return "the value must be a number or a random token."; }
+return "";
+}
+
+// After substitution has replaced every DEFINED $name, any remaining valid `$name` (letter-led) is an
+// undefined reference. Returns the first such name, or "" if none. Drives the map-error warning.
+string first_undefined_variable(string line, dictionary@ vars)
+{
+if(string_contains(line, "$", 1) < 0) return "";
+int n = int(line.length());
+for(int i = 0; i < n; i++)
+{
+if(line.substr(i, 1) != "$") continue;
+int j = i + 1;
+string name = "";
+while(j < n)
+{
+string c = line.substr(j, 1);
+if(mv_is_name_char(c)) { name += c; j++; }
+else break;
+}
+if(name.length() > 0 and mv_is_letter(name.substr(0, 1)) and !vars.exists(name))
+return name;
+}
+return "";
+}
+
+// Fill `vars` with every mapvar defined anywhere in the current map file (order-independent). Used by
+// the single-line error check, which lacks the top-to-bottom context the whole-map scanner keeps.
+void build_map_var_table(dictionary@ vars)
+{
+string[] all = delinear(read_map_main_sif());
+for(uint i = 0; i < all.length(); i++)
+{
+string[] sd = string_split(string_trim_sides(all[i]), " ", true);
+if(sd.length() >= 3 and sd[0] == "mapvar") vars.set(sd[1], freeze_map_variable_value(sd[2]));
+}
+}

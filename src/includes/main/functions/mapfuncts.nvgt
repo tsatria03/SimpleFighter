@@ -203,9 +203,19 @@ given mode, show the error box for it. line_no is its 1-based position among the
 lines. Header lines (mode/bounds) are skipped — they aren't placeable objects. */
 void report_single_map_line(string line, int line_no, string mode)
 {
-string[] sd = string_split(line, " ", true);
+dictionary map_vars;
+build_map_var_table(map_vars);   // no top-to-bottom context here, so use every defined variable
+string resolved = substitute_map_variables(line, map_vars);
+string[] sd = string_split(resolved, " ", true);
 if(sd.length()==0) return;
 if(line_is_map_header(sd)) return;
+string undef = first_undefined_variable(resolved, map_vars);
+if(undef != "")
+{
+string[] ublocks = {map_error_block(line_no, line, "the variable '"+undef+"' is not defined on an earlier line.", -1)};
+present_map_errors(ublocks);
+return;
+}
 int col=-1;
 string reason = entity_line_error(sd, mode);
 if(reason == "")
@@ -239,17 +249,31 @@ string[] all = delinear(read_map_main_sif());
 string[] filtered;
 uint[] orig;
 filter_empty_lines(all, filtered, orig);
+dictionary map_vars;   // map variables defined so far, top to bottom (define-above-use)
 for(uint i=0; i<filtered.length(); i++)
 {
-string[] sd = string_split(filtered[i], " ", true);
+// Resolve every $name defined on an earlier line before validating, so a variable reference in a
+// numeric field doesn't false-flag; the report block still shows the original text.
+string resolved = substitute_map_variables(filtered[i], map_vars);
+string[] sd = string_split(resolved, " ", true);
 if(sd.length()==0) continue;
 if(line_is_map_header(sd)) continue;
+string undef = first_undefined_variable(resolved, map_vars);
+if(undef != "")
+{
+blocks.insert_last(map_error_block(int(i+1), filtered[i], "the variable '"+undef+"' is not defined on an earlier line.", -1));
+continue;
+}
 int col=-1;
 string reason = entity_line_error(sd, mode);
 if(reason == "")
 {
 reason = entity_semantic_error(sd, mode, col);
-if(reason == "") continue;
+if(reason == "")
+{
+if(sd[0]=="mapvar") map_vars.set(sd[1], freeze_map_variable_value(sd[2]));   // clean definition: record for lines below
+continue;
+}
 }
 blocks.insert_last(map_error_block(int(i+1), filtered[i], reason, col));
 }
