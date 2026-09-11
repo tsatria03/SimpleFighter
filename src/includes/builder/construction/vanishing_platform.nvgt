@@ -14,6 +14,7 @@ double vplatpitch;
 int vplattime;
 string tile;
 string vptype;
+int platid = -1;
 timer vplattimer;
 vanishing_platform(double mx,double mx2,double my,double my2,double vol,double semitone,double vol2,double semitone2,int vtime,string ty,string vtype,double zp=0)
 {
@@ -30,7 +31,7 @@ vplattime=vtime;
 tile=ty;
 vptype=vtype;
 double sz = (mapmode == "3d") ? z : 0;
-spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true, sz);
+platid=spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, tilevolume, tilepitch, false, false, true, sz);
 vplatsound=vanpool.play_extended_3d(get_map_sound("builder/construction/vanishing platforms/"+vptype+"/*loop*"),me.x,me.y,me.z,minx,miny,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,vplatvolume,vplatpitch,false);
 vanpool.update_sound_3d(vplatsound,minx,miny, sz);
 vanpool.update_sound_range_3d(vplatsound, 0, maxx-minx, 0, maxy-miny, 0, 0);
@@ -45,14 +46,16 @@ if(vanishing_platforms[i].vanished==false and vanishing_platforms[i].vplattimer.
 {
 vanpool.destroy_sound(vanishing_platforms[i].vplatsound);
 double sz = (mapmode == "3d") ? vanishing_platforms[i].z : 0;
-spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, "", vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true, sz);
+remove_platform(vanishing_platforms[i].platid);
+vanishing_platforms[i].platid=spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, "", vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true, sz);
 vanishing_platforms[i].vanished=true;
 vanishing_platforms[i].vplattimer.restart();
 }
 else if(vanishing_platforms[i].vanished==true and vanishing_platforms[i].vplattimer.elapsed>=vanishing_platforms[i].vplattime)
 {
 double sz = (mapmode == "3d") ? vanishing_platforms[i].z : 0;
-spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, vanishing_platforms[i].tile, vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true, sz);
+remove_platform(vanishing_platforms[i].platid);
+vanishing_platforms[i].platid=spawn_platform(vanishing_platforms[i].minx, vanishing_platforms[i].maxx, vanishing_platforms[i].miny, vanishing_platforms[i].maxy, 1, 1, vanishing_platforms[i].tile, vanishing_platforms[i].tilevolume, vanishing_platforms[i].tilepitch, false, false, true, sz);
 vanishing_platforms[i].vplatsound=vanpool.play_extended_3d(get_map_sound("builder/construction/vanishing platforms/"+vanishing_platforms[i].vptype+"/*loop*"),me.x,me.y,me.z,vanishing_platforms[i].minx,vanishing_platforms[i].miny,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,vanishing_platforms[i].vplatvolume,vanishing_platforms[i].vplatpitch,false);
 vanpool.update_sound_3d(vanishing_platforms[i].vplatsound,vanishing_platforms[i].minx,vanishing_platforms[i].miny, sz);
 vanpool.update_sound_range_3d(vanishing_platforms[i].vplatsound, 0, vanishing_platforms[i].maxx-vanishing_platforms[i].minx, 0, vanishing_platforms[i].maxy-vanishing_platforms[i].miny, 0, 0);
@@ -66,7 +69,8 @@ void spawn_vanishing_platform(double x1,double x2,double y1,double y2,double til
 vanishing_platform vp1(x1,x2,y1,y2,tilevol,tilepitch,vplatvol,vplatpitch,vtime,tile,vtype,z);
 vanishing_platforms.insert_last(vp1);
 }
-/* Owns a looping vplatsound; stop it then null. (Its untracked backing tile is left, like belt.) */
+/* Owns a looping vplatsound and one backing tile (platid, re-tracked each vanish/reappear); stop the
+sound, remove the tile, then null. */
 bool despawn_vanishing_platform(bool by_coord, double gx, double gy, double gz)
 {
 int target = -1;
@@ -76,6 +80,7 @@ if(@vanishing_platforms[i]==null) continue;
 if(!by_coord || (vanishing_platforms[i].minx==gx && vanishing_platforms[i].miny==gy && (mapmode!="3d" || vanishing_platforms[i].z==gz))) target = int(i);
 }
 if(target < 0) return false;
+remove_platform(vanishing_platforms[target].platid);
 vanpool.destroy_sound(vanishing_platforms[target].vplatsound);
 @vanishing_platforms[target] = null;
 return true;

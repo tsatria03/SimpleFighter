@@ -10,6 +10,7 @@ int dir;
 int speed;
 string tile;
 string belttype;
+int[] platform_ids;
 timer speedtimer;
 belt(double mx,double mx2,double my,double my2,int bd,int sp,string ty,string bt,double mnz=0,double mxz=0)
 {
@@ -29,14 +30,14 @@ beltsound=beltpool.play_3d(get_map_sound("builder/construction/belts/"+belttype+
 beltpool.update_sound_3d(beltsound,minx,miny,minz);
 beltpool.update_sound_range_3d(beltsound, 0, maxx-minx, 0, maxy-miny, 0, maxz-minz);
 for(double z = minz; z <= maxz; z++)
-spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, 0, 100, false, false, true, z);
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, 0, 100, false, false, true, z));
 }
 else
 {
 beltsound=beltpool.play_3d(get_map_sound("builder/construction/belts/"+belttype+"/*loop*"),me.x,me.y,me.z,minx,miny,0,calculate_theta(me_rotation),true);
 beltpool.update_sound_3d(beltsound,minx,miny, 0);
 beltpool.update_sound_range_3d(beltsound, 0, maxx-minx, 0, maxy-miny, 0, 0);
-spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, 0, 100, false, false, true);
+platform_ids.insert_last(spawn_platform(minx, maxx, miny, maxy, 1, 1, tile, 0, 100, false, false, true));
 }
 }
 }
@@ -85,7 +86,8 @@ void spawn_belt(double x1,double x2,double y1,double y2,int direction,int speed,
 belt belt1(x1,x2,y1,y2,direction,speed,tile,belttype,minz,maxz);
 belts.insert_last(belt1);
 }
-/* Stops the looping beltsound then nulls the slot. (Its untracked backing tiles are left.) */
+/* Stops the looping beltsound, removes its backing platform tiles (one per z-level, tracked in
+platform_ids), then nulls the slot. */
 bool despawn_belt(bool by_coord, double gx, double gy, double gz)
 {
 int target = -1;
@@ -95,6 +97,8 @@ if(@belts[i]==null) continue;
 if(!by_coord || (belts[i].minx==gx && belts[i].miny==gy && (mapmode!="3d" || belts[i].minz==gz))) target = int(i);
 }
 if(target < 0) return false;
+for(int j = int(belts[target].platform_ids.length()) - 1; j >= 0; j--)
+remove_platform(belts[target].platform_ids[j]);
 beltpool.destroy_sound(belts[target].beltsound);
 @belts[target] = null;
 return true;
