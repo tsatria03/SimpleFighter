@@ -1562,6 +1562,29 @@ speak("Map updated.");
 report_map_file_errors(mapmode);
 }
 }
+else if ((base_command == "ub" || base_command == "unbuild") && !map_is_compiled)
+{
+if (parsed.length() < 2) { speak("Invalid command syntax. Usage: /unbuild object, or /ub object."); return; }
+string ubtype = normalize_buildtype(parsed[1]);
+bool ub_coord = false;
+double ubx = 0, uby = 0, ubz = 0;
+if (mapmode == "3d")
+{
+if (parsed.length() == 5) { ub_coord = true; ubx = stn(parsed[2]); uby = stn(parsed[3]); ubz = stn(parsed[4]); }
+else if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /unbuild object, or /unbuild object x y z."); return; }
+}
+else
+{
+if (parsed.length() == 4) { ub_coord = true; ubx = stn(parsed[2]); uby = stn(parsed[3]); }
+else if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /unbuild object, or /unbuild object x y."); return; }
+}
+if (unbuild_entity(ubtype, ub_coord, ubx, uby, ubz))
+{
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+}
+else speak("There's no " + parsed[1] + " to remove.");
+}
 else if (base_command == "ud"  && !map_is_compiled || base_command == "undomap" && !map_is_compiled)
 {
 if (parsed.length() != 1)

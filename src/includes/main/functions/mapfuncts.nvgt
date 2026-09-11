@@ -261,6 +261,47 @@ void report_map_file_errors(string mode)
 {
 present_map_errors(collect_map_file_errors(mode));
 }
+/* The removal counterpart to /build: delete one entity's line from the current map's main.sif and
+reload. type is the normalized on-disk keyword. by_coord false removes the LAST line of that type
+(newest, LIFO); true removes the one whose placement corner matches gx,gy[,gz] -- a single-tile
+entity's x,y[,z] or a ranged entity's minx,miny[,minz] -- with the newest winning an exact-corner
+tie. Header lines (mode/bounds) are skipped so they can never be removed. push_map_undo() first so
+/undomap recovers it. Returns true if a line was removed. Decompiled maps only (callers gate that). */
+bool unbuild_entity(string type, bool by_coord, double gx, double gy, double gz)
+{
+string[] lines = delinear(read_map_main_sif());
+int target = -1;
+for(uint i=0; i<lines.length(); i++)
+{
+string[] t = string_split(lines[i], " ", true);
+if(t.length() < 1) continue;
+if(line_is_map_header(t)) continue;
+if(t[0] != type) continue;
+if(!by_coord) { target = int(i); continue; }
+if(t.length() < 3) continue;
+bool single = (stn(t[1]) == gx && stn(t[2]) == gy);
+bool ranged = (t.length() > 3 && stn(t[1]) == gx && stn(t[3]) == gy);
+if(mapmode == "3d")
+{
+if(single) single = (t.length() > 3 && stn(t[3]) == gz);
+if(ranged) ranged = (t.length() > 5 && stn(t[5]) == gz);
+}
+if(single || ranged) target = int(i);
+}
+if(target < 0) return false;
+lines.remove_at(target);
+string joined;
+for(uint i=0; i<lines.length(); i++)
+{
+if(i > 0) joined += "\r\n";
+joined += lines[i];
+}
+push_map_undo();
+write_map_main_sif(joined);
+bump_map_modified();
+load_map(mapname, mapowner);
+return true;
+}
 
 float stn(string str)
 {

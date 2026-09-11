@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-**STATUS: designed, NOT built.** Two commands that remove what `/build` and `/spawn` place — the entity-cleanup gap the spawn help text already calls out ("the only cleanup verbs are /kill and /killall, npc-only; a /spawn of a non-npc entity has no command to remove it"). See [[project_trusted_commands_compiled]] (gating) and the build/spawn branches in `command_parser.nvgt`.
+**STATUS: unbuild BUILT & shipping in 14.8; despawn still to build.** unbuild = `unbuild_entity()` in mapfuncts.nvgt (read_map_main_sif → delinear → find line → remove_at → push_map_undo → write_map_main_sif → load_map) + the `ub`/`unbuild` branch in command_parser.nvgt + allcommands entry + commands.txt + changelog. Feedback used: map-update sound + "Map updated." on success, "There's no <type> to remove." on miss. despawn NOT started — it's the in-memory, trusted-on-compiled counterpart (per-type teardown, sentinel-null; composites call their existing cleanup like a wall's platform_ids loop).** Two commands that remove what `/build` and `/spawn` place — the entity-cleanup gap the spawn help text already calls out ("the only cleanup verbs are /kill and /killall, npc-only; a /spawn of a non-npc entity has no command to remove it"). See [[project_trusted_commands_compiled]] (gating) and the build/spawn branches in `command_parser.nvgt`.
 
 **Names & aliases (settled):**
 - **unbuild** (`ub`) — inverse of `/build`. Permanent: removes the entity's line from `main.sif` and reloads. Decompiled-only.
@@ -20,6 +20,7 @@ metadata:
 - **Bare form `<cmd> <type>`** → removes the MOST-RECENTLY-ADDED entity of that type (LIFO). `despawn sign` drops the newest sign; repeat to walk back. This is the common case and matches the build/test workflow.
 - **Optional coord form `<cmd> <type> <x> <y> [z]`** → removes the specific one at those coordinates (coords ONLY, never the full field list) — the precision escape hatch when several exist and you don't want the newest. z on 3d maps.
 - Arg parsing distinguishes the two by token count + mapmode (2 tokens = type-only; type + 2 or 3 coords = coord form).
+- **Coord match = PLACEMENT CORNER (SETTLED):** the coordinate you give is the entity's own placement corner — a single-tile entity's `x y[ z]`, or a ranged entity's `minx miny[ minz]` — matched EXACTLY (not containment). Multiple entities at different corners each get uniquely targeted; if two share the exact same corner, the NEWEST (last in file / LIFO) is removed, repeatable. Tiny false-match risk (a ranged line whose maxx coincides), documented, acceptable.
 - Type name accepts friendly and on-disk forms via `normalize_buildtype`, same as build/spawn.
 
 **Why it's safe (settled):**
