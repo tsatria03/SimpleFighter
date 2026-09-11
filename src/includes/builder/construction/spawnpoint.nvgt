@@ -16,6 +16,7 @@ void spawncheck()
 {
 for(uint i=0; i<spawnpoints.length(); i++)
 {
+if(@spawnpoints[i]==null) continue;
 bool match = me.x==spawnpoints[i].spawnx and me.y==spawnpoints[i].spawny;
 if(mapmode == "3d") match = match and me.z==spawnpoints[i].spawnz;
 if(match)
@@ -29,6 +30,21 @@ void create_spawnpoint (int x,int y,int z=0)
 {
 spawnpoint sp1(x,y,z);
 spawnpoints.insert_last(sp1);
+}
+/* int coords. Clears @last_spawnpoint if it pointed at this one (a dangling ref would survive), then
+nulls the slot. */
+bool despawn_spawnpoint(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<spawnpoints.length(); i++)
+{
+if(@spawnpoints[i]==null) continue;
+if(!by_coord || (spawnpoints[i].spawnx==gx && spawnpoints[i].spawny==gy && (mapmode!="3d" || spawnpoints[i].spawnz==gz))) target = int(i);
+}
+if(target < 0) return false;
+if(last_spawnpoint is spawnpoints[target]) @last_spawnpoint = null;
+@spawnpoints[target] = null;
+return true;
 }
 void destroy_all_spawnpoints()
 {

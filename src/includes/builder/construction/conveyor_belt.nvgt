@@ -44,6 +44,7 @@ void beltloop()
 {
 for(uint i=0; i<belts.length(); i++)
 {
+if(@belts[i]==null) continue;
 if(belts[i].speedtimer.elapsed>=belts[i].speed)
 {
 belts[i].speedtimer.restart();
@@ -84,10 +85,25 @@ void spawn_belt(double x1,double x2,double y1,double y2,int direction,int speed,
 belt belt1(x1,x2,y1,y2,direction,speed,tile,belttype,minz,maxz);
 belts.insert_last(belt1);
 }
+/* Stops the looping beltsound then nulls the slot. (Its untracked backing tiles are left.) */
+bool despawn_belt(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<belts.length(); i++)
+{
+if(@belts[i]==null) continue;
+if(!by_coord || (belts[i].minx==gx && belts[i].miny==gy && (mapmode!="3d" || belts[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+beltpool.destroy_sound(belts[target].beltsound);
+@belts[target] = null;
+return true;
+}
 void destroy_all_belts()
 {
 for(uint i=0; i<belts.length(); i++)
 {
+if(@belts[i]==null) continue;
 beltpool.destroy_sound(belts[i].beltsound);
 }
 belts.resize(0);

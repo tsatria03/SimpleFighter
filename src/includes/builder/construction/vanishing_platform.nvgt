@@ -40,6 +40,7 @@ void vplatloop()
 {
 for(uint i=0; i<vanishing_platforms.length(); i++)
 {
+if(@vanishing_platforms[i]==null) continue;
 if(vanishing_platforms[i].vanished==false and vanishing_platforms[i].vplattimer.elapsed>=vanishing_platforms[i].vplattime)
 {
 vanpool.destroy_sound(vanishing_platforms[i].vplatsound);
@@ -65,10 +66,25 @@ void spawn_vanishing_platform(double x1,double x2,double y1,double y2,double til
 vanishing_platform vp1(x1,x2,y1,y2,tilevol,tilepitch,vplatvol,vplatpitch,vtime,tile,vtype,z);
 vanishing_platforms.insert_last(vp1);
 }
+/* Owns a looping vplatsound; stop it then null. (Its untracked backing tile is left, like belt.) */
+bool despawn_vanishing_platform(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<vanishing_platforms.length(); i++)
+{
+if(@vanishing_platforms[i]==null) continue;
+if(!by_coord || (vanishing_platforms[i].minx==gx && vanishing_platforms[i].miny==gy && (mapmode!="3d" || vanishing_platforms[i].z==gz))) target = int(i);
+}
+if(target < 0) return false;
+vanpool.destroy_sound(vanishing_platforms[target].vplatsound);
+@vanishing_platforms[target] = null;
+return true;
+}
 void destroy_all_vanishing_platforms()
 {
 for(uint i=0; i<vanishing_platforms.length(); i++)
 {
+if(@vanishing_platforms[i]==null) continue;
 vanpool.destroy_sound(vanishing_platforms[i].vplatsound);
 }
 vanishing_platforms.resize(0);

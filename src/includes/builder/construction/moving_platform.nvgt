@@ -195,6 +195,7 @@ void mplatcheck()
 {
 for(uint i = 0; i < moving_platforms.length(); i++)
 {
+if(@moving_platforms[i]==null) continue;
 moving_platforms[i].check_player();
 moving_platforms[i].move();
 }
@@ -206,10 +207,28 @@ moving_platform mp1(left_x, right_x, bottom_y, top_y, x_length, direction, snap,
 moving_platforms.insert_last(mp1);
 }
 
+/* Stops the looping platsound, removes its single backing tile (platform_id), clears the platformmove
+flag, then nulls the slot. */
+bool despawn_moving_platform(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<moving_platforms.length(); i++)
+{
+if(@moving_platforms[i]==null) continue;
+if(!by_coord || (moving_platforms[i].minx==gx && moving_platforms[i].miny==gy && (mapmode!="3d" || moving_platforms[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+platpool.destroy_sound(moving_platforms[target].platsound);
+remove_platform(moving_platforms[target].platform_id);
+@moving_platforms[target] = null;
+platformmove = false;
+return true;
+}
 void destroy_all_moving_platforms()
 {
 for(uint i = 0; i < moving_platforms.length(); i++)
 {
+if(@moving_platforms[i]==null) continue;
 platpool.destroy_sound(moving_platforms[i].platsound);
 remove_platform(moving_platforms[i].platform_id);
 }

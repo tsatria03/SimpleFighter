@@ -19,6 +19,7 @@ bool is_in_blockage(string& text)
 {
 for(uint i=0; i<blockages.length(); i++)
 {
+if(@blockages[i]==null) continue;
 if(blockages[i].minx<=me.x and blockages[i].maxx>=me.x and blockages[i].miny<=me.y and blockages[i].maxy>=me.y)
 {
 if(mapmode == "3d" && (me.z < blockages[i].minz || me.z > blockages[i].maxz)) continue;
@@ -43,6 +44,19 @@ void spawn_blockage(double x1,double x2,double y1,double y2,string text,double m
 {
 blockage bk1(x1,x2,y1,y2,text,minz,maxz);
 blockages.insert_last(bk1);
+}
+/* No sounds or sub-entities -- just null the slot. */
+bool despawn_blockage(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<blockages.length(); i++)
+{
+if(@blockages[i]==null) continue;
+if(!by_coord || (blockages[i].minx==gx && blockages[i].miny==gy && (mapmode!="3d" || blockages[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@blockages[target] = null;
+return true;
 }
 void destroy_all_blockages()
 {
