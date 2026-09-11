@@ -51,6 +51,21 @@ void spawn_clock(double mnx, double mxx, double mny, double mxy, string text, st
 clock ck1(mnx, mxx, mny, mxy, text, clocktype, destroyable, mnz, mxz, ranged);
 clocks.insert_last(ck1);
 }
+/* Remove one live clock for the despawn command; a clock always has a live looping clocksound, so
+stop it before nulling the slot. */
+bool despawn_clock(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<clocks.length(); i++)
+{
+if(@clocks[i] == null) continue;
+if(!by_coord || (clocks[i].minx==gx && clocks[i].miny==gy && (mapmode!="3d" || clocks[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+clockpool.destroy_sound(clocks[target].clocksound);
+@clocks[target] = null;
+return true;
+}
 void destroy_all_clocks()
 {
 for(uint i=0; i<clocks.length(); i++)

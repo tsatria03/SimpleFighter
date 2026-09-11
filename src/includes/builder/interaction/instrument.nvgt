@@ -211,6 +211,24 @@ void spawn_instrument(double mnx, double mxx, double mny, double mxy, double mnz
 	instruments.insert_last(inst1);
 }
 
+/* Remove one live instrument for the despawn command. instpool is SHARED across all instruments, so
+destroy only THIS instance's three note slots (never instpool.destroy_all, which would silence the
+others), then null the slot. */
+bool despawn_instrument(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<instruments.length(); i++)
+{
+if(@instruments[i] == null) continue;
+if(!by_coord || (instruments[i].minx==gx && instruments[i].miny==gy && (mapmode!="3d" || instruments[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+instpool.destroy_sound(instruments[target].pianoslot);
+instpool.destroy_sound(instruments[target].drumslot);
+instpool.destroy_sound(instruments[target].otherslot);
+@instruments[target] = null;
+return true;
+}
 void destroy_all_instruments()
 {
 	instpool.destroy_all();

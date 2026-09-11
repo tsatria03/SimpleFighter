@@ -137,6 +137,23 @@ void spawn_switcher(double mnx, double mxx, double mny, double mxy, string switc
 switcher sc1(mnx, mxx, mny, mxy, switchtype, on_command, off_command, toggled, destroying_sound, looping, singleuse, mnz, mxz, contact_trigger, trigger_time);
 switchers.insert_last(sc1);
 }
+/* Remove one live switcher for the despawn command. Switches and sensors share this array, told apart
+by contact_trigger, so the caller passes which subtype to remove. Uses the instance's own .pool handle
+(switchpool for switches, sensorpool for sensors) to stop its looping switchsound, then nulls the slot. */
+bool despawn_switcher(bool sensor, bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<switchers.length(); i++)
+{
+if(@switchers[i] == null) continue;
+if(switchers[i].contact_trigger != sensor) continue;
+if(!by_coord || (switchers[i].minx==gx && switchers[i].miny==gy && (mapmode!="3d" || switchers[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+switchers[target].pool.destroy_sound(switchers[target].switchsound);
+@switchers[target] = null;
+return true;
+}
 void destroy_all_switchers()
 {
 for(uint i=0; i<switchers.length(); i++)

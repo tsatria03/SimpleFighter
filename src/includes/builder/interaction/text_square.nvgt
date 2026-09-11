@@ -20,6 +20,7 @@ void textcheck()
 {
 for(uint i=0; i<text_squares.length(); i++)
 {
+if(@text_squares[i] == null) continue;
 bool match = me.x>=text_squares[i].minx and me.x<=text_squares[i].maxx and me.y>=text_squares[i].miny and me.y<=text_squares[i].maxy;
 if(mapmode == "3d") match = match and me.z>=text_squares[i].minz and me.z<=text_squares[i].maxz;
 if(match and controls.action_repeating("interact"))
@@ -32,6 +33,20 @@ void spawn_text_square(double mnx, double mxx, double mny, double mxy, string te
 {
 text_square text1(mnx, mxx, mny, mxy, text, mnz, mxz);
 text_squares.insert_last(text1);
+}
+/* Remove one live text square for the despawn command; it owns no sounds or sub-entities, so just
+null the slot (textcheck now guards against the null). */
+bool despawn_text_square(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<text_squares.length(); i++)
+{
+if(@text_squares[i] == null) continue;
+if(!by_coord || (text_squares[i].minx==gx && text_squares[i].miny==gy && (mapmode!="3d" || text_squares[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@text_squares[target] = null;
+return true;
 }
 void destroy_all_text_squares()
 {

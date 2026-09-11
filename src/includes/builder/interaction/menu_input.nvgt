@@ -34,6 +34,20 @@ menu_input mi1(mnx, mxx, mny, mxy, prompt, options, submit_command, cancel_comma
 menu_inputs.insert_last(mi1);
 }
 
+/* Remove one live menu input for the despawn command; it owns no sounds or sub-entities, so just
+null the slot. */
+bool despawn_menu_input(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<menu_inputs.length(); i++)
+{
+if(@menu_inputs[i] == null) continue;
+if(!by_coord || (menu_inputs[i].minx==gx && menu_inputs[i].miny==gy && (mapmode!="3d" || menu_inputs[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@menu_inputs[target] = null;
+return true;
+}
 void destroy_all_menu_inputs()
 {
 menu_inputs.resize(0);

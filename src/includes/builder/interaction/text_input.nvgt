@@ -58,6 +58,20 @@ text_input ti1(mnx, mxx, mny, mxy, title, prompt, answer, char_filter, submit_co
 text_inputs.insert_last(ti1);
 }
 
+/* Remove one live text input for the despawn command; it owns no sounds or sub-entities, so just
+null the slot. */
+bool despawn_text_input(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<text_inputs.length(); i++)
+{
+if(@text_inputs[i] == null) continue;
+if(!by_coord || (text_inputs[i].minx==gx && text_inputs[i].miny==gy && (mapmode!="3d" || text_inputs[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@text_inputs[target] = null;
+return true;
+}
 void destroy_all_text_inputs()
 {
 text_inputs.resize(0);

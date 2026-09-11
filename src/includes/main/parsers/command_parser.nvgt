@@ -687,6 +687,25 @@ dispatch_entity_line(sd);
 else
 speak("Cannot spawn " + parsed[1] + "; " + spawnerr);
 }
+else if ((base_command == "despawn" || base_command == "dsp") && (!map_is_compiled || trusted))
+{
+if (parsed.length() < 2) { speak("Invalid command syntax. Usage: /despawn object, or /dsp object."); return; }
+string dstype = normalize_buildtype(parsed[1]);
+bool ds_coord = false;
+double dsx = 0, dsy = 0, dsz = 0;
+if (mapmode == "3d")
+{
+if (parsed.length() == 5) { ds_coord = true; dsx = stn(parsed[2]); dsy = stn(parsed[3]); dsz = stn(parsed[4]); }
+else if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /despawn object, or /despawn object x y z."); return; }
+}
+else
+{
+if (parsed.length() == 4) { ds_coord = true; dsx = stn(parsed[2]); dsy = stn(parsed[3]); }
+else if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /despawn object, or /despawn object x y."); return; }
+}
+if (!despawn_entity(dstype, ds_coord, dsx, dsy, dsz))
+speak("There's no " + parsed[1] + " to remove.");
+}
 else if (base_command == "hb" || base_command == "healbones")
 {
 if (parsed.length() == 1)

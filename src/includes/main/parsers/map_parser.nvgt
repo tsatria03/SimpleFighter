@@ -180,6 +180,23 @@ otherwise a plain-english reason (unrecognized object, or wrong number of values
 exact keyword + length gates of dispatch_entity_line WITHOUT spawning, so it MUST be kept in sync
 with that function: any entity added/changed there must be updated here too. `mode` is passed in
 (not read from the global mapmode) so a paste can be checked against the pasted map's own mode. */
+/* Removal dispatch for the despawn command -- the in-memory counterpart to dispatch_entity_line.
+Routes an on-disk keyword to its per-type remover (filled in one category at a time). by_coord false
+removes the newest of that type; true removes the one at the placement corner gx,gy[,gz]. Returns true
+if one was removed (false = none found, or the type's category isn't wired up yet). */
+bool despawn_entity(string type, bool by_coord, double gx, double gy, double gz)
+{
+if(type=="sign") return despawn_sign(by_coord, gx, gy, gz);
+else if(type=="switch") return despawn_switcher(false, by_coord, gx, gy, gz);
+else if(type=="sensor") return despawn_switcher(true, by_coord, gx, gy, gz);
+else if(type=="clock") return despawn_clock(by_coord, gx, gy, gz);
+else if(type=="calendar") return despawn_calendar(by_coord, gx, gy, gz);
+else if(type=="instrument") return despawn_instrument(by_coord, gx, gy, gz);
+else if(type=="text_input") return despawn_text_input(by_coord, gx, gy, gz);
+else if(type=="menu_input") return despawn_menu_input(by_coord, gx, gy, gz);
+else if(type=="text_square") return despawn_text_square(by_coord, gx, gy, gz);
+return false;
+}
 string entity_line_error(string[] sd, string mode)
 {
 if(sd.length()==0) return "";

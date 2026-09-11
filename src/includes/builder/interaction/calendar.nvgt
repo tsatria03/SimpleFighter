@@ -51,6 +51,21 @@ void spawn_calendar(double mnx, double mxx, double mny, double mxy, string text,
 cal cn1(mnx, mxx, mny, mxy, text, calendartype, destroyable, mnz, mxz, ranged);
 calendars.insert_last(cn1);
 }
+/* Remove one live calendar for the despawn command; a calendar always has a live looping
+calendarsound, so stop it before nulling the slot. (Element type is cal, array is calendars.) */
+bool despawn_calendar(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<calendars.length(); i++)
+{
+if(@calendars[i] == null) continue;
+if(!by_coord || (calendars[i].minx==gx && calendars[i].miny==gy && (mapmode!="3d" || calendars[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+calpool.destroy_sound(calendars[target].calendarsound);
+@calendars[target] = null;
+return true;
+}
 void destroy_all_calendars()
 {
 for(uint i=0; i<calendars.length(); i++)

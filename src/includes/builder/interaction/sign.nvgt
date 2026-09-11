@@ -56,6 +56,22 @@ void spawn_sign(double mnx, double mxx, double mny, double mxy, string text, str
 sign sg1(mnx, mxx, mny, mxy, text, signtype, destroyable, looping, mnz, mxz, ranged);
 signs.insert_last(sg1);
 }
+/* Remove one live sign for the despawn command: bare (by_coord false) drops the newest, else the one
+whose placement corner (minx,miny[,minz]) matches. Stops its looping signsound (harmless if never set)
+then sentinel-nulls the slot. */
+bool despawn_sign(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<signs.length(); i++)
+{
+if(@signs[i] == null) continue;
+if(!by_coord || (signs[i].minx==gx && signs[i].miny==gy && (mapmode!="3d" || signs[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+signpool.destroy_sound(signs[target].signsound);
+@signs[target] = null;
+return true;
+}
 void destroy_all_signs()
 {
 for(uint i=0; i<signs.length(); i++)
