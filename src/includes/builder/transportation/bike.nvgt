@@ -380,6 +380,42 @@ speedable=true;
 spiable=true;
 turnable=true;
 }
+bool despawn_bike(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<bikes.length(); i++)
+{
+if(@bikes[i] == null) continue;
+bool m = by_coord ? (bikes[i].bikex==gx && bikes[i].bikey==gy && (mapmode!="3d" || bikes[i].bikez==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+bool was_riding = bikes[target].moveable;
+bikepool.destroy_sound(bikes[target].bellsound);
+bikepool.destroy_sound(bikes[target].bikesound);
+bikepool.destroy_sound(bikes[target].startsound);
+bikepool.destroy_sound(bikes[target].stopsound);
+bikepool.destroy_sound(bikes[target].stucksound);
+bikepool.destroy_sound(bikes[target].speedsound);
+bikepool.destroy_sound(bikes[target].turnsound);
+bikepool.destroy_sound(bikes[target].changesound);
+@bikes[target] = null;
+/* Only restore ride state if the removed bike was the one being ridden. */
+if(was_riding)
+{
+onbike=false;
+cammable=true;
+hookable=true;
+jumpable=true;
+moveable=true;
+pauseable=true;
+quittable=true;
+speedable=true;
+spiable=true;
+turnable=true;
+}
+return true;
+}
 
 void build_bike()
 {

@@ -68,9 +68,31 @@ void destroy_all_airbeacons()
 {
 for (uint i = 0; i < airbeacons.length(); i++)
 {
+if(@airbeacons[i] == null) continue;
 airbecpool.destroy_sound(airbeacons[i].loopsound);
 }
 airbeacons.resize(0);
+}
+bool despawn_airbeacon(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for (uint i = 0; i < airbeacons.length(); i++)
+{
+if(@airbeacons[i] == null) continue;
+bool m;
+if(by_coord)
+{
+if(mapmode == "2d") m = (airbeacons[i].minx==gx && airbeacons[i].balt==gy);
+else if(mapmode == "3d") m = (airbeacons[i].minx==gx && airbeacons[i].miny==gy && airbeacons[i].balt==gz);
+else m = (airbeacons[i].minx==gx && airbeacons[i].miny==gy);
+}
+else m = true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+airbeacons[target].disable();
+@airbeacons[target] = null;
+return true;
 }
 
 void build_airbeacon()

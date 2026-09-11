@@ -71,6 +71,7 @@ string base = "builder/transportation/aircrafts/" + ac.plaintype;
 
 for(uint i = 0; i < air_turbulences.length(); i++)
 {
+if(@air_turbulences[i] == null) continue;
 air_turbulence@ tb = air_turbulences[i];
 bool in_announce_range = absolute(me.x - tb.x) <= tb.announce_distance;
 bool in_alarm_range = absolute(me.x - tb.x) <= tb.alarm_distance;
@@ -171,11 +172,34 @@ void destroy_all_air_turbulences()
 {
 for(uint i = 0; i < air_turbulences.length(); i++)
 {
+if(@air_turbulences[i] == null) continue;
 turbpool.destroy_sound(air_turbulences[i].alarmsound);
 turbpool.destroy_sound(air_turbulences[i].spawnsound);
 turbpool.destroy_sound(air_turbulences[i].remsound);
 }
 air_turbulences.resize(0);
+}
+bool despawn_air_turbulence(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i = 0; i < air_turbulences.length(); i++)
+{
+if(@air_turbulences[i] == null) continue;
+bool m;
+if(by_coord)
+{
+if(mapmode == "3d") m = (air_turbulences[i].x==gx && air_turbulences[i].y==gy && air_turbulences[i].minz==gz);
+else m = (air_turbulences[i].x==gx && air_turbulences[i].miny==gy);
+}
+else m = true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+turbpool.destroy_sound(air_turbulences[target].alarmsound);
+turbpool.destroy_sound(air_turbulences[target].spawnsound);
+turbpool.destroy_sound(air_turbulences[target].remsound);
+@air_turbulences[target] = null;
+return true;
 }
 
 void build_air_turbulence()

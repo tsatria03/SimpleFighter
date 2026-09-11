@@ -116,6 +116,7 @@ aircrafts[i].landing=true;
 aircrafts[i].landsound=plainpool.play_stationary(get_map_sound("builder/transportation/aircrafts/"+aircrafts[i].plaintype+"/*gear*"),false);
 for (uint b = 0; b < airbeacons.length(); b++)
 {
+if(@airbeacons[b] == null) continue;
 airbeacons[b].enable();
 }
 }
@@ -344,6 +345,7 @@ else
 bool topdown_on_beacon = false;
 for (uint b = 0; b < airbeacons.length(); b++)
 {
+if(@airbeacons[b] == null) continue;
 if (airbeacons[b].is_on_beacon()) { topdown_on_beacon = true; break; }
 }
 ready_to_land = aircrafts[i].landing && topdown_on_beacon;
@@ -354,6 +356,7 @@ if (ready_to_land && aircrafts[i].moveable == true)
 bool on_valid_beacon = false;
 for (uint b = 0; b < airbeacons.length(); b++)
 {
+if(@airbeacons[b] == null) continue;
 if (airbeacons[b].is_on_beacon())
 {
 on_valid_beacon = true;
@@ -460,6 +463,39 @@ quittable=true;
 speedable=true;
 spiable=true;
 turnable=true;
+}
+bool despawn_aircraft(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<aircrafts.length(); i++)
+{
+if(@aircrafts[i] == null) continue;
+bool m = by_coord ? (aircrafts[i].plainx==gx && aircrafts[i].plainy==gy && (mapmode!="3d" || aircrafts[i].plainz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+bool was_flying = aircrafts[target].moveable;
+plainpool.destroy_sound(aircrafts[target].loopsound);
+plainpool.destroy_sound(aircrafts[target].plainsound);
+plainpool.destroy_sound(aircrafts[target].altsound);
+plainpool.destroy_sound(aircrafts[target].speedsound);
+plainpool.destroy_sound(aircrafts[target].hurtsound);
+@aircrafts[target] = null;
+/* Only restore flight state if the removed aircraft was the one being flown. */
+if(was_flying)
+{
+inplain=false;
+cammable=true;
+hookable=true;
+jumpable=true;
+moveable=true;
+pauseable=true;
+quittable=true;
+speedable=true;
+spiable=true;
+turnable=true;
+}
+return true;
 }
 
 void build_aircraft()

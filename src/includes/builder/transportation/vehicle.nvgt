@@ -291,6 +291,39 @@ speedable=true;
 spiable=true;
 turnable=true;
 }
+bool despawn_vehicle(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<vehicles.length(); i++)
+{
+if(@vehicles[i] == null) continue;
+bool m = by_coord ? (vehicles[i].vehx==gx && vehicles[i].vehy==gy && (mapmode!="3d" || vehicles[i].vehz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+bool was_driving = vehicles[target].moveable;
+vehpool.destroy_sound(vehicles[target].beepsound);
+vehpool.destroy_sound(vehicles[target].vehsound);
+vehpool.destroy_sound(vehicles[target].hurtsound);
+vehpool.destroy_sound(vehicles[target].turnsound);
+vehpool.destroy_sound(vehicles[target].stucksound);
+@vehicles[target] = null;
+/* Only restore drive state if the removed vehicle was the one being driven. */
+if(was_driving)
+{
+invehicle=false;
+cammable=true;
+hookable=true;
+jumpable=true;
+moveable=true;
+pauseable=true;
+quittable=true;
+speedable=true;
+spiable=true;
+turnable=true;
+}
+return true;
+}
 
 void build_vehicle()
 {
