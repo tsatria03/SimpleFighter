@@ -33,6 +33,7 @@ void npczoneloop()
 {
 for(uint i = 0; i < npc_zones.length(); i++)
 {
+if(@npc_zones[i]==null) continue;
 bool trigger = npc_zones[i].minx <= me.x and npc_zones[i].maxx >= me.x and npc_zones[i].y <= me.y and npc_zones[i].y2 >= me.y;
 if(mapmode == "3d") trigger = trigger and npc_zones[i].z == me.z;
 if((npc_zones[i].auto_spawn or trigger) and npc_zones[i].spawntimer.elapsed >= npc_zones[i].spawntime and (npc_zones[i].cap <= 0 or npc_live_count() < uint(npc_zones[i].cap)))
@@ -79,6 +80,21 @@ npc_zone nz(x1, x2, y, y2, sp, sl, path, category, subtype, z, cap, auto_spawn);
 npc_zones.insert_last(nz);
 }
 
+/* Non-standard coord fields (minx double, y/y2 double, z int). Stops future NPC spawns; NPCs it
+already put into npcs[] stay (untracked, remove via kill/killall or despawn npc). Arena guards its own
+zone_index against the null. */
+bool despawn_npc_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<npc_zones.length(); i++)
+{
+if(@npc_zones[i]==null) continue;
+if(!by_coord || (npc_zones[i].minx==gx && npc_zones[i].y==gy && (mapmode!="3d" || npc_zones[i].z==gz))) target = int(i);
+}
+if(target < 0) return false;
+@npc_zones[target] = null;
+return true;
+}
 void destroy_all_npc_zones()
 {
 npc_zones.resize(0);

@@ -30,12 +30,14 @@ safesound=safepool.play_stationary(get_map_sound("builder/zones/safe zones/"+saf
 }
 bool player_in_safezone(uint i)
 {
+if(@safezones[i]==null) return false;
 if(!(safezones[i].minx<=me.x and safezones[i].maxx>=me.x and safezones[i].miny<=me.y and safezones[i].maxy>=me.y)) return false;
 if(mapmode == "3d" and (me.z < safezones[i].minz or me.z > safezones[i].maxz)) return false;
 return true;
 }
 bool cam_in_safezone(uint i)
 {
+if(@safezones[i]==null) return false;
 if(!(safezones[i].minx<=cam.x and safezones[i].maxx>=cam.x and safezones[i].miny<=cam.y and safezones[i].maxy>=cam.y)) return false;
 if(mapmode == "3d" and (cam.z < safezones[i].minz or cam.z > safezones[i].maxz)) return false;
 return true;
@@ -48,6 +50,7 @@ bool is_in_safe(double x,double y,double z)
 {
 for(uint i=0; i<safezones.length(); i++)
 {
+if(@safezones[i]==null) continue;
 if(safezones[i].minx<=x && safezones[i].maxx>=x && safezones[i].miny<=y && safezones[i].maxy>=y)
 {
 if(mapmode == "3d" && (z < safezones[i].minz || z > safezones[i].maxz)) continue;
@@ -60,6 +63,7 @@ void update_safezone()
 {
 for(uint i=0; i<safezones.length(); i++)
 {
+if(@safezones[i]==null) continue;
 bool currently_in_zone = player_in_safezone(i);
 if (currently_in_zone && !safezones[i].player_in_zone)
 {
@@ -78,10 +82,26 @@ void spawn_safezone(double x1,double x2,double y1,double y2,string safetype,doub
 safezone sz1(x1,x2,y1,y2,safetype,minz,maxz);
 safezones.insert_last(sz1);
 }
+/* Plays the *out* cue if the player is currently inside the removed zone (mirrors destroy_all), then
+nulls the slot. safesound is a one-shot, nothing to stop. */
+bool despawn_safe_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<safezones.length(); i++)
+{
+if(@safezones[i]==null) continue;
+if(!by_coord || (safezones[i].minx==gx && safezones[i].miny==gy && (mapmode!="3d" || safezones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+if(safezones[target].player_in_zone) safepool.play_stationary(get_map_sound("builder/zones/safe zones/"+safezones[target].safetype+"/*out*"),false);
+@safezones[target] = null;
+return true;
+}
 void destroy_all_safezones()
 {
 for(uint i=0; i<safezones.length(); i++)
 {
+if(@safezones[i]==null) continue;
 if(safezones[i].player_in_zone==true) safezones[i].safesound=safepool.play_stationary(get_map_sound("builder/zones/safe zones/"+safezones[i].safetype+"/*out*"),false);
 }
 safezones.resize(0);

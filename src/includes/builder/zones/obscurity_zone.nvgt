@@ -39,6 +39,7 @@ bool is_obscured(string entity_type, string target)
 {
 for (uint i = 0; i < obscurity_zones.length(); i++)
 {
+if(@obscurity_zones[i]==null) continue;
 obscurity_zone@ z = obscurity_zones[i];
 if (!z.covers(me.x, me.y, me.z)) continue;
 if (target == "spier" && !z.affects_spier) continue;
@@ -54,6 +55,18 @@ obscurity_zone oz1(x1, x2, y1, y2, aspier, amenu, etypes, wtl, minz, maxz);
 obscurity_zones.insert_last(oz1);
 }
 
+bool despawn_obscurity_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<obscurity_zones.length(); i++)
+{
+if(@obscurity_zones[i]==null) continue;
+if(!by_coord || (obscurity_zones[i].minx==gx && obscurity_zones[i].miny==gy && (mapmode!="3d" || obscurity_zones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@obscurity_zones[target] = null;
+return true;
+}
 void destroy_all_obscurity_zones()
 {
 obscurity_zones.resize(0);

@@ -24,6 +24,7 @@ void objzoneloop()
 {
 for(uint i=0; i<objzones.length(); i++)
 {
+if(@objzones[i]==null) continue;
 bool in_zone = objzones[i].minx<=me.x and objzones[i].maxx>=me.x and objzones[i].miny<=me.y and objzones[i].maxy>=me.y;
 if(mapmode == "3d") in_zone = in_zone and me.z >= objzones[i].minz and me.z <= objzones[i].maxz;
 if(in_zone and objzones[i].spawntimer.elapsed>=objzones[i].spawntime)
@@ -37,6 +38,19 @@ void spawn_objzone(double x1,double x2,double y1,double y2,int sp,string objtype
 {
 objzone oz1(x1,x2,y1,y2,sp,objtype,objtype2,minz,maxz);
 objzones.insert_last(oz1);
+}
+/* Stops future item spawns; items it already dropped into objs[] stay (untracked, remove separately). */
+bool despawn_item_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<objzones.length(); i++)
+{
+if(@objzones[i]==null) continue;
+if(!by_coord || (objzones[i].minx==gx && objzones[i].miny==gy && (mapmode!="3d" || objzones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@objzones[target] = null;
+return true;
 }
 void destroy_all_objzones()
 {

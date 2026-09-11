@@ -22,6 +22,7 @@ void bombzoneloop()
 {
 for(uint i=0; i<bombzones.length(); i++)
 {
+if(@bombzones[i]==null) continue;
 bool trigger = bombzones[i].minx<=me.x and bombzones[i].maxx>=me.x and bombzones[i].bomby<=me.y and bombzones[i].bomby2>=me.y;
 if(mapmode == "3d") trigger = trigger and bombzones[i].bombz == me.z;
 if(trigger and bombzones[i].spawntimer.elapsed>=bombzones[i].spawntime)
@@ -35,6 +36,20 @@ void spawn_bombzone(double x1,double x2,double y,double y2,int sp,string type,in
 {
 bombzone bz1(x1,x2,y,y2,sp,type,z);
 bombzones.insert_last(bz1);
+}
+/* Non-standard coord fields (minx double, bomby/bombz int). Stops future bomb spawns; existing bombs
+stay. */
+bool despawn_bomb_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<bombzones.length(); i++)
+{
+if(@bombzones[i]==null) continue;
+if(!by_coord || (bombzones[i].minx==gx && bombzones[i].bomby==gy && (mapmode!="3d" || bombzones[i].bombz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@bombzones[target] = null;
+return true;
 }
 void destroy_all_bombzones()
 {

@@ -346,6 +346,7 @@ void menuzoneloop()
 {
 for(uint i=0; i<menuzones.length(); i++)
 {
+if(@menuzones[i]==null) continue;
 bool in_zone = menuzones[i].minx<=me.x and menuzones[i].maxx>=me.x and menuzones[i].miny<=me.y and menuzones[i].maxy>=me.y;
 if(mapmode == "3d") in_zone = in_zone and me.z >= menuzones[i].minz and me.z <= menuzones[i].maxz;
 if(in_zone and controls.action_repeating("interact"))
@@ -366,6 +367,18 @@ void spawn_menuzone(double x1,double x2,double y1,double y2,double minz=0,double
 {
 menuzone menz1(x1,x2,y1,y2,minz,maxz,menu_name);
 menuzones.insert_last(menz1);
+}
+bool despawn_menu_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<menuzones.length(); i++)
+{
+if(@menuzones[i]==null) continue;
+if(!by_coord || (menuzones[i].minx==gx && menuzones[i].miny==gy && (mapmode!="3d" || menuzones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@menuzones[target] = null;
+return true;
 }
 void destroy_all_menuzones()
 {

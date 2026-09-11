@@ -22,6 +22,7 @@ void projzoneloop()
 {
 for(uint i=0; i<projzones.length(); i++)
 {
+if(@projzones[i]==null) continue;
 bool trigger = projzones[i].minx<=me.x and projzones[i].maxx>=me.x and projzones[i].proy<=me.y and projzones[i].proy2>=me.y;
 if(mapmode == "3d") trigger = trigger and projzones[i].proz == me.z;
 if(trigger and projzones[i].spawntimer.elapsed>=projzones[i].spawntime)
@@ -43,6 +44,20 @@ void spawn_projzone(double x1,double x2,double y,double y2,int sp,string type,in
 {
 projzone pz1(x1,x2,y,y2,sp,type,z);
 projzones.insert_last(pz1);
+}
+/* Non-standard coord fields (minx double, proy double, proz int). Stops future projectile spawns;
+existing projectiles stay. */
+bool despawn_projectile_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<projzones.length(); i++)
+{
+if(@projzones[i]==null) continue;
+if(!by_coord || (projzones[i].minx==gx && projzones[i].proy==gy && (mapmode!="3d" || projzones[i].proz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@projzones[target] = null;
+return true;
 }
 void destroy_all_projzones()
 {

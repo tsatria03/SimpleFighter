@@ -29,6 +29,7 @@ void stzoneloop()
 {
 for(uint i=0; i<story_zones.length(); i++)
 {
+if(@story_zones[i]==null) continue;
 bool inside = (story_zones[i].minx<=me.x and story_zones[i].maxx>=me.x and story_zones[i].miny<=me.y and story_zones[i].maxy>=me.y);
 if(mapmode == "3d") inside = inside and me.z >= story_zones[i].minz and me.z <= story_zones[i].maxz;
 bool can_fire = story_zones[i].retriggerable or !story_zones[i].fired;
@@ -55,6 +56,18 @@ void spawn_story_zone(double x1,double x2,double y1,double y2,string text,string
 {
 story_zone stz1(x1,x2,y1,y2,text,stztype,mode,retriggerable,minz,maxz);
 story_zones.insert_last(stz1);
+}
+bool despawn_story_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<story_zones.length(); i++)
+{
+if(@story_zones[i]==null) continue;
+if(!by_coord || (story_zones[i].minx==gx && story_zones[i].miny==gy && (mapmode!="3d" || story_zones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@story_zones[target] = null;
+return true;
 }
 void destroy_all_story_zones()
 {

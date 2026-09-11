@@ -65,6 +65,7 @@ fall_damage=fdmg;
 // here, so this stays pure geometry like player_in_healzone.
 bool player_in_tilezone(uint i)
 {
+if(@tilezones[i]==null) return false;
 if(!(tilezones[i].minx<=me.x and tilezones[i].maxx>=me.x and tilezones[i].miny<=me.y and tilezones[i].maxy>=me.y)) return false;
 if(mapmode == "3d" and (me.z < tilezones[i].minz or me.z > tilezones[i].maxz)) return false;
 return true;
@@ -150,6 +151,19 @@ if(tilezones[i].fall_damage >= 0) fallmod = tilezones[i].fall_damage;           
 }
 }
 
+/* No sound, no tiles; speed/jump overrides self-heal next tilezoneloop. Just null the slot. */
+bool despawn_tile_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<tilezones.length(); i++)
+{
+if(@tilezones[i]==null) continue;
+if(!by_coord || (tilezones[i].minx==gx && tilezones[i].miny==gy && (mapmode!="3d" || tilezones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@tilezones[target] = null;
+return true;
+}
 void destroy_all_tilezones()
 {
 // The player may be standing in a zone at unload; drop any override back to their own value.

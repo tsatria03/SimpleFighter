@@ -17,6 +17,7 @@ bool player_in_fallzone()
 {
 for(uint i=0; i<fallzones.length(); i++)
 {
+if(@fallzones[i]==null) continue;
 if(!(fallzones[i].minx<=me.x and fallzones[i].maxx>=me.x and fallzones[i].miny<=me.y and fallzones[i].maxy>=me.y)) continue;
 if(mapmode == "3d" and (me.z < fallzones[i].minz or me.z > fallzones[i].maxz)) continue;
 return true;
@@ -27,6 +28,18 @@ void spawn_fallzone(double x1,double x2,double y1,double y2,double minz=0,double
 {
 fallzone fz1(x1,x2,y1,y2,minz,maxz);
 fallzones.insert_last(fz1);
+}
+bool despawn_fall_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<fallzones.length(); i++)
+{
+if(@fallzones[i]==null) continue;
+if(!by_coord || (fallzones[i].minx==gx && fallzones[i].miny==gy && (mapmode!="3d" || fallzones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@fallzones[target] = null;
+return true;
 }
 void destroy_all_fallzones()
 {

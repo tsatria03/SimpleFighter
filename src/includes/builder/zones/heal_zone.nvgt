@@ -30,6 +30,7 @@ arena_heal=ah;
 }
 bool player_in_healzone(uint i)
 {
+if(@healzones[i]==null) return false;
 if(!(healzones[i].minx<=me.x and healzones[i].maxx>=me.x and healzones[i].miny<=me.y and healzones[i].maxy>=me.y)) return false;
 if(mapmode == "3d" and (me.z < healzones[i].minz or me.z > healzones[i].maxz)) return false;
 return true;
@@ -38,6 +39,7 @@ void healzoneloop()
 {
 for(uint i=0; i<healzones.length(); i++)
 {
+if(@healzones[i]==null) continue;
 if(player_in_healzone(i) and healzones[i].healtimer.elapsed>=healzones[i].healtime)
 {
 healzones[i].healtimer.restart();
@@ -83,6 +85,7 @@ void update_healzone()
 {
 for(uint i=0; i<healzones.length(); i++)
 {
+if(@healzones[i]==null) continue;
 bool currently_in_zone = player_in_healzone(i);
 if (currently_in_zone && !healzones[i].in_zone)
 {
@@ -100,6 +103,18 @@ void spawn_healzone(double x1,double x2,double y1,double y2,int hm,int hp,int ht
 {
 healzone hz1(x1,x2,y1,y2,hm,hp,ht,hlt,minz,maxz,arena_heal);
 healzones.insert_last(hz1);
+}
+bool despawn_heal_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<healzones.length(); i++)
+{
+if(@healzones[i]==null) continue;
+if(!by_coord || (healzones[i].minx==gx && healzones[i].miny==gy && (mapmode!="3d" || healzones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@healzones[target] = null;
+return true;
 }
 void destroy_all_healzones()
 {

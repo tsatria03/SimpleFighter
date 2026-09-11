@@ -48,6 +48,7 @@ shield_amount=sh;
 // tile underfoot actually matches -- is applied at step time, not here, so this stays pure geometry.
 bool player_in_fluxzone(uint i)
 {
+if(@fluxzones[i]==null) return false;
 if(!(fluxzones[i].minx<=me.x and fluxzones[i].maxx>=me.x and fluxzones[i].miny<=me.y and fluxzones[i].maxy>=me.y)) return false;
 if(mapmode == "3d" and (me.z < fluxzones[i].minz or me.z > fluxzones[i].maxz)) return false;
 return true;
@@ -56,6 +57,18 @@ void spawn_fluxzone(double x1, double x2, double y1, double y2, string surf, dou
 {
 fluxzone fz1(x1, x2, y1, y2, surf, sp, hp, st, sh, minz, maxz);
 fluxzones.insert_last(fz1);
+}
+bool despawn_flux_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<fluxzones.length(); i++)
+{
+if(@fluxzones[i]==null) continue;
+if(!by_coord || (fluxzones[i].minx==gx && fluxzones[i].miny==gy && (mapmode!="3d" || fluxzones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@fluxzones[target] = null;
+return true;
 }
 void destroy_all_fluxzones()
 {

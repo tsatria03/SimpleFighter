@@ -25,6 +25,7 @@ string get_text_zone_at(double x,double y,double z=0)
 {
 for(int i=int(text_zones.length())-1; i>=0; i--)
 {
+if(@text_zones[i]==null) continue;
 if(text_zones[i].minx<=x and text_zones[i].maxx>=x and text_zones[i].miny<=y and text_zones[i].maxy>=y)
 {
 if(mapmode == "3d" && (z < text_zones[i].minz || z > text_zones[i].maxz)) continue;
@@ -58,6 +59,18 @@ void spawn_text_zone(double x1,double x2,double y1,double y2,string text,double 
 {
 text_zone tz1(x1,x2,y1,y2,text,minz,maxz);
 text_zones.insert_last(tz1);
+}
+bool despawn_text_zone(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<text_zones.length(); i++)
+{
+if(@text_zones[i]==null) continue;
+if(!by_coord || (text_zones[i].minx==gx && text_zones[i].miny==gy && (mapmode!="3d" || text_zones[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@text_zones[target] = null;
+return true;
 }
 void destroy_all_text_zones()
 {
