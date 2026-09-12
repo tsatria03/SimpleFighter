@@ -74,3 +74,223 @@ else result = result or clause;
 }
 return result;
 }
+
+/* ===== The logic_condition element (section 2): state, parsing, runtime. Soundless (no pool), so it
+gets no spier / obscurity / object-menu wiring per the soundless-entity rule. Branches are held as two
+parallel arrays: conditions[i] with commands[i] are the if (i==0) and elseif (i>=1) branches, evaluated
+top to bottom; the first true one wins, and if none match the else_command wins (it may be empty). ===== */
+class logic_condition
+{
+double minx, maxx, miny, maxy, minz, maxz;
+string mode;            // "contact", "interact", or "watch"
+bool singleuse;
+string[] conditions;    // if + elseif conditions, in order
+string[] commands;      // the matching command for each condition (empty = do nothing)
+string else_command;    // fired when no condition matches (may be empty)
+bool was_inside;        // contact: fire-on-enter / re-arm-on-exit gate
+int last_winner;        // watch: index of the last-fired branch (-2 = none / reset on exit)
+logic_condition(double mnx, double mxx, double mny, double mxy, double mnz, double mxz, string md, string[]@ conds, string[]@ cmds, string ec, bool sgl)
+{
+minx=mnx; maxx=mxx; miny=mny; maxy=mxy; minz=mnz; maxz=mxz;
+mode=md; singleuse=sgl;
+conditions=conds; commands=cmds; else_command=ec;
+was_inside=false; last_winner=-2;
+}
+/* Index of the winning branch: 0..conditions.length()-1 for a matched if/elseif, or conditions.length()
+for the else. Each condition's universal tokens (%health%, %flag:x%, %item:y%, ...) are substituted to
+values before the evaluator runs, so it only ever compares literals. */
+int evaluate_winner()
+{
+for(uint i=0; i<conditions.length(); i++)
+{
+string c = conditions[i];
+c = expand_state_tokens(c);
+c = expand_flag_tokens(c);
+c = expand_item_tokens(c);
+if(evaluate_condition(c)) return int(i);
+}
+return int(conditions.length());
+}
+}
+logic_condition@[] logic_conditions(0);
+
+void spawn_logic_condition(double mnx, double mxx, double mny, double mxy, double mnz, double mxz, string mode, string[]@ conds, string[]@ cmds, string else_cmd, bool singleuse)
+{
+logic_condition lc(mnx, mxx, mny, mxy, mnz, mxz, mode, conds, cmds, else_cmd, singleuse);
+logic_conditions.insert_last(lc);
+}
+
+/* Build the quoted-field block for the on-disk line: "if cond" "if cmd" ["elseif cond" "elseif cmd"]...
+"else cmd". Every field is escape_quotes'd so a quote inside a command survives (the shared escape
+convention). The count of quoted fields is always odd and >= 3, which the parser uses to peel if / else /
+elseif pairs deterministically. */
+string build_logic_quoted(string[]@ conds, string[]@ cmds, string else_cmd)
+{
+string s = "";
+for(uint i=0; i<conds.length(); i++)
+s += " \"" + escape_quotes(conds[i]) + "\" \"" + escape_quotes(cmds[i]) + "\"";
+s += " \"" + escape_quotes(else_cmd) + "\"";
+return s;
+}
+
+/* Parse one logic_condition line. Shape: logic_condition <coords> <mode> <quoted fields...> <singleuse>.
+Coords are single (x y [z]) or ranged (mnx mxx mny mxy [mnz mxz]); the count of bare tokens before the
+first quote tells them apart (same detection sensors use). The mode word sits just before the first
+quote. The quoted block peels into if/elseif pairs + a trailing else; a trailing bare bool is single-use.
+A structurally broken line (no quotes, or an even quoted-field count) is dropped, matching the reader's
+permit-what-loads contract. */
+void read_logic_condition(string[] sd)
+{
+int qidx = -1;
+for(uint i=1; i<sd.length(); i++)
+{
+if(sd[i].length() > 0 and sd[i].substr(0,1) == "\"") { qidx = int(i); break; }
+}
+if(qidx == -1) return;
+int numcount = qidx - 1;
+bool ranged = (mapmode == "3d") ? (numcount >= 5) : (numcount >= 4);
+// Drop a line that lacks enough bare tokens for its detected shape, so the coord reads below can't
+// run off the end (permit-what-loads: a broken line simply doesn't place, Tier 2 flags it at authoring).
+if(ranged)
+{
+if(mapmode == "3d" and numcount < 7) return;
+if(mapmode != "3d" and numcount < 5) return;
+}
+else
+{
+if(mapmode == "3d" and numcount < 4) return;
+if(mapmode != "3d" and numcount < 3) return;
+}
+double mnx, mxx, mny, mxy, mnz=0, mxz=0;
+if(ranged)
+{
+mnx=stn(sd[1]); mxx=stn(sd[2]); mny=stn(sd[3]); mxy=stn(sd[4]);
+if(mapmode == "3d") { mnz=stn(sd[5]); mxz=stn(sd[6]); }
+}
+else
+{
+mnx=stn(sd[1]); mxx=mnx; mny=stn(sd[2]); mxy=mny;
+if(mapmode == "3d") { mnz=stn(sd[3]); mxz=mnz; }
+}
+string mode = sd[qidx-1];
+string combined = join_string_array(sd, qidx, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() < 3 or (quoted.length() % 2) == 0) return;
+string[] conds;
+string[] cmds;
+uint pairs = (quoted.length()-1)/2;
+for(uint i=0; i<pairs; i++)
+{
+conds.insert_last(quoted[i*2]);
+cmds.insert_last(quoted[i*2+1]);
+}
+string else_cmd = quoted[quoted.length()-1];
+bool singleuse = false;
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+if(tail.length() >= 1 and tail[0].length() > 0) singleuse = string_to_bool(tail[0]);
+spawn_logic_condition(mnx, mxx, mny, mxy, mnz, mxz, mode, conds, cmds, else_cmd, singleuse);
+}
+
+void write_logic_condition(double x, double y, double z, string mode, string[]@ conds, string[]@ cmds, string else_cmd, bool singleuse)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords = (mapmode=="3d") ? (""+x+" "+y+" "+z) : (""+x+" "+y);
+mapper.write("\r\n"+"logic_condition "+coords+" "+mode+build_logic_quoted(conds, cmds, else_cmd)+" "+singleuse);
+mapper.close();
+bump_map_modified();
+}
+
+void write_ranged_logic_condition(double mnx, double mxx, double mny, double mxy, double mnz, double mxz, string mode, string[]@ conds, string[]@ cmds, string else_cmd, bool singleuse)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string coords = (mapmode=="3d") ? (""+mnx+" "+mxx+" "+mny+" "+mxy+" "+mnz+" "+mxz) : (""+mnx+" "+mxx+" "+mny+" "+mxy);
+mapper.write("\r\n"+"logic_condition "+coords+" "+mode+build_logic_quoted(conds, cmds, else_cmd)+" "+singleuse);
+mapper.close();
+bump_map_modified();
+}
+
+/* Fire the winning branch of the element in slot `slot`. A real if/elseif match on a single-use element
+consumes it (nulls the slot) BEFORE running its command; an else win never consumes single-use (it keeps
+waiting for a real match). An empty winning command is a silent no-op. Commands run trusted, so they work
+on a compiled map. */
+void fire_logic_condition_winner(uint slot, int w)
+{
+if(@logic_conditions[slot] == null) return;
+logic_condition@ lc = @logic_conditions[slot];
+bool real_match = (w < int(lc.conditions.length()));
+string cmd = real_match ? lc.commands[w] : lc.else_command;
+if(real_match and lc.singleuse) @logic_conditions[slot] = null;
+if(cmd != "") comstack(cmd, true);
+}
+
+void fire_logic_condition(uint slot)
+{
+if(@logic_conditions[slot] == null) return;
+fire_logic_condition_winner(slot, logic_conditions[slot].evaluate_winner());
+}
+
+void logicloop()
+{
+for(uint i=0; i<logic_conditions.length(); i++)
+{
+if(@logic_conditions[i] == null) continue;
+bool inside = me.x>=logic_conditions[i].minx and me.x<=logic_conditions[i].maxx and me.y>=logic_conditions[i].miny and me.y<=logic_conditions[i].maxy;
+if(mapmode == "3d") inside = inside and me.z>=logic_conditions[i].minz and me.z<=logic_conditions[i].maxz;
+string md = logic_conditions[i].mode;
+if(md == "contact")
+{
+if(inside and !logic_conditions[i].was_inside)
+{
+logic_conditions[i].was_inside = true;
+fire_logic_condition(i);
+}
+else if(!inside and logic_conditions[i].was_inside)
+logic_conditions[i].was_inside = false;
+}
+else if(md == "watch")
+{
+if(inside)
+{
+int w = logic_conditions[i].evaluate_winner();
+if(w != logic_conditions[i].last_winner)
+{
+logic_conditions[i].last_winner = w;
+fire_logic_condition_winner(i, w);
+}
+}
+else if(logic_conditions[i].last_winner != -2)
+logic_conditions[i].last_winner = -2;
+}
+else if(md == "interact")
+{
+if(inside and controls.action_repeating("interact"))
+{
+fire_logic_condition(i);
+return;
+}
+}
+}
+}
+
+// Remove one live logic condition for the despawn command: the newest, or the one whose placement
+// corner matches gx,gy[,gz]. Soundless, so nothing to stop before nulling the slot.
+bool despawn_logic_condition(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<logic_conditions.length(); i++)
+{
+if(@logic_conditions[i] == null) continue;
+if(!by_coord or (logic_conditions[i].minx==gx and logic_conditions[i].miny==gy and (mapmode!="3d" or logic_conditions[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+@logic_conditions[target] = null;
+return true;
+}
+
+void destroy_all_logic_conditions()
+{
+logic_conditions.resize(0);
+}
