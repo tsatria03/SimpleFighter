@@ -31,7 +31,7 @@ Level 3 needs live key handling during navigation, so it is a single-list form d
 
 - A dedicated preview `sound_pool` (mirrors the forms' `t`); `play_stationary` (non-positional); **destroy the previous slot before each play** so clips never stack.
 - Clip resolved via `get_map_sound("builder/<cat>/<type>/<folder>/*<clip>*")` — map-context, so the current map's `assets/` overrides layer over the global library.
-- Missing clip for a folder → **announce "no <label> sound"** rather than silence (mirrors the GC platform browser courtesy).
+- Missing clip for a folder → **announce "no <label> sound"** rather than silence (mirrors an external reference game's platform browser courtesy).
 - **No volume / pitch controls.** The build forms have volume/pitch sliders that shape the preview; the gallery deliberately omits them (dev decision 2026-08-31) — it plays each clip at its natural level. So the level-3 view is JUST the list plus the play keys, no sliders.
 
 ## Key convention (uniform — matches every existing form)
