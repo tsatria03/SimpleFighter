@@ -1,0 +1,89 @@
+Logic conditions.
+
+A logic condition is a placed element that checks your game state and runs a slash command based on the result. It is the map's decision maker: if this is true do one thing, otherwise do another. You give it one or more conditions, each paired with a command, and a final else command that runs when none of them matched. It reads live values like your health, your position, your map flags, and how many of an item you carry, so it can open a door only when you hold the key, warn you when your health drops, count your progress, and branch a map's events on what you have done.
+
+It works hand in hand with two other features: map flags, which remember numbers while you play, and items, which you carry in your inventory. A logic condition reads both, so the natural pattern is a switch or sensor that changes a flag, and a logic condition that reacts to it.
+
+Building a logic condition.
+
+You build one from the interaction section of the build menu. The form asks for a build mode, single for one tile or ranged for a rectangular area, then the coordinates, then the branches and settings:
+
+The if condition is the test that decides whether the first branch runs. It is required.
+The if command is the slash command that runs when the if condition is true. You may leave it blank for a branch that matches but does nothing.
+The else command runs when no condition matched. You may leave it blank.
+The trigger mode chooses when the element checks: contact, interact, or watch, explained below.
+Single use, when checked, makes the element fire once and then stop for the rest of the map.
+
+The form has three buttons: add elseif branch, okay, and cancel. Pressing okay builds the element right away with whatever branches you have entered, so a plain if and else is a single press. Pressing add elseif branch opens a small window with two fields, an elseif condition and its command; filling it in and pressing okay adds that branch and returns you to the form, where you can add more or press okay to finish. Each elseif you add is checked in order, after the if and before the else.
+
+Writing a condition.
+
+A condition is written as a value, an operator, and a value, with one space around the operator, like %health% >= 50. The values are usually tokens that fill in a live number the moment the condition is checked: %health%, %points%, %x%, and the other character and position tokens, plus %flag:name% for a map flag and %item:name% for how many of an item you hold. A plain number works as a value too. The spaces matter: the condition is read by splitting on spaces into three pieces, so %health% >= 50 works but %health%>=50 does not.
+
+Operators and connectors.
+
+Six operators are available: == equal to, != not equal to, > greater than, < less than, >= greater than or equal to, and <= less than or equal to. You can join several comparisons in one condition with the connectors and, or, &&, and ||, where && means the same as and and || the same as or. So %health% <= 20 and %flag:shielded% == 0 is true only when both halves are true.
+
+Connectors are folded strictly left to right, with no parentheses and no order of precedence. This means %flag:a% == 1 or %flag:b% == 1 and %flag:c% == 1 is read as ((a or b) and c), not a or (b and c). When you need different grouping, split it into separate branches instead: put one grouping in the if and another in an elseif, each with the same command.
+
+The three trigger modes.
+
+Contact checks once, the moment you step into the area, the same way a story zone fires as you enter. It runs the winning branch and then stays quiet while you remain inside; it checks again only after you leave and come back. Use it for something that should happen when you arrive.
+
+Interact does nothing on its own; it waits for you to press the interact key while standing in the area, like a switch. Use it for something the player chooses to trigger, such as trying a locked door.
+
+Watch keeps checking the whole time you are inside and runs a branch whenever the winning branch changes. If your health drops while you stand in the area, or a flag flips, watch notices and reacts without you moving. It fires only on a change, not every moment, so it stays quiet until the result actually differs. Use it to react to things happening around the player while they are in a spot.
+
+If, elseif, and else.
+
+The conditions are checked from the top down: the if first, then each elseif in the order you added them. The first one that is true wins and its command runs; the rest are skipped. If none are true, the else command runs. The else always exists, though it may be empty, so a logic condition always has exactly one outcome each time it checks. Leaving a command blank makes that branch do nothing, which is useful when you want to match a case on purpose and not fall through to the else.
+
+Single use.
+
+Normally a logic condition keeps working for the whole map, firing every time its mode triggers. Check single use to make it fire once and then go silent for the rest of the run. It is used up only when a real if or elseif branch wins; if only the else runs, it stays armed and keeps waiting for a real match. This makes single use right for a one-time reward or event that should happen the first time a condition is finally met.
+
+Reading flags and items.
+
+Two tokens make logic conditions powerful. %flag:name% fills in a map flag's current value, or zero if it was never set, so %flag:door_opened% == 1 tests whether a flag has been set. %item:name% fills in how many of an item you carry, so %item:keycard% >= 1 tests whether you hold at least one, and %item:coin% >= 10 tests a count. Both are covered in their own topics, map flags and items.
+
+A note on signs.
+
+A flag or item token in a logic condition's command works because the command runs live. A sign is different: a sign's written text is fixed when the map loads, so a percent token in a sign's message is not filled in. To speak a flag or item count aloud, put it in a command, such as a logic condition or switch whose command is /speak you have %flag:coins% coins, rather than in a sign's text. A dollar sign map variable, which is filled in as the map loads, does work inside a sign.
+
+Examples.
+
+A health readout on three tiers, checked when you press interact:
+
+logic_condition 5 0 interact "%health% >= 80" "/speak full health" "%health% >= 40" "/speak doing okay" "/speak you are badly hurt" false
+
+The if, the one elseif, and the else are checked in order, so full health wins at 80 or more, doing okay wins from 40 to 79, and you are badly hurt covers the rest.
+
+A locked door that needs a key item, opened with the interact key:
+
+logic_condition 10 0 interact "%item:keycard% >= 1" "/speak the door unlocks" "/speak the door is locked; you need a keycard" false
+
+If you hold at least one keycard the door speaks that it unlocks; otherwise it tells you what you need. Pair it with a real door the same command can open.
+
+A door that remembers it was opened, using a flag, checked on contact:
+
+logic_condition 10 0 contact "%flag:door% == 1" "/speak the door is already open" "/setflag door 1; /speak you push the door open" false
+
+The first time you reach the tile the flag is zero, so the else runs: it opens the door and sets the flag. Step away and back and the if now wins, so it just says the door is already open. Because flags reset when the map loads, the door starts closed again on a fresh visit.
+
+A milestone that fires when a counter reaches a goal, watched over the whole map:
+
+logic_condition 0 100 0 100 watch "%flag:coins% >= 10" "/speak you have enough coins, the gate opens" "" false
+
+The ranged area covers the map, and watch means the moment your coins flag reaches ten, while you are anywhere inside, it announces the gate. The else is blank, so nothing happens until the goal is met.
+
+Two conditions joined together:
+
+logic_condition 5 0 contact "%flag:torch_lit% == 1 and %item:rope% >= 1" "/speak you are ready to descend" "/speak you still need to prepare" false
+
+Both halves must be true, so you are ready only with the torch lit and a rope in hand.
+
+A one-time reward with single use, granted the first time you arrive:
+
+logic_condition 5 0 contact "%health% >= 1" "/give gold 100; /speak you found 100 gold" "" true
+
+Single use is true, so the reward is given once and never again this run.
