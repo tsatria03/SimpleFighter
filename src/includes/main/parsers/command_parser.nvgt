@@ -846,7 +846,7 @@ if (parsed.length() < 2 || parsed.length() > 3 || (parsed.length() == 3 && flag 
 double amt = stn(parsed[1]);
 if (flag == "true") amt = maxhealth * amt / 100;
 health -= amt;
-if (health <= 0) player_lose_life();
+if (health <= 0) player_lose_life(false);
 }
 else if (base_command == "slv" || base_command == "sublevel")
 {
@@ -905,7 +905,7 @@ double amt = stn(parsed[1]);
 if (flag == "true") amt = maxhealth * amt / 100;
 health = amt;
 if (health > maxhealth) health = maxhealth;
-if (health <= 0) player_lose_life();
+if (health <= 0) player_lose_life(false);
 }
 else if (base_command == "stlv" || base_command == "setlevel")
 {
@@ -1270,17 +1270,8 @@ else if ((base_command == "sd" || base_command == "suicide") && (!map_is_compile
 {
 if (parsed.length() == 1)
 {
-if(lifecard>=2)
-{
-p.play_stationary(get_pack_sound("main/misc/*punch*"),false);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*life*"),false);
-lifecard-=1;
-health=maxhealth;
-bonehealth=0;
-broken_bones.delete_all();
-}
-else if(lifecard<=1)
-{
+// A true wipe-out: end the game no matter how many lives remain (still plays the hit cue).
+lifecard=0;
 wepdef=0;
 drawnshield=false;
 fireable=true;
@@ -1299,7 +1290,6 @@ dlgplay(get_pack_sound("main/characters/"+chartype+"/general/*death*"), true, tr
 dlgplay(get_map_sound("builder/construction/platforms/"+gmt(me.x,me.y)+"/*fall*"));
 clearmap(true);
 show_death_prompt();
-}
 }
 else
 {

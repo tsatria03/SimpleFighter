@@ -33,12 +33,14 @@ playerdeath();
 }
 /* Take a life the way combat and hazards do: with spare lives, drop one, refill health, and clear
 broken bones with the life-lost cue; on the last life, run the normal death. Used by the /subhealth
-and /sethealth commands when they drive health to zero. */
-void player_lose_life()
+and /sethealth commands when they drive health to zero. play_punch controls the hit cue -- both
+/subhealth and /sethealth pass false so their life loss plays the life cue without the punch; the
+default stays true for any future caller that wants the hit sound. */
+void player_lose_life(bool play_punch = true)
 {
 if(lifecard>=2)
 {
-p.play_stationary(get_pack_sound("main/misc/*punch*"),false);
+if(play_punch) p.play_stationary(get_pack_sound("main/misc/*punch*"),false);
 p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*life*"),false);
 lifecard-=1;
 health=maxhealth;
