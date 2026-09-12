@@ -641,6 +641,30 @@ resume_pools();
 if(mres==-1) speak("canceled");
 return;
 }
+/* The /flags menu (and the "flags" menu zone): a read-only list of every set map flag and its value,
+alphabetical, whole numbers shown clean like the loc readout. The empty guard resumes pools before
+returning so the menu-zone path (which pauses before run_menu) doesn't leave pools frozen. Mirrors
+komlogmenu above; escape says canceled. */
+void flagsmenu()
+{
+if(glider_engine_on) glider_engine_stop();
+if(map_flags.get_size() == 0)
+{
+resume_pools();
+speak("There are no flags on this map.");
+return;
+}
+setupmenu();
+string[] names = flag_names_sorted();
+m.add_item("total flags "+names.length());
+for(uint i = 0; i < names.length(); i++)
+m.add_item(names[i]+", "+flag_get(names[i]));
+m.intro_text="Flags";
+int mres = m.run();
+resume_pools();
+if(mres==-1) speak("canceled");
+return;
+}
 void shopmenu()
 {
 if(glider_engine_on) glider_engine_stop();
