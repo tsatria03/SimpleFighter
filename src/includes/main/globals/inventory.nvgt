@@ -4,6 +4,44 @@ timer usetimer;
 sound_pool invpool;
 inventory inv;
 
+/* Universal %item:name% token (14.9): replaced with the player's current map-inventory count of that
+item, or 0 if none is held. The name is read from just after "item:" up to the closing "%", so an item
+name may contain spaces or underscores (give/take use those names). Modeled on expand_flag_tokens and
+called in comparse right after it, so it works in any command or text. A token with no closing % is
+left literal. inv (declared just above) is the map-session inventory that give/take/getall fill. */
+string expand_item_tokens(string cmd)
+{
+if(string_contains(cmd, "%item:", 1) < 0) return cmd;
+string result = "";
+int n = int(cmd.length());
+int i = 0;
+while(i < n)
+{
+if(cmd.substr(i, 6) == "%item:")
+{
+int j = i + 6;
+string name = "";
+bool closed = false;
+while(j < n)
+{
+string c = cmd.substr(j, 1);
+if(c == "%") { closed = true; break; }
+name += c;
+j++;
+}
+if(closed and name.length() > 0)
+{
+result += ("" + inv.count(name));
+i = j + 1;
+continue;
+}
+}
+result += cmd.substr(i, 1);
+i++;
+}
+return result;
+}
+
 class inventory
 {
 dictionary items;

@@ -1,0 +1,76 @@
+/*
+Logic condition -- an if/elseif/else branching map element (14.9). This file will hold the whole
+element: the class, its live array, read/write, the per-frame contact/interact/watch check, and the
+build form. Those arrive in SECTION 2. Section 1 defines only the shared condition EVALUATOR below,
+which both the element (to decide which branch wins) and the Tier 2 map-error check (to validate a
+condition's syntax) will use.
+
+evaluate_condition takes a condition string whose tokens have ALREADY been substituted to values --
+for example "140 >= 50 and 0 == 1" -- and returns whether it is true. It is a left-to-right clause
+fold in the style of the dev's StoryBuilder evaluate_condition: read one "value operator value" clause
+to a bool, then for each following connector (and, or, &&, ||) read the next clause and fold it in,
+strictly left to right with NO precedence and NO parentheses, so "a or b and c" means ((a or b) and c).
+Comparisons accept floats. Anything malformed -- fewer than three tokens, an unknown connector, a
+missing clause -- returns false, so a broken condition simply fails and the element falls through to
+the next branch or the else (the runtime backstop for a typo Tier 2 missed).
+*/
+
+// True if s parses as a plain number (optionally signed, at most one decimal point). Used to choose
+// numeric vs string equality; the ordering comparisons always go through stn.
+bool logic_is_number(string s)
+{
+if(s.length() == 0) return false;
+bool digit = false, dot = false;
+for(uint i = 0; i < s.length(); i++)
+{
+string c = s.substr(i, 1);
+if(c >= "0" and c <= "9") { digit = true; continue; }
+if(c == "." and !dot) { dot = true; continue; }
+if((c == "-" or c == "+") and i == 0) continue;
+return false;
+}
+return digit;
+}
+
+// Evaluate one "a op b" clause. Ordering (> < >= <=) compares numeric values via stn. Equality
+// (== !=) compares numerically when both sides are numbers (so 5 equals 5.0), otherwise as exact
+// text. An unrecognized operator yields false.
+bool logic_compare(string a, string op, string b)
+{
+if(op == "==") { if(logic_is_number(a) and logic_is_number(b)) return stn(a) == stn(b); return a == b; }
+if(op == "!=") { if(logic_is_number(a) and logic_is_number(b)) return stn(a) != stn(b); return a != b; }
+if(op == ">") return stn(a) > stn(b);
+if(op == "<") return stn(a) < stn(b);
+if(op == ">=") return stn(a) >= stn(b);
+if(op == "<=") return stn(a) <= stn(b);
+return false;
+}
+
+bool logic_is_connector(string t)
+{
+return t == "and" or t == "or" or t == "&&" or t == "||";
+}
+
+bool evaluate_condition(string cond)
+{
+string[] raw = string_split(string_trim_sides(cond), " ", true);
+string[] tok;
+for(uint i = 0; i < raw.length(); i++)
+if(raw[i].length() > 0) tok.insert_last(raw[i]);
+if(tok.length() < 3) return false;
+bool result = logic_compare(tok[0], tok[1], tok[2]);
+int idx = 3;
+int n = int(tok.length());
+while(idx < n)
+{
+string conn = tok[idx].lower();
+if(!logic_is_connector(conn)) return false;
+idx += 1;
+if(idx + 2 >= n) return false;
+bool clause = logic_compare(tok[idx], tok[idx + 1], tok[idx + 2]);
+idx += 3;
+if(conn == "and" or conn == "&&") result = result and clause;
+else result = result or clause;
+}
+return result;
+}
