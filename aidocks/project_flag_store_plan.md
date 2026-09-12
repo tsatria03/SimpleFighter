@@ -1,11 +1,11 @@
 ---
 name: project_flag_store_plan
-description: Settled design + 4-section build plan for numeric map flags — named session-scoped numeric values set by trusted commands (setflag/addflag/subflag/clearflag), read via a universal %flag:name% token, listed by /flags. NOT built yet. Ships in 14.9.
+description: As-built record of numeric map flags (SHIPPED 14.9) — named session-scoped numeric values set by trusted commands (setflag/addflag/subflag/clearflag), read via a universal %flag:name% token, listed by /flags. All 4 sections built.
 metadata:
   type: project
 ---
 
-**STATUS: design COMPLETE, NOT built.** Chosen (post-14.8, during 14.9) as the standalone "memory layer" to build FIRST, before the [[project_logic_condition_plan]] element — logic conditions will read flags for free once this ships. Builds one section at a time, confirm+commit between sections ([[feedback_confirm_before_implementing]], [[feedback_stage_commits_before_big_changes]]). Ships in **14.9** (still open, was 2/10 entries when this was planned). Every decision below is settled with the dev.
+**STATUS: BUILT — shipped in 14.9. All 4 sections done.** Chosen (post-14.8, during 14.9) as the standalone "memory layer" built FIRST, before the [[project_logic_condition_plan]] element — logic conditions will read flags for free via `%flag:name%`. Built one section at a time, confirm+commit between. **Deviation from plan:** `expand_flag_tokens` lives in the new `flags.nvgt` (not `mapfuncts.nvgt`) to keep the whole subsystem in one file — it's global via glob-include either way, and comparse calls it right after `expand_state_tokens`. Everything else built as designed below.
 
 ## What map flags are
 
@@ -40,5 +40,5 @@ Flags are a command+token feature, not a builder element — no on-disk map line
 
 ## Files touched (summary)
 
-NEW: `src/includes/main/globals/flags.nvgt`, `sf/docks/builder/flags.txt`, this plan.
+NEW: `src/includes/main/globals/flags.nvgt`, `sf/docks/builder/map_flags.txt`, this plan.
 EDIT: `mapfuncts.nvgt` (expand_flag_tokens), `command_parser.nvgt` (comparse wire + 5 commands), `menu.nvgt` (flagsmenu), `menu_zone.nvgt` (list + dispatch), `command_blocker.nvgt` (5 entries), map-load reset site, `commands.txt`, `maps.txt`, `changelog.txt`.

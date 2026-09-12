@@ -1,0 +1,54 @@
+Map flags.
+
+A map flag is a named number the map remembers while you play it. You give it a name and set its value with a command, change it whenever you like, and read it back anywhere with a token. A flag has no position; it is not placed in the world, it simply holds a number, such as how many coins you have picked up, whether a door has been opened, or how many enemies are left. Flags are how a map keeps a running count or remembers that something has happened.
+
+How flags differ from map variables.
+
+Flags and map variables are both named numbers, but they are opposites in one way, and it is worth being clear on which you want. A map variable is set once as the map loads and never changes after that; it is a fixed value you chose, written with a dollar sign like $spot. A flag is the moving kind: it starts at zero, and commands change it as you play. You read a variable with $name and a flag with %flag:name%. Reach for a variable to name a value that stays put, and for a flag to count or remember something that changes during play.
+
+The two are also made in completely different ways, despite the matching names. A map variable is a builder element: you place it from the misc section of the build menu, and it becomes a line in the map like any other object. A flag is not an element at all. You will not find it in the build menu, and it is never placed anywhere; it simply comes into being the first time a command names it, and it is gone when the map reloads. So a map variable is something you build, while a flag is something a command creates on the fly.
+
+Setting a flag.
+
+Four commands change a flag, and all of them are silent when they work. Setflag name value sets the flag to a value outright. Addflag name amount adds to it, and subflag name amount subtracts; a flag you have never set counts as zero, so adding to a brand new flag just starts it at that amount. Clearflag name removes the flag entirely, so it reads as zero again. A flag's name must start with a letter and use only letters, digits, and underscores, the same as a map variable. The value or amount can be a plain number, a random token like random(1,6), or another token, including a flag token, so setflag total %flag:coins% copies one flag into another. These commands are usually attached to a switch, a sensor, an input, or a map timer, but you can also type them into the command console while building.
+
+Reading a flag.
+
+Write %flag:name% anywhere in a command or a piece of text and it is replaced with that flag's current value the moment the command runs. A flag that has not been set reads as zero, so you never have to seed a flag before reading it. Because it is filled in fresh each run, a command that speaks %flag:coins% always reports the latest count. The token is universal: it works in the console, in a macro, and in any object's command, exactly like the character tokens such as %health%.
+
+Where flags live.
+
+Flags last for the current visit to the map and no longer. Every flag is cleared when the map loads or reloads, so each play starts with no flags set and every flag reading zero. Flags are not written to the map file and are not saved when you leave, so they are a scratch pad for a single run, not a permanent record. Traveling to another map and coming back starts its flags fresh as well.
+
+Flags on compiled maps.
+
+On a decompiled map you are building, you can type the flag commands into the console freely to test them. On a compiled, shipped map the four changing commands only work when a switch, sensor, input, or map timer fires them, not when a player types them, so a player cannot set a flag by hand to skip past something the map gates on it. Reading is never restricted: the flags command and the %flag:name% token work on any map.
+
+Listing flags.
+
+The flags command, or fgs for short, opens a menu of every flag that is currently set and its value, listed in alphabetical order, with a total at the top. If nothing has set a flag yet it simply tells you there are no flags on the map. It only reads, so it is safe to check at any time and works on compiled maps too. The flags menu can also be opened from a menu zone, listed there as map flags.
+
+Examples.
+
+These are real map lines, the kind you would find in main.sif, showing flags driven by switches. A switch line is: switch, its x and y, its type, its on command in quotes, its off command in quotes, and then four true or false fields for toggled, sound on destroy, looping, and single use.
+
+A coin a player can collect:
+
+switch 5 0 switch "/addflag coins 1; /speak you have %flag:coins% coins" "" false false false true
+
+The switch's on command is a stack of two commands: it adds one to the coins flag, then speaks the new total, so taking the coin says something like you have 1 coins. The last field, single use, is true, so the coin can only be taken once. Because coins reads as zero before anything sets it, there is no need to set it up first. Drop several of these around the map, each adding one to the same coins flag, and they share one running count.
+
+A score shared across two switches:
+
+switch 5 0 switch "/addflag score 10" "" false false false true
+switch 15 0 switch "/addflag score 10; /speak your score is %flag:score%" "" false false false true
+
+Both switches add ten to the same score flag, so it climbs as the player finds each one; the second also reports the total when it fires. This is the flag version of two objects sharing a value, except the value grows as you play instead of being fixed the moment the map loads.
+
+Remembering that a door was opened:
+
+switch 20 0 switch "/setflag door_opened 1; /speak the door is now open" "" false false false true
+
+The switch sets door_opened to one, using the flag as a simple yes or no where zero means not yet and one means done. Any command elsewhere on the map can then read %flag:door_opened% to report or react to whether it has happened this run. Because flags reset when the map loads, the door begins closed again on every fresh visit.
+
+One thing to keep in mind from these examples: a flag is read through a command, such as a switch that speaks %flag:coins%, not through a sign's own message. A sign's text is filled in once when the map loads, so a dollar sign map variable works inside it but a percent flag token does not. Use a variable to bake a fixed number into sign text, and a flag when a command needs to read a number that changes as you play.
