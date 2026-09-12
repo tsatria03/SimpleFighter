@@ -1,11 +1,11 @@
 ---
 name: project_wind_trap_plan
-description: Settled but unbuilt design + section plan for the Wind trap — a fire-style seeking trap that pushes the player instead of killing, with wall-aware knockback, an optional health chip, a faced direction, and a tile push distance. Build section by section.
+description: As-built record of the Wind trap (SHIPPED 14.3) — a fire-style seeking trap that pushes the player instead of killing, with wall-aware knockback, an optional health chip, a faced direction, and a tile push distance. Design + section plan kept for reference.
 metadata:
   type: project
 ---
 
-Settled design and section plan for the **Wind trap**, agreed with the dev on 2026-08-11 but NOT YET BUILT. Wind is modeled on [[the fire trap]] (`src/includes/builder/traps/fire.nvgt`): a placed emitter with a per-axis seeing range that wakes up and homes toward the player, playing a looping sound. It differs from fire in the payoff — instead of killing on contact, it **shoves** the player and optionally chips health. Sounds live in `sf/sounds/decompiled/builder/traps/winds/` (six types: wind…wind6, each with `loop.ogg` + `hit.ogg`, same layout as fires).
+Design and section plan for the **Wind trap**, agreed with the dev on 2026-08-11 and **BUILT — shipped in 14.3** (`src/includes/builder/traps/wind.nvgt`: class + `read_wind` / `write_wind` / `windloop` / `build_wind` / `wind_semantic_error`). Kept below for the record of how it was designed and sequenced. Wind is modeled on [[the fire trap]] (`src/includes/builder/traps/fire.nvgt`): a placed emitter with a per-axis seeing range that wakes up and homes toward the player, playing a looping sound. It differs from fire in the payoff — instead of killing on contact, it **shoves** the player and optionally chips health. Sounds live in `sf/sounds/decompiled/builder/traps/winds/` (six types: wind…wind6, each with `loop.ogg` + `hit.ogg`, same layout as fires).
 
 Build one section at a time, pausing for review/commit between sections, per [[feedback_confirm_before_implementing]]. Follow all stability rules ([[project_stability_rules]]): double coords, CRLF, builder audio form, mode-locked parsing, alphabetical menu slot ([[feedback_alphabetize_builder_entities]]), form control order ([[feedback_builder_form_control_order]]).
 

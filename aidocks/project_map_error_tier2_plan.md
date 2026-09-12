@@ -1,6 +1,6 @@
 ---
 name: project_map_error_tier2_plan
-description: Full sequencing plan for Tier 2 of map error checking — per-entity SEMANTIC validation (wrong-type fields, out-of-bounds coords, nonexistent tile/npc/sound names, bad ranges) layered on the shipped Tier 1 structural checker. 8 sections (~12–16 commits), one entity/cluster per commit. NOT STARTED.
+description: As-built record of Tier 2 map error checking — per-entity SEMANTIC validation (wrong-type fields, out-of-bounds coords, nonexistent tile/npc/sound names, bad ranges) layered on the shipped Tier 1 structural checker. BUILT — all 72 entities dispatched via entity_semantic_error, shipped in 14.4. Sequencing plan kept for reference.
 metadata:
   type: project
 ---
