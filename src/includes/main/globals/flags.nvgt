@@ -1,0 +1,108 @@
+/*
+Map flags -- the runtime numeric memory layer (section 1: store + token).
+
+A flag is a NAMED NUMBER (default 0) held for the current map session only: `clear_all_flags()` runs
+at the top of load_map (map_parser.nvgt), so the store resets on every map load or reload, exactly
+like the map inventory. Flags are the mutable, runtime counterpart to map variables ($name), which
+are load-time immutable constants -- see map_variable.nvgt.
+
+Names follow the SAME rules as map variables (start with a letter, then letters/digits/underscores,
+case-sensitive), and this file REUSES that file's `mv_is_letter` / `mv_is_name_char` helpers.
+
+Reading: the universal `%flag:name%` token, expanded by `expand_flag_tokens` in comparse right after
+the state tokens. An unset or cleared flag reads 0 (never an error, matching the state tokens). The
+token works in any command or text (e.g. `speak you have %flag:coins% coins`).
+
+Writing is done by the trusted setflag/addflag/subflag/clearflag commands (section 2); listing by the
+/flags menu (section 3). This file owns only the store and the token.
+*/
+
+dictionary map_flags;   // name -> current numeric value; only SET flags are present (unset reads 0)
+
+// A flag name is valid under the map-variable rules: letter-led, letters/digits/underscores only.
+bool flag_name_valid(string name)
+{
+if(name.length() == 0 or !mv_is_letter(name.substr(0, 1))) return false;
+for(uint i = 0; i < name.length(); i++)
+if(!mv_is_name_char(name.substr(i, 1))) return false;
+return true;
+}
+
+// Current value of a flag, or 0 if it was never set (or was cleared).
+double flag_get(string name)
+{
+double v = 0;
+if(map_flags.exists(name)) map_flags.get(name, v);
+return v;
+}
+
+void flag_set(string name, double value)
+{
+map_flags.set(name, value);
+}
+
+// Add (delta may be negative). Auto-creates the flag from 0 when it isn't set yet.
+void flag_add(string name, double delta)
+{
+map_flags.set(name, flag_get(name) + delta);
+}
+
+void flag_sub(string name, double delta)
+{
+flag_add(name, -delta);
+}
+
+// Remove the flag entirely (distinct from setting it to 0, which keeps it present). No-op if absent.
+void flag_clear(string name)
+{
+if(map_flags.exists(name)) map_flags.delete(name);
+}
+
+// Every set flag's name, alphabetical. Used by the /flags menu (section 3).
+string[] flag_names_sorted()
+{
+string[] names = map_flags.get_keys();
+names.sort_ascending();
+return names;
+}
+
+// Wipe all flags -- called on every map load/reload so flags are map-session scoped.
+void clear_all_flags()
+{
+map_flags.delete_all();
+}
+
+/* Replace every `%flag:name%` in `cmd` with the flag's current value (0 if unset). The name is read
+from just after `%flag:` up to the closing `%`, must start with a letter, and may contain only
+letters/digits/underscores. A malformed token (no closing %, empty or non-letter-led name) is left
+literal. Called in comparse alongside expand_state_tokens, so flags resolve in any command or text. */
+string expand_flag_tokens(string cmd)
+{
+if(string_contains(cmd, "%flag:", 1) < 0) return cmd;   // fast path
+string result = "";
+int n = int(cmd.length());
+int i = 0;
+while(i < n)
+{
+if(cmd.substr(i, 6) == "%flag:")
+{
+int j = i + 6;
+string name = "";
+while(j < n)
+{
+string c = cmd.substr(j, 1);
+if(mv_is_name_char(c)) { name += c; j++; }
+else break;
+}
+if(j < n and cmd.substr(j, 1) == "%" and name.length() > 0 and mv_is_letter(name.substr(0, 1)))
+{
+result += ("" + flag_get(name));
+i = j + 1;
+continue;
+}
+}
+result += cmd.substr(i, 1);
+i++;
+}
+return result;
+}
