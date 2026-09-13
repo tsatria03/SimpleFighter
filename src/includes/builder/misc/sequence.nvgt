@@ -179,28 +179,75 @@ void destroy_all_sequences()
 sequences.resize(0);
 }
 
-/* Coordless build form (misc category), modeled on build_map_variable: a name, the comma-separated
-steps, the two commands, and the reset-on-fail / single-use checkboxes. Appends the line and reloads, so
-the loader spawns it -- there is no in-memory object to spawn here. The name box is whitelisted to the
-identifier characters; the steps and command boxes accept anything. */
+/* Coordless build form (misc category). A required mode list (custom / ascending / descending) drives
+which field appears next, sensor-style: custom shows the steps box (the token combination), while
+ascending and descending show a count box (how many numbers must be entered in order). Shared fields are
+the name, the two commands, and the reset-on-fail / single-use checkboxes. Appends the line and reloads,
+so the loader spawns it. The name box is whitelisted to identifier characters and the count box to
+numbers; the steps and command boxes accept anything. */
 void build_sequence()
 {
-form.reset();
-form.create_window("sequence", false, true, false);
-int name_box = form.create_input_box("name: must start with a letter, then letters, digits, and underscores only", "");
-int steps_box = form.create_input_box("steps: the combination as tokens separated by commas", "");
-int complete_box = form.create_input_box("on complete command: leave blank to skip", "");
-int fail_box = form.create_input_box("on fail command: leave blank to skip", "");
-int rof_cb = form.create_checkbox("reset on fail", true);
-int su_cb = form.create_checkbox("single use", false);
-form.set_disallowed_chars(name_box, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true, "This character is not allowed.");
-int ok = form.create_button("&okay", true);
-int cn = form.create_button("&cancel");
-form.focus(name_box);
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+string saved_name = "";
+string saved_steps = "";
+string saved_count = "";
+string saved_complete = "";
+string saved_fail = "";
+bool saved_rof = true;
+bool saved_su = false;
+int saved_mode_pos = 0;
+int last_mode_pos = -2;
+bool do_build = true;
+int mode_list=-1, name_box=-1, steps_box=-1, count_box=-1, complete_box=-1, fail_box=-1, rof_cb=-1, su_cb=-1, ok=-1, cn=-1;
 while(true)
 {
+if(do_build)
+{
+do_build = false;
+if(last_mode_pos != -2)
+{
+saved_name = form.get_text(name_box);
+saved_complete = form.get_text(complete_box);
+saved_fail = form.get_text(fail_box);
+saved_rof = form.is_checked(rof_cb);
+saved_su = form.is_checked(su_cb);
+if(last_mode_pos == 0) saved_steps = form.get_text(steps_box);
+else saved_count = form.get_text(count_box);
+}
+form.reset();
+form.create_window("sequence", false, true, last_mode_pos != -2);
+mode_list = form.create_list("mode");
+form.add_list_item(mode_list, "custom", "custom");
+form.add_list_item(mode_list, "ascending", "ascending");
+form.add_list_item(mode_list, "descending", "descending");
+form.set_list_position(mode_list, saved_mode_pos, false);
+name_box = form.create_input_box("name: must start with a letter, then letters, digits, and underscores only", saved_name);
+steps_box = -1; count_box = -1;
+if(saved_mode_pos == 0)
+steps_box = form.create_input_box("steps: the combination as tokens separated by commas", saved_steps);
+else
+count_box = form.create_input_box("count: how many numbers must be entered in order", saved_count);
+complete_box = form.create_input_box("on complete command: leave blank to skip", saved_complete);
+fail_box = form.create_input_box("on fail command: leave blank to skip", saved_fail);
+rof_cb = form.create_checkbox("reset on fail", saved_rof);
+su_cb = form.create_checkbox("single use", saved_su);
+form.set_disallowed_chars(name_box, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true, "This character is not allowed.");
+if(count_box != -1) form.set_disallowed_chars(count_box, disallowed_nums, false, "This character is not allowed.");
+ok = form.create_button("&okay", true);
+cn = form.create_button("&cancel");
+if(last_mode_pos == -2) form.focus(mode_list);
+else form.focus_silently(mode_list);
+last_mode_pos = saved_mode_pos;
+}
 wait(5);
 form.monitor();
+int cur_mode_pos = form.get_list_position(mode_list);
+if(cur_mode_pos != -1 and cur_mode_pos != last_mode_pos)
+{
+saved_mode_pos = cur_mode_pos;
+do_build = true;
+continue;
+}
 if(key_pressed(KEY_ESCAPE)) { resume_pools(); speak("canceled"); return; }
 if(form.is_pressed(cn)) { resume_pools(); speak("canceled"); return; }
 if(form.is_pressed(ok))
@@ -208,14 +255,24 @@ if(form.is_pressed(ok))
 string name = string_trim_sides(form.get_text(name_box));
 string ne = map_variable_name_error(name);
 if(ne != "") { speak(ne); form.focus(name_box); continue; }
-string steps = string_trim_sides(form.get_text(steps_box));
-if(steps == "") { speak("The steps are required."); form.focus(steps_box); continue; }
+string mode = (saved_mode_pos == 1) ? "ascending" : ((saved_mode_pos == 2) ? "descending" : "custom");
+string steps_or_count;
+if(saved_mode_pos == 0)
+{
+steps_or_count = string_trim_sides(form.get_text(steps_box));
+if(steps_or_count == "") { speak("The steps are required."); form.focus(steps_box); continue; }
+}
+else
+{
+steps_or_count = string_trim_sides(form.get_text(count_box));
+if(steps_or_count == "" or string_to_number(steps_or_count) < 1) { speak("The count must be a number of at least one."); form.focus(count_box); continue; }
+}
 string comp = form.get_text(complete_box);
 string fail = form.get_text(fail_box);
 bool rof = form.is_checked(rof_cb);
 bool su = form.is_checked(su_cb);
 resume_pools();
-write_sequence(name, "custom", steps, comp, fail, rof, su);
+write_sequence(name, mode, steps_or_count, comp, fail, rof, su);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
