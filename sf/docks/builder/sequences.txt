@@ -1,0 +1,64 @@
+Sequences.
+
+A sequence is a combination lock for your map: a list of steps that must be entered in the right order to make something happen. It is how you build keypads, ritual puzzles, press-the-plates-in-order doors, and Simon-says challenges. The sequence itself has no position; it is an abstract combination you define once, and ordinary switches around the map feed it one step at a time. When the steps are entered in the correct order, it runs a command you chose; enter a wrong one and it can start over.
+
+How it works.
+
+You give the sequence a name and an ordered list of step tokens, like 7,4,9 or red,blue,green. The tokens are just labels you pick. Then you place switches, and each switch's command feeds one token to the sequence by name. The sequence remembers how far along you are: a token that matches the next expected step advances it, and when the last step is entered it fires its on complete command. A token that does not match is a wrong entry, which runs its on fail command and, unless you turn that off, resets it to the beginning.
+
+Because the switches feed the sequence by name, the switch you press and the token it feeds are separate things. A switch sitting anywhere can feed any token, so the tiles you press and the order of the combination are up to you.
+
+Building a sequence.
+
+You build one from the misc section of the build menu. The form asks for:
+
+Name. Starts with a letter, then letters, digits, and underscores, like a map variable.
+Steps. The combination, written as tokens separated by commas, such as 7,4,9. Spaces around the commas are fine; they are trimmed.
+On complete command. The slash command that runs when the whole order is entered correctly. Leave it blank to do nothing.
+On fail command. The command that runs on a wrong step. Leave it blank to do nothing.
+Reset on fail. When on, a wrong step restarts the combination from the beginning. When off, a wrong step just runs the fail command and progress stays where it was.
+Single use. When on, the sequence fires once and then stops responding. When off, it re-arms after completing so it can be solved again.
+
+Feeding a sequence.
+
+A switch feeds a step with the command seqstep, written as /seqstep name token, or /sqs name token. So a switch whose command is /seqstep vault 7 tells the sequence named vault that the token 7 was just entered. Put one such command on each switch that is part of the puzzle. There is also /seqreset name, or /sqr name, which clears a sequence's progress back to the start on demand, handy for a reset lever or a timer that scrambles the puzzle.
+
+Hearing your progress.
+
+A sequence stays silent on a correct step that is not the last one; only completing or failing runs a command. That is on purpose, but it means a player pressing a correct switch hears nothing unless you add feedback yourself. The %seq:name% token fills in how many steps have been entered correctly so far, so the usual trick is to have each switch feed the step and then speak the progress. A switch command of /seqstep vault 7; /speak %seq:vault% of 3 feeds the token and then says something like 1 of 3, so the player hears each correct press land.
+
+Wrong entries and resetting.
+
+With reset on fail turned on, any wrong token sends the combination back to step zero, so the player must start the whole order again. Turn it off if you want a gentler puzzle where a wrong press only complains and leaves progress alone. Either way the on fail command runs, so you can speak a hint or play a buzzer. The %seq:name% token reads zero again after a reset.
+
+Re-arming and single use.
+
+By default a sequence re-arms after it completes: it resets to step zero so the player can enter the combination again. Turn on single use to make it fire exactly once and then go dormant, ignoring any further steps. Use single use for a one-time vault or a puzzle that should not be repeatable; leave it off for a lock the player might work more than once.
+
+Sequences and other features.
+
+A sequence's commands are ordinary slash commands, so they run trusted and work on a compiled map when a switch fires them. That means a sequence pairs naturally with the rest of the map: its on complete command can set a map flag, and a logic condition or a door then reacts to that flag. This is the clean way to have a combination lock open a real door.
+
+A note on positions.
+
+Like map timers and map variables, a sequence has no coordinates; it is defined once and lives nowhere in particular. The switches that feed it are the placed part. Progress resets when the map loads, so every visit starts the combination fresh.
+
+Examples.
+
+A three-button keypad that opens a door, with spoken progress:
+
+sequence vault "7,4,9" "/setflag vaultopen 1; /speak correct, the vault opens" "/speak wrong, start over" true false
+switch 5 0 switch "/seqstep vault 7; /speak %seq:vault% of 3" "" false false false false
+switch 7 0 switch "/seqstep vault 4; /speak %seq:vault% of 3" "" false false false false
+switch 9 0 switch "/seqstep vault 9; /speak %seq:vault% of 3" "" false false false false
+
+Press the switches so the tokens arrive as 7, then 4, then 9. Each correct press speaks the running count, the final one speaks correct and sets the vaultopen flag, and a wrong press says start over and resets. A door or a logic condition elsewhere reads the vaultopen flag to actually open the way.
+
+A one-time step-on-the-plates puzzle using sensors:
+
+sequence path "north,east,south" "/setflag bridge 1; /speak the bridge appears" "/speak the floor rumbles and settles" true true
+sensor 10 12 none "/seqstep path north" "" 0 false false false
+sensor 10 14 none "/seqstep path east" "" 0 false false false
+sensor 10 16 none "/seqstep path south" "" 0 false false false
+
+Here silent contact sensors feed the steps as the player walks onto them in order. Single use is on, so once the bridge flag is set the puzzle is done, and a logic condition or door elsewhere reads the bridge flag to reveal the way. Stepping out of order rumbles and resets it.

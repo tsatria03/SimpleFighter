@@ -1,11 +1,13 @@
 ---
 name: project_sequence_plan
-description: Settled design + 5-section build plan for the sequence element — a coordless combination-puzzle element fed by /seqstep, matching ordered tokens and firing a command on completion. NOT built yet. Ships in 14.9.
+description: As-built record of the sequence element (SHIPPED 14.9) — a coordless combination-puzzle element fed by /seqstep, matching ordered tokens and firing a command on completion. All 5 sections built.
 metadata:
   type: project
 ---
 
-**STATUS: design COMPLETE, all decisions settled (2026-09), NOT built.** A combination-puzzle feature adapted to SF from an external reference game's coordless "sequence trigger" (which watches other triggers by ID). SF is ID-less, so the adaptation is **name-based**: the sequence is a coordless element, and ordinary switches FEED it steps by name with a command instead of being watched by ID. Reuses the patterns from [[project_flag_store_plan]] (name-based, session-scoped, parameterized token) and [[project_universal_state_tokens]]. Ships in **14.9** (dev confirmed room for it). Build one section at a time, confirm+commit between ([[feedback_confirm_before_implementing]], [[feedback_stage_commits_before_big_changes]]).
+**STATUS: BUILT — shipped in 14.9. All 5 sections done.** Element in `src/includes/builder/misc/sequence.nvgt` (class + `feed_sequence`/`reset_sequence`/`find_sequence` engine + read/write + `build_sequence` form + `sequence_semantic_error` Tier 2 + `expand_seq_tokens` for `%seq:name%`). Commands `/seqstep` (sqs) / `/seqreset` (sqr) in command_parser (trusted). Event-driven — NO game.nvgt loop. Deviations from plan: Tier 1 mirror + dispatch landed in §1 (stability rule), and `expand_seq_tokens` lives in sequence.nvgt (not mapfuncts) to keep the subsystem together. Everything else as designed below.
+
+**Original STATUS (kept for the record): design COMPLETE, all decisions settled (2026-09).** A combination-puzzle feature adapted to SF from an external reference game's coordless "sequence trigger" (which watches other triggers by ID). SF is ID-less, so the adaptation is **name-based**: the sequence is a coordless element, and ordinary switches FEED it steps by name with a command instead of being watched by ID. Reuses the patterns from [[project_flag_store_plan]] (name-based, session-scoped, parameterized token) and [[project_universal_state_tokens]]. Ships in **14.9** (dev confirmed room for it). Build one section at a time, confirm+commit between ([[feedback_confirm_before_implementing]], [[feedback_stage_commits_before_big_changes]]).
 
 ## What it is
 
