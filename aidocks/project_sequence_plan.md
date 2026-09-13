@@ -47,7 +47,7 @@ EDIT: `command_parser.nvgt` (comparse token wire + 2 commands), `mapfuncts.nvgt`
 
 ---
 
-## ADDENDUM: sequence MODES (custom / ascending / descending) — 14.9, NOT built yet
+## ADDENDUM: sequence MODES (custom / ascending / descending) — BUILT, shipped 14.9
 
 A follow-up enhancement to the shipped sequence element, so authors don't have to type a long explicit combination for a number puzzle: a sequence gains a **mode**, and the ascending/descending modes let the player SORT numbers instead of matching an authored list. Inspired by the number-sorting game Ascending Match (co-created by the dev + KamiKitsune — keep the name out of committed files per [[feedback_dont_name_others_games]]); this is NOT a port of that whole game (no subsystem, no swap UI), just a matching mode on the existing element.
 

@@ -13,11 +13,25 @@ Building a sequence.
 You build one from the misc section of the build menu. The form asks for the following:
 
 Name. Starts with a letter, then letters, digits, and underscores, like a map variable.
-Steps. The combination, written as tokens separated by commas, such as 7,4,9. Spaces around the commas are fine; they are trimmed.
+Sort mode. How entries are judged: custom, ascending, or descending. The next field changes to match; the three modes are explained under Sort modes below.
+Steps, shown in custom mode. The combination, written as tokens separated by commas, such as 7,4,9. Spaces around the commas are fine; they are trimmed.
+Count, shown in ascending or descending mode. How many numbers must be entered in order. There is no list to type; the numbers come from the switches.
 On complete command. The slash command that runs when the whole order is entered correctly. Leave it blank to do nothing.
 On fail command. The command that runs on a wrong step. Leave it blank to do nothing.
-Reset on fail. When on, a wrong step restarts the combination from the beginning. When off, a wrong step just runs the fail command and progress stays where it was.
+Reset on fail. When on, a wrong step restarts from the beginning. When off, a wrong step just runs the fail command and progress stays where it was.
 Single use. When on, the sequence fires once and then stops responding. When off, it re-arms after completing so it can be solved again.
+
+Sort modes.
+
+A sequence judges entries one of three ways, chosen by the sort mode; in a hand-written line the mode word comes right after the name, as the examples show.
+
+Custom means you type the exact combination and the player must enter it in that order, like a keypad code. The tokens can be anything, numbers or words, and correct means exactly what you typed. This is the classic lock.
+
+Ascending means you do not type a combination at all. Instead you give a count, and the player must enter that many numbers from lowest to highest. The numbers come from the switches, so the player presses them in order of value.
+
+Descending is the same, but the numbers must go from highest to lowest.
+
+Ascending and descending are how you build a sort-the-numbers puzzle. They only check that each number is higher or lower than the last, so the actual numbers can differ every play if the switches feed random values, shown in the examples.
 
 Feeding a sequence.
 
@@ -47,7 +61,7 @@ Examples.
 
 A three-button keypad that opens a door, with spoken progress:
 
-sequence vault "7,4,9" "/setflag vaultopen 1; /speak correct, the vault opens" "/speak wrong, start over" true false
+sequence vault custom "7,4,9" "/setflag vaultopen 1; /speak correct, the vault opens" "/speak wrong, start over" true false
 switch 5 0 switch "/seqstep vault 7; /speak %seq:vault% of 3" "" false false false false
 switch 7 0 switch "/seqstep vault 4; /speak %seq:vault% of 3" "" false false false false
 switch 9 0 switch "/seqstep vault 9; /speak %seq:vault% of 3" "" false false false false
@@ -56,9 +70,23 @@ Press the switches so the tokens arrive as 7, then 4, then 9. Each correct press
 
 A one-time step-on-the-plates puzzle using sensors:
 
-sequence path "north,east,south" "/setflag bridge 1; /speak the bridge appears" "/speak the floor rumbles and settles" true true
+sequence path custom "north,east,south" "/setflag bridge 1; /speak the bridge appears" "/speak the floor rumbles and settles" true true
 sensor 10 12 none "/seqstep path north" "" 0 false false false
 sensor 10 14 none "/seqstep path east" "" 0 false false false
 sensor 10 16 none "/seqstep path south" "" 0 false false false
 
 Here silent contact sensors feed the steps as the player walks onto them in order. Single use is on, so once the bridge flag is set the puzzle is done, and a logic condition or door elsewhere reads the bridge flag to reveal the way. Stepping out of order rumbles and resets it.
+
+A random sort-the-numbers puzzle, different every play, using ascending mode:
+
+mapvar a random(1,44)
+mapvar b random(1,44)
+mapvar c random(1,44)
+sequence sortme ascending "3" "/speak sorted, well done" "/speak that is not higher, start over" true false
+switch 5 0 switch "/seqstep sortme $a; /speak $a" "" false false false false
+switch 7 0 switch "/seqstep sortme $b; /speak $b" "" false false false false
+switch 9 0 switch "/seqstep sortme $c; /speak $c" "" false false false false
+
+Each map variable rolls one number from 1 to 44 and holds it for the whole play, so the three switches carry fixed but unpredictable numbers, spoken as you press them. The sequence is ascending with a count of three, so you must press the switches from the smallest number to the largest; a press that is not higher than the last says start over and resets. Because the map variables reroll on every load, the correct order changes each time you play, and you never typed the numbers yourself. Descending mode would ask for largest to smallest instead.
+
+Note: use map variables for the switch numbers, not a bare random. A plain random on a switch would roll a new number on every press, so the tile's value would change mid-puzzle. A map variable freezes the roll once per load, which is what a sortable tile needs.
