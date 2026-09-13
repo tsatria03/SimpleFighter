@@ -136,6 +136,51 @@ void destroy_all_sequences()
 sequences.resize(0);
 }
 
+/* Coordless build form (misc category), modeled on build_map_variable: a name, the comma-separated
+steps, the two commands, and the reset-on-fail / single-use checkboxes. Appends the line and reloads, so
+the loader spawns it -- there is no in-memory object to spawn here. The name box is whitelisted to the
+identifier characters; the steps and command boxes accept anything. */
+void build_sequence()
+{
+form.reset();
+form.create_window("sequence", false, true, false);
+int name_box = form.create_input_box("name: must start with a letter, then letters, digits, and underscores only", "");
+int steps_box = form.create_input_box("steps: the combination as tokens separated by commas", "");
+int complete_box = form.create_input_box("on complete command: leave blank to skip", "");
+int fail_box = form.create_input_box("on fail command: leave blank to skip", "");
+int rof_cb = form.create_checkbox("reset on fail", true);
+int su_cb = form.create_checkbox("single use", false);
+form.set_disallowed_chars(name_box, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_", true, "This character is not allowed.");
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(name_box);
+while(true)
+{
+wait(5);
+form.monitor();
+if(key_pressed(KEY_ESCAPE)) { resume_pools(); speak("canceled"); return; }
+if(form.is_pressed(cn)) { resume_pools(); speak("canceled"); return; }
+if(form.is_pressed(ok))
+{
+string name = string_trim_sides(form.get_text(name_box));
+string ne = map_variable_name_error(name);
+if(ne != "") { speak(ne); form.focus(name_box); continue; }
+string steps = string_trim_sides(form.get_text(steps_box));
+if(steps == "") { speak("The steps are required."); form.focus(steps_box); continue; }
+string comp = form.get_text(complete_box);
+string fail = form.get_text(fail_box);
+bool rof = form.is_checked(rof_cb);
+bool su = form.is_checked(su_cb);
+resume_pools();
+write_sequence(name, steps, comp, fail, rof, su);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
+
 /* Universal %seq:name% token: replaced with how many steps of that sequence have been entered correctly
 so far (0 if the sequence isn't found or hasn't been started). Parameterized scan-and-replace like
 %flag:name% / %item:name%, read from after "seq:" to the closing "%"; called in comparse after the item
