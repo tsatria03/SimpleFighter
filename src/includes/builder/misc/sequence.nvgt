@@ -17,22 +17,28 @@ arrive in later sections.
 class sequence
 {
 string seqname;
-string[] steps;
+string mode;         // "custom" (match the typed tokens in order), "ascending", or "descending"
+string[] steps;      // custom mode: the ordered tokens to match
+uint count;          // ascending/descending: how many numbers must be entered in order
+double last_value;   // ascending/descending: the last number fed, for the greater/less comparison
 string complete_command;
 string fail_command;
 bool reset_on_fail;
 bool single_use;
 uint current_step;   // how many correct steps have been entered so far
 bool dormant;        // set once a single-use sequence has completed; ignores further input
-sequence(string nm, string[]@ stps, string comp, string fail, bool rof, bool su)
+sequence(string nm, string md, string[]@ stps, uint cnt, string comp, string fail, bool rof, bool su)
 {
 seqname=nm;
+mode=md;
 steps=stps;
+count=cnt;
 complete_command=comp;
 fail_command=fail;
 reset_on_fail=rof;
 single_use=su;
 current_step=0;
+last_value=0;
 dormant=false;
 }
 }
@@ -58,22 +64,46 @@ void feed_sequence(string name, string token)
 {
 sequence@ s = find_sequence(name);
 if(@s == null) return;
-if(s.dormant or s.steps.length() == 0) return;
-if(s.current_step < s.steps.length() and token == s.steps[s.current_step])
+if(s.dormant) return;
+bool matched = false;
+uint target = 0;
+if(s.mode == "ascending" or s.mode == "descending")
+{
+if(s.count == 0) return;
+target = s.count;
+// A non-numeric token, or one not further in the sorted direction, is a wrong entry. The first
+// number is always accepted; each later one must be greater (ascending) or less (descending).
+if(logic_is_number(token))
+{
+double v = stn(token);
+bool ok;
+if(s.current_step == 0) ok = true;
+else if(s.mode == "ascending") ok = (v > s.last_value);
+else ok = (v < s.last_value);
+if(ok) { s.last_value = v; matched = true; }
+}
+}
+else
+{
+if(s.steps.length() == 0) return;
+target = s.steps.length();
+if(s.current_step < s.steps.length() and token == s.steps[s.current_step]) matched = true;
+}
+if(matched)
 {
 s.current_step += 1;
-if(s.current_step >= s.steps.length())
+if(s.current_step >= target)
 {
 string cmd = s.complete_command;
 if(s.single_use) s.dormant = true;
-else s.current_step = 0;
+else { s.current_step = 0; s.last_value = 0; }
 if(cmd != "") comstack(cmd, true);
 }
 }
 else
 {
 string cmd = s.fail_command;
-if(s.reset_on_fail) s.current_step = 0;
+if(s.reset_on_fail) { s.current_step = 0; s.last_value = 0; }
 if(cmd != "") comstack(cmd, true);
 }
 }
@@ -84,11 +114,12 @@ void reset_sequence(string name)
 sequence@ s = find_sequence(name);
 if(@s == null) return;
 s.current_step = 0;
+s.last_value = 0;
 }
 
-void spawn_sequence(string name, string[]@ steps, string complete_command, string fail_command, bool reset_on_fail, bool single_use)
+void spawn_sequence(string name, string mode, string[]@ steps, uint count, string complete_command, string fail_command, bool reset_on_fail, bool single_use)
 {
-sequence s(name, steps, complete_command, fail_command, reset_on_fail, single_use);
+sequence s(name, mode, steps, count, complete_command, fail_command, reset_on_fail, single_use);
 sequences.insert_last(s);
 }
 
@@ -98,18 +129,27 @@ commands; the two trailing bare tokens are the bools. Steps are split on commas 
 are dropped. A line missing the quoted block is ignored (permit-what-loads). */
 void read_sequence(string[] sd)
 {
-if(sd.length() < 2) return;
+if(sd.length() < 3) return;
 string name = sd[1];
-string combined = join_string_array(sd, 2, sd.length());
+// The mode is required and sits right after the name; a line without a valid mode does not load.
+string mode = sd[2];
+if(mode != "custom" and mode != "ascending" and mode != "descending") return;
+string combined = join_string_array(sd, 3, sd.length());
 string remainder;
 array<string> quoted = extract_quoted(combined, remainder);
 if(quoted.length() < 3) return;
 string[] steps;
+uint count = 0;
+if(mode == "ascending" or mode == "descending")
+count = uint(stn(quoted[0]));   // in a sort mode the first quoted field is the count, not a token list
+else
+{
 array<string> raw = string_split(quoted[0], ",");
 for(uint i=0; i<raw.length(); i++)
 {
 string t = string_trim_sides(raw[i]);
 if(t.length() > 0) steps.insert_last(t);
+}
 }
 bool rof = true;
 bool su = false;
@@ -119,14 +159,17 @@ for(uint i=0; i<tail.length(); i++)
 if(tail[i].length() > 0) bools.insert_last(tail[i]);
 if(bools.length() >= 1) rof = string_to_bool(bools[0]);
 if(bools.length() >= 2) su = string_to_bool(bools[1]);
-spawn_sequence(name, steps, quoted[1], quoted[2], rof, su);
+spawn_sequence(name, mode, steps, count, quoted[1], quoted[2], rof, su);
 }
 
-void write_sequence(string name, string steps, string complete_command, string fail_command, bool reset_on_fail, bool single_use)
+/* Write a sequence line. steps_or_count is the first quoted field: the comma-separated tokens in custom
+mode, or the count number (as text) in ascending/descending mode. The mode is always written as a bare
+token after the name (new format); old mode-less lines still read as custom. */
+void write_sequence(string name, string mode, string steps_or_count, string complete_command, string fail_command, bool reset_on_fail, bool single_use)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
-mapper.write("\r\n"+"sequence "+name+" \""+escape_quotes(steps)+"\" \""+escape_quotes(complete_command)+"\" \""+escape_quotes(fail_command)+"\" "+reset_on_fail+" "+single_use);
+mapper.write("\r\n"+"sequence "+name+" "+mode+" \""+escape_quotes(steps_or_count)+"\" \""+escape_quotes(complete_command)+"\" \""+escape_quotes(fail_command)+"\" "+reset_on_fail+" "+single_use);
 mapper.close();
 bump_map_modified();
 }
@@ -172,7 +215,7 @@ string fail = form.get_text(fail_box);
 bool rof = form.is_checked(rof_cb);
 bool su = form.is_checked(su_cb);
 resume_pools();
-write_sequence(name, steps, comp, fail, rof, su);
+write_sequence(name, "custom", steps, comp, fail, rof, su);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -226,20 +269,29 @@ command, fail command), the steps list at least one token, and any trailing rese
 token is a real bool. The commands themselves are free text and aren't validated. */
 string sequence_semantic_error(string[] sd, string mode, int &out col)
 {
-if(sd.length() < 2) { col=-1; return "a sequence needs a name."; }
+if(sd.length() < 3) { col=-1; return "a sequence needs a name and a mode."; }
 string name = sd[1];
 if(name.length() == 0 or !mv_is_letter(name.substr(0,1))) { col=1; return "the sequence name must start with a letter."; }
 for(uint i=0; i<name.length(); i++)
 if(!mv_is_name_char(name.substr(i,1))) { col=1; return "the sequence name may only contain letters, digits, and underscores."; }
-string combined = join_string_array(sd, 2, sd.length());
+string smode = sd[2];
+if(smode != "custom" and smode != "ascending" and smode != "descending") { col=2; return "the mode must be custom, ascending, or descending."; }
+string combined = join_string_array(sd, 3, sd.length());
 string remainder;
 array<string> quoted = extract_quoted(combined, remainder);
-if(quoted.length() < 3) { col=2; return "a sequence needs its steps, an on complete command, and an on fail command, all in quotes."; }
+if(quoted.length() < 3) { col=3; return "a sequence needs its steps or count, an on complete command, and an on fail command, all in quotes."; }
+if(smode == "custom")
+{
 int stepcount = 0;
 array<string> raw = string_split(quoted[0], ",");
 for(uint i=0; i<raw.length(); i++)
 if(string_trim_sides(raw[i]).length() > 0) stepcount += 1;
-if(stepcount == 0) { col=2; return "the steps must list at least one token separated by commas."; }
+if(stepcount == 0) { col=3; return "the steps must list at least one token separated by commas."; }
+}
+else
+{
+if(!is_number_token(quoted[0]) or stn(quoted[0]) < 1) { col=3; return "the count must be a number of at least one."; }
+}
 array<string> tail = string_split(string_trim_sides(remainder), " ");
 for(uint i=0; i<tail.length(); i++)
 if(tail[i].length() > 0 and !is_bool_token(tail[i])) { col=-1; return "the reset on fail and single use values must be true or false."; }
