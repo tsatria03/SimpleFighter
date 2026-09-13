@@ -44,3 +44,26 @@ The sequence is an ELEMENT (spawned instance from the map line, like map_timer),
 
 NEW: `src/includes/builder/misc/sequence.nvgt`, `sf/docks/builder/sequences.txt`, this plan.
 EDIT: `command_parser.nvgt` (comparse token wire + 2 commands), `mapfuncts.nvgt` OR sequence.nvgt (expand_seq_tokens — put in sequence.nvgt to keep the subsystem together, like flags), `command_blocker.nvgt`, `map_menu.nvgt`, `map_parser.nvgt` (dispatch + Tier1 mirror + Tier2 dispatch), `map.nvgt` (destroy_all wire), `game.nvgt` (no per-frame loop needed — sequences are event-driven via /seqstep, so NO game.nvgt loop, unlike logic conditions), `commands.txt`, `maps.txt`, `changelog.txt`.
+
+---
+
+## ADDENDUM: sequence MODES (custom / ascending / descending) — 14.9, NOT built yet
+
+A follow-up enhancement to the shipped sequence element, so authors don't have to type a long explicit combination for a number puzzle: a sequence gains a **mode**, and the ascending/descending modes let the player SORT numbers instead of matching an authored list. Inspired by the number-sorting game Ascending Match (co-created by the dev + KamiKitsune — keep the name out of committed files per [[feedback_dont_name_others_games]]); this is NOT a port of that whole game (no subsystem, no swap UI), just a matching mode on the existing element.
+
+**Settled decisions:**
+- New build-form list, caption **"mode"** (bare options, descriptions in the topic): **custom**, **ascending**, **descending**.
+- **custom** = the current behavior: match the exact `steps` tokens in the exact order typed (the keypad/code case). Renamed from the implicit-only mode; it's the default. **The build form always writes a mode (required, defaults to custom)** — the on-disk back-compat below is ONLY for old hand-authored lines that predate the mode token.
+- **ascending / descending** = no step list; instead a **count** (how many numbers). Each fed number must be numerically **greater (ascending)** or **less (descending)** than the last one fed; complete when `count` numbers have been accepted in order. A non-numeric or wrong-direction token is a wrong entry.
+- **Form field swap by mode** (sensor-style rebuild): custom shows the **steps** box; ascending/descending show a **count** box.
+- **`reset on fail`** (existing field) already governs a wrong entry: on = restart the whole sort, off = reject that entry and keep going. No new field.
+- **Randomness is external, unchanged:** for a different puzzle each play, switches feed **frozen-random map variables** (`mapvar n1 random(1,44)` → `$n1`); a bare `random()` on a switch would reroll each press, so map variables are required for the random flavor (no new code — [[project_map_variables_plan]] already does the freezing). A fixed sort (same each play) needs no map variables.
+- **`%seq:name%`** still reports correct-count-so-far in all modes.
+- **On-disk (back-compat):** a new bare **mode** token after the name — `sequence <name> <mode> "<steps-or-count>" "<complete>" "<fail>" <rof> <su>`. The first quoted field is the comma-list in custom mode or the count number in ascending/descending. OLD lines with NO mode token still read as **custom** — detect by whether the token after the name is a mode word (custom/ascending/descending) or the start of the quoted block. So nothing already built breaks (per the read_/write signature rule in [[project_stability_rules]]).
+- **Class additions:** `mode` (string), `count` (uint, for asc/desc), `last_value` (double, the last number fed for the comparison). custom keeps using `steps[]` + `current_step`; asc/desc use `count` + `current_step` + `last_value`.
+- **Version:** ships in **14.9** as a SEPARATE changelog entry (NOT merged into the existing sequence entry) — dev's call.
+
+**Build plan — 3 sections:**
+1. **Engine.** Add `mode`/`count`/`last_value` to the class; branch `feed_sequence` for ascending/descending (numeric compare via stn, direction check, complete at count); update `read_sequence`/`write_sequence` for the mode token with the back-compat detection.
+2. **Build form.** The mode list + steps/count field swap (rebuild-on-mode-change like the sensor form).
+3. **Tier 2 + docs.** Extend `sequence_semantic_error` (mode in {custom,ascending,descending}; custom → steps non-empty; asc/desc → count a positive number); update the sequences.txt topic (explain the three modes + a random-sort example with map variables) and the maps.txt/commands.txt notes; add the SEPARATE 14.9 changelog entry.
