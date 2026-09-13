@@ -8,7 +8,43 @@ Any numeric argument to any of these commands can be written as random(low,high)
 
 Character and position tokens.
 
-Alongside random, a set of tokens expands to your character's live values the moment a command runs, so a command can report or reuse a number without you having to know it in advance. Write any of them inside a command and it is replaced with the current value: %health%, %maxhealth%, and %healthpc% (your health, its maximum, and your health as a percentage of that maximum); %stam%, %maxstam%, and %stampc% (the same three for stamina); %level%, %xp% (your current experience), %xpneeded% (the total experience needed for the next level), %xpleft% (how much more experience you still need, which is what the combat log reports on a level up), %points%, %lives%, and %kills%; %speed% for your current movement speed level, from 1 to 20 with 5 normal, which reflects a speed tile zone you are standing in; %jump% for your current jump height, also 1 to 20 with 5 normal and likewise reflecting a jump tile zone; and %x%, %y%, and %z% for your position, where z is meaningful only on 3d maps; and %minx%, %maxx%, %miny%, %maxy%, %minz%, and %maxz% for the current map's minimum and maximum edges on each axis, so a command can compare your position against the map's boundaries or place something relative to them. The two percentages are given to two decimals, the same as the statistics screen. So /speak %health% of %maxhealth%, %healthpc% percent speaks something like 140 of 200, 70 percent.
+Alongside random, a set of tokens expands to your character's live values the moment a command runs, so a command can report or reuse a number without you having to know it in advance. Write any of them inside a command and it is replaced with the current value. The tokens are the following:
+
+%health% - your current health.
+%maxhealth% - your maximum health.
+%healthpc% - your health as a percentage of its maximum, given to two decimals.
+
+%stam% - your current stamina.
+%maxstam% - your maximum stamina.
+%stampc% - your stamina as a percentage of its maximum, given to two decimals.
+
+%level% - your current level.
+
+%xp% - your current experience.
+%xpneeded% - the total experience needed for your next level.
+%xpleft% - how much more experience you still need, the same number the combat log reports when you level up.
+
+%points% - your points, the currency spent in the shop.
+%lives% - your remaining lives.
+%kills% - your kill count.
+
+%speed% - your current movement speed level, from 1 to 20 with 5 normal, reflecting a speed tile zone you are standing in.
+%jump% - your current jump height, from 1 to 20 with 5 normal, reflecting a jump tile zone you are standing in.
+
+%x% - your x position.
+%y% - your y position.
+%z% - your z position, meaningful only on 3d maps.
+
+%minx% - the current map's minimum x edge.
+%maxx% - the current map's maximum x edge.
+
+%miny% - the current map's minimum y edge.
+%maxy% - the current map's maximum y edge.
+
+%minz% - the current map's minimum z edge.
+%maxz% - the current map's maximum z edge.
+
+So /speak %health% of %maxhealth%, %healthpc% percent speaks something like 140 of 200, 70 percent, and a command can compare your position against the map's edges or place something relative to them.
 
 Because each token is resolved when its own command actually runs, a token placed after a command that changed the value reads the new value: setx 50; speak you moved to x %x% speaks 50, and sethealth 50 true; speak your health is now %healthpc% percent reports the health you just set. These tokens work in every command, everywhere a command can appear: the console, a macro, a switch or sensor, an input, or a map timer.
 
@@ -28,7 +64,11 @@ Stacked commands and their delays run asynchronously — the call that fires the
 
 Commands on compiled maps.
 
-Some commands behave differently once a map is compiled and shipped, because a compiled map is read-only. There are three cases, and each command below notes which one applies. Most commands work normally on a compiled map. A group of editing and map-loading commands — build, unbuild, newmap, delmap, rawmap, rawdata, undomap, redomap, maperrors, maps, and menu — never work on a compiled map, because there is no editable map file for them to act on and the map list only offers decompiled maps. A middle group — spawn, despawn, go, gozone, suicide, the position commands from addx through setz, and the flag commands setflag, addflag, subflag, and clearflag — work on a compiled map only when a switch, sensor, input, map timer, or logic condition fires them, not when you type them into the console or fire them from a macro, so a map author can wire them into the map's own machinery while a player can't use them to skip past its design. Changemap is the exception in that group: it works on a compiled map even when typed, so you can travel between compiled maps.
+Some commands behave differently once a map is compiled and shipped, because a compiled map is read-only. There are three cases, and each command below notes which one applies. Most commands work normally on a compiled map. A group of editing and map-loading commands — build, unbuild, newmap, delmap, rawmap, rawdata, undomap, redomap, maperrors, maps, and menu — never work on a compiled map, because there is no editable map file for them to act on and the map list only offers decompiled maps.
+
+A middle group — spawn, despawn, go, gozone, suicide, the position commands from addx through setz, and the flag commands setflag, addflag, subflag, and clearflag — work on a compiled map only when a switch, sensor, input, map timer, or logic condition fires them, not when you type them into the console or fire them from a macro, so a map author can wire them into the map's own machinery while a player can't use them to skip past its design. Changemap is the exception in that group: it works on a compiled map even when typed, so you can travel between compiled maps.
+
+Command refference.
 
 /addflag name value, or /afg name value: Adds the value to the named map flag, creating it from zero if it isn't set yet; a negative value subtracts. The value can be a plain number, a random token, or another token such as %flag:score%. Runs silently; on a compiled map it works only when fired by a switch, sensor, input, map timer, or logic condition, not when typed. See the map flags topic.
 /addhealth amount, or /aht amount: Adds the amount to your character's health, up to full. Append true to make the amount a percentage of the maximum, or false for an exact value, the default. Runs silently.
@@ -111,7 +151,9 @@ The object name accepts either the friendly form (the same name the builder menu
 /spawn object fields, or /sp object fields: The ephemeral cousin of /build. Takes the same arguments — the object name followed by the entity's on-disk fields — and places the entity in the map immediately.
 
 Unlike /build, the spawn is never written to main.sif and the map is never reloaded; the entity exists only in memory and will be gone the next time the map loads. The object name alone (with no fields) speaks an error rather than opening any dialog, since /spawn has no interactive form.
-This is the verb to use from a switch's on or off command when you want the switch to summon something temporarily without permanently editing the map. On a compiled, shipped map /spawn works only when a switch, sensor, input, map timer, or logic condition fires it — the very use described here; typed into the console or fired from a macro there, it silently does nothing on press. Cleanup is the author's responsibility, and /despawn is the verb for it: pair a /spawn on a switch's on side with /despawn on its off side to take the entity back on flip-off. /despawn is the in-memory counterpart to /spawn and works for any entity, not just npcs — /spawn platform ... on and /despawn platform on off removes the platform again, and the same pattern cleans up a door, hazard, item, force field, or anything else you spawn. It removes the newest of a type, or the one at coordinates you name, and plays whatever removal sound the entity carries. For npcs, /killall and /kill remain as combat-style removals alongside /despawn. Friendly names and on-disk tokens are both accepted, the same way /build accepts them.
+This is the verb to use from a switch's on or off command when you want the switch to summon something temporarily without permanently editing the map. On a compiled, shipped map /spawn works only when a switch, sensor, input, map timer, or logic condition fires it — the very use described here; typed into the console or fired from a macro there, it silently does nothing on press.
+
+Cleanup is the author's responsibility, and /despawn is the verb for it: pair a /spawn on a switch's on side with /despawn on its off side to take the entity back on flip-off. /despawn is the in-memory counterpart to /spawn and works for any entity, not just npcs — /spawn platform ... on and /despawn platform on off removes the platform again, and the same pattern cleans up a door, hazard, item, force field, or anything else you spawn. It removes the newest of a type, or the one at coordinates you name, and plays whatever removal sound the entity carries. For npcs, /killall and /kill remain as combat-style removals alongside /despawn. Friendly names and on-disk tokens are both accepted, the same way /build accepts them.
 
 When the object you spawn or build carries its own quoted text — a sign, a story zone, a menu or text input, and so on — how you write those quotes depends on where the command lives. Typed straight into this console the quotes need nothing special: /spawn sign 5 0 "hi" sign false false works as written. But when the same command is stored inside a switch, sensor, menu input, or text input field, each of those inner quotes must be escaped as a backslash followed by a quote, like \"hi\", so the surrounding field isn't closed early. The builder form escapes them for you when you type the command with ordinary quotes; you only add the backslashes by hand when editing main.sif directly.
 
