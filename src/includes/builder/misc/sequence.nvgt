@@ -1,0 +1,176 @@
+/*
+Sequence -- a coordless combination-puzzle element (14.9). It holds an ordered list of step tokens and
+fires a command when they are entered in order. Ordinary switches feed it one token at a time with the
+/seqstep command (section 2); it is NOT tied to a position and does not watch anything on its own -- it
+only reacts when fed. Adapted from an external reference game's ID-based "sequence trigger": SF has no
+entity IDs, so instead of the sequence watching triggers by ID, the triggers FEED the sequence by name.
+
+A sequence is an ELEMENT instance found by name (like the map timer), not a bare store: each `sequence`
+map line spawns one instance holding its definition plus a current_step counter. Feeding advances the
+counter when the token matches the next step; any wrong token runs the fail command and (if reset-on-fail)
+restarts; completing runs the complete command and re-arms unless single-use. Session-scoped: instances
+re-spawn fresh (current_step 0) on every map load. This file has the data, engine, read/write, teardown,
+and the %seq:name% progress token; the /seqstep + /seqreset commands, build form, and map-error checks
+arrive in later sections.
+*/
+
+class sequence
+{
+string seqname;
+string[] steps;
+string complete_command;
+string fail_command;
+bool reset_on_fail;
+bool single_use;
+uint current_step;   // how many correct steps have been entered so far
+bool dormant;        // set once a single-use sequence has completed; ignores further input
+sequence(string nm, string[]@ stps, string comp, string fail, bool rof, bool su)
+{
+seqname=nm;
+steps=stps;
+complete_command=comp;
+fail_command=fail;
+reset_on_fail=rof;
+single_use=su;
+current_step=0;
+dormant=false;
+}
+}
+
+sequence@[] sequences(0);
+
+// The live sequence with this name, or null. Names are unique per map by convention.
+sequence@ find_sequence(string name)
+{
+for(uint i=0; i<sequences.length(); i++)
+{
+if(@sequences[i] == null) continue;
+if(sequences[i].seqname == name) return @sequences[i];
+}
+return null;
+}
+
+/* Feed one token to the named sequence (the /seqstep command's engine). If the token is the next
+expected step, advance; if that was the last step, run the complete command and either re-arm (reset to 0)
+or, for single-use, go dormant. Any other token is a wrong entry: run the fail command and, when
+reset-on-fail is on, restart from the beginning. Commands run trusted so they work on compiled maps. */
+void feed_sequence(string name, string token)
+{
+sequence@ s = find_sequence(name);
+if(@s == null) return;
+if(s.dormant or s.steps.length() == 0) return;
+if(s.current_step < s.steps.length() and token == s.steps[s.current_step])
+{
+s.current_step += 1;
+if(s.current_step >= s.steps.length())
+{
+string cmd = s.complete_command;
+if(s.single_use) s.dormant = true;
+else s.current_step = 0;
+if(cmd != "") comstack(cmd, true);
+}
+}
+else
+{
+string cmd = s.fail_command;
+if(s.reset_on_fail) s.current_step = 0;
+if(cmd != "") comstack(cmd, true);
+}
+}
+
+// Clear a sequence's progress to zero (the /seqreset command). A spent single-use sequence stays spent.
+void reset_sequence(string name)
+{
+sequence@ s = find_sequence(name);
+if(@s == null) return;
+s.current_step = 0;
+}
+
+void spawn_sequence(string name, string[]@ steps, string complete_command, string fail_command, bool reset_on_fail, bool single_use)
+{
+sequence s(name, steps, complete_command, fail_command, reset_on_fail, single_use);
+sequences.insert_last(s);
+}
+
+/* Parse one sequence line: sequence <name> "<steps>" "<complete cmd>" "<fail cmd>" <reset_on_fail>
+<single_use>. name is a bare token; the three quoted fields are the comma-separated steps and the two
+commands; the two trailing bare tokens are the bools. Steps are split on commas and trimmed; empty ones
+are dropped. A line missing the quoted block is ignored (permit-what-loads). */
+void read_sequence(string[] sd)
+{
+if(sd.length() < 2) return;
+string name = sd[1];
+string combined = join_string_array(sd, 2, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() < 3) return;
+string[] steps;
+array<string> raw = string_split(quoted[0], ",");
+for(uint i=0; i<raw.length(); i++)
+{
+string t = string_trim_sides(raw[i]);
+if(t.length() > 0) steps.insert_last(t);
+}
+bool rof = true;
+bool su = false;
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+string[] bools;
+for(uint i=0; i<tail.length(); i++)
+if(tail[i].length() > 0) bools.insert_last(tail[i]);
+if(bools.length() >= 1) rof = string_to_bool(bools[0]);
+if(bools.length() >= 2) su = string_to_bool(bools[1]);
+spawn_sequence(name, steps, quoted[1], quoted[2], rof, su);
+}
+
+void write_sequence(string name, string steps, string complete_command, string fail_command, bool reset_on_fail, bool single_use)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+mapper.write("\r\n"+"sequence "+name+" \""+escape_quotes(steps)+"\" \""+escape_quotes(complete_command)+"\" \""+escape_quotes(fail_command)+"\" "+reset_on_fail+" "+single_use);
+mapper.close();
+bump_map_modified();
+}
+
+void destroy_all_sequences()
+{
+sequences.resize(0);
+}
+
+/* Universal %seq:name% token: replaced with how many steps of that sequence have been entered correctly
+so far (0 if the sequence isn't found or hasn't been started). Parameterized scan-and-replace like
+%flag:name% / %item:name%, read from after "seq:" to the closing "%"; called in comparse after the item
+tokens. */
+string expand_seq_tokens(string cmd)
+{
+if(string_contains(cmd, "%seq:", 1) < 0) return cmd;
+string result = "";
+int n = int(cmd.length());
+int i = 0;
+while(i < n)
+{
+if(cmd.substr(i, 5) == "%seq:")
+{
+int j = i + 5;
+string name = "";
+bool closed = false;
+while(j < n)
+{
+string c = cmd.substr(j, 1);
+if(c == "%") { closed = true; break; }
+name += c;
+j++;
+}
+if(closed and name.length() > 0)
+{
+sequence@ s = find_sequence(name);
+uint prog = (@s != null) ? s.current_step : 0;
+result += ("" + prog);
+i = j + 1;
+continue;
+}
+}
+result += cmd.substr(i, 1);
+i++;
+}
+return result;
+}
