@@ -219,3 +219,29 @@ i++;
 }
 return result;
 }
+
+/* Tier 2 semantic check for a sequence line: the name is a valid identifier (letter-led,
+letters/digits/underscores, like a map variable), the quoted block has the three fields (steps, complete
+command, fail command), the steps list at least one token, and any trailing reset-on-fail / single-use
+token is a real bool. The commands themselves are free text and aren't validated. */
+string sequence_semantic_error(string[] sd, string mode, int &out col)
+{
+if(sd.length() < 2) { col=-1; return "a sequence needs a name."; }
+string name = sd[1];
+if(name.length() == 0 or !mv_is_letter(name.substr(0,1))) { col=1; return "the sequence name must start with a letter."; }
+for(uint i=0; i<name.length(); i++)
+if(!mv_is_name_char(name.substr(i,1))) { col=1; return "the sequence name may only contain letters, digits, and underscores."; }
+string combined = join_string_array(sd, 2, sd.length());
+string remainder;
+array<string> quoted = extract_quoted(combined, remainder);
+if(quoted.length() < 3) { col=2; return "a sequence needs its steps, an on complete command, and an on fail command, all in quotes."; }
+int stepcount = 0;
+array<string> raw = string_split(quoted[0], ",");
+for(uint i=0; i<raw.length(); i++)
+if(string_trim_sides(raw[i]).length() > 0) stepcount += 1;
+if(stepcount == 0) { col=2; return "the steps must list at least one token separated by commas."; }
+array<string> tail = string_split(string_trim_sides(remainder), " ");
+for(uint i=0; i<tail.length(); i++)
+if(tail[i].length() > 0 and !is_bool_token(tail[i])) { col=-1; return "the reset on fail and single use values must be true or false."; }
+return "";
+}
