@@ -5,13 +5,18 @@ int stuntime=500;
 
 timer stuntimer;
 
+// Dedicated player stun state. The globals above are shared/overloaded as a release timer for NPC and projectile stuns (see weapon.nvgt / bullet.nvgt / projectile.nvgt), so the player keeps its own so that stunning an enemy never freezes the player.
+bool me_stunned=false;
+int me_stundir=0;
+timer me_stuntimer;
+
 void stun_target(string entity, string id, int st)
 {
-stundir = st;
 if(entity == "me")
 {
-stuntimer.restart();
-stunned = true;
+me_stuntimer.restart();
+me_stundir = st;
+me_stunned = true;
 cammable = false;
 fireable = false;
 jumpable = false;
@@ -29,6 +34,7 @@ for(uint i = 0; i < npcs.length(); i++)
 if(@npcs[i] == null) continue;
 if(npcs[i].category == target_cat && npcs[i].subtype == id)
 {
+stundir = st;
 stuntimer.restart();
 stunned = true;
 npcs[i].fireable = false;
@@ -44,6 +50,7 @@ for(uint i = 0; i < projectiles.length(); i++)
 {
 if(projectiles[i].projtype == id)
 {
+stundir = st;
 stuntimer.restart();
 stunned = true;
 projectiles[i].fireable = false;
@@ -54,9 +61,11 @@ projectiles[i].fireable = false;
 
 void stuncheck()
 {
-if(stunned == true && stuntimer.elapsed >= stundir)
+if(me_stunned == true)
 {
-stunned = false;
+if(me_stuntimer.elapsed >= me_stundir)
+{
+me_stunned = false;
 cammable = true;
 fireable = true;
 jumpable = true;
@@ -65,6 +74,19 @@ speedable = true;
 spiable = true;
 turnable = true;
 wepref = true;
+}
+else
+{
+// Hold the stun down each frame. update_character_settings() rewrites these flags to true every tick from the character-blocker zones, and it runs before stuncheck, so without re-asserting them here a stun would only last a single frame and never actually freeze the player.
+cammable = false;
+fireable = false;
+jumpable = false;
+moveable = false;
+speedable = false;
+spiable = false;
+turnable = false;
+wepref = false;
+}
 }
 for(uint i = 0; i < npcs.length(); i++)
 {
