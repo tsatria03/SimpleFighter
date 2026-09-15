@@ -404,6 +404,21 @@ cmd = string_replace(cmd, "%z%", ""+me.z, true);
 return cmd;
 }
 
+/* Runs the full universal token set over author-written DISPLAY text -- signs, dialogs, text squares,
+timed text, blockages, and input prompts/labels -- mirroring the chain comparse applies to commands
+(state, flag, item, seq) and adding random(). Called live at each element's show site, so tokens reflect
+the value the moment the text is read and random() rerolls per read. Token-free text returns untouched. */
+string expand_text_tokens(string s)
+{
+if(s.find("%") < 0 and s.find("random(") < 0) return s;
+s = expand_state_tokens(s);
+s = expand_flag_tokens(s);
+s = expand_item_tokens(s);
+s = expand_seq_tokens(s);
+s = expand_random_tokens(s);
+return s;
+}
+
 /* Shared by the text_input and menu_input builder entities: substitutes the input's captured value
 into an author-written command right before it is handed to comstack(). %answer% is the text a text
 input captured, %choice% the label a menu input picked, %index% that choice's 0-based position.

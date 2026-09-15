@@ -11,6 +11,8 @@ metadata:
 
 1. **Broken-bones firing + general stun fix.** Removed the fire-gate so you can fire with broken bones; the bone-stun now actually freezes you. Root cause was that `update_character_settings()` rewrites the capability flags to allowed every frame (before `stuncheck()`), so no stun ever stuck — `stuncheck()` now HOLDS the stun each frame, and the player got a dedicated stun state (`me_stunned`/`me_stuntimer`/`me_stundir`) decoupled from the NPC/projectile-shared global so stunning an enemy doesn't freeze the player. This fixed ALL player stuns (falls, weapon hits, projectiles), not just bones — partly reverses the 14.4 "can't fire while bones broken" entry. Files: stunner.nvgt, game_handlers.nvgt, charfuncts.nvgt, character_parser.nvgt, checkpoint.nvgt.
 
+2. **Universal tokens in map-element text.** The full token set (state + %flag:name% + %item:name% + %seq:name% + random()) now works inside author DISPLAY text of 7 elements (sign, text square, story-zone dialog, timed text, blockage, text-input title/prompt, menu-input prompt/labels) via one `expand_text_tokens` helper called live at each show site. See [[project_text_element_tokens_plan]] (BUILT).
+
 ## Firm commitments so far
 
 - **Final capstone in the change-log summaries.** WHEN 15.0 is done, write one last summary in [[project_change_log_summaries]] (`aidocks/project_change_log_summaries.txt`) that ties the *entire package* together — the bow on the whole two-year arc, not just a V15 era section. This is the closing note for the whole file (which currently runs V1 -> V14.9 with three capstones). Do this LAST, after 15.0's features/docs are settled, so it can reflect what actually shipped.

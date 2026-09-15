@@ -5,6 +5,10 @@ metadata:
   type: project
 ---
 
+**STATUS: BUILT — shipped in 15.0. Both sections done.** `expand_text_tokens` in mapfuncts.nvgt wired into all 7 display sites; docs updated across the 6 topics + commands.txt token section; one 15.0 changelog entry. Original plan below (kept for the record).
+
+---
+
 **STATUS: design COMPLETE, all decisions settled (2026-09). Ships in 15.0. Not yet built.** Fulfills the reworded todo entry ("Make the universal state tokens, along with the flag, item, sequence, and random tokens, work inside the text that map elements display..."). Build one section at a time, confirm+commit between ([[feedback_confirm_before_implementing]]).
 
 ## What it is
