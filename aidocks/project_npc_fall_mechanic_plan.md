@@ -5,6 +5,8 @@ metadata:
   type: project
 ---
 
+**STATUS: PASS 1 BUILT & shipping in 15.0 (all 4 sections). Pass 2 (health-only fall damage) still optional/later.** Below kept as the full record.
+
 **STATUS: investigated, design OPEN, NOT built (2026-09).** Candidate 15.0 feature: make NPCs fall off ledges/when knocked airborne instead of floating. The mechanics are very doable — terrain detection already exists and is reusable — but three design decisions must be settled with the dev first ([[feedback_confirm_before_implementing]]). See [[project_v15_final_plan]].
 
 ## The player fall system (the model to mirror)

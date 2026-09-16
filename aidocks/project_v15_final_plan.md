@@ -13,6 +13,8 @@ metadata:
 
 2. **Universal tokens in map-element text.** The full token set (state + %flag:name% + %item:name% + %seq:name% + random()) now works inside author DISPLAY text of 7 elements (sign, text square, story-zone dialog, timed text, blockage, text-input title/prompt, menu-input prompt/labels) via one `expand_text_tokens` helper called live at each show site. See [[project_text_element_tokens_plan]] (BUILT).
 
+3. **NPC gravity / fall mechanic (pass 1).** NPCs now fall off ledges (while chasing with `chase terrains` on), when knocked airborne, or when spawned unsupported, instead of floating; fall/land sounds by drop distance. New `flying` field (true=floats) + `use lands` field, both surfaced in the NPC manager; `chase terrains` extended to apply during sight-pursuit (`|| pursuing`). See [[project_npc_fall_mechanic_plan]] (PASS 1 BUILT). Pass 2 (health-only fall damage) still optional/later.
+
 ## Firm commitments so far
 
 - **Final capstone in the change-log summaries.** WHEN 15.0 is done, write one last summary in [[project_change_log_summaries]] (`aidocks/project_change_log_summaries.txt`) that ties the *entire package* together — the bow on the whole two-year arc, not just a V15 era section. This is the closing note for the whole file (which currently runs V1 -> V14.9 with three capstones). Do this LAST, after 15.0's features/docs are settled, so it can reflect what actually shipped.
