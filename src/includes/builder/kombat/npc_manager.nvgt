@@ -35,7 +35,7 @@ string target_path = (path_choice == "global")
 ? "sounds/decompiled/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif"
 : "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif";
 string[] keys = {"x attack range", "y attack range", "z attack range", "x sight range", "y sight range", "z sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "taunt delay", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "patrol z range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee time", "flee speed", "provoke speed", "terrain"};
-string[] cb_keys = {"attacking", "move x", "move y", "move z", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
+string[] cb_keys = {"attacking", "move x", "move y", "move z", "flying", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
 form.reset();
 form.create_window("add "+subtype, false, true, false);
 int[] inputs;
@@ -44,13 +44,16 @@ inputs.insert_last(form.create_input_box(keys[i]));
 string[] mode_opts = {"auto", "own", "player", "never"};
 int steps_list = form.create_list("use steps");
 int falls_list = form.create_list("use falls");
+int lands_list = form.create_list("use lands");
 for(uint i=0; i<mode_opts.length(); i++)
 {
 form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
 form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
+form.add_list_item(lands_list, mode_opts[i], mode_opts[i]);
 }
 form.set_list_position(steps_list, 0, false);
 form.set_list_position(falls_list, 0, false);
+form.set_list_position(lands_list, 0, false);
 string[] wt_opts;
 string[] wt2_opts;
 build_npc_weapon_lists(wt_opts, wt2_opts);
@@ -105,6 +108,7 @@ for(uint i=0; i<checkboxes.length(); i++)
 content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
 content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
 content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
+content += "use lands="+mode_opts[form.get_list_position(lands_list)]+"\r\n";
 content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
 content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
 create_subfolders(target_path);
@@ -342,7 +346,7 @@ return;
 bool edit_npc_form(string target_path, string subtype)
 {
 string[] keys = {"x attack range", "y attack range", "z attack range", "x sight range", "y sight range", "z sight range", "health", "rest heal time", "ambient heal time", "lives", "attack", "defense", "fire speed", "move speed", "taunt delay", "level", "xp", "chase mode", "chase time", "teleport time", "patrol x range", "patrol y range", "patrol z range", "targets", "launch path", "launch category", "launch subtype", "launch time", "flee time", "flee speed", "provoke speed", "terrain"};
-string[] cb_keys = {"attacking", "move x", "move y", "move z", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
+string[] cb_keys = {"attacking", "move x", "move y", "move z", "flying", "drop item", "tel x", "tel y", "tel z", "ambient heal", "launching", "hit and run", "chase terrains"};
 dictionary existing;
 file fin;
 if(fin.open(target_path, "rb"))
@@ -371,21 +375,26 @@ inputs.insert_last(form.create_input_box(keys[i], preset));
 string[] mode_opts = {"auto", "own", "player", "never"};
 int steps_list = form.create_list("use steps");
 int falls_list = form.create_list("use falls");
+int lands_list = form.create_list("use lands");
 for(uint i=0; i<mode_opts.length(); i++)
 {
 form.add_list_item(steps_list, mode_opts[i], mode_opts[i]);
 form.add_list_item(falls_list, mode_opts[i], mode_opts[i]);
+form.add_list_item(lands_list, mode_opts[i], mode_opts[i]);
 }
 string steps_pre = "auto"; if(existing.exists("use steps")) existing.get("use steps", steps_pre);
 string falls_pre = "auto"; if(existing.exists("use falls")) existing.get("use falls", falls_pre);
-int steps_idx = 0, falls_idx = 0;
+string lands_pre = "auto"; if(existing.exists("use lands")) existing.get("use lands", lands_pre);
+int steps_idx = 0, falls_idx = 0, lands_idx = 0;
 for(uint i=0; i<mode_opts.length(); i++)
 {
 if(mode_opts[i] == steps_pre) steps_idx = i;
 if(mode_opts[i] == falls_pre) falls_idx = i;
+if(mode_opts[i] == lands_pre) lands_idx = i;
 }
 form.set_list_position(steps_list, steps_idx, false);
 form.set_list_position(falls_list, falls_idx, false);
+form.set_list_position(lands_list, lands_idx, false);
 string[] wt_opts;
 string[] wt2_opts;
 build_npc_weapon_lists(wt_opts, wt2_opts);
@@ -440,6 +449,7 @@ for(uint i=0; i<checkboxes.length(); i++)
 content += cb_keys[i]+"="+(form.is_checked(checkboxes[i]) ? "true" : "false")+"\r\n";
 content += "use steps="+mode_opts[form.get_list_position(steps_list)]+"\r\n";
 content += "use falls="+mode_opts[form.get_list_position(falls_list)]+"\r\n";
+content += "use lands="+mode_opts[form.get_list_position(lands_list)]+"\r\n";
 content += "weapon type="+wt_opts[form.get_list_position(wt_list)]+"\r\n";
 content += "weapon type2="+wt2_opts[form.get_list_position(wt2_list)]+"\r\n";
 file fout;

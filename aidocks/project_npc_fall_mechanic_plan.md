@@ -68,7 +68,9 @@ For a **non-flying** NPC, gravity OWNS the vertical axis. The AI's UPWARD move i
 - **Field name is `flying`** (settled), true=float, false=fallable; parsed in `npc_parse_file` near the move-flag block (`else if(k == "flying") self.flying = string_to_bool(v);`). It is a CHARACTER stat in the NPC info.sif, NOT a map-line field.
 - Support helpers reusable as-is on NPC int coords: `gmt(x,y)` (2d), `platform_supports(x,y,z)` (3d), `wall_blocks` (wall-climb-out on landing).
 
-## Pass 1 build — fall + land ONLY (no damage). §1 + §2 BUILT (engine + sounds); §3 (manager UI) + §4 (docs/changelog) remain.
+## Pass 1 build — fall + land ONLY (no damage). §1 + §2 + §3 BUILT (engine + sounds + manager UI); §4 (docs/changelog) remains.
+
+§3 note: `flying` checkbox + `use lands` list added to BOTH `add_npc_form` and `edit_npc_form` in npc_manager.nvgt (the manager has two forms sharing the same cb_keys/list/save structure — update both). `flying` in cb_keys is also what stops the manager's save-rewrite from dropping the field. Chase mode was already an editable input box (type `provoke` etc there).
 
 1. **npc class fields:** `bool flying; bool falling; int fallcounter; timer falltimer;` + a fixed NPC fall interval constant. Default `flying/falling=false`, `fallcounter=0` in the constructor defaults (before npc_parse at line 187).
 2. **Parse:** `flying` in `npc_parse_file` (near move x/y/z at ~495-497). [DATA DONE: all 187 shipped info.sif already carry `flying=false`.]
