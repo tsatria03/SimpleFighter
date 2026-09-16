@@ -1068,6 +1068,15 @@ int npc_fall_threshold = 8;
 // shrug off falls that kill fragile ones.
 double npc_fallmod = 21;
 
+// True if a non-flying NPC could stand at this cell (there is support to hold it): 3d uses platform_supports,
+// 2d needs a solid non-air tile. Used so a blocked NPC never REVERSES backward off a ledge into open air.
+bool npc_cell_supported(int cx, int cy, int cz)
+{
+if(mapmode == "3d") return platform_supports(cx, cy, cz);
+string t = gmt(cx, cy);
+return t != "" && t != "air";
+}
+
 // Play a resolved fall/land clip (silent on the "skip" sentinel or empty) at the NPC's position, through its
 // category's sound pool, so it's spatialized like the NPC's other sounds.
 void npc_play_fall_land(uint i, string clip)
@@ -1559,8 +1568,14 @@ if(dx_intent != 0 && npcs[i].move_x && paused == 0)
 int next_x = npcs[i].x + dx_intent;
 string next_tile_x = (mapmode == "3d") ? gmt(next_x, npcs[i].y, npcs[i].z) : gmt(next_x, npcs[i].y);
 bool blocked = string_contains(next_tile_x, "wall", 1) > -1 or is_in_safe(next_x, npcs[i].y) or (!terrain_off && !npc_terrain_allows(npcs[i], next_x, npcs[i].y, npcs[i].z));
-if(blocked) next_x = npcs[i].x - dx_intent;
-if(next_x >= minx && next_x <= maxx && (terrain_off || npc_terrain_allows(npcs[i], next_x, npcs[i].y, npcs[i].z)))
+if(blocked)
+{
+int rev_x = npcs[i].x - dx_intent;
+// Don't reverse a fallable NPC backward off a ledge into open air (it would just drop away from its target); hold instead. Forward steps onto air are left untouched, so chase-terrains ledge-chasing still works.
+if(!npcs[i].flying && mapmode != "topdown" && !npc_cell_supported(rev_x, npcs[i].y, npcs[i].z)) next_x = npcs[i].x;
+else next_x = rev_x;
+}
+if(next_x != npcs[i].x && next_x >= minx && next_x <= maxx && (terrain_off || npc_terrain_allows(npcs[i], next_x, npcs[i].y, npcs[i].z)))
 {
 int actual_dx = next_x - npcs[i].x;
 if(actual_dx != 0) npcs[i].facing_dx = (actual_dx > 0) ? 1 : -1;
@@ -1583,8 +1598,14 @@ if(dy_intent != 0 && npcs[i].move_y && paused == 0)
 int next_y = npcs[i].y + dy_intent;
 string next_tile_y = (mapmode == "3d") ? gmt(npcs[i].x, next_y, npcs[i].z) : gmt(npcs[i].x, next_y);
 bool blocked = string_contains(next_tile_y, "wall", 1) > -1 or is_in_safe(npcs[i].x, next_y) or (!terrain_off && !npc_terrain_allows(npcs[i], npcs[i].x, next_y, npcs[i].z));
-if(blocked) next_y = npcs[i].y - dy_intent;
-if(next_y >= miny && next_y <= maxy && (terrain_off || npc_terrain_allows(npcs[i], npcs[i].x, next_y, npcs[i].z)))
+if(blocked)
+{
+int rev_y = npcs[i].y - dy_intent;
+// On 3d, y is horizontal ground, so the same rule as x: don't reverse a fallable NPC off a ledge into open air; hold instead. (On 2d, y is vertical and already handled by the gravity gating above, so leave its reverse alone.)
+if(!npcs[i].flying && mapmode == "3d" && !npc_cell_supported(npcs[i].x, rev_y, npcs[i].z)) next_y = npcs[i].y;
+else next_y = rev_y;
+}
+if(next_y != npcs[i].y && next_y >= miny && next_y <= maxy && (terrain_off || npc_terrain_allows(npcs[i], npcs[i].x, next_y, npcs[i].z)))
 {
 npcs[i].y = next_y;
 moved = true;
