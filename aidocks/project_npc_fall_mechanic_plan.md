@@ -47,7 +47,9 @@ metadata:
 
 NPCs do NOT voluntarily step onto empty/air cells: `npc_terrain_allows` (npc.nvgt:637) returns false for a `""`/`"air"` tile even when `terrain=any`, so the movement code treats a gap like a wall and the NPC oscillates at the edge instead of walking off. Gravity only fires once an NPC actually LEAVES solid ground. Three ways that happens: (1) knocked off by a weapon push, (2) spawned/placed with no tile beneath it (falls immediately — confirmed working), (3) **`chase terrains=true`**, which via `ignore_terrain = chase_terrains && (provoked||fleeing)` makes a provoked NPC ignore terrain limits and pursue the player across gaps → steps into air → falls.
 
-**DONE (dev's call): set `chase terrains=true` on ALL 187 shipped NPC info.sif** (perl substring replace, CRLF-preserved — NOTE: `sed -i` DESTROYS CRLF on git-bash here, `perl -i -pe` preserves it; use perl for in-place value edits). Side effect of the flag (existing semantics): a provoked/fleeing NPC also ignores its normal `terrain` restriction while chasing, not just gaps. Uncommitted at time of writing.
+**DONE (dev's call): set `chase terrains=true` on ALL 187 shipped NPC info.sif** (perl substring replace, CRLF-preserved — NOTE: `sed -i` DESTROYS CRLF on git-bash here, `perl -i -pe` preserves it; use perl for in-place value edits). Committed.
+
+**CODE FIX (npc.nvgt:1526):** `chase terrains` originally only overrode terrain when `provoked || fleeing` (and `provoked` is only set by TAKING DAMAGE, lines 1177/1189) — so a plain sight-chase never crossed a gap; the NPC just oscillated at the edge. Changed to `ignore_terrain = chase_terrains && (provoked || fleeing || pursuing)` so it also applies during an active sight-pursuit. Now a `chase terrains=true` NPC walks off ledges toward the player on sight and falls. For `terrain=any` NPCs (all shipped) `ignore_terrain` only ever gates AIR, so this is purely the ledge-walk-off; it only affects solid-tile movement for NPCs the author gives a SPECIFIC terrain (opt out those with `chase terrains=false`).
 
 ## Vertical-axis / gravity rule [SETTLED — support-aware (option B)]
 
