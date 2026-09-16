@@ -57,6 +57,7 @@ bool flying;
 bool falling;
 int fallcounter;
 timer falltimer;
+int sidestep_dir;
 bool dropitem;
 bool tel_x;
 bool tel_y;
@@ -175,6 +176,7 @@ move_z = false;
 flying = false;
 falling = false;
 fallcounter = 0;
+sidestep_dir = 0;
 ambient_heal = false;
 facing_dx = 1;
 launching = false;
@@ -1072,7 +1074,8 @@ double npc_fallmod = 21;
 // 2d needs a solid non-air tile. Used so a blocked NPC never REVERSES backward off a ledge into open air.
 bool npc_cell_supported(int cx, int cy, int cz)
 {
-if(mapmode == "3d") return platform_supports(cx, cy, cz);
+if(mapmode == "3d") return cz <= int(minz) || platform_supports(cx, cy, cz);
+if(cy <= miny) return true;   // 2d floor boundary
 string t = gmt(cx, cy);
 return t != "" && t != "air";
 }
@@ -1173,6 +1176,37 @@ npcs[i].fallcounter = 0;
 npc_play_fall_land(i, clip3d);
 }
 }
+}
+
+// Section 2 wall-follow sidestep (3d only): when a non-flying NPC is blocked straight toward its target with no
+// side to favor, step perpendicular onto solid, unblocked ground to slip around the obstacle -- committing to one
+// direction (sidestep_dir) so it follows the wall to its end instead of jittering in place. Returns true if it
+// stepped. This is LOCAL avoidance, not pathfinding: a fully enclosing wall, a dead-end, or an opening on the
+// side it commits away from can still stump it.
+bool npc_sidestep(uint i, int tx, int ty, bool terrain_off)
+{
+if(mapmode != "3d") return false;   // 2d is a single line -- there is no lateral way around
+if(npcs[i].flying) return false;    // flyers already move freely on every axis
+// Sidestep on whichever horizontal axis the NPC needs LESS to close; the other axis is its blocked approach.
+bool primary_is_x = absolute(tx - npcs[i].x) >= absolute(ty - npcs[i].y);
+int pref = primary_is_x ? ((ty > npcs[i].y) ? 1 : ((ty < npcs[i].y) ? -1 : 0)) : ((tx > npcs[i].x) ? 1 : ((tx < npcs[i].x) ? -1 : 0));
+int dir = (npcs[i].sidestep_dir != 0) ? npcs[i].sidestep_dir : (pref != 0 ? pref : 1);
+for(int attempt = 0; attempt < 2; attempt++)
+{
+int d = (attempt == 0) ? dir : -dir;
+int nx = npcs[i].x, ny = npcs[i].y;
+if(primary_is_x) ny += d; else nx += d;
+if(nx < minx || nx > maxx || ny < miny || ny > maxy) continue;
+string t = gmt(nx, ny, npcs[i].z);
+bool blocked = string_contains(t, "wall", 1) > -1 or is_in_safe(nx, ny) or (!terrain_off && !npc_terrain_allows(npcs[i], nx, ny, npcs[i].z));
+if(blocked) continue;
+if(!npc_cell_supported(nx, ny, npcs[i].z)) continue;   // don't sidestep off into a pit
+npcs[i].x = nx;
+npcs[i].y = ny;
+npcs[i].sidestep_dir = d;   // commit so it keeps following the wall the same way
+return true;
+}
+return false;
 }
 
 void npcloop()
@@ -1627,6 +1661,12 @@ if(next_z >= int(minz) && next_z <= int(maxz))
 npcs[i].z = next_z;
 moved = true;
 }
+}
+// Section 2 wall-follow: a normal move toward the target clears any committed sidestep direction; if instead the NPC got fully stuck this tick and isn't already at the target, try slipping perpendicular around the obstacle.
+if(moved) npcs[i].sidestep_dir = 0;
+else if(has_move && (npcs[i].x != tx || npcs[i].y != ty))
+{
+if(npc_sidestep(i, tx, ty, terrain_off)) moved = true;
 }
 if(moved)
 {
