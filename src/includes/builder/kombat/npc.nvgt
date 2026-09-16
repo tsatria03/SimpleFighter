@@ -340,6 +340,30 @@ if(snd == "") snd = get_map_sound(platform_path);
 return snd == "" ? "skip" : snd;
 }
 
+// Twin of resolve_npc_fall_sound but for the *land* (touchdown) clip, governed by the NPC's separate
+// use_lands field. own -> the NPC's own *land*; player -> the platform tile it lands on; auto -> own then
+// tile; never -> silent. Returns "skip" when there's nothing to play.
+string resolve_npc_land_sound(npc@ self)
+{
+string mode = self.use_lands;
+string platform_path = "builder/construction/platforms/"+gmt(self.x, self.y)+"/*land*";
+string own_path = "builder/kombat/npc/"+self.category+"/"+self.subtype+"/general/*land*";
+if(mode == "never") return "skip";
+if(mode == "own")
+{
+string snd = get_map_sound(own_path);
+return snd == "" ? "skip" : snd;
+}
+if(mode == "player")
+{
+string snd = get_map_sound(platform_path);
+return snd == "" ? "skip" : snd;
+}
+string snd = get_map_sound(own_path);
+if(snd == "") snd = get_map_sound(platform_path);
+return snd == "" ? "skip" : snd;
+}
+
 string read_npc_info(string category, string subtype, string path = "any")
 {
 string maplocal = "data/builder/maps/decompiled/"+mapname+"/assets/builder/kombat/npc/"+category+"/"+subtype+"/data/info.sif";
@@ -1035,10 +1059,24 @@ break_charbones(ct, dmg, random(100, 200), count);
 // that matches the player's normal-speed fall.
 int npc_falltime = 50;
 
+// Cells an NPC must drop for a HARD landing, mirroring the player's fall_threshold: a fall of this many
+// cells or more plays the fall sound on landing, a shorter drop plays the (softer) land sound.
+int npc_fall_threshold = 8;
+
+// Play a resolved fall/land clip (silent on the "skip" sentinel or empty) at the NPC's position, through its
+// category's sound pool, so it's spatialized like the NPC's other sounds.
+void npc_play_fall_land(uint i, string clip)
+{
+if(clip == "" || clip == "skip") return;
+sound_pool@ pool = npc_pool(npcs[i].category);
+pool.play_extended_3d(clip, me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+}
+
 // Gravity for one non-flying NPC, mirroring the player's fallcheck. Runs every frame, outside the movement
 // timer, so a non-flyer left unsupported (walked off a ledge, knocked airborne, or spawned in the air) drops
-// one cell per npc_falltime until it lands on solid ground. 2d falls along y, 3d along z. Landing sound is
-// added in section 2; for now it lands silently.
+// one cell per npc_falltime until it lands on solid ground. 2d falls along y, 3d along z. On landing it plays
+// ONE sound chosen by drop distance, mirroring the player: a fall of npc_fall_threshold cells or more plays the
+// fall sound (use_falls), a shorter drop plays the softer land sound (use_lands) -- own clip or the landing tile.
 void npc_fallcheck(uint i)
 {
 if(@npcs[i] == null) return;
@@ -1064,8 +1102,10 @@ if(npcs[i].y <= miny || (land_here != "" && land_here != "air"))
 {
 // Came to rest inside a wall's height? Climb to its top so we sit on it, not inside it (mirror of the player).
 while(npcs[i].y < maxy && wall_blocks(npcs[i].x, npcs[i].y + 1, npcs[i].z)) npcs[i].y++;
+string clip2d = (npcs[i].fallcounter >= npc_fall_threshold) ? resolve_npc_fall_sound(npcs[i]) : resolve_npc_land_sound(npcs[i]);
 npcs[i].falling = false;
 npcs[i].fallcounter = 0;
+npc_play_fall_land(i, clip2d);
 }
 }
 else if(mapmode == "3d")
@@ -1090,8 +1130,10 @@ landed = true;
 }
 if(landed)
 {
+string clip3d = (npcs[i].fallcounter >= npc_fall_threshold) ? resolve_npc_fall_sound(npcs[i]) : resolve_npc_land_sound(npcs[i]);
 npcs[i].falling = false;
 npcs[i].fallcounter = 0;
+npc_play_fall_land(i, clip3d);
 }
 }
 }
