@@ -1593,7 +1593,8 @@ string ab = gmt(npcs[i].x, npcs[i].y + 1);
 if(ab == "" || ab == "air" || string_contains(ab, "wall", 1) > -1) dy_intent = 0;
 }
 }
-if(dy_intent != 0 && npcs[i].move_y && paused == 0)
+// On 2d, y is vertical, so a non-flyer climbs regardless of its move_y flag (the gating above already limited dy to upward-onto-support). On 3d, y is horizontal ground, so move_y is still required there.
+if(dy_intent != 0 && (npcs[i].move_y || (mapmode == "2d" && !npcs[i].flying)) && paused == 0)
 {
 int next_y = npcs[i].y + dy_intent;
 string next_tile_y = (mapmode == "3d") ? gmt(npcs[i].x, next_y, npcs[i].z) : gmt(npcs[i].x, next_y);
@@ -1617,7 +1618,8 @@ if(mapmode == "3d" && !npcs[i].flying && dz_intent != 0)
 if(dz_intent < 0) dz_intent = 0;
 else if(!platform_supports(npcs[i].x, npcs[i].y, npcs[i].z + 1)) dz_intent = 0;
 }
-if(mapmode == "3d" && dz_intent != 0 && npcs[i].move_z && paused == 0)
+// A non-flyer climbs regardless of its move_z flag: the gating above already limited its dz to upward-onto-support (down is gravity's job), so climbing terrain is automatic like falling is. move_z is only needed for a FLYER's free vertical flight.
+if(mapmode == "3d" && dz_intent != 0 && (npcs[i].move_z || !npcs[i].flying) && paused == 0)
 {
 int next_z = npcs[i].z + dz_intent;
 if(next_z >= int(minz) && next_z <= int(maxz))
