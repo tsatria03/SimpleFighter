@@ -43,6 +43,12 @@ metadata:
 
    **NPCs have NO bones.** The bone system (`broken_bones`, `break_charbones`, `bonecheck`) is player-only. `npc_apply_break_charbones` / `npc_play_pain` in npc.nvgt are MISNAMED — they act on the PLAYER (when an animal/zombie NPC hits you). So a future NPC fall-damage pass is HEALTH-only (subtract from npc health/lives), no bone breaks.
 
+## Walking off ledges — the `chase terrains` gate [IMPORTANT]
+
+NPCs do NOT voluntarily step onto empty/air cells: `npc_terrain_allows` (npc.nvgt:637) returns false for a `""`/`"air"` tile even when `terrain=any`, so the movement code treats a gap like a wall and the NPC oscillates at the edge instead of walking off. Gravity only fires once an NPC actually LEAVES solid ground. Three ways that happens: (1) knocked off by a weapon push, (2) spawned/placed with no tile beneath it (falls immediately — confirmed working), (3) **`chase terrains=true`**, which via `ignore_terrain = chase_terrains && (provoked||fleeing)` makes a provoked NPC ignore terrain limits and pursue the player across gaps → steps into air → falls.
+
+**DONE (dev's call): set `chase terrains=true` on ALL 187 shipped NPC info.sif** (perl substring replace, CRLF-preserved — NOTE: `sed -i` DESTROYS CRLF on git-bash here, `perl -i -pe` preserves it; use perl for in-place value edits). Side effect of the flag (existing semantics): a provoked/fleeing NPC also ignores its normal `terrain` restriction while chasing, not just gaps. Uncommitted at time of writing.
+
 ## Vertical-axis / gravity rule [SETTLED — support-aware (option B)]
 
 For a **non-flying** NPC, gravity OWNS the vertical axis. The AI's UPWARD move is allowed **only when the destination cell is supported** (something to stand on) — this stops the jitter (never rise into empty air) while STILL letting a ground enemy climb onto reachable platforms. The AI never moves itself DOWN (gravity does that).
