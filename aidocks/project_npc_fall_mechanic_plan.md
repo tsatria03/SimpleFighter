@@ -93,7 +93,28 @@ For a **non-flying** NPC, gravity OWNS the vertical axis. The AI's UPWARD move i
    - **CRITICAL:** `edit_npc_form` REWRITES the whole info.sif from scratch on save using only the known keys/cb_keys/list fields — it does NOT preserve unknown fields. So the appended `flying=false` would be SILENTLY DROPPED the first time an NPC is edited+saved UNLESS `flying` is in `cb_keys[]`. Adding it there is therefore REQUIRED (not just for the UI) to keep the field alive through the editor. (Note: this same rewrite behavior means any info.sif field not in the editor's lists is already lost on edit — pre-existing, out of scope.)
    - `build_npc()` (placing an NPC on the map) needs NO change — it doesn't touch stats.
 
-## Pass 2 (later, after fall+land confirmed): fall DAMAGE — HEALTH ONLY (NPCs have no bones). Scale by fallcounter; tune an NPC threshold/mod.
+## Pass 2 — fall DAMAGE (HEALTH ONLY; NPCs have no bones). Design in progress.
+
+Mirrors the PLAYER's fall damage (map.nvgt fallcheck), minus bones. Player model for reference:
+- Soft landing (`fallcounter < fall_threshold`=8, OR in a fall zone) → NO damage.
+- Hard landing (>= 8) → `damage = max(1, fallcounter * fallmod - defence * defmod)`; player `fallmod` default 21 (a per-CHARACTER stat, tile-zone overridable), `defmod` default 3. Plus a stun of `10 * fallcounter`. Shield/bike absorb first.
+
+NPC side (settled facts):
+- `npc_fall_threshold` already = 8 (built in pass 1). Reuse it.
+- **`fallmod` is PLAYER-ONLY** (a character stat) — NPCs must NOT use it. NPCs need their own per-tile fall-damage value.
+- NPCs already mitigate incoming damage with **`npc.defence * 3`** (fixed ×3 in weapon.nvgt/bullet.nvgt) — mirror that for fall damage. Use base `defence` (that's what the incoming-damage code uses, not the per-state w_/h_ variants).
+- Lethal fall must route through the NPC's normal death/lose-life path (not a bespoke death).
+
+Proposed formula: at `fallcounter >= npc_fall_threshold`, `dmg = max(1, fallcounter * <npc-per-tile> - npcs[i].defence * 3)`; `npcs[i].health -= dmg`; if health <= 0, run the NPC's existing death/lose-life.
+
+OPEN DECISIONS (to settle before building):
+1. **Per-tile fall-damage source: [SETTLED — A]** fixed global `npc_fallmod = 21` (mirrors npc_falltime/npc_fall_threshold; 21 matches the player default). No per-NPC field. Variety comes from each NPC's existing `defence` (×3 mitigation) and `health` pool.
+2. **Stun on a hard landing: [SETTLED — A, yes]** stun the NPC for `10 * fallcounter` ms on a hard landing, mirroring the player. Use the existing NPC stun mechanism (the per-npc fireable/move flags, as weapon/bullet stuns do — NOT the player's me_stunned).
+3. **Fall zones spare NPCs: [SETTLED — A, yes]** an NPC landing in a fall zone takes NO fall damage, same as the player. Reuse the existing fall-zone check at the NPC's position (the player uses `player_in_fallzone()`; may need a coord-taking variant / generalize it — implementation detail to resolve when building).
+
+## Pass 2 — FINAL settled spec (ready to build)
+
+At a hard landing (`fallcounter >= npc_fall_threshold`=8) that is NOT in a fall zone: `dmg = max(1, fallcounter * npc_fallmod - npcs[i].defence * 3)` with `npc_fallmod = 21` (new fixed global); `npcs[i].health -= dmg`; also stun the NPC for `10 * fallcounter` ms via the existing NPC stun mechanism; if `health <= 0`, route through the NPC's normal death/lose-life path. HEALTH-ONLY (no bones). Soft landings (< 8 tiles, or in a fall zone) stay harmless (pass-1 behavior, just the land sound). Hook point: the landing branch of `npc_fallcheck` (where `fallcounter` is still available, before it's reset) — same spot pass 1 chooses the land vs fall sound.
 
 ## Files (anticipated)
 

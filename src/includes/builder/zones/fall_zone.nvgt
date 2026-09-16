@@ -13,16 +13,22 @@ minz=mnz;
 maxz=mxz;
 }
 }
-bool player_in_fallzone()
+// True if the point (px,py,pz) sits inside any fall zone. Used by both the player's landing (via
+// player_in_fallzone) and an NPC's landing, so a soft-landing area spares whoever lands in it.
+bool point_in_fallzone(double px, double py, double pz)
 {
 for(uint i=0; i<fallzones.length(); i++)
 {
 if(@fallzones[i]==null) continue;
-if(!(fallzones[i].minx<=me.x and fallzones[i].maxx>=me.x and fallzones[i].miny<=me.y and fallzones[i].maxy>=me.y)) continue;
-if(mapmode == "3d" and (me.z < fallzones[i].minz or me.z > fallzones[i].maxz)) continue;
+if(!(fallzones[i].minx<=px and fallzones[i].maxx>=px and fallzones[i].miny<=py and fallzones[i].maxy>=py)) continue;
+if(mapmode == "3d" and (pz < fallzones[i].minz or pz > fallzones[i].maxz)) continue;
 return true;
 }
 return false;
+}
+bool player_in_fallzone()
+{
+return point_in_fallzone(me.x, me.y, me.z);
 }
 void spawn_fallzone(double x1,double x2,double y1,double y2,double minz=0,double maxz=0)
 {

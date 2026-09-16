@@ -1063,6 +1063,11 @@ int npc_falltime = 50;
 // cells or more plays the fall sound on landing, a shorter drop plays the (softer) land sound.
 int npc_fall_threshold = 8;
 
+// Damage per cell fallen on a hard landing. NPC counterpart to the player's per-character fallmod (which is
+// player-only), fixed for all NPCs; the actual hit is reduced by the NPC's own defence, so tanky creatures
+// shrug off falls that kill fragile ones.
+double npc_fallmod = 21;
+
 // Play a resolved fall/land clip (silent on the "skip" sentinel or empty) at the NPC's position, through its
 // category's sound pool, so it's spatialized like the NPC's other sounds.
 void npc_play_fall_land(uint i, string clip)
@@ -1070,6 +1075,27 @@ void npc_play_fall_land(uint i, string clip)
 if(clip == "" || clip == "skip") return;
 sound_pool@ pool = npc_pool(npcs[i].category);
 pool.play_extended_3d(clip, me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, tilevolume, tilepitch, false);
+}
+
+// Hard-landing consequence (health only -- NPCs have no bones). A fall of npc_fall_threshold cells or more,
+// unless the NPC landed in a fall zone, deals npc_fallmod per cell minus the NPC's defence (min 1) and briefly
+// stuns it (10ms per cell), mirroring the player. Just subtracting health is enough to kill -- the death /
+// lose-life check later in npcloop handles a health that drops to zero. Must be called while fallcounter still
+// holds the drop distance, before the landing resets it.
+void npc_apply_fall_impact(uint i)
+{
+if(npcs[i].fallcounter < npc_fall_threshold) return;
+if(point_in_fallzone(npcs[i].x, npcs[i].y, npcs[i].z)) return;
+double dmg = max(1, npcs[i].fallcounter * npc_fallmod - npcs[i].defence * 3);
+npcs[i].health -= dmg;
+// Stun the same way a weapon/bullet hit stuns an npc (shared npc stun state, released by stuncheck's npc loop).
+stuntimer.restart();
+stunned = true;
+stundir = 10 * npcs[i].fallcounter;
+npcs[i].fireable = false;
+npcs[i].move_x = false;
+npcs[i].move_y = false;
+npcs[i].move_z = false;
 }
 
 // Gravity for one non-flying NPC, mirroring the player's fallcheck. Runs every frame, outside the movement
@@ -1103,6 +1129,7 @@ if(npcs[i].y <= miny || (land_here != "" && land_here != "air"))
 // Came to rest inside a wall's height? Climb to its top so we sit on it, not inside it (mirror of the player).
 while(npcs[i].y < maxy && wall_blocks(npcs[i].x, npcs[i].y + 1, npcs[i].z)) npcs[i].y++;
 string clip2d = (npcs[i].fallcounter >= npc_fall_threshold) ? resolve_npc_fall_sound(npcs[i]) : resolve_npc_land_sound(npcs[i]);
+npc_apply_fall_impact(i);   // reads fallcounter; must run before the reset below
 npcs[i].falling = false;
 npcs[i].fallcounter = 0;
 npc_play_fall_land(i, clip2d);
@@ -1131,6 +1158,7 @@ landed = true;
 if(landed)
 {
 string clip3d = (npcs[i].fallcounter >= npc_fall_threshold) ? resolve_npc_fall_sound(npcs[i]) : resolve_npc_land_sound(npcs[i]);
+npc_apply_fall_impact(i);   // reads fallcounter; must run before the reset below
 npcs[i].falling = false;
 npcs[i].fallcounter = 0;
 npc_play_fall_land(i, clip3d);
