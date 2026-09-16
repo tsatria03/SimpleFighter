@@ -28,11 +28,12 @@ int push_y;
 int push_z;
 bool first_tick;
 bool is_cloner;
+bool hit_player;
 string direction;
 string bulltype;
 string bulltype2;
 timer speedtimer;
-bullet(int bx,int by,int br,int br2,double dmg,int sp,string dr,string bt,string bt2,int sn,int fn,int bz=0,int br3=0,int scr=0,int scc=0,int px=0,int py=0,int pz=0,bool cloner=false)
+bullet(int bx,int by,int br,int br2,double dmg,int sp,string dr,string bt,string bt2,int sn,int fn,int bz=0,int br3=0,int scr=0,int scc=0,int px=0,int py=0,int pz=0,bool cloner=false,bool hitp=true)
 {
 bullx=bx;
 bully=by;
@@ -54,6 +55,7 @@ push_y=py;
 push_z=pz;
 first_tick=true;
 is_cloner=cloner;
+hit_player=hitp;
 direction=dr;
 bulltype=bt;
 bulltype2=bt2;
@@ -132,7 +134,7 @@ bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/
 bullets[i].bull_bounce();
 }
 }
-if(!(was_first_tick && bullets[i].firer_npc == -1) && me.x==bullets[i].bullx and me.y==bullets[i].bully and (mapmode != "3d" or me.z==bullets[i].bullz) and inplain==false and invehicle==false and onbike==false and !glider_engine_on)
+if(!(was_first_tick && bullets[i].firer_npc == -1) && !(bullets[i].firer_npc == -1 and !bullets[i].hit_player) && me.x==bullets[i].bullx and me.y==bullets[i].bully and (mapmode != "3d" or me.z==bullets[i].bullz) and inplain==false and invehicle==false and onbike==false and !glider_engine_on)
 {
 if(wepchar.reflection and wepdef==1)
 {
@@ -751,9 +753,9 @@ return;
 }
 }
 }
-void spawn_bullet(int x,int y,int range,int range2,double damage,int speed,string direction,string bulltype,string bulltype2,int stun=0,int firer_npc=-1,int z=0,int range3=0,int scadder_radius=0,int scadder_count=0,int push_x=0,int push_y=0,int push_z=0,bool is_cloner=false)
+void spawn_bullet(int x,int y,int range,int range2,double damage,int speed,string direction,string bulltype,string bulltype2,int stun=0,int firer_npc=-1,int z=0,int range3=0,int scadder_radius=0,int scadder_count=0,int push_x=0,int push_y=0,int push_z=0,bool is_cloner=false,bool hit_player=true)
 {
-bullet bl1(x,y,range,range2,damage,speed,direction,bulltype,bulltype2,stun,firer_npc,z,range3,scadder_radius,scadder_count,push_x,push_y,push_z,is_cloner);
+bullet bl1(x,y,range,range2,damage,speed,direction,bulltype,bulltype2,stun,firer_npc,z,range3,scadder_radius,scadder_count,push_x,push_y,push_z,is_cloner,hit_player);
 bullets.insert_last(bl1);
 }
 void cloner_clone_position(int hx, int hy, int hz, int &out cx, int &out cy, int &out cz)
