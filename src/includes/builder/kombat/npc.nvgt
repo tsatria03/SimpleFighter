@@ -53,6 +53,10 @@ bool fireable;
 bool move_x;
 bool move_y;
 bool move_z;
+bool flying;
+bool falling;
+int fallcounter;
+timer falltimer;
 bool dropitem;
 bool tel_x;
 bool tel_y;
@@ -85,6 +89,7 @@ bool fleeing;
 timer flee_timer;
 string use_steps;
 string use_falls;
+string use_lands;
 string[] terrain;
 int[] terrain_speeds;
 int active_terrain_speed;
@@ -140,6 +145,7 @@ targets.insert_last("player");
 if(cat == "helpers") targets.insert_last("helpers");
 use_steps = "auto";
 use_falls = "auto";
+use_lands = "auto";
 terrain.insert_last("any");
 terrain_speeds.insert_last(0);
 active_terrain_speed = 0;
@@ -166,6 +172,9 @@ tel_x = false;
 tel_y = false;
 tel_z = false;
 move_z = false;
+flying = false;
+falling = false;
+fallcounter = 0;
 ambient_heal = false;
 facing_dx = 1;
 launching = false;
@@ -444,6 +453,7 @@ else if(k == "ambient heal time") self.ambient_heal_time = roll_slot_int(v);
 else if(k == "ambient heal") self.ambient_heal = string_to_bool(v);
 else if(k == "use steps") self.use_steps = v;
 else if(k == "use falls") self.use_falls = v;
+else if(k == "use lands") self.use_lands = v;
 else if(k == "terrain")
 {
 self.terrain.resize(0);
@@ -495,6 +505,7 @@ else if(k == "attacking") self.fireable = string_to_bool(v);
 else if(k == "move x") self.move_x = string_to_bool(v);
 else if(k == "move y") self.move_y = string_to_bool(v);
 else if(k == "move z") self.move_z = string_to_bool(v);
+else if(k == "flying") self.flying = string_to_bool(v);
 else if(k == "drop item") self.dropitem = string_to_bool(v);
 else if(k == "tel x") self.tel_x = string_to_bool(v);
 else if(k == "tel y") self.tel_y = string_to_bool(v);
@@ -1019,6 +1030,72 @@ break_charbones(ct, dmg, random(100, 200), count);
 }
 }
 
+// Milliseconds a non-flying NPC takes to fall one cell. Fixed (unlike the player's falltime, which scales
+// with player speed/weight, ~50ms at normal speed), so every falling NPC drops at a steady, predictable rate
+// that matches the player's normal-speed fall.
+int npc_falltime = 50;
+
+// Gravity for one non-flying NPC, mirroring the player's fallcheck. Runs every frame, outside the movement
+// timer, so a non-flyer left unsupported (walked off a ledge, knocked airborne, or spawned in the air) drops
+// one cell per npc_falltime until it lands on solid ground. 2d falls along y, 3d along z. Landing sound is
+// added in section 2; for now it lands silently.
+void npc_fallcheck(uint i)
+{
+if(@npcs[i] == null) return;
+if(mapmode == "topdown") return;
+if(npcs[i].flying) return;
+if(paused != 0) return;
+if(mapmode == "2d")
+{
+if(!npcs[i].falling)
+{
+string here = gmt(npcs[i].x, npcs[i].y);
+if((here == "" || here == "air") && npcs[i].y > miny) npcs[i].falling = true;
+else return;
+}
+if(npcs[i].falltimer.elapsed >= npc_falltime && npcs[i].y > miny)
+{
+npcs[i].falltimer.restart();
+npcs[i].y--;
+npcs[i].fallcounter++;
+}
+string land_here = gmt(npcs[i].x, npcs[i].y);
+if(npcs[i].y <= miny || (land_here != "" && land_here != "air"))
+{
+// Came to rest inside a wall's height? Climb to its top so we sit on it, not inside it (mirror of the player).
+while(npcs[i].y < maxy && wall_blocks(npcs[i].x, npcs[i].y + 1, npcs[i].z)) npcs[i].y++;
+npcs[i].falling = false;
+npcs[i].fallcounter = 0;
+}
+}
+else if(mapmode == "3d")
+{
+if(!npcs[i].falling)
+{
+if(!platform_supports(npcs[i].x, npcs[i].y, npcs[i].z) && npcs[i].z > int(minz)) npcs[i].falling = true;
+else return;
+}
+if(npcs[i].falltimer.elapsed >= npc_falltime && npcs[i].z > int(minz))
+{
+npcs[i].falltimer.restart();
+npcs[i].z--;
+npcs[i].fallcounter++;
+}
+bool landed = false;
+if(npcs[i].z <= int(minz)) { npcs[i].z = int(minz); landed = true; }
+else if(platform_supports(npcs[i].x, npcs[i].y, npcs[i].z))
+{
+while(npcs[i].z < int(maxz) && wall_blocks(npcs[i].x, npcs[i].y, npcs[i].z + 1)) npcs[i].z++;
+landed = true;
+}
+if(landed)
+{
+npcs[i].falling = false;
+npcs[i].fallcounter = 0;
+}
+}
+}
+
 void npcloop()
 {
 for(uint i = 0; i < npcs.length(); i++)
@@ -1421,6 +1498,16 @@ npcs[i].x = next_x;
 moved = true;
 }
 }
+// On 2d, y is the vertical axis, so gravity owns it for a non-flyer: drop downward intent (gravity handles the fall) and permit upward intent only when the cell above holds a solid, walkable tile to climb onto. On 3d, y is horizontal ground, so this leaves it alone.
+if(mapmode == "2d" && !npcs[i].flying && dy_intent != 0)
+{
+if(dy_intent < 0) dy_intent = 0;
+else
+{
+string ab = gmt(npcs[i].x, npcs[i].y + 1);
+if(ab == "" || ab == "air" || string_contains(ab, "wall", 1) > -1) dy_intent = 0;
+}
+}
 if(dy_intent != 0 && npcs[i].move_y && paused == 0)
 {
 int next_y = npcs[i].y + dy_intent;
@@ -1432,6 +1519,12 @@ if(next_y >= miny && next_y <= maxy && (terrain_off || npc_terrain_allows(npcs[i
 npcs[i].y = next_y;
 moved = true;
 }
+}
+// On 3d, z is the vertical axis, so gravity owns it for a non-flyer: drop downward intent and permit upward only onto a supported cell (a platform to climb onto).
+if(mapmode == "3d" && !npcs[i].flying && dz_intent != 0)
+{
+if(dz_intent < 0) dz_intent = 0;
+else if(!platform_supports(npcs[i].x, npcs[i].y, npcs[i].z + 1)) dz_intent = 0;
 }
 if(mapmode == "3d" && dz_intent != 0 && npcs[i].move_z && paused == 0)
 {
@@ -1478,6 +1571,8 @@ if(npcs[i].refsound2 != -1) pool.update_sound_3d(npcs[i].refsound2, npcs[i].x, n
 npcs[i].movetimer.restart();
 }
 }
+
+npc_fallcheck(i);   // gravity: runs every frame, independent of the movement timer
 
 if(!npcs[i].hurting and npcs[i].taunttimer.elapsed >= npcs[i].taunttime)
 {
