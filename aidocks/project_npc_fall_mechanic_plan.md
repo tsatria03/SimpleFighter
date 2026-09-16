@@ -5,7 +5,9 @@ metadata:
   type: project
 ---
 
-**STATUS: PASS 1 BUILT & shipping in 15.0 (all 4 sections). Pass 2 (health-only fall damage) still optional/later.** Below kept as the full record.
+**STATUS: PASS 1 + PASS 2 BUILT & shipping in 15.0 (whole feature complete).** Pass 1 = fall+land physics/sounds/manager; pass 2 = health-only fall damage + hard-landing stun. Below kept as the full record.
+
+Pass 2 as built: `npc_fallmod = 21` (fixed global) + `point_in_fallzone(px,py,pz)` (fall_zone.nvgt, player_in_fallzone now calls it) + `npc_apply_fall_impact(i)` called in both landing branches of npc_fallcheck BEFORE fallcounter resets — at >=8 cells and not in a fall zone, `dmg = max(1, fallcounter*21 - defence*3)`, `health -= dmg` (existing npcloop health<=0 check at ~1791 handles death), stun `10*fallcounter` via the shared npc stun state. Docs: flying-field doc extended + separate 15.0 changelog entry.
 
 **STATUS: investigated, design OPEN, NOT built (2026-09).** Candidate 15.0 feature: make NPCs fall off ledges/when knocked airborne instead of floating. The mechanics are very doable — terrain detection already exists and is reusable — but three design decisions must be settled with the dev first ([[feedback_confirm_before_implementing]]). See [[project_v15_final_plan]].
 
