@@ -1645,6 +1645,20 @@ if(npcs[i].sidestep_dir != 0)
 if(npcs[i].sidestep_axis == 0) dx_intent = 0;
 else dy_intent = 0;
 }
+// Climb-first: if a valid upward climb toward a higher target is available right here (a staircase/ladder rung or walkable tile directly above), take it BEFORE stepping horizontally, so the NPC commits to the climb instead of wandering off along the ground past the stairs and getting stuck below the target. Non-flyers only; the horizontal step resumes once it reaches the target's height (no climb left).
+if(!npcs[i].flying)
+{
+if(mapmode == "2d" && dy_intent > 0)
+{
+string above = gmt(npcs[i].x, npcs[i].y + 1);
+if(above != "" && above != "air" && string_contains(above, "wall", 1) < 0) dx_intent = 0;
+}
+else if(mapmode == "3d" && dz_intent > 0 && platform_supports(npcs[i].x, npcs[i].y, npcs[i].z + 1))
+{
+dx_intent = 0;
+dy_intent = 0;
+}
+}
 if(dx_intent != 0 && npcs[i].move_x && paused == 0)
 {
 int next_x = npcs[i].x + dx_intent;
