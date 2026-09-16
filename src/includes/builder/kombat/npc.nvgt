@@ -57,6 +57,10 @@ bool flying;
 bool falling;
 int fallcounter;
 timer falltimer;
+bool killed_by_fall;
+bool pushed_by_player;
+timer push_timer;
+bool fall_by_player;
 int sidestep_dir;
 int sidestep_axis;
 bool dropitem;
@@ -177,6 +181,9 @@ move_z = false;
 flying = false;
 falling = false;
 fallcounter = 0;
+killed_by_fall = false;
+pushed_by_player = false;
+fall_by_player = false;
 sidestep_dir = 0;
 sidestep_axis = 0;
 ambient_heal = false;
@@ -1072,6 +1079,12 @@ int npc_fall_threshold = 8;
 // shrug off falls that kill fragile ones.
 double npc_fallmod = 21;
 
+// How recently (ms) the player must have pushed an NPC for a fall it then starts to count as a PLAYER kill
+// (so a push that knocks an enemy off a ledge still pays out XP). A push and the fall it triggers are only a
+// frame or two apart, so this window is short -- long enough to bridge that, short enough that a much later
+// unassisted walk-off isn't wrongly credited.
+int npc_push_credit_ms = 500;
+
 // True if a non-flying NPC could stand at this cell (there is support to hold it): 3d uses platform_supports,
 // 2d needs a solid non-air tile. Used so a blocked NPC never REVERSES backward off a ledge into open air.
 bool npc_cell_supported(int cx, int cy, int cz)
@@ -1102,6 +1115,17 @@ if(npcs[i].fallcounter < npc_fall_threshold) return;
 if(point_in_fallzone(npcs[i].x, npcs[i].y, npcs[i].z)) return;
 double dmg = max(1, npcs[i].fallcounter * npc_fallmod - npcs[i].defence * 3);
 npcs[i].health -= dmg;
+// A fatal fall makes the death handler withhold XP -- UNLESS the player caused the fall with a push, which still counts as their kill and pays out.
+if(npcs[i].health <= 0) npcs[i].killed_by_fall = !npcs[i].fall_by_player;
+npcs[i].fall_by_player = false;   // consumed on this landing
+kombatlog.insert_last(round(dmg, 0) + " damage to " + npcs[i].subtype + ", falling down.");
+// Play the creature's hurt sound if it survived the landing (a lethal fall is handled by the death cue instead), mirroring a weapon hit: play the *hurt* clip at its position and open the hurt window so it stops taunting.
+if(npcs[i].health > 0)
+{
+sound_pool@ pool = npc_pool(npcs[i].category);
+npcs[i].hurtsound = pool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype+"/general/*hurt*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+npcs[i].react_to_hit(pool, npcs[i].hurtsound);
+}
 // Stun the same way a weapon/bullet hit stuns an npc (shared npc stun state, released by stuncheck's npc loop).
 stuntimer.restart();
 stunned = true;
@@ -1128,7 +1152,13 @@ if(mapmode == "2d")
 if(!npcs[i].falling)
 {
 string here = gmt(npcs[i].x, npcs[i].y);
-if((here == "" || here == "air") && npcs[i].y > miny) npcs[i].falling = true;
+if((here == "" || here == "air") && npcs[i].y > miny)
+{
+npcs[i].falling = true;
+// If the player pushed this NPC a moment ago, this fall is the player's doing -- tag it so a fatal landing still pays out XP.
+if(npcs[i].pushed_by_player && npcs[i].push_timer.elapsed < npc_push_credit_ms) npcs[i].fall_by_player = true;
+npcs[i].pushed_by_player = false;
+}
 else return;
 }
 if(npcs[i].falltimer.elapsed >= npc_falltime && npcs[i].y > miny)
@@ -1153,7 +1183,12 @@ else if(mapmode == "3d")
 {
 if(!npcs[i].falling)
 {
-if(!platform_supports(npcs[i].x, npcs[i].y, npcs[i].z) && npcs[i].z > int(minz)) npcs[i].falling = true;
+if(!platform_supports(npcs[i].x, npcs[i].y, npcs[i].z) && npcs[i].z > int(minz))
+{
+npcs[i].falling = true;
+if(npcs[i].pushed_by_player && npcs[i].push_timer.elapsed < npc_push_credit_ms) npcs[i].fall_by_player = true;
+npcs[i].pushed_by_player = false;
+}
 else return;
 }
 if(npcs[i].falltimer.elapsed >= npc_falltime && npcs[i].z > int(minz))
@@ -1891,6 +1926,7 @@ if(npcs[i].currentlives >= 2 and paused == 0)
 pool.play_3d(get_map_sound(sound_base+"/*life*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), false);
 npcs[i].health = npcs[i].maxhealth;
 npcs[i].currentlives -= 1;
+npcs[i].killed_by_fall = false;   // it revived, so any pending fall-kill flag is stale; don't let it withhold XP from a later real kill
 }
 else if(npcs[i].currentlives <= 1 and paused == 0)
 {
@@ -1900,7 +1936,8 @@ else if(npcs[i].currentlives <= 1 and paused == 0)
 if(npcs[i].tauntsound != -1) { pool.destroy_sound(npcs[i].tauntsound); npcs[i].tauntsound = -1; }
 if(npcs[i].refsound2 != -1) { pool.destroy_sound(npcs[i].refsound2); npcs[i].refsound2 = -1; }
 npcs[i].defsound = pool.play_extended_3d(get_map_sound(sound_base+"/*death*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-if(xpmod >= 1)
+// No XP (and no "defeated" credit line) for a creature that a FALL finished off -- you didn't land the blow. The kill itself still counts below, since it did die by your doing.
+if(xpmod >= 1 && !npcs[i].killed_by_fall)
 {
 double effx_xp = in_normal ? npcs[i].xpvalue : (in_wounded ? npcs[i].w_xpvalue : npcs[i].h_xpvalue);
 double gained_xp = effx_xp * eff_level * xpmod;
