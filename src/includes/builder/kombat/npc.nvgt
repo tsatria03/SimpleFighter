@@ -58,6 +58,7 @@ bool falling;
 int fallcounter;
 timer falltimer;
 int sidestep_dir;
+int sidestep_axis;
 bool dropitem;
 bool tel_x;
 bool tel_y;
@@ -177,6 +178,7 @@ flying = false;
 falling = false;
 fallcounter = 0;
 sidestep_dir = 0;
+sidestep_axis = 0;
 ambient_heal = false;
 facing_dx = 1;
 launching = false;
@@ -1187,15 +1189,18 @@ bool npc_sidestep(uint i, int tx, int ty, bool terrain_off)
 {
 if(mapmode != "3d") return false;   // 2d is a single line -- there is no lateral way around
 if(npcs[i].flying) return false;    // flyers already move freely on every axis
-// Sidestep on whichever horizontal axis the NPC needs LESS to close; the other axis is its blocked approach.
-bool primary_is_x = absolute(tx - npcs[i].x) >= absolute(ty - npcs[i].y);
-int pref = primary_is_x ? ((ty > npcs[i].y) ? 1 : ((ty < npcs[i].y) ? -1 : 0)) : ((tx > npcs[i].x) ? 1 : ((tx < npcs[i].x) ? -1 : 0));
+// Sidestep on the axis PERPENDICULAR to the blocked approach. Once committed, keep the same axis so the NPC
+// follows one wall to its end instead of flip-flopping as the distances change (0 = sidestep on x, 1 = on y).
+int axis;
+if(npcs[i].sidestep_dir != 0) axis = npcs[i].sidestep_axis;
+else axis = (absolute(tx - npcs[i].x) >= absolute(ty - npcs[i].y)) ? 1 : 0;   // primary is x -> sidestep on y, and vice versa
+int pref = (axis == 1) ? ((ty > npcs[i].y) ? 1 : ((ty < npcs[i].y) ? -1 : 0)) : ((tx > npcs[i].x) ? 1 : ((tx < npcs[i].x) ? -1 : 0));
 int dir = (npcs[i].sidestep_dir != 0) ? npcs[i].sidestep_dir : (pref != 0 ? pref : 1);
 for(int attempt = 0; attempt < 2; attempt++)
 {
 int d = (attempt == 0) ? dir : -dir;
 int nx = npcs[i].x, ny = npcs[i].y;
-if(primary_is_x) ny += d; else nx += d;
+if(axis == 1) ny += d; else nx += d;
 if(nx < minx || nx > maxx || ny < miny || ny > maxy) continue;
 string t = gmt(nx, ny, npcs[i].z);
 bool blocked = string_contains(t, "wall", 1) > -1 or is_in_safe(nx, ny) or (!terrain_off && !npc_terrain_allows(npcs[i], nx, ny, npcs[i].z));
@@ -1203,7 +1208,8 @@ if(blocked) continue;
 if(!npc_cell_supported(nx, ny, npcs[i].z)) continue;   // don't sidestep off into a pit
 npcs[i].x = nx;
 npcs[i].y = ny;
-npcs[i].sidestep_dir = d;   // commit so it keeps following the wall the same way
+npcs[i].sidestep_dir = d;   // commit direction + axis so it keeps following the wall the same way
+npcs[i].sidestep_axis = axis;
 return true;
 }
 return false;
@@ -1597,18 +1603,20 @@ else dz_intent = -dz_intent;
 bool ignore_terrain = npcs[i].chase_terrains && (npcs[i].provoked || npcs[i].fleeing || pursuing);
 bool stuck_terrain = !ignore_terrain && !npc_terrain_allows(npcs[i], npcs[i].x, npcs[i].y, npcs[i].z);
 bool terrain_off = ignore_terrain || stuck_terrain;
+// Section 2 wall-follow: remember where we started (to detect real progress this tick) and, while committed to a wall-follow, suppress the normal pursuit on the sidestep axis so it can't drag the NPC back off the wall.
+int ss_pre_x = npcs[i].x, ss_pre_y = npcs[i].y;
+if(npcs[i].sidestep_dir != 0)
+{
+if(npcs[i].sidestep_axis == 0) dx_intent = 0;
+else dy_intent = 0;
+}
 if(dx_intent != 0 && npcs[i].move_x && paused == 0)
 {
 int next_x = npcs[i].x + dx_intent;
 string next_tile_x = (mapmode == "3d") ? gmt(next_x, npcs[i].y, npcs[i].z) : gmt(next_x, npcs[i].y);
 bool blocked = string_contains(next_tile_x, "wall", 1) > -1 or is_in_safe(next_x, npcs[i].y) or (!terrain_off && !npc_terrain_allows(npcs[i], next_x, npcs[i].y, npcs[i].z));
-if(blocked)
-{
-int rev_x = npcs[i].x - dx_intent;
-// Don't reverse a fallable NPC backward off a ledge into open air (it would just drop away from its target); hold instead. Forward steps onto air are left untouched, so chase-terrains ledge-chasing still works.
-if(!npcs[i].flying && mapmode != "topdown" && !npc_cell_supported(rev_x, npcs[i].y, npcs[i].z)) next_x = npcs[i].x;
-else next_x = rev_x;
-}
+// Blocked toward the target: HOLD this axis instead of reversing backward. A reverse just bounces the NPC away from its target (and can drop it off a ledge), and — since a reverse counts as a move — it would also mask the stuck state from the wall-follow sidestep below. Forward steps onto air are left untouched (so chase-terrains ledge-chasing still works); going around a wall is the sidestep's job now.
+if(blocked) next_x = npcs[i].x;
 if(next_x != npcs[i].x && next_x >= minx && next_x <= maxx && (terrain_off || npc_terrain_allows(npcs[i], next_x, npcs[i].y, npcs[i].z)))
 {
 int actual_dx = next_x - npcs[i].x;
@@ -1633,13 +1641,8 @@ if(dy_intent != 0 && (npcs[i].move_y || (mapmode == "2d" && !npcs[i].flying)) &&
 int next_y = npcs[i].y + dy_intent;
 string next_tile_y = (mapmode == "3d") ? gmt(npcs[i].x, next_y, npcs[i].z) : gmt(npcs[i].x, next_y);
 bool blocked = string_contains(next_tile_y, "wall", 1) > -1 or is_in_safe(npcs[i].x, next_y) or (!terrain_off && !npc_terrain_allows(npcs[i], npcs[i].x, next_y, npcs[i].z));
-if(blocked)
-{
-int rev_y = npcs[i].y - dy_intent;
-// On 3d, y is horizontal ground, so the same rule as x: don't reverse a fallable NPC off a ledge into open air; hold instead. (On 2d, y is vertical and already handled by the gravity gating above, so leave its reverse alone.)
-if(!npcs[i].flying && mapmode == "3d" && !npc_cell_supported(npcs[i].x, rev_y, npcs[i].z)) next_y = npcs[i].y;
-else next_y = rev_y;
-}
+// Blocked: hold this axis instead of reversing backward (same reasoning as x); the sidestep below handles going around.
+if(blocked) next_y = npcs[i].y;
 if(next_y != npcs[i].y && next_y >= miny && next_y <= maxy && (terrain_off || npc_terrain_allows(npcs[i], npcs[i].x, next_y, npcs[i].z)))
 {
 npcs[i].y = next_y;
@@ -1662,8 +1665,10 @@ npcs[i].z = next_z;
 moved = true;
 }
 }
-// Section 2 wall-follow: a normal move toward the target clears any committed sidestep direction; if instead the NPC got fully stuck this tick and isn't already at the target, try slipping perpendicular around the obstacle.
-if(moved) npcs[i].sidestep_dir = 0;
+// Section 2 wall-follow: if the NPC got CLOSER to its target this tick it made real progress, so stop following the wall. If instead it's no closer (blocked/stuck) and isn't already there, slip perpendicular around the obstacle. Using distance-progress rather than the moved flag is what keeps a held/sidestep tick from looking like progress.
+int ss_pre_dist = absolute(tx - ss_pre_x) + absolute(ty - ss_pre_y);
+int ss_post_dist = absolute(tx - npcs[i].x) + absolute(ty - npcs[i].y);
+if(ss_post_dist < ss_pre_dist) npcs[i].sidestep_dir = 0;
 else if(has_move && (npcs[i].x != tx || npcs[i].y != ty))
 {
 if(npc_sidestep(i, tx, ty, terrain_off)) moved = true;
