@@ -21,7 +21,7 @@ A container is a roaming trap. It rolls around homing at the player (fire-style)
 - **Health: fixed author-set field** (like camera/spikes/walls). Destroyable by weapons while rolling (add to the bullet + weapon melee hit loops the same way `sucams` are — see bullet.nvgt sucams loop ~593 and weapon.nvgt).
 - **Reward on destruction: level + xp fields, camera-style.** On death: if `xpmod >= 1`, `xp += containerxp * containerlevel * xpmod`, log "N experience gained. Defeated <type> level N." No kills-counter bump (not a creature). An author who wants a pure hazard sets xp to 0.
 - **Hover time: configurable field** (ms).
-- **Drop height: configurable, min 10** (reject "Drop height cannot be lower than 10."), default = maxz (3d) / maxy (2d).
+- **Drop height: configurable, min 8** (reject "Drop height cannot be lower than 8."; lowered from 10 → 8 by dev 2026-09 to match the player's ~8-tile hard-fall threshold), default = maxz (3d) / maxy (2d).
 
 ## Sounds (builder/traps/containers/<type>/)
 
@@ -35,7 +35,7 @@ The container must be added to the builder gallery too — one entry in `gallery
 
 ## Fields / form (control order per [[feedback_builder_form_control_order]]: inputs → lists → checkboxes → buttons)
 
-Inputs: x, y, (z), x seeing range (default maxx), y seeing range (default maxy), (z seeing range default maxz), speed, health, level, xp, drop height (default maxz/maxy, min 10), hover time.
+Inputs: x, y, (z), x seeing range (default maxx), y seeing range (default maxy), (z seeing range default maxz), speed, health, level, xp, drop height (default maxz/maxy, min 8), hover time.
 Lists: container sound (none + folders).
 Checkboxes: move on x, move on y, (move on z) — like fire.
 Buttons: okay, cancel.
