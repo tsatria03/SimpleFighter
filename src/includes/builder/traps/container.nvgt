@@ -175,7 +175,7 @@ int hp = form.create_input_box("health", "1");
 int lev = form.create_input_box("level");
 int exper = form.create_input_box("xp");
 int dh = form.create_input_box("drop height", "" + ((mapmode == "3d") ? maxz : maxy));
-int ht = form.create_input_box("hover time", "1500");
+int ht = form.create_input_box("hover time", "2500");
 form.set_disallowed_chars(sx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sy, disallowed_nums, false, "This character is not allowed.");
 if(sz != -1) form.set_disallowed_chars(sz, disallowed_nums, false, "This character is not allowed.");
@@ -310,20 +310,21 @@ return;
 }
 }
 
-/* Release the carried player: clear the caught flag and RESTORE movement. moveable is NOT reset by
-update_character_settings() (unlike jumpable/speedable, which it rewrites every frame), so without setting
-moveable=true here a released player would stay frozen forever. Called from every release path -- drop,
+/* Release the carried player: just clear the caught flag. Walking is blocked while caught by a
+player_caught guard in the key_step_*/key_strafe_* movers -- NOT by freezing `moveable`, because moveable
+ALSO gates aiming (the face_* keys), so freezing it would stop the player aiming at the container. jumpable
+and speedable are held false each frame during the carry and auto-restore via update_character_settings once
+player_caught is false, so nothing needs restoring here. Called from every release path -- drop,
 destruction-while-caught, despawn, and map-clear. */
 void container_release_player()
 {
 player_caught = false;
-moveable = true;
-jumpable = true;
-speedable = true;
 }
 
 /* The state machine, run every frame from the game loop (after update_character_settings + stuncheck,
-before game_input -- which is why re-asserting moveable=false here actually freezes walking).
+before game_input -- which is why re-asserting jumpable/speedable=false here actually freezes them). Walking
+is blocked separately by a player_caught guard in the key_step_*/key_strafe_* movers; moveable is left TRUE
+so the alt+shift face_* aiming keys (which moveable gates) still work while caught, so the player can aim.
 DEATH (health<=0, set by weapons in the hit loops, section 5): death cue + camera-style xp reward, release
 the player if it was carrying them (they fall from the current height), remove. ROLLING: live-leash seek
 (spotted recomputed each tick from the seeing-range box), home per move flags at 1 tile/speed, catch on
@@ -376,14 +377,14 @@ if(caught_now and !player_caught and paused==0 and !glider_engine_on and invehic
 player_caught = true;
 containers[i].phase = CONTAINER_FLIGHT;
 containerpool.destroy_sound(containers[i].loopsound);
-containers[i].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*catch*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+containers[i].wepsound = containerpool.play_stationary_extended(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*catch*"),false,0,0,0,100,false);
 containers[i].loopsound = containerpool.play_stationary_extended(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*flight*"),true,0,0,0,100,false);
 containers[i].movetimer.restart();
 }
 }
 else if(containers[i].phase == CONTAINER_FLIGHT)
 {
-moveable=false; jumpable=false; speedable=false;
+jumpable=false; speedable=false;   // freeze jump/run while caught; NOT moveable (it also gates aiming -- walking is blocked in the key_step_*/key_strafe_* movers instead)
 if(paused==0 and containers[i].movetimer.elapsed >= containers[i].speed)
 {
 containers[i].movetimer.restart();
@@ -404,14 +405,14 @@ if(height >= containers[i].dropheight)
 {
 containers[i].phase = CONTAINER_HOVER;
 containerpool.destroy_sound(containers[i].loopsound);
-containers[i].loopsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*hover*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,fsz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+containers[i].loopsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*hover*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,fsz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 containers[i].hovertimer.restart();
 }
 }
 }
 else if(containers[i].phase == CONTAINER_HOVER)
 {
-moveable=false; jumpable=false; speedable=false;
+jumpable=false; speedable=false;   // freeze jump/run while caught; NOT moveable (it also gates aiming -- walking is blocked in the key_step_*/key_strafe_* movers instead)
 containers[i].containerx = int(me.x);
 if(paused==0 and containers[i].hovertimer.elapsed >= containers[i].hovertime)
 {

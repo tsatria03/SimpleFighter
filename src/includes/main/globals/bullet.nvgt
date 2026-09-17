@@ -615,6 +615,29 @@ try_bullet_splash(i, "sucam", int(i18), mapmode == "3d");
 return;
 }
 }
+for(uint ic=0; ic<containers.length(); ic++)
+{
+if(@containers[ic] == null) continue;
+if(containers[ic].containerx==bullets[i].bullx and containers[ic].containery==bullets[i].bully and (mapmode != "3d" or containers[ic].containerz==bullets[i].bullz))
+{
+bulletpool.destroy_sound(bullets[i].bullsound);
+bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*hit*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+bullets[i].wepsound=bulletpool.play_extended_3d(get_pack_sound("main/equipments/weapons/"+bullets[i].bulltype+"/"+bullets[i].bulltype2+"/general/*shell*"),me.x,me.y,me.z,bullets[i].bullx,bullets[i].bully,bullets[i].bullz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+double dmg = max(0, bullets[i].damage);
+containers[ic].health-=dmg;
+kombatlog.insert_last(round(dmg, 0)+" damage to "+containers[ic].containertype+" by "+bullets[i].bulltype2+"'s weapon attack.");
+if(dmg>0 and containers[ic].health>0) containers[ic].wepsound=containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[ic].containertype+"/*hurt*"),me.x,me.y,me.z,containers[ic].containerx,containers[ic].containery,containers[ic].containerz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(bullets[i].is_cloner)
+{
+int cx, cy, cz;
+cloner_clone_position(containers[ic].containerx, containers[ic].containery, containers[ic].containerz, cx, cy, cz);
+spawn_container(cx, cy, containers[ic].crange, containers[ic].crange2, containers[ic].speed, containers[ic].health, containers[ic].maxhealth, containers[ic].level, containers[ic].xp, containers[ic].dropheight, containers[ic].hovertime, containers[ic].containertype, containers[ic].moveable, containers[ic].moveable2, cz, containers[ic].crange3, containers[ic].moveable3);
+}
+try_bullet_splash(i, "container", int(ic), mapmode == "3d");
+@bullets[i] = null;
+return;
+}
+}
 for(uint i19=0; i19<bikes.length(); i19++)
 {
 if(@bikes[i19] == null) continue;

@@ -11,6 +11,10 @@ Living backlog of feature ideas and agreed-but-not-yet-built designs for SimpleF
 
 ---
 
+## Remove "turn mode" entirely (dev-requested 2026-09, AFTER container development)
+
+The dev wants **turn mode** removed from the game — turning on the spot on 2d maps. Turn mode (`turnmode==1`) makes a plain arrow key first pivot the player to FACE that direction WITHOUT stepping (turn in place); only a second press then moves. The dev wants this gone, so on 2d the arrows always MOVE (facing follows the direction moved), and deliberate aiming is done solely via the alt+shift `face_*` keys. Do this as a SEPARATE enhancement once the container feature is fully done, NOT mid-container. Scope when picked up: the `turnmode==1` branches live in `key_step_up`/`key_step_down` (map.nvgt, ~870-912; the `if(facing==... turnmode==1){ set facing, turn sound }` turn-in-place block vs the `else if(...) me.y++` move block) plus a settings toggle + persistence (grep `turnmode`, `spokenturns` may be related). Removing it = drop the turn-in-place branches so the move branch always runs. Surfaced while fixing container aiming (the caught-state guard blocks plain-arrow turning, which the dev is fine with since turn mode is going away). Confirm the design (any retired setting/keybind) with the dev first per [[feedback_confirm_before_implementing]].
+
 ## Slant — a directional ramp/incline builder entity (DESIGN SETTLED 2026-08, not yet built)
 
 A new **construction** builder entity. Modeled on the "slant" in an external reference game (its map-syntax glossary), adapted to SimpleFighter's conventions. Design was walked through and settled with the dev; the pieces below are agreed.
