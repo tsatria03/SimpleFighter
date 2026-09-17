@@ -742,6 +742,18 @@ if(is_3d and dz > range3) continue;
 int d = dx + dy + (is_3d ? dz : 0);
 if(best_dist < 0 or d < best_dist) { best_type = 9; best_idx = int(i); best_dist = d; }
 }
+for(uint i = 0; i < containers.length(); i++)
+{
+if(@containers[i] == null) continue;
+if(!target_in_facing(containers[i].containerx, containers[i].containerx, containers[i].containery, containers[i].containery, containers[i].containerz, containers[i].containerz, fx, fy, fz, facing, is_3d)) continue;
+int dx = absolute(int(containers[i].containerx) - fx);
+int dy = absolute(int(containers[i].containery) - fy);
+int dz = absolute(int(containers[i].containerz) - fz);
+if(dx > range or dy > range2) continue;
+if(is_3d and dz > range3) continue;
+int d = dx + dy + (is_3d ? dz : 0);
+if(best_dist < 0 or d < best_dist) { best_type = 18; best_idx = int(i); best_dist = d; }
+}
 for(uint i = 0; i < vehicles.length(); i++)
 {
 if(@vehicles[i] == null) continue;
@@ -962,6 +974,16 @@ double hit_dmg = max(0, dmg);
 sucams[i].camhealth -= hit_dmg;
 kombatlog.insert_last(round(hit_dmg, 0) + " damage to " + sucams[i].cameratype + " by " + sub + "'s weapon attack.");
 if(hit_dmg > 0) sucams[i].hurtsound = campool.play_extended_3d(get_map_sound("builder/traps/security cameras/"+sucams[i].cameratype+"/*hurt*"), me.x, me.y, me.z, sucams[i].sucamx, sucams[i].sucamy, sucams[i].sucamz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+return;
+}
+if(best_type == 18)
+{
+uint i = uint(best_idx);
+play_melee_hit_at(containers[i].containerx, containers[i].containery, containers[i].containerz);
+double hit_dmg = max(0, dmg);
+containers[i].health -= hit_dmg;
+kombatlog.insert_last(round(hit_dmg, 0) + " damage to " + containers[i].containertype + " by " + sub + "'s weapon attack.");
+if(hit_dmg > 0 && containers[i].health > 0) containers[i].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*hurt*"), me.x, me.y, me.z, containers[i].containerx, containers[i].containery, containers[i].containerz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 return;
 }
 if(best_type == 10)
