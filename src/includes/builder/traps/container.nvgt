@@ -9,6 +9,10 @@ loopsound is the ambient looping slot (the rolling loop, later swapped to the fl
 it must be destroyed on despawn or it leaks. wepsound holds one-shot cues (spawn/catch/hover/drop/etc). */
 sound_pool containerpool;
 container@[] containers(0);
+/* True while a container is carrying the player (FLIGHT or HOVER). Gates catching to one container at a
+time, suppresses the player's fallcheck while carried (fallcheck early-returns on it, like glider_engine_on),
+and is cleared on drop / death / map-clear so the player falls and regains control. */
+bool player_caught = false;
 
 // phase constants for the container state machine (used from containerloop, section 4)
 const int CONTAINER_ROLLING = 0;   // seeking the player on the ground
@@ -76,6 +80,7 @@ if(@containers[i]==null) continue;
 if(!by_coord || (containers[i].containerx==gx && containers[i].containery==gy && (mapmode!="3d" || containers[i].containerz==gz))) target = int(i);
 }
 if(target < 0) return false;
+if(containers[target].phase != CONTAINER_ROLLING) container_release_player();   // it was carrying the player -> release so they can move/fall again
 containerpool.destroy_sound(containers[target].loopsound);
 @containers[target] = null;
 return true;
@@ -88,6 +93,7 @@ if(@containers[i] == null) continue;
 containerpool.destroy_sound(containers[i].loopsound);
 }
 containers.resize(0);
+container_release_player();   // map cleared/reloaded -> nothing is carrying the player anymore
 }
 
 /* On-disk: container x y [z] xrange yrange [zrange] speed health level xp dropheight hovertime containertype
@@ -159,7 +165,7 @@ int rng2 = form.create_input_box("y seeing range", "" + maxy);
 int rng3 = -1;
 if(mapmode == "3d") rng3 = form.create_input_box("z seeing range", "" + maxz);
 int sp = form.create_input_box("speed");
-int hp = form.create_input_box("health");
+int hp = form.create_input_box("health", "1");
 int lev = form.create_input_box("level");
 int exper = form.create_input_box("xp");
 int dh = form.create_input_box("drop height", "" + ((mapmode == "3d") ? maxz : maxy));
@@ -294,6 +300,121 @@ load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
 return;
+}
+}
+}
+
+/* Release the carried player: clear the caught flag and RESTORE movement. moveable is NOT reset by
+update_character_settings() (unlike jumpable/speedable, which it rewrites every frame), so without setting
+moveable=true here a released player would stay frozen forever. Called from every release path -- drop,
+destruction-while-caught, despawn, and map-clear. */
+void container_release_player()
+{
+player_caught = false;
+moveable = true;
+jumpable = true;
+speedable = true;
+}
+
+/* The state machine, run every frame from the game loop (after update_character_settings + stuncheck,
+before game_input -- which is why re-asserting moveable=false here actually freezes walking).
+DEATH (health<=0, set by weapons in the hit loops, section 5): death cue + camera-style xp reward, release
+the player if it was carrying them (they fall from the current height), remove. ROLLING: live-leash seek
+(spotted recomputed each tick from the seeing-range box), home per move flags at 1 tile/speed, catch on
+coincidence -- ON FOOT ONLY (not gliding/vehicle/bike, and not mid-fall). FLIGHT: hold the player's
+movement flags (leave fireable/turnable so they can still aim/shoot), lift them 1 tile/speed toward drop
+height, then HOVER. HOVER: hold at the top for hover time, then DROP -- stationary drop cue + 3d remove
+cue, release the player so fallcheck takes over, and remove the one-shot container. */
+void containerloop()
+{
+for(uint i=0; i<containers.length(); i++)
+{
+if(@containers[i] == null) continue;
+double usz = (mapmode == "3d") ? containers[i].containerz : 0;
+if(containers[i].health <= 0)
+{
+containerpool.destroy_sound(containers[i].loopsound);
+containers[i].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*death*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+if(xpmod >= 1)
+{
+double gained_xp = containers[i].xp * containers[i].level * xpmod;
+xp += gained_xp;
+kombatlog.insert_last(gained_xp + " experience gained. Defeated " + containers[i].containertype + " level " + containers[i].level + ".");
+}
+if(containers[i].phase != CONTAINER_ROLLING) container_release_player();
+@containers[i] = null;
+continue;
+}
+if(containers[i].phase == CONTAINER_ROLLING)
+{
+if(containers[i].movetimer.elapsed >= containers[i].speed)
+{
+bool in_spot = absolute(me.x-containers[i].containerx)<=containers[i].crange and absolute(me.y-containers[i].containery)<=containers[i].crange2;
+if(mapmode == "3d") in_spot = in_spot and absolute(me.z-containers[i].containerz)<=containers[i].crange3;
+containers[i].spotted = in_spot;
+if(containers[i].spotted)
+{
+containerpool.update_sound_3d(containers[i].loopsound, containers[i].containerx, containers[i].containery, usz);
+containers[i].movetimer.restart();
+if(containers[i].containerx<me.x and containers[i].moveable and paused==0) containers[i].containerx++;
+if(containers[i].containerx>me.x and containers[i].moveable and paused==0) containers[i].containerx--;
+if(containers[i].containery<me.y and containers[i].moveable2 and paused==0) containers[i].containery++;
+if(containers[i].containery>me.y and containers[i].moveable2 and paused==0) containers[i].containery--;
+if(mapmode=="3d" and containers[i].containerz<me.z and containers[i].moveable3 and paused==0) containers[i].containerz++;
+if(mapmode=="3d" and containers[i].containerz>me.z and containers[i].moveable3 and paused==0) containers[i].containerz--;
+}
+}
+bool caught_now = me.x==containers[i].containerx and me.y==containers[i].containery and (mapmode!="3d" or me.z==containers[i].containerz);
+if(caught_now and !player_caught and paused==0 and !glider_engine_on and invehicle==false and onbike==false and inplain==false and falling==false)
+{
+player_caught = true;
+containers[i].phase = CONTAINER_FLIGHT;
+containerpool.destroy_sound(containers[i].loopsound);
+containers[i].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*catch*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+containers[i].loopsound = containerpool.play_stationary_extended(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*flight*"),true,0,0,0,100,false);
+containers[i].movetimer.restart();
+}
+}
+else if(containers[i].phase == CONTAINER_FLIGHT)
+{
+moveable=false; jumpable=false; speedable=false;
+if(paused==0 and containers[i].movetimer.elapsed >= containers[i].speed)
+{
+containers[i].movetimer.restart();
+if(mapmode == "3d")
+{
+if(int(me.z) < containers[i].dropheight) me.z += 1;
+containers[i].containerz = int(me.z);
+}
+else
+{
+if(int(me.y) < containers[i].dropheight) me.y += 1;
+containers[i].containery = int(me.y);
+}
+containers[i].containerx = int(me.x);
+double fsz = (mapmode == "3d") ? containers[i].containerz : 0;
+int height = (mapmode == "3d") ? int(me.z) : int(me.y);
+if(height >= containers[i].dropheight)
+{
+containers[i].phase = CONTAINER_HOVER;
+containerpool.destroy_sound(containers[i].loopsound);
+containers[i].loopsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*hover*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,fsz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+containers[i].hovertimer.restart();
+}
+}
+}
+else if(containers[i].phase == CONTAINER_HOVER)
+{
+moveable=false; jumpable=false; speedable=false;
+containers[i].containerx = int(me.x);
+if(paused==0 and containers[i].hovertimer.elapsed >= containers[i].hovertime)
+{
+containerpool.destroy_sound(containers[i].loopsound);
+containerpool.play_stationary_extended(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*drop*"),false,0,0,0,100,false);
+container_release_player();
+@containers[i] = null;
+continue;
+}
 }
 }
 }
