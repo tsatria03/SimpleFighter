@@ -92,8 +92,9 @@ return -1;
 
 // Phase-1 map downloader: fetch the map server's index, then loop a menu so the
 // player can download one map after another into the compiled-maps folder (where
-// they appear under load map, then compiled maps). Overwriting an existing copy
-// asks first; escape or back exits. Modeled on compile_map/decompile_map's loop.
+// they appear under load map, then compiled maps). A map the player already has is
+// filtered out of the list (so it can't be re-downloaded, and vanishes the moment
+// it finishes downloading); escape or back exits. Modeled on compile_map/decompile_map's loop.
 
 void download_map()
 {
@@ -117,14 +118,27 @@ return;
 while(true)
 {
 setupmenu();
+// Offer a map only if the player doesn't already have a compiled copy by that
+// name; a just-downloaded map drops out of the list on the next loop pass. Count
+// the maps actually shown so a fully-owned list gets its own message below.
+int shown = 0;
 for(uint i = 0; i < maps.length(); i++)
 {
 string[] parts = string_split(maps[i], "|", true);
 string fname = parts[0];
+string fileword = fname;
+if(fileword.length() < 4 || fileword.substr(fileword.length() - 4) != ".map") fileword += ".map";
+if(file_exists("data/builder/maps/compiled/" + fileword)) continue;
 string display = fname;
 if(parts.length() >= 3)
 display = fname + ", " + parts[1] + " map, total size, " + measure_file_size(int64(string_to_number(parts[2])));
 m.add_item(display, fname);
+shown++;
+}
+if(shown == 0)
+{
+alert("Nothing to download", "You already have every map that's available to download.");
+return;
 }
 // Sentinel id can't collide with a server map name: '*' is illegal in a map filename.
 m.add_item("back", "*back*");
@@ -147,19 +161,6 @@ if(fileword.length() < 4 || fileword.substr(fileword.length() - 4) != ".map") fi
 if(!directory_exists("data/builder/maps/compiled"))
 directory_create("data/builder/maps/compiled");
 string local = "data/builder/maps/compiled/" + fileword;
-if(file_exists(local))
-{
-setupmenu();
-m.add_item("yes");
-m.add_item("no");
-m.intro_text = "This map already exists. Do you want to overwrite it?";
-int conf = m.run();
-if(conf != 0)
-{
-speak("canceled");
-continue;
-}
-}
 string result = dl_file(map_server_url + "/maps/public/" + fileword, local);
 if(result != "finished")
 {
