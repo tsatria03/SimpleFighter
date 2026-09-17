@@ -15,11 +15,12 @@ int direction;
 int cur_x_step, cur_y_step, cur_z_step;
 double projhealth, maxprojhealth;
 double damage;
+double projlevel, projxp;   // reward for destroying a destroyable projectile: xp += projxp * projlevel * xpmod. Named proj* (not level/xp) so they don't shadow the global player level/xp.
 int speed;
 int stun;
 string projtype;
 timer projtimer;
-projectile(int px, int py, double mnx, double mxx, double mny, double mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, double mnz=0, double mxz=0, bool csc=false)
+projectile(int px, int py, double mnx, double mxx, double mny, double mxy, int dir, double hp, double plv, double pxp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int pz=0, double mnz=0, double mxz=0, bool csc=false)
 {
 prox = px;
 proy = py;
@@ -32,6 +33,8 @@ minz = mnz;
 maxz = mxz;
 direction = dir;
 damage = dm;
+projlevel = plv;
+projxp = pxp;
 speed = sp;
 projtype = pt;
 fireable = pf;
@@ -369,9 +372,9 @@ break;
 }
 }
 
-void spawn_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, double dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, double mnz=0, double mxz=0, bool csc=false)
+void spawn_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, double plv, double pxp, double dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, double mnz=0, double mxz=0, bool csc=false)
 {
-projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz, csc);
+projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, plv, pxp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz, csc);
 projectiles.insert_last(p1);
 }
 
@@ -568,8 +571,8 @@ bool battack = form.is_checked(attack_cb);
 bool bsingle = form.is_checked(single_cb);
 t.destroy_sound(prevslot);
 resume_pools();
-write_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, bz, bmnz, bmxz);
-spawn_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, 0, bz, bmnz, bmxz);
+write_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, 1, 0, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, bz, bmnz, bmxz);   // level/xp placeholders (1, 0) -- the build form's real inputs are wired in section 3
+spawn_projectile(bx, by, bmnx, bmxx, bmny, bmxy, bdir, bhp, 1, 0, bdmg, bsp, btype, bbounce, bdest, battack, bsingle, 0, bz, bmnz, bmxz);   // level/xp placeholders (1, 0) -- the build form's real inputs are wired in section 3
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
@@ -593,14 +596,16 @@ double mnz = 0, mxz = 0;
 if(mapmode == "3d") { mnz = stn(sd[o+4]); mxz = stn(sd[o+5]); o += 6; } else o += 4;
 int dir = stn(sd[o]);
 double hp = stn(sd[o+1]);
-int dm = stn(sd[o+2]);
-int sp = stn(sd[o+3]);
-string pt = sd[o+4];
-bool bae = string_to_bool(sd[o+5]);
-bool dest = string_to_bool(sd[o+6]);
-bool pf = string_to_bool(sd[o+7]);
-bool su = string_to_bool(sd[o+8]);
-spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, dm, sp, pt, bae, dest, pf, su, 0, z, mnz, mxz);
+double lv = stn(sd[o+2]);
+double xpv = stn(sd[o+3]);
+int dm = stn(sd[o+4]);
+int sp = stn(sd[o+5]);
+string pt = sd[o+6];
+bool bae = string_to_bool(sd[o+7]);
+bool dest = string_to_bool(sd[o+8]);
+bool pf = string_to_bool(sd[o+9]);
+bool su = string_to_bool(sd[o+10]);
+spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, lv, xpv, dm, sp, pt, bae, dest, pf, su, 0, z, mnz, mxz);
 }
 /* Tier 2 semantic check: projectile is a start position, a travel box (ranged), a direction (0-7
 flat, 0-9 in 3d), health/damage/speed numbers, a projectile sound (or "none"), and four flags. */
@@ -653,7 +658,7 @@ if(!is_bool_token(sd[o+8])) { col=o+8; return "the single use value must be true
 return "";
 }
 
-void write_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int z=0, double mnz=0, double mxz=0)
+void write_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, double level, double xp, int dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int z=0, double mnz=0, double mxz=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif", "ab");
 mapdata = mapper.read();
@@ -661,7 +666,7 @@ string start = ""+x+" "+y;
 if(mapmode == "3d") start += " "+z;
 string bounds = ""+mnx+" "+mxx+" "+mny+" "+mxy;
 if(mapmode == "3d") bounds += " "+mnz+" "+mxz;
-mapper.write("\r\n"+"projectile "+start+" "+bounds+" "+dir+" "+hp+" "+dm+" "+sp+" "+pt+" "+bae+" "+dest+" "+pf+" "+su);
+mapper.write("\r\n"+"projectile "+start+" "+bounds+" "+dir+" "+hp+" "+level+" "+xp+" "+dm+" "+sp+" "+pt+" "+bae+" "+dest+" "+pf+" "+su);
 mapper.close();
 bump_map_modified();
 }

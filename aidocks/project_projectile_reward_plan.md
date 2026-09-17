@@ -40,8 +40,8 @@ bullet.nvgt (bullet hit ~763, splash ~1120), glider.nvgt (~287), weapon.nvgt (me
 
 ## Build sections (section-by-section, dev's call)
 
-- **§1 — Class + spawn_projectile signature + all 6 call sites** (level/xp params; values per the table above).
-- **§2 — Read/write + parser dispatch (18/21) + Tier-1 lenok (18/21).**
+- **§1 — Class + spawn_projectile signature + all 6 call sites. [DONE 2026-09]** Class fields `projlevel`/`projxp` (named proj* to avoid shadowing global player level/xp), added to constructor + spawn_projectile after `hp` (params `plv`/`pxp`). Call sites: zone `1, level`; cloner `projectiles[i23].projlevel/projxp`; weapon+shield `0, 0`; form + read pass PLACEHOLDER `1, 0` (finalized in §3/§2). `level` global confirmed (command_parser `level +=`, arena `int(level)`). Braces 130/130. No reward until §5.
+- **§2 — Read/write + parser dispatch (18/21) + Tier-1 lenok (18/21). [DONE 2026-09]** read_projectile parses `lv`/`xpv` at sd[o+2]/[o+3] (post-hp reads shifted +2), passes them to spawn (real values now). write_projectile: +level/xp params, writes `…dir hp level xp dm sp…`. Parser dispatch + Tier-1 → 18/21 (map_parser.nvgt). Form's write_projectile call still placeholder `1, 0` (finalized §3). Offsets verified (su at sd[17] 2d / sd[20] 3d). Braces 130/130, 197/197.
 - **§3 — Build form** (level + xp inputs, prefilled like camera; control order).
 - **§4 — Tier-2 semantic** (validate level + xp are numbers, in projectile_semantic_error, adjusting offsets for the two new fields).
 - **§5 — Reward-on-destroy helper wired into the ~5 death sites.**
