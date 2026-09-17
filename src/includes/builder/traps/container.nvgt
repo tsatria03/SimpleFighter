@@ -85,12 +85,18 @@ containerpool.destroy_sound(containers[target].loopsound);
 @containers[target] = null;
 return true;
 }
+/* Map-clear teardown (runs on every load/reload/leave). Like floor breakers (destroy_all_floorbreakers),
+each container plays its remove cue as it's torn down, so removing a container line -- which reloads the map
+-- makes the removed one (and every other container) sound its removal. despawn (section 6) is in-memory
+with no reload, so it plays the cue itself. */
 void destroy_all_containers()
 {
 for(uint i=0; i<containers.length(); i++)
 {
 if(@containers[i] == null) continue;
 containerpool.destroy_sound(containers[i].loopsound);
+double usz = (mapmode == "3d") ? containers[i].containerz : 0;
+containers[i].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*remove*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 }
 containers.resize(0);
 container_release_player();   // map cleared/reloaded -> nothing is carrying the player anymore
