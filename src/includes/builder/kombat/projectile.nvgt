@@ -372,6 +372,20 @@ break;
 }
 }
 
+/* Award the destroy reward for a destroyable projectile: xp += projxp * projlevel * xpmod, with a "Defeated"
+log -- camera/container style, NOT a creature kill (no kills++ , no kill sound). Called from every place a
+projectile's health hits 0, BEFORE it's removed. Silent when the reward computes to 0 (default xp=0 pure
+hazards) so destroying ordinary projectiles doesn't spam the log. */
+void award_projectile_kill(uint i)
+{
+if(@projectiles[i] == null) return;
+double gained_xp = projectiles[i].projxp * projectiles[i].projlevel * xpmod;
+if(xpmod >= 1 && gained_xp > 0)
+{
+xp += gained_xp;
+kombatlog.insert_last(gained_xp + " experience gained. Defeated " + projectiles[i].projtype + " level " + projectiles[i].projlevel + ".");
+}
+}
 void spawn_projectile(int x, int y, double mnx, double mxx, double mny, double mxy, int dir, double hp, double plv, double pxp, double dm, int sp, string pt, bool bae, bool dest, bool pf, bool su, int sn=0, int z=0, double mnz=0, double mxz=0, bool csc=false)
 {
 projectile p1(x, y, mnx, mxx, mny, mxy, dir, hp, plv, pxp, dm, sp, pt, bae, dest, pf, su, sn, z, mnz, mxz, csc);
@@ -614,7 +628,7 @@ bool su = string_to_bool(sd[o+10]);
 spawn_projectile(x, y, mnx, mxx, mny, mxy, dir, hp, lv, xpv, dm, sp, pt, bae, dest, pf, su, 0, z, mnz, mxz);
 }
 /* Tier 2 semantic check: projectile is a start position, a travel box (ranged), a direction (0-7
-flat, 0-9 in 3d), health/damage/speed numbers, a projectile sound (or "none"), and four flags. */
+flat, 0-9 in 3d), health/level/xp/damage/speed numbers, a projectile sound (or "none"), and four flags. */
 string projectile_semantic_error(string[] sd, string mode, int &out col)
 {
 bool is3d = (mode == "3d");
@@ -653,14 +667,16 @@ int dmax = is3d ? 9 : 7;
 string de = dir_id_error(sd[o], 0, dmax);
 if(de != "") { col=o; return "the direction "+de+"."; }
 if(!is_number_token(sd[o+1])) { col=o+1; return "the health must be a number."; }
-if(!is_number_token(sd[o+2])) { col=o+2; return "the damage must be a number."; }
-if(!is_number_token(sd[o+3])) { col=o+3; return "the speed must be a number."; }
-string pt = sd[o+4];
-if(pt != "none" && !name_exists("builder/kombat/projectiles/*", pt)) { col=o+4; return "the projectile sound '"+pt+"' does not exist."; }
-if(!is_bool_token(sd[o+5])) { col=o+5; return "the bounce value must be true or false."; }
-if(!is_bool_token(sd[o+6])) { col=o+6; return "the destroyable value must be true or false."; }
-if(!is_bool_token(sd[o+7])) { col=o+7; return "the fireable value must be true or false."; }
-if(!is_bool_token(sd[o+8])) { col=o+8; return "the single use value must be true or false."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the level must be a number."; }
+if(!is_number_token(sd[o+3])) { col=o+3; return "the experience must be a number."; }
+if(!is_number_token(sd[o+4])) { col=o+4; return "the damage must be a number."; }
+if(!is_number_token(sd[o+5])) { col=o+5; return "the speed must be a number."; }
+string pt = sd[o+6];
+if(pt != "none" && !name_exists("builder/kombat/projectiles/*", pt)) { col=o+6; return "the projectile sound '"+pt+"' does not exist."; }
+if(!is_bool_token(sd[o+7])) { col=o+7; return "the bounce value must be true or false."; }
+if(!is_bool_token(sd[o+8])) { col=o+8; return "the destroyable value must be true or false."; }
+if(!is_bool_token(sd[o+9])) { col=o+9; return "the fireable value must be true or false."; }
+if(!is_bool_token(sd[o+10])) { col=o+10; return "the single use value must be true or false."; }
 return "";
 }
 
