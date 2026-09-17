@@ -150,6 +150,49 @@ mapper.close();
 bump_map_modified();
 }
 
+/* Tier 2 semantic check: container is a position, per-axis seeing ranges, speed/health/level/xp/dropheight/
+hovertime numbers, a container sound (or "none"), and move-on-axis flags. Keyed on length (14 = 2d/topdown,
+17 = 3d). Mirrors camera_semantic_error but has no direction field and adds drop height, hover time, and the
+three move flags. */
+string container_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (sd.length() == 17);
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the x range must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the y range must be a number."; }
+if(is3d)
+{
+if(!is_number_token(sd[o+2])) { col=o+2; return "the z range must be a number."; }
+o += 3;
+}
+else o += 2;
+if(!is_number_token(sd[o])) { col=o; return "the speed must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the health must be a number."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the level must be a number."; }
+if(!is_number_token(sd[o+3])) { col=o+3; return "the experience must be a number."; }
+if(!is_number_token(sd[o+4])) { col=o+4; return "the drop height must be a number."; }
+if(!is_number_token(sd[o+5])) { col=o+5; return "the hover time must be a number."; }
+string ctype = sd[o+6];
+if(ctype != "none" && !name_exists("builder/traps/containers/*", ctype)) { col=o+6; return "the container sound '"+ctype+"' does not exist."; }
+if(!is_bool_token(sd[o+7])) { col=o+7; return "the move on x value must be true or false."; }
+if(!is_bool_token(sd[o+8])) { col=o+8; return "the move on y value must be true or false."; }
+if(is3d)
+{
+if(!is_bool_token(sd[o+9])) { col=o+9; return "the move on z value must be true or false."; }
+}
+return "";
+}
+
 /* Build form. Field order per the builder-form control convention: inputs, then the sound list, then the
 move-axis checkboxes, then okay/cancel. Seeing ranges + drop height default to the map's max extent; drop
 height is validated to be at least 10 (a shorter lift wouldn't be a real fall). Audition keys on the sound
