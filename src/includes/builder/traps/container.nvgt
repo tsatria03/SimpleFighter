@@ -85,6 +85,8 @@ if(!by_coord || (containers[i].containerx==gx && containers[i].containery==gy &&
 }
 if(target < 0) return false;
 if(containers[target].phase != CONTAINER_ROLLING) container_release_player();   // it was carrying the player -> release so they can move/fall again
+double usz = (mapmode == "3d") ? containers[target].containerz : 0;
+containers[target].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[target].containertype+"/*remove*"),me.x,me.y,me.z,containers[target].containerx,containers[target].containery,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);   // despawn is in-memory (no reload), so play the remove cue here like despawn_floorbreaker
 containerpool.destroy_sound(containers[target].loopsound);
 @containers[target] = null;
 return true;
@@ -315,7 +317,7 @@ return;
 }
 
 /* Release the carried player: just clear the caught flag. Walking is blocked while caught by a
-player_caught guard in the key_step_*/key_strafe_* movers -- NOT by freezing `moveable`, because moveable
+player_caught guard in the key_step/key_strafe movers -- NOT by freezing `moveable`, because moveable
 ALSO gates aiming (the face_* keys), so freezing it would stop the player aiming at the container. jumpable
 and speedable are held false each frame during the carry and auto-restore via update_character_settings once
 player_caught is false, so nothing needs restoring here. Called from every release path -- drop,
@@ -328,7 +330,7 @@ container_catcher = -1;
 
 /* The state machine, run every frame from the game loop (after update_character_settings + stuncheck,
 before game_input -- which is why re-asserting jumpable/speedable=false here actually freezes them). Walking
-is blocked separately by a player_caught guard in the key_step_*/key_strafe_* movers; moveable is left TRUE
+is blocked separately by a player_caught guard in the key_step/key_strafe movers; moveable is left TRUE
 so the alt+shift face_* aiming keys (which moveable gates) still work while caught, so the player can aim.
 DEATH (health<=0, set by weapons in the hit loops, section 5): death cue + camera-style xp reward, release
 the player if it was carrying them (they fall from the current height), remove. ROLLING: live-leash seek
@@ -390,7 +392,7 @@ containers[i].movetimer.restart();
 }
 else if(containers[i].phase == CONTAINER_FLIGHT)
 {
-jumpable=false; speedable=false;   // freeze jump/run while caught; NOT moveable (it also gates aiming -- walking is blocked in the key_step_*/key_strafe_* movers instead)
+jumpable=false; speedable=false;   // freeze jump/run while caught; NOT moveable (it also gates aiming -- walking is blocked in the key_step/key_strafe movers instead)
 if(paused==0 and containers[i].movetimer.elapsed >= containers[i].speed)
 {
 containers[i].movetimer.restart();
@@ -418,7 +420,7 @@ containers[i].hovertimer.restart();
 }
 else if(containers[i].phase == CONTAINER_HOVER)
 {
-jumpable=false; speedable=false;   // freeze jump/run while caught; NOT moveable (it also gates aiming -- walking is blocked in the key_step_*/key_strafe_* movers instead)
+jumpable=false; speedable=false;   // freeze jump/run while caught; NOT moveable (it also gates aiming -- walking is blocked in the key_step/key_strafe movers instead)
 containers[i].containerx = int(me.x);
 if(paused==0 and containers[i].hovertimer.elapsed >= containers[i].hovertime)
 {
