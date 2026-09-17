@@ -13,6 +13,10 @@ container@[] containers(0);
 time, suppresses the player's fallcheck while carried (fallcheck early-returns on it, like glider_engine_on),
 and is cleared on drop / death / map-clear so the player falls and regains control. */
 bool player_caught = false;
+/* Index of the container currently carrying the player (-1 = none). Lets the weapon code (container_autohit)
+land the player's shots on the right container while caught, since a thing on the player's own tile can't be
+hit by normal aim/collision. Set at catch, cleared on release. */
+int container_catcher = -1;
 
 // phase constants for the container state machine (used from containerloop, section 4)
 const int CONTAINER_ROLLING = 0;   // seeking the player on the ground
@@ -319,6 +323,7 @@ destruction-while-caught, despawn, and map-clear. */
 void container_release_player()
 {
 player_caught = false;
+container_catcher = -1;
 }
 
 /* The state machine, run every frame from the game loop (after update_character_settings + stuncheck,
@@ -375,6 +380,7 @@ bool caught_now = me.x==containers[i].containerx and me.y==containers[i].contain
 if(caught_now and !player_caught and paused==0 and !glider_engine_on and invehicle==false and onbike==false and inplain==false and falling==false)
 {
 player_caught = true;
+container_catcher = int(i);
 containers[i].phase = CONTAINER_FLIGHT;
 containerpool.destroy_sound(containers[i].loopsound);
 containers[i].wepsound = containerpool.play_stationary_extended(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*catch*"),false,0,0,0,100,false);

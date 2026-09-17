@@ -388,6 +388,20 @@ pending_ammo = am;
 return true;
 }
 
+/* While a container is carrying the player, any attack the player makes lands on it -- a thing sitting on
+your own tile can't be reached by a normal bullet (muzzle-exempt) or melee swing, so the player's fire is
+redirected straight onto the carrying container. Player only (firer_npc==-1); returns true if it consumed
+the attack (caller stops before spawning a normal shot/swing). hurt plays stationary since it's on you. */
+bool container_autohit(int firer_npc, double dmg)
+{
+if(firer_npc != -1 || !player_caught) return false;
+if(container_catcher < 0 || container_catcher >= int(containers.length()) || @containers[container_catcher] == null) return false;
+double d = max(0, dmg);
+containers[container_catcher].health -= d;
+kombatlog.insert_last(round(d, 0) + " damage to " + containers[container_catcher].containertype + " by " + sub + "'s weapon attack.");
+if(d > 0 && containers[container_catcher].health > 0) containers[container_catcher].wepsound = containerpool.play_stationary_extended(get_map_sound("builder/traps/containers/"+containers[container_catcher].containertype+"/*hurt*"), false, 0, 0, 0, 100, false);
+return true;
+}
 void fire(int x, int y, string facing, double extra_damage, int firer_npc = -1, int z = 0)
 {
 if(loaded_ammo == 0 && !is_melee())
@@ -463,6 +477,7 @@ bool player_reflecting = (wepchar.reflection && wepdef == 1);
 if(!(firer_npc != -1 && ((shieldon == 1 && !shieldpassthrough) || player_reflecting)))
 sound_slot = p.play_extended_3d(get_pack_sound("main/equipments/weapons/"+cad+"/"+sub+"/general/*fire*"), me.x, me.y, me.z, x, y, z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
 double dmg = damage + extra_damage + type_bonus();
+if(container_autohit(firer_npc, dmg)) { if(!is_melee()) loaded_ammo -= 1; return; }   // caught: this shot/swing hits the carrying container instead of flying off
 if(is_melee())
 {
 melee_strike(x, y, z, dmg, firer_npc, facing);
@@ -516,6 +531,7 @@ if(!is_melee()) loaded_ammo -= 1;
 
 void melee_strike(int fx, int fy, int fz, double dmg, int firer_npc, string facing)
 {
+if(container_autohit(firer_npc, dmg)) return;   // caught (delayed swing path): the swing lands on the carrying container
 if(firer_npc != -1)
 {
 bool player_in_range = npc_targets(npcs[firer_npc], "player")
