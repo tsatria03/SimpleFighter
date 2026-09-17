@@ -1,0 +1,91 @@
+/* A container is a roaming trap: it homes at the player like a fire (live-leash sight), and on reaching
+their tile it CATCHES them -- locking their movement (they can still aim/fire) -- carries them up to a
+configurable drop height, hovers, then drops them so the normal fall system does the damage. The player
+destroys it with weapons (camera-style health + level + xp reward) to avoid being lifted. One-shot: it
+removes itself after dropping. 2d + 3d only (topdown has no fall). Models: fire (seek), teleporter
+(coordinate move), security_camera (reward). Section 1: the class, globals, and lifecycle helpers only --
+the containerloop() state machine, build form, reader/writer, destroy/reward, gallery, and docs come later.
+loopsound is the ambient looping slot (the rolling loop, later swapped to the flight loop while lifting);
+it must be destroyed on despawn or it leaks. wepsound holds one-shot cues (spawn/catch/hover/drop/etc). */
+sound_pool containerpool;
+container@[] containers(0);
+
+// phase constants for the container state machine (used from containerloop, section 4)
+const int CONTAINER_ROLLING = 0;   // seeking the player on the ground
+const int CONTAINER_FLIGHT = 1;    // caught the player, carrying them up toward drop height
+const int CONTAINER_HOVER = 2;     // holding at the top before the drop
+
+class container
+{
+bool moveable, moveable2, moveable3, spotted;
+int loopsound, wepsound;
+int containerx;
+int containery;
+int containerz;
+int crange;
+int crange2;
+int crange3;
+int speed;
+double health, maxhealth;
+double level, xp;
+int dropheight;
+int hovertime;
+int phase;
+string containertype;
+timer movetimer, hovertimer;
+container(int cx,int cy,int crng,int crng2,int sp,double chp,double cmhp,double clv,double cxp,int cdh,int cht,string ctype,bool cm,bool cm2,int cz=0,int crng3=0,bool cm3=false)
+{
+containerx=cx;
+containery=cy;
+containerz=cz;
+crange=crng;
+crange2=crng2;
+crange3=crng3;
+speed=sp;
+health=chp;
+maxhealth=cmhp;
+level=clv;
+xp=cxp;
+dropheight=cdh;
+hovertime=cht;
+containertype=ctype;
+moveable=cm;
+moveable2=cm2;
+moveable3=cm3;
+spotted=false;
+phase=CONTAINER_ROLLING;
+double sz = (mapmode == "3d") ? containerz : 0;
+wepsound=containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containertype+"/*spawn*"),me.x,me.y,me.z,containerx,containery,sz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+loopsound=containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containertype+"/*loop*"),me.x,me.y,me.z,containerx,containery,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+}
+}
+void spawn_container(int x,int y,int crange,int crange2,int speed,double health,double maxhealth,double level,double xp,int dropheight,int hovertime,string containertype,bool moveable,bool moveable2,int z=0,int crange3=0,bool moveable3=false)
+{
+container ct1(x,y,crange,crange2,speed,health,maxhealth,level,xp,dropheight,hovertime,containertype,moveable,moveable2,z,crange3,moveable3);
+containers.insert_last(ct1);
+}
+/* Non-standard coords (containerx/y/z, int, and mutable as the container roams). Stops the always-looping
+loopsound before nulling. A container roams at runtime, so a coord match uses its CURRENT (drifted)
+position -- bare form is more reliable for a moving one, like fire/teleporter. */
+bool despawn_container(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<containers.length(); i++)
+{
+if(@containers[i]==null) continue;
+if(!by_coord || (containers[i].containerx==gx && containers[i].containery==gy && (mapmode!="3d" || containers[i].containerz==gz))) target = int(i);
+}
+if(target < 0) return false;
+containerpool.destroy_sound(containers[target].loopsound);
+@containers[target] = null;
+return true;
+}
+void destroy_all_containers()
+{
+for(uint i=0; i<containers.length(); i++)
+{
+if(@containers[i] == null) continue;
+containerpool.destroy_sound(containers[i].loopsound);
+}
+containers.resize(0);
+}
