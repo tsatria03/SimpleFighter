@@ -89,3 +89,45 @@ containerpool.destroy_sound(containers[i].loopsound);
 }
 containers.resize(0);
 }
+
+/* On-disk: container x y [z] xrange yrange [zrange] speed health level xp dropheight hovertime containertype
+movex movey [movez]. 14 tokens on 2d/topdown, 17 on 3d (z after y, zrange after yrange, movez after movey) --
+the o-offset walks past each optional 3d field, mirroring read_fire/read_camera. health is written once and
+handed to spawn as both current and max. */
+void read_container(string[] sd)
+{
+bool is_3d = sd.length() == 17;
+int o = 1;
+int cx = stn(sd[o]);
+int cy = stn(sd[o+1]);
+int cz = 0;
+if(is_3d) { cz = stn(sd[o+2]); o += 3; } else o += 2;
+int crange = stn(sd[o]);
+int crange2 = stn(sd[o+1]);
+int crange3 = 0;
+if(is_3d) { crange3 = stn(sd[o+2]); o += 3; } else o += 2;
+int sp = stn(sd[o]);
+double hp = stn(sd[o+1]);
+double lv = stn(sd[o+2]);
+double xpv = stn(sd[o+3]);
+int dh = stn(sd[o+4]);
+int ht = stn(sd[o+5]);
+string ctype = sd[o+6];
+bool cm = string_to_bool(sd[o+7]);
+bool cm2 = string_to_bool(sd[o+8]);
+bool cm3 = false;
+if(is_3d) cm3 = string_to_bool(sd[o+9]);
+spawn_container(cx, cy, crange, crange2, sp, hp, hp, lv, xpv, dh, ht, ctype, cm, cm2, cz, crange3, cm3);
+}
+
+void write_container(int x, int y, int crange, int crange2, int speed, double health, double level, double xp, int dropheight, int hovertime, string containertype, bool moveable, bool moveable2, int z=0, int crange3=0, bool moveable3=false)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string zsrc = (mapmode == "3d") ? (" "+z) : "";
+string zrng = (mapmode == "3d") ? (" "+crange3) : "";
+string zmov = (mapmode == "3d") ? (" "+moveable3) : "";
+mapper.write("\r\n"+"container "+x+" "+y+zsrc+" "+crange+" "+crange2+zrng+" "+speed+" "+health+" "+level+" "+xp+" "+dropheight+" "+hovertime+" "+containertype+" "+moveable+" "+moveable2+zmov);
+mapper.close();
+bump_map_modified();
+}
