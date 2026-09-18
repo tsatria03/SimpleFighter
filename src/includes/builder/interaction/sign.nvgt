@@ -72,6 +72,34 @@ signpool.destroy_sound(signs[target].signsound);
 @signs[target] = null;
 return true;
 }
+
+/* The canonical one-shot destroy for a sign, extracted so the weapon/bullet/projectile hit sites and
+kill_sign all share it (section 3b swaps the ~15 inline copies over to this): stop the looping ambient slot,
+play the *break* cue positioned across the sign's span, and null the slot. */
+void destroy_sign(uint i)
+{
+signpool.destroy_sound(signs[i].signsound);
+signs[i].hurtsound = signpool.play_extended_3d(get_map_sound("builder/interaction/signs/"+signs[i].signtype+"/*break*"), me.x, me.y, me.z, signs[i].signx, signs[i].signy, signs[i].signz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+signpool.update_sound_range_3d(signs[i].hurtsound, 0, signs[i].maxx-signs[i].minx, 0, signs[i].maxy-signs[i].miny, 0, (mapmode=="3d")?(signs[i].maxz-signs[i].minz):0);
+@signs[i] = null;
+}
+
+/* Command-kill (used by /kill and /killall): break the newest, or coord-matched (by min corner), DESTROYABLE
+sign via destroy_sign. Non-destroyable signs are skipped -- the destroyable flag gates weapons and /kill
+alike; use /despawn to remove one of those silently. */
+bool kill_sign(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<signs.length(); i++)
+{
+if(@signs[i] == null) continue;
+if(!signs[i].destroyable) continue;
+if(!by_coord || (signs[i].minx==gx && signs[i].miny==gy && (mapmode!="3d" || signs[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+destroy_sign(uint(target));
+return true;
+}
 void destroy_all_signs()
 {
 for(uint i=0; i<signs.length(); i++)

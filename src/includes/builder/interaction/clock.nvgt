@@ -66,6 +66,34 @@ clockpool.destroy_sound(clocks[target].clocksound);
 @clocks[target] = null;
 return true;
 }
+
+/* The canonical one-shot destroy for a clock, extracted so the weapon/bullet/projectile hit sites and
+kill_clock all share it (section 3b swaps the inline copies over to this): stop the looping ambient slot,
+play the *break* cue positioned across the clock's span, and null the slot. */
+void destroy_clock(uint i)
+{
+clockpool.destroy_sound(clocks[i].clocksound);
+clocks[i].hurtsound = clockpool.play_extended_3d(get_map_sound("builder/interaction/clocks/"+clocks[i].clocktype+"/*break*"), me.x, me.y, me.z, clocks[i].clockx, clocks[i].clocky, clocks[i].clockz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+clockpool.update_sound_range_3d(clocks[i].hurtsound, 0, clocks[i].maxx-clocks[i].minx, 0, clocks[i].maxy-clocks[i].miny, 0, (mapmode=="3d")?(clocks[i].maxz-clocks[i].minz):0);
+@clocks[i] = null;
+}
+
+/* Command-kill (used by /kill and /killall): break the newest, or coord-matched (by min corner), DESTROYABLE
+clock via destroy_clock. Non-destroyable clocks are skipped -- the destroyable flag gates weapons and /kill
+alike; use /despawn to remove one of those silently. */
+bool kill_clock(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<clocks.length(); i++)
+{
+if(@clocks[i] == null) continue;
+if(!clocks[i].destroyable) continue;
+if(!by_coord || (clocks[i].minx==gx && clocks[i].miny==gy && (mapmode!="3d" || clocks[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+destroy_clock(uint(target));
+return true;
+}
 void destroy_all_clocks()
 {
 for(uint i=0; i<clocks.length(); i++)
