@@ -45,7 +45,7 @@ Vertical/height axis is **y on 2d, z on 3d** (the axis `flight height` lives on)
 
 Health <= 0 in any phase -> `death` + camera-style reward + remove.
 
-**Locked inferred defaults:** starts grounded; rise/descend are GRADUAL (one tile per speed-step, for audible feedback — "up to height 5 as soon as you hit it" read as immediate takeoff, not teleport); the flight timer counts down regardless of whether the player keeps hitting it in the air; `hurt` suppressed on a killing blow.
+**Locked inferred defaults:** starts grounded; rise/descend are GRADUAL (one tile per speed-step, for audible feedback — "up to height 5 as soon as you hit it" read as immediate takeoff, not teleport); the flight timer counts down regardless of whether the player keeps hitting it in the air; `hurt` suppressed on a killing blow; `land` plays ON TOUCHDOWN (dev 2026-09), not when the descent begins. **Flight height is CLAMPED to the map's vertical bound in the constructor** (`min(flightheight, maxy)` 2d / `min(flightheight, maxz)` 3d, `jet_vmax`) so the jet can never climb out of the top of the map, whatever an author or hand-edited line sets — covers ASCEND + AIR since both read the field (dev asked 2026-09). No lower floor (a flight height below ground level just skips the climb).
 
 ## Build-form fields (FINAL, dev-approved order 2026-09)
 
@@ -61,7 +61,7 @@ Input boxes, then the sound list, then okay/cancel. NO checkboxes, NO sliders. O
 8. **level** — default `1` (reward multiplier)
 9. **xp** — default `0` (base reward; 0 = silent/no reward)
 10. **flight height** — default `5`
-11. **flight time** — default `5000` (ms cruising before it descends)
+11. **flight time** — default `10000` (ms cruising before it descends)
 12. **security jet sound** — list: `none` + the `jet` folder(s)
 - **okay** / **cancel** buttons
 
@@ -77,8 +77,8 @@ Input boxes, then the sound list, then okay/cancel. NO checkboxes, NO sliders. O
 4. **`jetloop` state machine** — the four phases + melee, registered in game.nvgt's loop.
 5. **Runtime integrations** — jetpool into all_pools (decpool.nvgt), effect_space apply_effect_pools, spier (announces the jet folder), obscurity_zone name lists, object-info menu (health + level, camera-style), tracker anchor, game_handlers object-menu gate.
 6. **Destroy + reward + weapon/bullet/glider hit wiring [BUILT 2026-09].** `award_jet_kill` (xp-only, silent at 0) + `hurt_jet(i, dmg)` (play `hurt` UNLESS fatal, subtract health, and if GROUNDED+survived -> takeoff: `flight` cue + ground-loop->engine-loop swap + phase ASCEND; death itself is jetloop's top-check job, NOT inlined here -- container model). Scan-and-hit blocks: weapon.nvgt melee (new `best_type = 19` in the target scan + a `best_type == 19` apply block calling hurt_jet), bullet.nvgt (direct-hit block with cloner via spawn_security_jet + splash loop in try_bullet_splash, skip_kind `"jet"`), and glider.nvgt (a ram block after the camera's). **Glider ram ADDED (dev, 2026-09): jets ARE glider-hittable** (unlike the container, which traps you) -- "since jets do not trap you, it should be hittable with a glider." Grounded hit = takeoff; airborne hit = just chips health (no re-takeoff).
-7. **Spawn/despawn/build/unbuild commands** — dispatch in the command handlers and the build/unbuild menu.
-8. **Tier-2 semantic** — `security_jet_semantic_error` + dispatch (position, health/attack/firetime/speed/level/xp/flightheight/flighttime numbers, jet sound or "none"). NO move-flag checks.
+7. **Spawn/despawn/build/unbuild commands [DONE 2026-09, NO NEW CODE].** All five command paths already resolve `jet` from earlier sections: `/build` menu+no-args -> `buildobj("jet")` (map_menu, §3); `/build` inline + `/spawn` -> `normalize_buildtype("jet")`=`jet` -> `dispatch_entity_line`/`entity_line_error` (§2 read+lenok); `/despawn` -> `despawn_entity("jet")` (map_parser, §2); `/unbuild` -> `unbuild_entity` (GENERIC keyword match on `t[0]`, entity-agnostic). `normalize_buildtype` needs NO `jet` entry -- it only translates tokens that DIFFER from their keyword (e.g. `security_camera`->`camera`); `jet`'s token == its keyword, so it falls through `return buildtype`. This is the payoff of the `jet` token choice.
+8. **Tier-2 semantic [DONE 2026-09]** — `security_jet_semantic_error` (position via coord_token_error, then health/attack/firetime/speed/level/xp/flightheight/flighttime is_number_token, then jet sound name_exists in `builder/kombat/security jets/*` or "none"; keyed is3d on length==13; mirrors read order). Dispatched in map_parser entity_semantic_error under `k=="jet"`. NO ranges/direction/flags.
 9. **Gallery** — the security jet gallery type with its audition keys (misc/gallery.nvgt).
 10. **Docs** — `sf/docks/builder/security_jets.txt` help topic, maps.txt Traps entry (alphabetical), a 15.0 changelog entry (~50-750 chars, [[feedback_changelog_rules]]), and mark this plan COMPLETE.
 

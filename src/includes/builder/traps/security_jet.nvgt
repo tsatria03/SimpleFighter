@@ -51,6 +51,11 @@ speed=sp;
 level=lv;
 xp=xpv;
 flightheight=fh;
+// Clamp the flight height to the map's vertical bound (maxy on 2d, maxz on 3d) so the jet can never
+// climb out of the top of the map, whatever an author (or a hand-edited line) set. Covers the ASCEND
+// climb and the AIR patrol height, since both read this field.
+int jet_vmax = int((mapmode == "3d") ? maxz : maxy);
+if(flightheight > jet_vmax) flightheight = jet_vmax;
 flighttime=fti;
 jettype=jt;
 phase=JET_GROUND;
@@ -127,6 +132,36 @@ mapper.close();
 bump_map_modified();
 }
 
+/* Tier 2 semantic check: a security jet is a ground position, then health/attack/fire time/speed/level/xp/
+flight height/flight time numbers, then a security jet sound (or "none"). No ranges, direction, or flags.
+Keyed on length (12 = 2d, 13 = 3d) and mirrors read_security_jet's field order exactly. */
+string security_jet_semantic_error(string[] sd, string mode, int &out col)
+{
+bool is3d = (sd.length() == 13);
+string e = coord_token_error(sd[1], "x", mode);
+if(e != "") { col=1; return "the x coordinate "+e+"."; }
+e = coord_token_error(sd[2], "y", mode);
+if(e != "") { col=2; return "the y coordinate "+e+"."; }
+int o = 3;
+if(is3d)
+{
+e = coord_token_error(sd[3], "z", mode);
+if(e != "") { col=3; return "the z coordinate "+e+"."; }
+o = 4;
+}
+if(!is_number_token(sd[o])) { col=o; return "the health must be a number."; }
+if(!is_number_token(sd[o+1])) { col=o+1; return "the attack must be a number."; }
+if(!is_number_token(sd[o+2])) { col=o+2; return "the fire time must be a number."; }
+if(!is_number_token(sd[o+3])) { col=o+3; return "the speed must be a number."; }
+if(!is_number_token(sd[o+4])) { col=o+4; return "the level must be a number."; }
+if(!is_number_token(sd[o+5])) { col=o+5; return "the experience must be a number."; }
+if(!is_number_token(sd[o+6])) { col=o+6; return "the flight height must be a number."; }
+if(!is_number_token(sd[o+7])) { col=o+7; return "the flight time must be a number."; }
+string jt = sd[o+8];
+if(jt != "none" && !name_exists("builder/kombat/security jets/*", jt)) { col=o+8; return "the security jet sound '"+jt+"' does not exist."; }
+return "";
+}
+
 /* Build form. Field order per the builder-form control convention: inputs, then the sound list, then
 okay/cancel -- NO checkboxes for this element. Audition keys on the sound list: Space hurt, Ctrl+L loop,
 Ctrl+E engine, Ctrl+I flight, Ctrl+H hit, Ctrl+N land, Ctrl+D death (avoiding the form-reserved Ctrl+A/C/F/G)
@@ -156,7 +191,7 @@ int sp = form.create_input_box("speed");
 int lev = form.create_input_box("level", "1");
 int exper = form.create_input_box("xp", "0");
 int fh = form.create_input_box("flight height", "5");
-int fti = form.create_input_box("flight time", "5000");
+int fti = form.create_input_box("flight time", "10000");
 form.set_disallowed_chars(sx, disallowed_nums, false, "This character is not allowed.");
 form.set_disallowed_chars(sy, disallowed_nums, false, "This character is not allowed.");
 if(sz != -1) form.set_disallowed_chars(sz, disallowed_nums, false, "This character is not allowed.");
@@ -318,8 +353,8 @@ the player is on an aircraft/vehicle/bike/glider, shield-aware). ASCEND: climbs 
 flight height, then AIR (the takeoff cue + loop->engine swap happen in hurt_jet, section 6, at the moment of
 the hit). AIR: patrols across the whole map, bouncing at the edges (blind) -- x only on 2d, and BOTH x and y
 on 3d (projectile-style diagonal, each axis flipping independently at its own edge) -- until the flight timer
-expires -> plays land, DESCEND. DESCEND: drops one tile/speed back to ground level, swaps the
-engine loop back to the ground loop, resumes GROUND. */
+expires -> DESCEND. DESCEND: drops one tile/speed back to ground level, then ON TOUCHDOWN (height back at
+ground level) plays land and swaps the engine loop back to the ground loop, resuming GROUND. */
 void jetloop()
 {
 for(uint i=0; i<jets.length(); i++)
@@ -416,8 +451,6 @@ jetpool.update_sound_3d(jets[i].loopsound, jets[i].jetx, jets[i].jety, fsz);
 if(paused == 0 and jets[i].flighttimer.elapsed >= jets[i].flighttime)
 {
 jets[i].phase = JET_DESCEND;
-double lsz = (mapmode == "3d") ? jets[i].jetz : 0;
-jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/kombat/security jets/"+jets[i].jettype+"/*land*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,lsz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 jets[i].movetimer.restart();
 }
 }
@@ -435,6 +468,7 @@ if(vert <= jets[i].groundlevel)
 {
 jets[i].phase = JET_GROUND;
 jetpool.destroy_sound(jets[i].loopsound);
+jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/kombat/security jets/"+jets[i].jettype+"/*land*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,dsz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
 jets[i].loopsound = jetpool.play_extended_3d(get_map_sound("builder/kombat/security jets/"+jets[i].jettype+"/*loop*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,dsz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 jets[i].movetimer.restart();
 }
