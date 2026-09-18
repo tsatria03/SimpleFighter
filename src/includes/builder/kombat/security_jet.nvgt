@@ -36,8 +36,9 @@ int flightheight;
 int flighttime;
 int phase;
 string jettype;
+bool autoflight;   // true = spawn already airborne at flight height and patrol at once (Option A); false = start on the ground homing
 timer movetimer, firetimer, flighttimer;
-security_jet(int jx, int jy, double hp, double mhp, int atk, int ft, int sp, double lv, double xpv, int fh, int fti, string jt, int jz=0)
+security_jet(int jx, int jy, double hp, double mhp, int atk, int ft, int sp, double lv, double xpv, int fh, int fti, string jt, bool af=false, int jz=0)
 {
 jetx=jx;
 jety=jy;
@@ -58,16 +59,31 @@ int jet_vmax = int((mapmode == "3d") ? maxz : maxy);
 if(flightheight > jet_vmax) flightheight = jet_vmax;
 flighttime=fti;
 jettype=jt;
-phase=JET_GROUND;
+autoflight=af;
 cur_x_step=1;
 cur_y_step=1;
-double sz = (mapmode == "3d") ? jetz : 0;
-loopsound=jetpool.play_extended_3d(get_map_sound("builder/kombat/security jets/"+jettype+"/*loop*"),me.x,me.y,me.z,jetx,jety,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
-}
-}
-void spawn_security_jet(int x, int y, double health, double maxhealth, int attack, int firetime, int speed, double level, double xp, int flightheight, int flighttime, string jettype, int z=0)
+/* Auto flight (Option A): spawn already airborne at the flight height and patrol at once -- put the jet at
+its flight height on the vertical axis (jety on 2d, jetz on 3d), start in JET_AIR, and set the flight timer
+running so it comes down after the flight time. groundlevel was captured above from the placed tile, so when
+the timer expires it descends back there and resumes ground homing. Off = start on the ground homing as
+before. The always-looping slot starts on the engine loop when airborne, the ground loop when not (no takeoff
+cue either way, matching how a ground-spawned jet just starts its loop). */
+if(autoflight)
 {
-security_jet sj1(x,y,health,maxhealth,attack,firetime,speed,level,xp,flightheight,flighttime,jettype,z);
+if(mapmode == "3d") jetz = flightheight;
+else jety = flightheight;
+phase = JET_AIR;
+flighttimer.restart();
+movetimer.restart();
+}
+else phase = JET_GROUND;
+double sz = (mapmode == "3d") ? jetz : 0;
+loopsound=jetpool.play_extended_3d(get_map_sound("builder/kombat/security jets/"+jettype+"/"+(autoflight ? "*engine*" : "*loop*")),me.x,me.y,me.z,jetx,jety,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+}
+}
+void spawn_security_jet(int x, int y, double health, double maxhealth, int attack, int firetime, int speed, double level, double xp, int flightheight, int flighttime, string jettype, bool autoflight=false, int z=0)
+{
+security_jet sj1(x,y,health,maxhealth,attack,firetime,speed,level,xp,flightheight,flighttime,jettype,autoflight,z);
 jets.insert_last(sj1);
 }
 /* Non-standard coords (jetx/y/z, int, and mutable as the jet roams). Stops the always-looping loopsound
@@ -100,9 +116,10 @@ jets.resize(0);
 }
 
 /* On-disk keyword is "jet" (dev-chosen shorthand, like security_camera's split -- the friendly builder name
-stays "security jet"): jet x y [z] health attack firetime speed level xp flightheight flighttime jettype.
-12 tokens on 2d, 13 on 3d (z after y) -- the o-offset walks past the optional 3d z, mirroring
-read_container/read_ttsenemie. health is read once and handed to spawn as both current and max. */
+stays "security jet"): jet x y [z] health attack firetime speed level xp flightheight flighttime jettype autoflight.
+13 tokens on 2d, 14 on 3d (z after y) -- the o-offset walks past the optional 3d z, mirroring
+read_container/read_ttsenemie. health is read once and handed to spawn as both current and max. autoflight is a
+trailing true/false (added 15.0, NO back-compat: old 12/13-token jet lines fail the value count and won't load). */
 void read_security_jet(string[] sd)
 {
 int x = stn(sd[1]);
@@ -119,25 +136,26 @@ double xpv = stn(sd[o+5]);
 int fh = stn(sd[o+6]);
 int fti = stn(sd[o+7]);
 string jt = sd[o+8];
-spawn_security_jet(x, y, hp, hp, atk, ft, sp, lv, xpv, fh, fti, jt, z);
+bool af = (sd[o+9] == "true");
+spawn_security_jet(x, y, hp, hp, atk, ft, sp, lv, xpv, fh, fti, jt, af, z);
 }
 
-void write_security_jet(int x, int y, double health, int attack, int firetime, int speed, double level, double xp, int flightheight, int flighttime, string jettype, int z=0)
+void write_security_jet(int x, int y, double health, int attack, int firetime, int speed, double level, double xp, int flightheight, int flighttime, string jettype, bool autoflight=false, int z=0)
 {
 mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
 mapdata=mapper.read();
 string zsrc = (mapmode == "3d") ? (" "+z) : "";
-mapper.write("\r\n"+"jet "+x+" "+y+zsrc+" "+health+" "+attack+" "+firetime+" "+speed+" "+level+" "+xp+" "+flightheight+" "+flighttime+" "+jettype);
+mapper.write("\r\n"+"jet "+x+" "+y+zsrc+" "+health+" "+attack+" "+firetime+" "+speed+" "+level+" "+xp+" "+flightheight+" "+flighttime+" "+jettype+" "+(autoflight ? "true" : "false"));
 mapper.close();
 bump_map_modified();
 }
 
 /* Tier 2 semantic check: a security jet is a ground position, then health/attack/fire time/speed/level/xp/
-flight height/flight time numbers, then a security jet sound (or "none"). No ranges, direction, or flags.
-Keyed on length (12 = 2d, 13 = 3d) and mirrors read_security_jet's field order exactly. */
+flight height/flight time numbers, then a security jet sound (or "none"), then the auto flight true/false.
+Keyed on length (13 = 2d, 14 = 3d) and mirrors read_security_jet's field order exactly. */
 string security_jet_semantic_error(string[] sd, string mode, int &out col)
 {
-bool is3d = (sd.length() == 13);
+bool is3d = (sd.length() == 14);
 string e = coord_token_error(sd[1], "x", mode);
 if(e != "") { col=1; return "the x coordinate "+e+"."; }
 e = coord_token_error(sd[2], "y", mode);
@@ -159,11 +177,13 @@ if(!is_number_token(sd[o+6])) { col=o+6; return "the flight height must be a num
 if(!is_number_token(sd[o+7])) { col=o+7; return "the flight time must be a number."; }
 string jt = sd[o+8];
 if(jt != "none" && !name_exists("builder/kombat/security jets/*", jt)) { col=o+8; return "the security jet sound '"+jt+"' does not exist."; }
+if(!is_bool_token(sd[o+9])) { col=o+9; return "the auto flight value must be true or false."; }
 return "";
 }
 
-/* Build form. Field order per the builder-form control convention: inputs, then the sound list, then
-okay/cancel -- NO checkboxes for this element. Audition keys on the sound list: Space hurt, Ctrl+L loop,
+/* Build form. Field order per the builder-form control convention: inputs, then the sound list, then the
+auto flight checkbox, then okay/cancel. auto flight off = spawn on the ground homing (as before), on = spawn
+already airborne at the flight height and patrol at once (Option A). Audition keys on the sound list: Space hurt, Ctrl+L loop,
 Ctrl+E engine, Ctrl+I flight, Ctrl+H hit, Ctrl+N land, Ctrl+D death (avoiding the form-reserved Ctrl+A/C/F/G)
 -- the same set wired into the gallery and security_jets.txt. health/level/xp/flight height/flight time carry sensible defaults (1 / 1 / 0 / 5 /
 5000); attack, fire time, and speed are required with no default. */
@@ -208,6 +228,7 @@ form.add_list_item(jet_list, "none", "none");
 for(uint i = 0; i < jets_l.length(); i++)
 form.add_list_item(jet_list, jets_l[i], jets_l[i]);
 form.set_list_position(jet_list, 0, false);
+int af = form.create_checkbox("auto flight", false);
 int ok = form.create_button("&okay", true);
 int cn = form.create_button("&cancel");
 form.focus(sx);
@@ -296,10 +317,11 @@ int bfh = string_to_number(form.get_text(fh));
 int bfti = string_to_number(form.get_text(fti));
 int p = form.get_list_position(jet_list);
 string btype = (p > 0) ? jets_l[p-1] : "none";
+bool baf = form.is_checked(af);
 t.destroy_sound(prevslot);
 resume_pools();
-write_security_jet(bsx, bsy, bhp, batk, bft, bsp, blev, bxp, bfh, bfti, btype, bsz);
-spawn_security_jet(bsx, bsy, bhp, bhp, batk, bft, bsp, blev, bxp, bfh, bfti, btype, bsz);
+write_security_jet(bsx, bsy, bhp, batk, bft, bsp, blev, bxp, bfh, bfti, btype, baf, bsz);
+spawn_security_jet(bsx, bsy, bhp, bhp, batk, bft, bsp, blev, bxp, bfh, bfti, btype, baf, bsz);
 load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
