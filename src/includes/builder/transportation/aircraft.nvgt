@@ -515,6 +515,32 @@ aircrafts[target].plainhealth = 0;
 return true;
 }
 
+/* Command-move (used by /go): relocate the newest aircraft. If it's being flown (moveable), carry the pilot
+to the destination too so they stay aboard -- its engine cue is non-positional while ridden and follows the
+player, and its idle loop is destroyed, so don't touch that slot. If it's parked, reposition the idle loop to
+the new spot. Caller bounds-checks + speaks. */
+bool move_aircraft(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<aircrafts.length(); i++) { if(@aircrafts[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+aircrafts[target].plainx = int(destx);
+aircrafts[target].plainy = int(desty);
+if(mapmode == "3d") aircrafts[target].plainz = int(destz);
+if(aircrafts[target].moveable)
+{
+me.x = aircrafts[target].plainx;
+me.y = aircrafts[target].plainy;
+if(mapmode == "3d") me.z = aircrafts[target].plainz;
+}
+else
+{
+double sz = (mapmode == "3d") ? aircrafts[target].plainz : 0;
+plainpool.update_sound_3d(aircrafts[target].loopsound, aircrafts[target].plainx, aircrafts[target].plainy, sz);
+}
+return true;
+}
+
 void build_aircraft()
 {
 string[] planes_list = get_map_sound_folders("builder/transportation/aircrafts/*");

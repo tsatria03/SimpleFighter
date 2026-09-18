@@ -434,6 +434,28 @@ bikes[target].bikehealth = 0;
 return true;
 }
 
+/* Command-move (used by /go): relocate the newest bike, reposition its beacon, and -- if it's being ridden
+(moveable) -- carry the rider to the destination too so they stay aboard (the ride keeps me and the bike in
+lockstep). Caller bounds-checks + speaks. */
+bool move_bike(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<bikes.length(); i++) { if(@bikes[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+bikes[target].bikex = int(destx);
+bikes[target].bikey = int(desty);
+if(mapmode == "3d") bikes[target].bikez = int(destz);
+double sz = (mapmode == "3d") ? bikes[target].bikez : 0;
+bikepool.update_sound_3d(bikes[target].bikesound, bikes[target].bikex, bikes[target].bikey, sz);
+if(bikes[target].moveable)
+{
+me.x = bikes[target].bikex;
+me.y = bikes[target].bikey;
+if(mapmode == "3d") me.z = bikes[target].bikez;
+}
+return true;
+}
+
 void build_bike()
 {
 string[] bikes_l = get_map_sound_folders("builder/transportation/bikes/*");

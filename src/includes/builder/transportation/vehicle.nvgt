@@ -342,6 +342,28 @@ vehicles[target].vehhealth = 0;
 return true;
 }
 
+/* Command-move (used by /go): relocate the newest vehicle, reposition its beacon, and -- if it's being
+driven (moveable) -- carry the driver to the destination too so they stay aboard (the ride keeps me and the
+vehicle in lockstep). Caller bounds-checks + speaks. */
+bool move_vehicle(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<vehicles.length(); i++) { if(@vehicles[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+vehicles[target].vehx = int(destx);
+vehicles[target].vehy = int(desty);
+if(mapmode == "3d") vehicles[target].vehz = int(destz);
+double sz = (mapmode == "3d") ? vehicles[target].vehz : 0;
+vehpool.update_sound_3d(vehicles[target].vehsound, vehicles[target].vehx, vehicles[target].vehy, sz);
+if(vehicles[target].moveable)
+{
+me.x = vehicles[target].vehx;
+me.y = vehicles[target].vehy;
+if(mapmode == "3d") me.z = vehicles[target].vehz;
+}
+return true;
+}
+
 void build_vehicle()
 {
 string[] vehs_list = get_map_sound_folders("builder/transportation/vehicles/*");
