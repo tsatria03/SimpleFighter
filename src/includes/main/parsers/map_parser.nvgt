@@ -270,6 +270,67 @@ else if(type=="checkpoint") return despawn_checkpoint(by_coord, gx, gy, gz);
 else if(type=="timed_text") return despawn_timedtext(by_coord, gx, gy, gz);
 return false;
 }
+
+/* Command-kill dispatch for /kill, mirroring despawn_entity but running each type's DEATH path (its death or
+break cue plus any reward) instead of a silent removal. Only the 17 health-bearing / destroyable types are
+handled; any other keyword falls through to false so the caller can report it as unkillable rather than as
+"nothing found". Returns whether a target was found and killed. */
+bool kill_entity(string type, bool by_coord, double gx, double gy, double gz)
+{
+if(type=="npc") return kill_npc(by_coord, gx, gy, gz);
+else if(type=="camera") return kill_camera(by_coord, gx, gy, gz);
+else if(type=="jet") return kill_security_jet(by_coord, gx, gy, gz);
+else if(type=="container") return kill_container(by_coord, gx, gy, gz);
+else if(type=="projectile") return kill_projectile(by_coord, gx, gy, gz);
+else if(type=="ttsenemie") return kill_ttsenemie(by_coord, gx, gy, gz);
+else if(type=="aircraft") return kill_aircraft(by_coord, gx, gy, gz);
+else if(type=="vehicle") return kill_vehicle(by_coord, gx, gy, gz);
+else if(type=="bike") return kill_bike(by_coord, gx, gy, gz);
+else if(type=="wall") return kill_wall(by_coord, gx, gy, gz);
+else if(type=="platform") return kill_platform(by_coord, gx, gy, gz);
+else if(type=="staircase") return kill_staircase(by_coord, gx, gy, gz);
+else if(type=="door") return kill_door(by_coord, gx, gy, gz);
+else if(type=="spike") return kill_spike(by_coord, gx, gy, gz);
+else if(type=="sign") return kill_sign(by_coord, gx, gy, gz);
+else if(type=="clock") return kill_clock(by_coord, gx, gy, gz);
+else if(type=="calendar") return kill_calendar(by_coord, gx, gy, gz);
+return false;
+}
+
+/* Whether a type keyword is one of the 17 that /kill and /killall can act on -- lets the command tell an
+unkillable type apart ("you can't kill a switch") from a killable one with nothing on the map ("there's no
+sign to kill"). Keep in sync with kill_entity / kill_all. */
+bool is_killable_type(string type)
+{
+return type=="npc" || type=="camera" || type=="jet" || type=="container" || type=="projectile" || type=="ttsenemie" || type=="aircraft" || type=="vehicle" || type=="bike" || type=="wall" || type=="platform" || type=="staircase" || type=="door" || type=="spike" || type=="sign" || type=="clock" || type=="calendar";
+}
+
+/* Kill EVERYTHING killable on the map, for a bare /killall. The 13 loop-driven types are zeroed in place --
+their own loops run the death (cue + reward) next frame -- so we iterate the arrays directly rather than via
+kill_* (which finds the newest and, since a zeroed entity isn't removed until its loop fires, would loop
+forever). The 4 immediate types (projectile, sign, clock, calendar) ARE removed the instant they're killed,
+so draining them with while(kill_*) is safe and reuses their destroyable-only + reward logic. Rewards all
+fire (Option A), so a busy map pays out everything at once. */
+void kill_all()
+{
+for(uint i=0; i<npcs.length(); i++) if(@npcs[i]!=null) { npcs[i].currentlives=1; npcs[i].killed_by_fall=false; npcs[i].health=0; }
+for(uint i=0; i<sucams.length(); i++) if(@sucams[i]!=null) sucams[i].camhealth=0;
+for(uint i=0; i<jets.length(); i++) if(@jets[i]!=null) jets[i].health=0;
+for(uint i=0; i<containers.length(); i++) if(@containers[i]!=null) containers[i].health=0;
+for(uint i=0; i<ttsenemies.length(); i++) if(@ttsenemies[i]!=null) ttsenemies[i].ttsenehealth=0;
+for(uint i=0; i<aircrafts.length(); i++) if(@aircrafts[i]!=null) aircrafts[i].plainhealth=0;
+for(uint i=0; i<vehicles.length(); i++) if(@vehicles[i]!=null) vehicles[i].vehhealth=0;
+for(uint i=0; i<bikes.length(); i++) if(@bikes[i]!=null) bikes[i].bikehealth=0;
+for(uint i=0; i<walls.length(); i++) if(@walls[i]!=null) walls[i].wallhealth=0;
+for(uint i=0; i<platforms.length(); i++) if(@platforms[i]!=null && !platform_is_wrapped(int(i))) platforms[i].plathealth=0;
+for(uint i=0; i<staircases.length(); i++) if(@staircases[i]!=null) staircases[i].stairshealth=0;
+for(uint i=0; i<doors.length(); i++) if(@doors[i]!=null) doors[i].doorhealth=0;
+for(uint i=0; i<spikes.length(); i++) if(@spikes[i]!=null) spikes[i].spikehealth=0;
+while(kill_projectile(false, 0, 0, 0)) {}
+while(kill_sign(false, 0, 0, 0)) {}
+while(kill_clock(false, 0, 0, 0)) {}
+while(kill_calendar(false, 0, 0, 0)) {}
+}
 string entity_line_error(string[] sd, string mode)
 {
 if(sd.length()==0) return "";
