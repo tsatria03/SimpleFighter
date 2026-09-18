@@ -109,6 +109,22 @@ if(target < 0) return false;
 containers[target].health = 0;
 return true;
 }
+
+/* Command-move (used by /go): relocate the newest container, reposition its looping rolling slot, and restart
+its move timer. Caller bounds-checks + speaks. */
+bool move_container(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<containers.length(); i++) { if(@containers[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+containers[target].containerx = int(destx);
+containers[target].containery = int(desty);
+if(mapmode == "3d") containers[target].containerz = int(destz);
+double usz = (mapmode == "3d") ? containers[target].containerz : 0;
+containerpool.update_sound_3d(containers[target].loopsound, containers[target].containerx, containers[target].containery, usz);
+containers[target].movetimer.restart();
+return true;
+}
 /* Map-clear teardown (runs on every load/reload/leave). Like floor breakers (destroy_all_floorbreakers),
 each container plays its remove cue as it's torn down, so removing a container line -- which reloads the map
 -- makes the removed one (and every other container) sound its removal. despawn (section 6) is in-memory

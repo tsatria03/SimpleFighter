@@ -336,11 +336,15 @@ return killed;
 }
 
 /* Kill EVERYTHING killable on the map, for a bare /killall -- sweep every killable type. Rewards all fire
-(Option A), so a busy map pays out everything at once. */
-void kill_all()
+(Option A), so a busy map pays out everything at once. Returns whether anything at all was killed, so the
+command can say the map was already empty rather than claim a kill. Every type is swept unconditionally (no
+short-circuit) so their side effects all run even once one has reported a kill. */
+bool kill_all()
 {
+bool killed = false;
 string[] kt = {"npc", "camera", "jet", "container", "ttsenemie", "aircraft", "vehicle", "bike", "wall", "platform", "staircase", "door", "spike", "projectile", "sign", "clock", "calendar"};
-for(uint i=0; i<kt.length(); i++) kill_all_of_type(kt[i]);
+for(uint i=0; i<kt.length(); i++) { if(kill_all_of_type(kt[i])) killed = true; }
+return killed;
 }
 string entity_line_error(string[] sd, string mode)
 {

@@ -267,6 +267,21 @@ ttsenemies[target].ttsenehealth = 0;
 return true;
 }
 
+/* Command-move (used by /go): relocate the newest tts enemy, reposition its looping voice slot, and restart
+its move timer. Caller bounds-checks + speaks. */
+bool move_ttsenemie(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<ttsenemies.length(); i++) { if(@ttsenemies[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+ttsenemies[target].ttsemx = int(destx);
+ttsenemies[target].ttsemy = int(desty);
+if(mapmode == "3d") ttsenemies[target].ttsemz = int(destz);
+if(ttsenemies[target].ttsemsound != -1) ttsempool.update_sound_3d(ttsenemies[target].ttsemsound, ttsenemies[target].ttsemx, ttsenemies[target].ttsemy, ttsenemies[target].ttsemz);
+ttsenemies[target].ttsenemietimer.restart();
+return true;
+}
+
 /* Tier 2 semantic check. A tts enemy is a position, five numbers (health, attack, defense, fire time,
 speed), four quoted strings (taunt, hurt, death, voice), then three numbers (rate, pitch, volume).
 Mirrors read_ttsenemie's shape. The spoken text is free-form and the voice name is system-dependent

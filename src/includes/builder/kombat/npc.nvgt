@@ -766,6 +766,23 @@ npcs[target].health = 0;
 return true;
 }
 
+/* Command-move (used by /go): relocate the newest npc to the destination, reposition its looping voice, and
+restart its move timer -- the mechanics of gop's old NPC branch, generalized to newest-of-type. The caller
+bounds-checks the destination and speaks the feedback. */
+bool move_npc(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<npcs.length(); i++) { if(@npcs[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+npcs[target].x = int(destx);
+npcs[target].y = int(desty);
+if(mapmode == "3d") npcs[target].z = int(destz);
+sound_pool@ pool = npc_pool(npcs[target].category);
+if(npcs[target].tauntsound != -1) pool.update_sound_3d(npcs[target].tauntsound, npcs[target].x, npcs[target].y, npcs[target].z);
+npcs[target].movetimer.restart();
+return true;
+}
+
 /* The npc lookup paths and the full set of npc categories, shared by the npc and npc_zone semantic
 checks. npc_zone's build form offers only a subset of these categories, but a hand-authored zone that
 names bosses or helpers still spawns correctly, so the wider set is used for both to avoid false

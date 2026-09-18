@@ -157,6 +157,21 @@ if(target < 0) return false;
 sucams[target].camhealth = 0;
 return true;
 }
+
+/* Command-move (used by /go): relocate the newest camera. A camera is stationary and re-emits its motor cue
+at its own coords each turn, so setting the coords is enough; we also nudge the live camsound slot to the new
+spot for an immediate reposition. alarmsound/wornsound are non-positional. Caller bounds-checks + speaks. */
+bool move_camera(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<sucams.length(); i++) { if(@sucams[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+sucams[target].sucamx = int(destx);
+sucams[target].sucamy = int(desty);
+if(mapmode == "3d") sucams[target].sucamz = int(destz);
+if(sucams[target].camsound != -1) sucampool.update_sound_3d(sucams[target].camsound, sucams[target].sucamx, sucams[target].sucamy, sucams[target].sucamz);
+return true;
+}
 void destroy_all_cameras()
 {
 for(uint i = 0; i < sucams.length(); i++)

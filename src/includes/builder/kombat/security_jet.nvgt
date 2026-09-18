@@ -118,6 +118,22 @@ if(target < 0) return false;
 jets[target].health = 0;
 return true;
 }
+
+/* Command-move (used by /go): relocate the newest jet, reposition its looping engine/ground slot, and restart
+its move timer. Caller bounds-checks + speaks. */
+bool move_security_jet(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<jets.length(); i++) { if(@jets[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+jets[target].jetx = int(destx);
+jets[target].jety = int(desty);
+if(mapmode == "3d") jets[target].jetz = int(destz);
+double usz = (mapmode == "3d") ? jets[target].jetz : 0;
+jetpool.update_sound_3d(jets[target].loopsound, jets[target].jetx, jets[target].jety, usz);
+jets[target].movetimer.restart();
+return true;
+}
 /* Map-clear teardown (runs on every load/reload/leave). No *remove* cue (the jet has none), so it just
 stops each jet's looping slot and clears the array. */
 void destroy_all_security_jets()
