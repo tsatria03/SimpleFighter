@@ -1,8 +1,9 @@
 /* A container is a roaming trap: it homes at the player like a fire (live-leash sight), and on reaching
 their tile it CATCHES them -- locking their movement (they can still aim/fire) -- carries them up to a
 configurable drop height, hovers, then drops them so the normal fall system does the damage. The player
-destroys it with weapons (camera-style health + level + xp reward) to avoid being lifted. One-shot: it
-removes itself after dropping. 2d + 3d only (topdown has no fall). Models: fire (seek), teleporter
+destroys it with weapons (camera-style health + level + xp reward) to avoid being lifted. Live-leash sight
+also means outrunning it works: once it has started chasing, leaving its seeing range makes it give up and
+remove itself (unlike fire/teleporter/wind, which only stop and wait). One-shot: it also removes itself after dropping. 2d + 3d only (topdown has no fall). Models: fire (seek), teleporter
 (coordinate move), security_camera (reward). Section 1: the class, globals, and lifecycle helpers only --
 the containerloop() state machine, build form, reader/writer, destroy/reward, gallery, and docs come later.
 loopsound is the ambient looping slot (the rolling loop, later swapped to the flight loop while lifting);
@@ -25,7 +26,7 @@ const int CONTAINER_HOVER = 2;     // holding at the top before the drop
 
 class container
 {
-bool moveable, moveable2, moveable3, spotted;
+bool moveable, moveable2, moveable3, spotted, has_spotted;
 int loopsound, wepsound;
 int containerx;
 int containery;
@@ -61,6 +62,7 @@ moveable=cm;
 moveable2=cm2;
 moveable3=cm3;
 spotted=false;
+has_spotted=false;
 phase=CONTAINER_ROLLING;
 double sz = (mapmode == "3d") ? containerz : 0;
 wepsound=containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containertype+"/*spawn*"),me.x,me.y,me.z,containerx,containery,sz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
@@ -378,7 +380,9 @@ so the alt+shift face_* aiming keys (which moveable gates) still work while caug
 DEATH (health<=0, set by weapons in the hit loops, section 5): death cue + camera-style xp reward, release
 the player if it was carrying them (they fall from the current height), remove. ROLLING: live-leash seek
 (spotted recomputed each tick from the seeing-range box), home per move flags at 1 tile/speed, catch on
-coincidence -- ON FOOT ONLY (not gliding/vehicle/bike, and not mid-fall). FLIGHT: hold the player's
+coincidence -- ON FOOT ONLY (not gliding/vehicle/bike, and not mid-fall). Once a MOVER has spotted the player
+(has_spotted latch), losing them from the seeing box makes it give up and remove itself (remove cue); a
+stationary container (no move axes) never self-removes this way. FLIGHT: hold the player's
 movement flags (leave fireable/turnable so they can still aim/shoot), lift them 1 tile/speed toward drop
 height, then HOVER. HOVER: hold at the top for hover time, then DROP -- stationary drop cue + 3d remove
 cue, release the player so fallcheck takes over, and remove the one-shot container. */
@@ -409,6 +413,20 @@ if(containers[i].movetimer.elapsed >= containers[i].speed)
 bool in_spot = absolute(me.x-containers[i].containerx)<=containers[i].crange and absolute(me.y-containers[i].containery)<=containers[i].crange2;
 if(mapmode == "3d") in_spot = in_spot and absolute(me.z-containers[i].containerz)<=containers[i].crange3;
 containers[i].spotted = in_spot;
+// Live-leash give-up: once it has chased the player (has_spotted latched on first sighting), slipping
+// back out of the seeing range makes it quit AND remove itself (remove cue) -- unlike fire/teleporter/
+// wind, which just hold position. A container never yet spotted stays dormant, so one placed out of
+// range at map start doesn't instantly vanish. ONLY a mover gives up this way: a stationary container
+// (no move axes) can't chase, so it stays put as a fixed trap and never self-removes on lost sight.
+bool can_chase = containers[i].moveable or containers[i].moveable2 or (mapmode == "3d" and containers[i].moveable3);
+if(in_spot) containers[i].has_spotted = true;
+else if(containers[i].has_spotted and can_chase)
+{
+containerpool.destroy_sound(containers[i].loopsound);
+containers[i].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*remove*"),me.x,me.y,me.z,containers[i].containerx,containers[i].containery,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+@containers[i] = null;
+continue;
+}
 if(containers[i].spotted)
 {
 containerpool.update_sound_3d(containers[i].loopsound, containers[i].containerx, containers[i].containery, usz);
