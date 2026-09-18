@@ -40,7 +40,7 @@ Vertical/height axis is **y on 2d, z on 3d** (the axis `flight height` lives on)
 
 - **GROUND (homing):** homes toward the player across the ground plane, staying at ground level (height 0) — tracks the player's x on 2d; x and y on 3d. The vertical axis is used ONLY for the climb to flight height, never for ground chasing. On the player's tile it strikes for `attack` every `fire time` (plays `hit`), gated like the tts enemie/container (blocked while the player is on an aircraft/vehicle/bike/glider — inplain/invehicle/onbike/glider_engine_on false, paused==0).
 - **ASCEND:** the moment a weapon hit lands while grounded -> play `flight` (one-shot), swap the loop slot to `engine`, climb one tile per speed-step to `flight height`.
-- **AIR (patrol):** patrol back and forth along **x** at the flight height, bouncing at the MAP edges (blind, not homing; holds whatever y it took off from on 3d), playing `engine`. Weapon hits still chip health here but do NOT re-trigger takeoff (it's already up).
+- **AIR (patrol):** patrol back and forth at the flight height, bouncing at the MAP edges (blind, not homing), playing `engine` — **x only on 2d**, and **BOTH x and y on 3d** (projectile-style diagonal roam: cur_x_step + cur_y_step, each axis flipping independently at its own edge, 0..maxx / 0..maxy). Weapon hits still chip health here but do NOT re-trigger takeoff (it's already up). (Dev clarified 2026-09: the 3d air patrol moves on x AND y like a projectile's diagonal directions, not x only.)
 - **DESCEND:** when the `flight time` timer expires -> play `land` (one-shot), descend one tile per speed-step back to ground level, then resume GROUND homing.
 
 Health <= 0 in any phase -> `death` + camera-style reward + remove.

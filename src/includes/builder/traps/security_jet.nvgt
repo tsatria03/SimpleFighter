@@ -26,6 +26,7 @@ int jety;
 int jetz;
 int groundlevel;   // the vertical the jet sits at / returns to on the ground (spawn y on 2d, spawn z on 3d); the climb/descent runs between this and flightheight
 int cur_x_step;    // +1 / -1 air-patrol heading along x, flipped when it bounces off a map edge
+int cur_y_step;    // +1 / -1 air-patrol heading along y (3d only), bounces independently of x -- projectile-style diagonal roam
 double health, maxhealth;
 double level, xp;
 int attack;
@@ -54,6 +55,7 @@ flighttime=fti;
 jettype=jt;
 phase=JET_GROUND;
 cur_x_step=1;
+cur_y_step=1;
 double sz = (mapmode == "3d") ? jetz : 0;
 loopsound=jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jettype+"/*loop*"),me.x,me.y,me.z,jetx,jety,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
 }
@@ -266,6 +268,153 @@ load_map(mapname, mapowner);
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
 speak("Map updated.");
 return;
+}
+}
+}
+
+/* Award the destroy reward: xp += xp * level * xpmod, camera/container style -- a "Defeated" log line, NO
+kills++ , NO loot. Called from jetloop's death branch BEFORE the jet is nulled. Silent when the reward
+computes to 0 (default xp=0) so destroying a no-reward jet doesn't spam the log. */
+void award_jet_kill(uint i)
+{
+if(@jets[i] == null) return;
+double gained_xp = jets[i].xp * jets[i].level * xpmod;
+if(xpmod >= 1 && gained_xp > 0)
+{
+xp += gained_xp;
+kombatlog.insert_last(gained_xp + " experience gained. Defeated " + jets[i].jettype + " level " + jets[i].level + ".");
+}
+}
+
+/* The state machine, run every frame from the game loop. The vertical/height axis is jety on 2d, jetz on
+3d; the ground plane is x on 2d, x+y on 3d. DEATH (health<=0, set by weapons in section 6): death cue +
+camera-style reward, remove. GROUND: homes toward the player across the ground plane at ground level (tts
+style, through walls), and on the player's tile strikes for attack every firetime (plays hit; blocked while
+the player is on an aircraft/vehicle/bike/glider, shield-aware). ASCEND: climbs one tile/speed toward the
+flight height, then AIR (the takeoff cue + loop->engine swap happen in hurt_jet, section 6, at the moment of
+the hit). AIR: patrols across the whole map, bouncing at the edges (blind) -- x only on 2d, and BOTH x and y
+on 3d (projectile-style diagonal, each axis flipping independently at its own edge) -- until the flight timer
+expires -> plays land, DESCEND. DESCEND: drops one tile/speed back to ground level, swaps the
+engine loop back to the ground loop, resumes GROUND. */
+void jetloop()
+{
+for(uint i=0; i<jets.length(); i++)
+{
+if(@jets[i] == null) continue;
+double usz = (mapmode == "3d") ? jets[i].jetz : 0;
+if(jets[i].health <= 0)
+{
+jetpool.destroy_sound(jets[i].loopsound);
+jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*death*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+award_jet_kill(i);
+@jets[i] = null;
+continue;
+}
+if(jets[i].phase == JET_GROUND)
+{
+if(jets[i].movetimer.elapsed >= jets[i].speed)
+{
+jetpool.update_sound_3d(jets[i].loopsound, jets[i].jetx, jets[i].jety, usz);
+jets[i].movetimer.restart();
+if(paused == 0)
+{
+if(jets[i].jetx < me.x) jets[i].jetx++;
+else if(jets[i].jetx > me.x) jets[i].jetx--;
+if(mapmode == "3d")
+{
+if(jets[i].jety < me.y) jets[i].jety++;
+else if(jets[i].jety > me.y) jets[i].jety--;
+}
+}
+}
+bool on_player = jets[i].jetx == me.x and jets[i].jety == me.y;
+if(mapmode == "3d") on_player = on_player and jets[i].jetz == int(me.z);
+if(on_player and jets[i].attack > 0 and jets[i].firetimer.elapsed >= jets[i].firetime and inplain == false and invehicle == false and onbike == false and paused == 0 and !glider_engine_on)
+{
+if(shieldon == 1 and shield_blocks())
+{
+jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*hit*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+int sdm = max(1, (shieldcushion ? int(jets[i].attack * 0.5) : jets[i].attack) - shielddefence*3);
+shieldstrength -= sdm;
+kombatlog.insert_last(jets[i].jettype + "'s attack took "+shieldtype+" "+sdm+" damage.");
+shieldslot = p.play_stationary_extended(get_pack_sound("main/equipments/shields/"+shieldtype+"/general/*hit*"),false,0,0,0,100,false);
+try_shield_launch(int(jets[i].jetx), int(jets[i].jety), (mapmode=="3d")?jets[i].jetz:0, jets[i].attack);
+}
+else
+{
+jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*hit*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,usz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+int dmg = max(1, jets[i].attack - defence*defmod);
+health -= dmg;
+kombatlog.insert_last(jets[i].jettype + "'s attack took you "+dmg+" damage.");
+string painfile;
+int damage_percent = round((float(dmg) / float(maxhealth)) * 100, 0);
+if(damage_percent >= 10) painfile = get_pack_sound("main/characters/"+chartype+"/general/*crit*");
+else painfile = get_pack_sound("main/characters/"+chartype+"/general/*hurt*");
+painslot = p.play_stationary_extended(painfile,false,0,0,0,100,false);
+}
+jets[i].firetimer.restart();
+}
+}
+else if(jets[i].phase == JET_ASCEND)
+{
+if(paused == 0 and jets[i].movetimer.elapsed >= jets[i].speed)
+{
+jets[i].movetimer.restart();
+if(mapmode == "3d") { if(jets[i].jetz < jets[i].flightheight) jets[i].jetz++; }
+else { if(jets[i].jety < jets[i].flightheight) jets[i].jety++; }
+double asz = (mapmode == "3d") ? jets[i].jetz : 0;
+jetpool.update_sound_3d(jets[i].loopsound, jets[i].jetx, jets[i].jety, asz);
+int vert = (mapmode == "3d") ? jets[i].jetz : jets[i].jety;
+if(vert >= jets[i].flightheight)
+{
+jets[i].phase = JET_AIR;
+jets[i].flighttimer.restart();
+}
+}
+}
+else if(jets[i].phase == JET_AIR)
+{
+if(paused == 0 and jets[i].movetimer.elapsed >= jets[i].speed)
+{
+jets[i].movetimer.restart();
+int next_x = jets[i].jetx + jets[i].cur_x_step;
+if(next_x < 0 or next_x > maxx) jets[i].cur_x_step = -jets[i].cur_x_step;
+else jets[i].jetx = next_x;
+if(mapmode == "3d")
+{
+int next_y = jets[i].jety + jets[i].cur_y_step;
+if(next_y < 0 or next_y > maxy) jets[i].cur_y_step = -jets[i].cur_y_step;
+else jets[i].jety = next_y;
+}
+double fsz = (mapmode == "3d") ? jets[i].jetz : 0;
+jetpool.update_sound_3d(jets[i].loopsound, jets[i].jetx, jets[i].jety, fsz);
+}
+if(paused == 0 and jets[i].flighttimer.elapsed >= jets[i].flighttime)
+{
+jets[i].phase = JET_DESCEND;
+double lsz = (mapmode == "3d") ? jets[i].jetz : 0;
+jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*land*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,lsz,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
+jets[i].movetimer.restart();
+}
+}
+else if(jets[i].phase == JET_DESCEND)
+{
+if(paused == 0 and jets[i].movetimer.elapsed >= jets[i].speed)
+{
+jets[i].movetimer.restart();
+if(mapmode == "3d") { if(jets[i].jetz > jets[i].groundlevel) jets[i].jetz--; }
+else { if(jets[i].jety > jets[i].groundlevel) jets[i].jety--; }
+double dsz = (mapmode == "3d") ? jets[i].jetz : 0;
+jetpool.update_sound_3d(jets[i].loopsound, jets[i].jetx, jets[i].jety, dsz);
+int vert = (mapmode == "3d") ? jets[i].jetz : jets[i].jety;
+if(vert <= jets[i].groundlevel)
+{
+jets[i].phase = JET_GROUND;
+jetpool.destroy_sound(jets[i].loopsound);
+jets[i].loopsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*loop*"),me.x,me.y,me.z,jets[i].jetx,jets[i].jety,dsz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+jets[i].movetimer.restart();
+}
+}
 }
 }
 }
