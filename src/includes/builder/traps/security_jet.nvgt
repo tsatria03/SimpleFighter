@@ -1,0 +1,125 @@
+/* A security jet is an enemy plane with a two-state machine: on the ground it homes at the player like a
+tts enemie and melee-strikes on contact, and the instant the player lands a weapon hit while it's grounded
+it takes off to a flight height and cruises back and forth across the map like a projectile, landing again
+after a flight-time timer to resume homing. Rinse and repeat until its health hits 0 (camera-style health +
+level + xp reward). 2d + 3d only (topdown has no height). Passes through walls in both states. Models:
+tts_enemie (ground homing + melee), projectile (edge-bouncing air patrol + reward helper), container (state
+machine + form + integration points). Section 1: the class, globals, pool, and spawn/despawn/destroy-all
+lifecycle only -- jetloop (the state machine), build form, reader/writer, destroy+reward, gallery, and docs
+come later. loopsound is the always-looping ambient slot (the ground loop, swapped to the engine loop while
+airborne); it must be destroyed on despawn or it leaks. wepsound holds one-shot cues (flight/hit/land/etc).
+The jet has no spawn or remove clip, so it just starts its ground loop on spawn and tears down silently. */
+sound_pool jetpool;
+security_jet@[] jets(0);
+
+// phase constants for the security jet state machine (used from jetloop, section 4)
+const int JET_GROUND = 0;    // homing at the player on the ground
+const int JET_ASCEND = 1;    // hit while grounded, climbing to the flight height
+const int JET_AIR = 2;       // cruising back and forth across the map at flight height
+const int JET_DESCEND = 3;   // flight timer expired, coming back down to the ground
+
+class security_jet
+{
+int loopsound, wepsound;
+int jetx;
+int jety;
+int jetz;
+int groundlevel;   // the vertical the jet sits at / returns to on the ground (spawn y on 2d, spawn z on 3d); the climb/descent runs between this and flightheight
+int cur_x_step;    // +1 / -1 air-patrol heading along x, flipped when it bounces off a map edge
+double health, maxhealth;
+double level, xp;
+int attack;
+int firetime;
+int speed;
+int flightheight;
+int flighttime;
+int phase;
+string jettype;
+timer movetimer, firetimer, flighttimer;
+security_jet(int jx, int jy, double hp, double mhp, int atk, int ft, int sp, double lv, double xpv, int fh, int fti, string jt, int jz=0)
+{
+jetx=jx;
+jety=jy;
+jetz=jz;
+groundlevel=(mapmode == "3d") ? jz : jy;
+health=hp;
+maxhealth=mhp;
+attack=atk;
+firetime=ft;
+speed=sp;
+level=lv;
+xp=xpv;
+flightheight=fh;
+flighttime=fti;
+jettype=jt;
+phase=JET_GROUND;
+cur_x_step=1;
+double sz = (mapmode == "3d") ? jetz : 0;
+loopsound=jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jettype+"/*loop*"),me.x,me.y,me.z,jetx,jety,sz,calculate_theta(me_rotation),0,0,0,0,0,0,true,0,0,0,100,false);
+}
+}
+void spawn_security_jet(int x, int y, double health, double maxhealth, int attack, int firetime, int speed, double level, double xp, int flightheight, int flighttime, string jettype, int z=0)
+{
+security_jet sj1(x,y,health,maxhealth,attack,firetime,speed,level,xp,flightheight,flighttime,jettype,z);
+jets.insert_last(sj1);
+}
+/* Non-standard coords (jetx/y/z, int, and mutable as the jet roams). Stops the always-looping loopsound
+before nulling. A jet roams at runtime, so a coord match uses its CURRENT (drifted) position -- the bare
+newest-of-type form is more reliable for a moving one, like fire/teleporter/container. The jet has no
+*remove* clip, so despawn is silent (like the tts enemie's), just tearing down the loop slot. */
+bool despawn_security_jet(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<jets.length(); i++)
+{
+if(@jets[i]==null) continue;
+if(!by_coord || (jets[i].jetx==gx && jets[i].jety==gy && (mapmode!="3d" || jets[i].jetz==gz))) target = int(i);
+}
+if(target < 0) return false;
+jetpool.destroy_sound(jets[target].loopsound);
+@jets[target] = null;
+return true;
+}
+/* Map-clear teardown (runs on every load/reload/leave). No *remove* cue (the jet has none), so it just
+stops each jet's looping slot and clears the array. */
+void destroy_all_security_jets()
+{
+for(uint i=0; i<jets.length(); i++)
+{
+if(@jets[i] == null) continue;
+jetpool.destroy_sound(jets[i].loopsound);
+}
+jets.resize(0);
+}
+
+/* On-disk: security_jet x y [z] health attack firetime speed level xp flightheight flighttime jettype.
+12 tokens on 2d, 13 on 3d (z after y) -- the o-offset walks past the optional 3d z, mirroring
+read_container/read_ttsenemie. health is read once and handed to spawn as both current and max. */
+void read_security_jet(string[] sd)
+{
+int x = stn(sd[1]);
+int y = stn(sd[2]);
+int z = 0;
+int o = 3;
+if(mapmode == "3d") { z = stn(sd[3]); o = 4; }
+double hp = stn(sd[o]);
+int atk = stn(sd[o+1]);
+int ft = stn(sd[o+2]);
+int sp = stn(sd[o+3]);
+double lv = stn(sd[o+4]);
+double xpv = stn(sd[o+5]);
+int fh = stn(sd[o+6]);
+int fti = stn(sd[o+7]);
+string jt = sd[o+8];
+spawn_security_jet(x, y, hp, hp, atk, ft, sp, lv, xpv, fh, fti, jt, z);
+}
+
+void write_security_jet(int x, int y, double health, int attack, int firetime, int speed, double level, double xp, int flightheight, int flighttime, string jettype, int z=0)
+{
+mapper.open("data/builder/maps/decompiled/"+mapname+"/"+"data/main.sif","ab");
+mapdata=mapper.read();
+string zsrc = (mapmode == "3d") ? (" "+z) : "";
+mapper.write("\r\n"+"security_jet "+x+" "+y+zsrc+" "+health+" "+attack+" "+firetime+" "+speed+" "+level+" "+xp+" "+flightheight+" "+flighttime+" "+jettype);
+mapper.close();
+bump_map_modified();
+}
