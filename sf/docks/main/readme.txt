@@ -437,7 +437,7 @@ belts (builder/construction/belts/): loop.
 bikes (builder/transportation/bikes/): per-bike misc and platform clips.
 bombs (builder/traps/bombs/): fall, plus per-bomb explosion clips.
 calendars (builder/interaction/calendars/): break, loop, press.
-cameras (builder/traps/security cameras/): alarm, alert, death, hurt, turn.
+cameras (builder/kombat/security cameras/): alarm, alert, death, hurt, turn.
 checkpoints (builder/construction/checkpoints/): get, loop.
 clocks (builder/interaction/clocks/): break, loop, press.
 doors (builder/transitions/doors/): one bundle folder per door sound holding close, death, deny, grant, hurt, jam, loop, move, open, and step clips. Passages draw their clips from these same door bundles.
