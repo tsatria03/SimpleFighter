@@ -123,3 +123,149 @@ mapper.write("\r\n"+"security_jet "+x+" "+y+zsrc+" "+health+" "+attack+" "+firet
 mapper.close();
 bump_map_modified();
 }
+
+/* Build form. Field order per the builder-form control convention: inputs, then the sound list, then
+okay/cancel -- NO checkboxes for this element. Audition keys on the sound list: Space hurt, Ctrl+L loop,
+Ctrl+E engine, Ctrl+F flight, Ctrl+H hit, Ctrl+A land, Ctrl+D death -- the same set wired into the gallery
+and security_jets.txt. health/level/xp/flight height/flight time carry sensible defaults (1 / 1 / 0 / 5 /
+5000); attack, fire time, and speed are required with no default. */
+void build_security_jet()
+{
+string[] jets_l = get_map_sound_folders("builder/traps/security jets/*");
+if(jets_l.length() == 0)
+{
+dlg("Error. There are no security jets available to view. Press enter to continue.", dlgsound:true);
+resume_pools();
+return;
+}
+string disallowed_nums = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ `!@#$%^&*()[]{};:'\"\\|,<>?_/.+=~";
+form.reset();
+form.create_window("security jet", false);
+bool y_uses_back_front = mapmode != "2d";
+int sx = form.create_input_box("x", sel_left_set ? sel_left : "");
+int sy = form.create_input_box("y", y_uses_back_front ? (sel_back_set ? sel_back : "") : (sel_bottom_set ? sel_bottom : ""));
+int sz = -1;
+if(mapmode == "3d") sz = form.create_input_box("z", sel_bottom_set ? sel_bottom : "");
+int hp = form.create_input_box("health", "1");
+int atk = form.create_input_box("attack");
+int ft = form.create_input_box("fire time");
+int sp = form.create_input_box("speed");
+int lev = form.create_input_box("level", "1");
+int exper = form.create_input_box("xp", "0");
+int fh = form.create_input_box("flight height", "5");
+int fti = form.create_input_box("flight time", "5000");
+form.set_disallowed_chars(sx, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sy, disallowed_nums, false, "This character is not allowed.");
+if(sz != -1) form.set_disallowed_chars(sz, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(hp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(atk, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(ft, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(sp, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(lev, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(exper, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fh, disallowed_nums, false, "This character is not allowed.");
+form.set_disallowed_chars(fti, disallowed_nums, false, "This character is not allowed.");
+int jet_list = form.create_list("security jet sound");
+form.add_list_item(jet_list, "none", "none");
+for(uint i = 0; i < jets_l.length(); i++)
+form.add_list_item(jet_list, jets_l[i], jets_l[i]);
+form.set_list_position(jet_list, 0, false);
+int ok = form.create_button("&okay", true);
+int cn = form.create_button("&cancel");
+form.focus(sx);
+while(true)
+{
+wait(5);
+form.monitor();
+int cur_focus = form.get_current_focus();
+if(key_down(KEY_SPACE) && keytimer.elapsed >= keytime)
+{
+t.destroy_sound(prevslot);
+if(cur_focus == jet_list)
+{
+int p = form.get_list_position(jet_list);
+if(p > 0) prevslot = t.play_stationary(get_map_sound("builder/traps/security jets/"+jets_l[p-1]+"/*hurt*"), false);
+}
+keytimer.restart();
+}
+if(cur_focus == jet_list && control_is_down() && key_repeating(KEY_L))
+{
+int p = form.get_list_position(jet_list);
+if(p > 0) { t.destroy_sound(prevslot); prevslot = t.play_stationary(get_map_sound("builder/traps/security jets/"+jets_l[p-1]+"/*loop*"), false); }
+}
+if(cur_focus == jet_list && control_is_down() && key_repeating(KEY_E))
+{
+int p = form.get_list_position(jet_list);
+if(p > 0) { t.destroy_sound(prevslot); prevslot = t.play_stationary(get_map_sound("builder/traps/security jets/"+jets_l[p-1]+"/*engine*"), false); }
+}
+if(cur_focus == jet_list && control_is_down() && key_repeating(KEY_F))
+{
+int p = form.get_list_position(jet_list);
+if(p > 0) { t.destroy_sound(prevslot); prevslot = t.play_stationary(get_map_sound("builder/traps/security jets/"+jets_l[p-1]+"/*flight*"), false); }
+}
+if(cur_focus == jet_list && control_is_down() && key_repeating(KEY_H))
+{
+int p = form.get_list_position(jet_list);
+if(p > 0) { t.destroy_sound(prevslot); prevslot = t.play_stationary(get_map_sound("builder/traps/security jets/"+jets_l[p-1]+"/*hit*"), false); }
+}
+if(cur_focus == jet_list && control_is_down() && key_repeating(KEY_A))
+{
+int p = form.get_list_position(jet_list);
+if(p > 0) { t.destroy_sound(prevslot); prevslot = t.play_stationary(get_map_sound("builder/traps/security jets/"+jets_l[p-1]+"/*land*"), false); }
+}
+if(cur_focus == jet_list && control_is_down() && key_repeating(KEY_D))
+{
+int p = form.get_list_position(jet_list);
+if(p > 0) { t.destroy_sound(prevslot); prevslot = t.play_stationary(get_map_sound("builder/traps/security jets/"+jets_l[p-1]+"/*death*"), false); }
+}
+if(key_pressed(KEY_ESCAPE))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(cn))
+{
+t.destroy_sound(prevslot);
+resume_pools();
+speak("canceled");
+return;
+}
+if(form.is_pressed(ok))
+{
+if(form.get_text(sx) == "") { speak("X is required."); form.focus(sx); continue; }
+if(form.get_text(sy) == "") { speak("Y is required."); form.focus(sy); continue; }
+if(sz != -1 && form.get_text(sz) == "") { speak("Z is required."); form.focus(sz); continue; }
+if(form.get_text(hp) == "") { speak("Health is required."); form.focus(hp); continue; }
+if(form.get_text(atk) == "") { speak("Attack is required."); form.focus(atk); continue; }
+if(form.get_text(ft) == "") { speak("Fire time is required."); form.focus(ft); continue; }
+if(form.get_text(sp) == "") { speak("Speed is required."); form.focus(sp); continue; }
+if(form.get_text(lev) == "") { speak("Level is required."); form.focus(lev); continue; }
+if(form.get_text(exper) == "") { speak("XP is required."); form.focus(exper); continue; }
+if(form.get_text(fh) == "") { speak("Flight height is required."); form.focus(fh); continue; }
+if(form.get_text(fti) == "") { speak("Flight time is required."); form.focus(fti); continue; }
+int bsx = string_to_number(form.get_text(sx));
+int bsy = string_to_number(form.get_text(sy));
+int bsz = (sz != -1) ? string_to_number(form.get_text(sz)) : 0;
+double bhp = string_to_number(form.get_text(hp));
+int batk = string_to_number(form.get_text(atk));
+int bft = string_to_number(form.get_text(ft));
+int bsp = string_to_number(form.get_text(sp));
+double blev = string_to_number(form.get_text(lev));
+double bxp = string_to_number(form.get_text(exper));
+int bfh = string_to_number(form.get_text(fh));
+int bfti = string_to_number(form.get_text(fti));
+int p = form.get_list_position(jet_list);
+string btype = (p > 0) ? jets_l[p-1] : "none";
+t.destroy_sound(prevslot);
+resume_pools();
+write_security_jet(bsx, bsy, bhp, batk, bft, bsp, blev, bxp, bfh, bfti, btype, bsz);
+spawn_security_jet(bsx, bsy, bhp, bhp, batk, bft, bsp, blev, bxp, bfh, bfti, btype, bsz);
+load_map(mapname, mapowner);
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*update*"), false);
+speak("Map updated.");
+return;
+}
+}
+}
