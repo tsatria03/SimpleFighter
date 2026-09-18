@@ -417,6 +417,23 @@ turnable=true;
 return true;
 }
 
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched, bike's health so bikeloop's
+death branch wrecks it next frame -- which also ejects the rider and restores their controls if they were on
+it. */
+bool kill_bike(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<bikes.length(); i++)
+{
+if(@bikes[i] == null) continue;
+bool m = by_coord ? (bikes[i].bikex==gx && bikes[i].bikey==gy && (mapmode!="3d" || bikes[i].bikez==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+bikes[target].bikehealth = 0;
+return true;
+}
+
 void build_bike()
 {
 string[] bikes_l = get_map_sound_folders("builder/transportation/bikes/*");

@@ -325,6 +325,23 @@ turnable=true;
 return true;
 }
 
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched, vehicle's health so
+vehloop's death branch wrecks it next frame -- which also ejects the driver and restores their controls if
+they were driving it. */
+bool kill_vehicle(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<vehicles.length(); i++)
+{
+if(@vehicles[i] == null) continue;
+bool m = by_coord ? (vehicles[i].vehx==gx && vehicles[i].vehy==gy && (mapmode!="3d" || vehicles[i].vehz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+vehicles[target].vehhealth = 0;
+return true;
+}
+
 void build_vehicle()
 {
 string[] vehs_list = get_map_sound_folders("builder/transportation/vehicles/*");

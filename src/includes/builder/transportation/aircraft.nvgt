@@ -498,6 +498,23 @@ turnable=true;
 return true;
 }
 
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched, aircraft's health so
+plainloop's death branch wrecks it next frame -- which also ejects the pilot and restores their controls if
+they were flying it. */
+bool kill_aircraft(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<aircrafts.length(); i++)
+{
+if(@aircrafts[i] == null) continue;
+bool m = by_coord ? (aircrafts[i].plainx==gx && aircrafts[i].plainy==gy && (mapmode!="3d" || aircrafts[i].plainz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+aircrafts[target].plainhealth = 0;
+return true;
+}
+
 void build_aircraft()
 {
 string[] planes_list = get_map_sound_folders("builder/transportation/aircrafts/*");

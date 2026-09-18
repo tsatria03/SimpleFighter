@@ -114,6 +114,22 @@ spikepool.destroy_sound(spikes[target].spikesound);
 @spikes[target] = null;
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched (by min corner), spike's
+health so spikeloop's death branch breaks it next frame, playing its death cue the same as a weapon breaking
+it. */
+bool kill_spike(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<spikes.length(); i++)
+{
+if(@spikes[i]==null) continue;
+if(!by_coord || (spikes[i].minx==gx && spikes[i].miny==gy && (mapmode!="3d" || spikes[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+spikes[target].spikehealth = 0;
+return true;
+}
 void destroy_all_spikes()
 {
 for(uint i=0; i<spikes.length(); i++)

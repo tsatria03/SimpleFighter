@@ -156,6 +156,22 @@ remove_platform(staircases[target].platform_ids[j]);
 onstaircase = false;
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched (by min corner), staircase's
+health so its check's death branch breaks it next frame, removing all its per-step tiles the same as a weapon
+breaking it. */
+bool kill_staircase(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<staircases.length(); i++)
+{
+if(@staircases[i]==null) continue;
+if(!by_coord || (staircases[i].minx==gx && staircases[i].miny==gy && (mapmode!="3d" || staircases[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+staircases[target].stairshealth = 0;
+return true;
+}
 void destroy_all_staircases()
 {
 staircases.resize(0);

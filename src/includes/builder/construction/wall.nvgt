@@ -239,6 +239,22 @@ remove_platform(walls[target].platform_ids[j]);
 @walls[target] = null;
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched (by min corner), wall's
+health so wallcheck's death branch breaks it next frame -- playing its death cue and removing all its per-z
+tiles (and any debris) the same as a weapon breaking it. */
+bool kill_wall(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<walls.length(); i++)
+{
+if(@walls[i]==null) continue;
+if(!by_coord || (walls[i].minx==gx && walls[i].miny==gy && (mapmode!="3d" || walls[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+walls[target].wallhealth = 0;
+return true;
+}
 void destroy_all_walls()
 {
 walls.resize(0);

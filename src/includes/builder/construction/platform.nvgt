@@ -267,6 +267,23 @@ if(target < 0) return false;
 remove_platform(target);
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched (by min corner), standalone
+platform's health so platcheck's death branch breaks it next frame. Wrapped platforms -- the backing tiles of
+a wall, staircase, or slant -- are skipped, since those are killed through their parent, like despawn_platform. */
+bool kill_platform(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<platforms.length(); i++)
+{
+if(@platforms[i]==null) continue;
+if(platform_is_wrapped(int(i))) continue;
+if(!by_coord || (platforms[i].minx==gx && platforms[i].miny==gy && (mapmode!="3d" || platforms[i].z==gz))) target = int(i);
+}
+if(target < 0) return false;
+platforms[target].plathealth = 0;
+return true;
+}
 void destroy_all_platforms()
 {
 platforms.resize(0);

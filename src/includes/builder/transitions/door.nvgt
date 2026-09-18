@@ -377,6 +377,22 @@ doorpool.destroy_sound(doors[target].movesound);
 doormove = false;
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched (by min corner), door's
+health so doorcheck's death branch breaks it next frame, playing its death cue the same as a weapon breaking
+it. */
+bool kill_door(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<doors.length(); i++)
+{
+if(@doors[i]==null) continue;
+if(!by_coord || (doors[i].minx==gx && doors[i].miny==gy && (mapmode!="3d" || doors[i].minz==gz))) target = int(i);
+}
+if(target < 0) return false;
+doors[target].doorhealth = 0;
+return true;
+}
 void destroy_all_doors()
 {
 for(uint i=0; i<doors.length(); i++)
