@@ -287,6 +287,29 @@ kombatlog.insert_last(gained_xp + " experience gained. Defeated " + jets[i].jett
 }
 }
 
+/* Take a weapon/bullet hit: play the hurt cue UNLESS the blow is fatal (jetloop plays death instead -- the
+projectile rule), subtract the damage, and -- if the jet is on the GROUND and survived -- launch it: play
+the flight cue and swap the ground loop for the engine loop, phase ASCEND. Death (health<=0) is handled by
+jetloop's top check, so this only decrements + reacts. Called from the weapon-melee and bullet hit/splash
+scans (section 6); the caller logs the "damage to" line with its own weapon name. */
+void hurt_jet(uint i, double dmg)
+{
+if(@jets[i] == null) return;
+double usz = (mapmode == "3d") ? jets[i].jetz : 0;
+bool fatal = (jets[i].health - dmg) <= 0;
+if(dmg > 0 && !fatal)
+jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*hurt*"), me.x, me.y, me.z, jets[i].jetx, jets[i].jety, usz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+jets[i].health -= dmg;
+if(!fatal && jets[i].phase == JET_GROUND)
+{
+jetpool.destroy_sound(jets[i].loopsound);
+jets[i].wepsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*flight*"), me.x, me.y, me.z, jets[i].jetx, jets[i].jety, usz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+jets[i].loopsound = jetpool.play_extended_3d(get_map_sound("builder/traps/security jets/"+jets[i].jettype+"/*engine*"), me.x, me.y, me.z, jets[i].jetx, jets[i].jety, usz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, true, 0, 0, 0, 100, false);
+jets[i].phase = JET_ASCEND;
+jets[i].movetimer.restart();
+}
+}
+
 /* The state machine, run every frame from the game loop. The vertical/height axis is jety on 2d, jetz on
 3d; the ground plane is x on 2d, x+y on 3d. DEATH (health<=0, set by weapons in section 6): death cue +
 camera-style reward, remove. GROUND: homes toward the player across the ground plane at ground level (tts

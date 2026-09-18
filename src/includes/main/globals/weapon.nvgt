@@ -770,6 +770,18 @@ if(is_3d and dz > range3) continue;
 int d = dx + dy + (is_3d ? dz : 0);
 if(best_dist < 0 or d < best_dist) { best_type = 18; best_idx = int(i); best_dist = d; }
 }
+for(uint i = 0; i < jets.length(); i++)
+{
+if(@jets[i] == null) continue;
+if(!target_in_facing(jets[i].jetx, jets[i].jetx, jets[i].jety, jets[i].jety, jets[i].jetz, jets[i].jetz, fx, fy, fz, facing, is_3d)) continue;
+int dx = absolute(int(jets[i].jetx) - fx);
+int dy = absolute(int(jets[i].jety) - fy);
+int dz = absolute(int(jets[i].jetz) - fz);
+if(dx > range or dy > range2) continue;
+if(is_3d and dz > range3) continue;
+int d = dx + dy + (is_3d ? dz : 0);
+if(best_dist < 0 or d < best_dist) { best_type = 19; best_idx = int(i); best_dist = d; }
+}
 for(uint i = 0; i < vehicles.length(); i++)
 {
 if(@vehicles[i] == null) continue;
@@ -1000,6 +1012,15 @@ double hit_dmg = max(0, dmg);
 containers[i].health -= hit_dmg;
 kombatlog.insert_last(round(hit_dmg, 0) + " damage to " + containers[i].containertype + " by " + sub + "'s weapon attack.");
 if(hit_dmg > 0 && containers[i].health > 0) containers[i].wepsound = containerpool.play_extended_3d(get_map_sound("builder/traps/containers/"+containers[i].containertype+"/*hurt*"), me.x, me.y, me.z, containers[i].containerx, containers[i].containery, containers[i].containerz, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
+return;
+}
+if(best_type == 19)
+{
+uint i = uint(best_idx);
+play_melee_hit_at(jets[i].jetx, jets[i].jety, jets[i].jetz);
+double hit_dmg = max(0, dmg);
+kombatlog.insert_last(round(hit_dmg, 0) + " damage to " + jets[i].jettype + " by " + sub + "'s weapon attack.");
+hurt_jet(i, hit_dmg);
 return;
 }
 if(best_type == 10)
