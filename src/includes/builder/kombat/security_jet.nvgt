@@ -103,6 +103,21 @@ jetpool.destroy_sound(jets[target].loopsound);
 @jets[target] = null;
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched, jet's health; jetloop's
+death branch fires next frame with its death cue and award_jet_kill reward, exactly as a weapon kill does. */
+bool kill_security_jet(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<jets.length(); i++)
+{
+if(@jets[i]==null) continue;
+if(!by_coord || (jets[i].jetx==gx && jets[i].jety==gy && (mapmode!="3d" || jets[i].jetz==gz))) target = int(i);
+}
+if(target < 0) return false;
+jets[target].health = 0;
+return true;
+}
 /* Map-clear teardown (runs on every load/reload/leave). No *remove* cue (the jet has none), so it just
 stops each jet's looping slot and clears the array. */
 void destroy_all_security_jets()

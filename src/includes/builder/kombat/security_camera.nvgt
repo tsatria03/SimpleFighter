@@ -142,6 +142,21 @@ sucampool.destroy_sound(sucams[target].wornsound);
 @sucams[target] = null;
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched, camera's health; camloop's
+death branch fires next frame with its death cue and xp reward, exactly as a weapon kill does. */
+bool kill_camera(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<sucams.length(); i++)
+{
+if(@sucams[i]==null) continue;
+if(!by_coord || (sucams[i].sucamx==gx && sucams[i].sucamy==gy && (mapmode!="3d" || sucams[i].sucamz==gz))) target = int(i);
+}
+if(target < 0) return false;
+sucams[target].camhealth = 0;
+return true;
+}
 void destroy_all_cameras()
 {
 for(uint i = 0; i < sucams.length(); i++)

@@ -250,6 +250,23 @@ if (file_exists(ttsenemies[target].death_file)) file_delete(ttsenemies[target].d
 return true;
 }
 
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched, tts enemy's health;
+ttseneloop's death branch fires next frame with its spoken death line and bodyfall (a tts enemy gives no
+reward), exactly as a weapon kill does. */
+bool kill_ttsenemie(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<ttsenemies.length(); i++)
+{
+if(@ttsenemies[i] == null) continue;
+bool m = by_coord ? (ttsenemies[i].ttsemx==gx && ttsenemies[i].ttsemy==gy && (mapmode!="3d" || ttsenemies[i].ttsemz==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+ttsenemies[target].ttsenehealth = 0;
+return true;
+}
+
 /* Tier 2 semantic check. A tts enemy is a position, five numbers (health, attack, defense, fire time,
 speed), four quoted strings (taunt, hurt, death, voice), then three numbers (rate, pitch, volume).
 Mirrors read_ttsenemie's shape. The spoken text is free-form and the voice name is system-dependent

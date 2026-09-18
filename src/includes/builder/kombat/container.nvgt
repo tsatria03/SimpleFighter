@@ -93,6 +93,22 @@ containerpool.destroy_sound(containers[target].loopsound);
 @containers[target] = null;
 return true;
 }
+
+/* Command-kill (used by /kill and /killall): zero the newest, or coord-matched, container's health;
+containerloop's death branch fires next frame with its death cue, xp reward, and release of any carried
+player, exactly as a weapon kill does. */
+bool kill_container(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<containers.length(); i++)
+{
+if(@containers[i]==null) continue;
+if(!by_coord || (containers[i].containerx==gx && containers[i].containery==gy && (mapmode!="3d" || containers[i].containerz==gz))) target = int(i);
+}
+if(target < 0) return false;
+containers[target].health = 0;
+return true;
+}
 /* Map-clear teardown (runs on every load/reload/leave). Like floor breakers (destroy_all_floorbreakers),
 each container plays its remove cue as it's torn down, so removing a container line -- which reloads the map
 -- makes the removed one (and every other container) sound its removal. despawn (section 6) is in-memory

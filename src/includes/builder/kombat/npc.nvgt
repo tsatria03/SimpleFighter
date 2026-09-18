@@ -745,6 +745,27 @@ tracking_target_died("npc", target);
 return true;
 }
 
+/* Command-kill (used by /kill and /killall): force a real kill of the newest, or coord-matched, npc and let
+npcloop's death branch run the full reward -- the death cue, xp + "Defeated" line, the kill count, bodyfall,
+and any loot -- exactly as a weapon kill does. currentlives is dropped to 1 so a multi-life npc dies outright
+instead of reviving, and killed_by_fall is cleared so the command kill still pays out xp. Zeroing health then
+lets npcloop finish it next frame (its death branch is the single canonical npc death path). */
+bool kill_npc(bool by_coord, double gx, double gy, double gz)
+{
+int target = -1;
+for(uint i=0; i<npcs.length(); i++)
+{
+if(@npcs[i] == null) continue;
+bool m = by_coord ? (npcs[i].x==gx && npcs[i].y==gy && (mapmode!="3d" || npcs[i].z==gz)) : true;
+if(m) target = int(i);
+}
+if(target < 0) return false;
+npcs[target].currentlives = 1;
+npcs[target].killed_by_fall = false;
+npcs[target].health = 0;
+return true;
+}
+
 /* The npc lookup paths and the full set of npc categories, shared by the npc and npc_zone semantic
 checks. npc_zone's build form offers only a subset of these categories, but a hand-authored zone that
 names bosses or helpers still spawns correctly, so the wider set is used for both to avoid false
