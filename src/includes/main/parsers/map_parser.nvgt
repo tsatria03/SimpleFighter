@@ -305,31 +305,42 @@ bool is_killable_type(string type)
 return type=="npc" || type=="camera" || type=="jet" || type=="container" || type=="projectile" || type=="ttsenemie" || type=="aircraft" || type=="vehicle" || type=="bike" || type=="wall" || type=="platform" || type=="staircase" || type=="door" || type=="spike" || type=="sign" || type=="clock" || type=="calendar";
 }
 
-/* Kill EVERYTHING killable on the map, for a bare /killall. The 13 loop-driven types are zeroed in place --
-their own loops run the death (cue + reward) next frame -- so we iterate the arrays directly rather than via
-kill_* (which finds the newest and, since a zeroed entity isn't removed until its loop fires, would loop
-forever). The 4 immediate types (projectile, sign, clock, calendar) ARE removed the instant they're killed,
-so draining them with while(kill_*) is safe and reuses their destroyable-only + reward logic. Rewards all
-fire (Option A), so a busy map pays out everything at once. */
+/* Kill all live instances of ONE killable type (shared by /killall <type> and, in a sweep, bare /killall).
+The 13 loop-driven types are zeroed in place -- their own loops run the death (cue + reward) next frame -- so
+we iterate the array directly rather than via kill_*, which finds the newest and, since a zeroed entity isn't
+removed until its loop fires, would loop forever. The 4 immediate types (projectile, sign, clock, calendar)
+ARE removed the instant they're killed, so draining them with while(kill_*) is safe and reuses their
+destroyable-only + reward logic. Platform-wrapped tiles (wall/staircase/slant backing) are skipped, matching
+kill_platform. Returns whether anything was killed. */
+bool kill_all_of_type(string type)
+{
+bool any = false;
+if(type=="npc") { for(uint i=0; i<npcs.length(); i++) if(@npcs[i]!=null) { npcs[i].currentlives=1; npcs[i].killed_by_fall=false; npcs[i].health=0; any=true; } }
+else if(type=="camera") { for(uint i=0; i<sucams.length(); i++) if(@sucams[i]!=null) { sucams[i].camhealth=0; any=true; } }
+else if(type=="jet") { for(uint i=0; i<jets.length(); i++) if(@jets[i]!=null) { jets[i].health=0; any=true; } }
+else if(type=="container") { for(uint i=0; i<containers.length(); i++) if(@containers[i]!=null) { containers[i].health=0; any=true; } }
+else if(type=="ttsenemie") { for(uint i=0; i<ttsenemies.length(); i++) if(@ttsenemies[i]!=null) { ttsenemies[i].ttsenehealth=0; any=true; } }
+else if(type=="aircraft") { for(uint i=0; i<aircrafts.length(); i++) if(@aircrafts[i]!=null) { aircrafts[i].plainhealth=0; any=true; } }
+else if(type=="vehicle") { for(uint i=0; i<vehicles.length(); i++) if(@vehicles[i]!=null) { vehicles[i].vehhealth=0; any=true; } }
+else if(type=="bike") { for(uint i=0; i<bikes.length(); i++) if(@bikes[i]!=null) { bikes[i].bikehealth=0; any=true; } }
+else if(type=="wall") { for(uint i=0; i<walls.length(); i++) if(@walls[i]!=null) { walls[i].wallhealth=0; any=true; } }
+else if(type=="platform") { for(uint i=0; i<platforms.length(); i++) if(@platforms[i]!=null && !platform_is_wrapped(int(i))) { platforms[i].plathealth=0; any=true; } }
+else if(type=="staircase") { for(uint i=0; i<staircases.length(); i++) if(@staircases[i]!=null) { staircases[i].stairshealth=0; any=true; } }
+else if(type=="door") { for(uint i=0; i<doors.length(); i++) if(@doors[i]!=null) { doors[i].doorhealth=0; any=true; } }
+else if(type=="spike") { for(uint i=0; i<spikes.length(); i++) if(@spikes[i]!=null) { spikes[i].spikehealth=0; any=true; } }
+else if(type=="projectile") { while(kill_projectile(false, 0, 0, 0)) any=true; }
+else if(type=="sign") { while(kill_sign(false, 0, 0, 0)) any=true; }
+else if(type=="clock") { while(kill_clock(false, 0, 0, 0)) any=true; }
+else if(type=="calendar") { while(kill_calendar(false, 0, 0, 0)) any=true; }
+return any;
+}
+
+/* Kill EVERYTHING killable on the map, for a bare /killall -- sweep every killable type. Rewards all fire
+(Option A), so a busy map pays out everything at once. */
 void kill_all()
 {
-for(uint i=0; i<npcs.length(); i++) if(@npcs[i]!=null) { npcs[i].currentlives=1; npcs[i].killed_by_fall=false; npcs[i].health=0; }
-for(uint i=0; i<sucams.length(); i++) if(@sucams[i]!=null) sucams[i].camhealth=0;
-for(uint i=0; i<jets.length(); i++) if(@jets[i]!=null) jets[i].health=0;
-for(uint i=0; i<containers.length(); i++) if(@containers[i]!=null) containers[i].health=0;
-for(uint i=0; i<ttsenemies.length(); i++) if(@ttsenemies[i]!=null) ttsenemies[i].ttsenehealth=0;
-for(uint i=0; i<aircrafts.length(); i++) if(@aircrafts[i]!=null) aircrafts[i].plainhealth=0;
-for(uint i=0; i<vehicles.length(); i++) if(@vehicles[i]!=null) vehicles[i].vehhealth=0;
-for(uint i=0; i<bikes.length(); i++) if(@bikes[i]!=null) bikes[i].bikehealth=0;
-for(uint i=0; i<walls.length(); i++) if(@walls[i]!=null) walls[i].wallhealth=0;
-for(uint i=0; i<platforms.length(); i++) if(@platforms[i]!=null && !platform_is_wrapped(int(i))) platforms[i].plathealth=0;
-for(uint i=0; i<staircases.length(); i++) if(@staircases[i]!=null) staircases[i].stairshealth=0;
-for(uint i=0; i<doors.length(); i++) if(@doors[i]!=null) doors[i].doorhealth=0;
-for(uint i=0; i<spikes.length(); i++) if(@spikes[i]!=null) spikes[i].spikehealth=0;
-while(kill_projectile(false, 0, 0, 0)) {}
-while(kill_sign(false, 0, 0, 0)) {}
-while(kill_clock(false, 0, 0, 0)) {}
-while(kill_calendar(false, 0, 0, 0)) {}
+string[] kt = {"npc", "camera", "jet", "container", "ttsenemie", "aircraft", "vehicle", "bike", "wall", "platform", "staircase", "door", "spike", "projectile", "sign", "clock", "calendar"};
+for(uint i=0; i<kt.length(); i++) kill_all_of_type(kt[i]);
 }
 string entity_line_error(string[] sd, string mode)
 {

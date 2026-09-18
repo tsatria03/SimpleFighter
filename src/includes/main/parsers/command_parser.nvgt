@@ -209,97 +209,47 @@ speak("Invalid command syntax. Usage: /drawshield shieldtype, or /drs shieldtype
 return;
 }
 }
-else if(base_command == "kn" || base_command=="kill")
+else if((base_command == "kn" || base_command == "kill") && (!map_is_compiled || trusted))
 {
-if(parsed.length()==5)
+if(parsed.length() < 2) { speak("Invalid command syntax. Usage: /kill object, or /kill object x y."); return; }
+string ktype = normalize_buildtype(parsed[1]);
+if(!is_killable_type(ktype)) { speak("You can't kill a " + parsed[1] + "."); return; }
+bool k_coord = false;
+double kx = 0, ky = 0, kz = 0;
+if(mapmode == "3d")
 {
-if(npcs.length()==0)
-{
-speak("There are no npcs on this map.");
-return;
-}
-string entity=parsed[1];
-string id=parsed[2];
-double x=stn(parsed[3]);
-double y=stn(parsed[4]);
-if(entity=="animal" || entity=="boss" || entity=="helper" || entity=="human" || entity=="robot" || entity=="special" || entity=="zombie")
-{
-string target_cat = (entity == "boss") ? "bosses" : (entity + "s");
-for(uint i=0; i<npcs.length(); i++)
-{
-if(@npcs[i] == null) continue;
-if(npcs[i].category==target_cat && npcs[i].subtype==id && npcs[i].x==x && npcs[i].y==y)
-{
-sound_pool@ pool = npc_pool(npcs[i].category);
-if(npcs[i].tauntsound != -1) { pool.destroy_sound(npcs[i].tauntsound); npcs[i].tauntsound = -1; }
-npcs[i].defsound=pool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype+"/general/*death*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,npcs[i].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-if(xpmod>=1) xp+=npcs[i].xpvalue*npcs[i].level*xpmod;
-kills+=1;
-int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
-spawn_bodyfall(npcs[i].x, npcs[i].y, (falldelay <= 0 ? random(500, 1000) : falldelay), resolve_npc_fall_sound(npcs[i]));
-string[] heal_folders={"health", "stamina"};
-string chosen_folder = random_string(heal_folders);
-string[] healtypes = get_map_sound_folders("builder/interaction/items/" + chosen_folder + "/*");
-if(healtypes.length()!=0 and npcs[i].dropitem==true) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*kill*"),false);
-p.play_3d(get_pack_sound("main/misc/*punch*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,npcs[i].z,calculate_theta(me_rotation),false);
-speak("Killed the "+entity+" " + id + " at position " + x + ", " + y + ".");
-clean_dead_npc_bullets(int(i));
-@npcs[i] = null;
-return;
-}
-}
+if(parsed.length() == 5) { k_coord = true; kx = stn(parsed[2]); ky = stn(parsed[3]); kz = stn(parsed[4]); }
+else if(parsed.length() != 2) { speak("Invalid command syntax. Usage: /kill object, or /kill object x y z."); return; }
 }
 else
 {
-speak("Invalid entity type: "+entity+".");
+if(parsed.length() == 4) { k_coord = true; kx = stn(parsed[2]); ky = stn(parsed[3]); }
+else if(parsed.length() != 2) { speak("Invalid command syntax. Usage: /kill object, or /kill object x y."); return; }
 }
+if(kill_entity(ktype, k_coord, kx, ky, kz))
+speak("Killed the " + parsed[1] + ".");
+else
+speak("There's no " + parsed[1] + " to kill.");
+}
+else if((base_command == "kl" || base_command == "killall") && (!map_is_compiled || trusted))
+{
+if(parsed.length() == 1)
+{
+kill_all();
+speak("Killed everything.");
+}
+else if(parsed.length() == 2)
+{
+string ktype = normalize_buildtype(parsed[1]);
+if(!is_killable_type(ktype)) { speak("You can't kill a " + parsed[1] + "."); return; }
+if(kill_all_of_type(ktype))
+speak("Killed all " + parsed[1] + "s.");
+else
+speak("There's no " + parsed[1] + " to kill.");
 }
 else
 {
-speak("Invalid command syntax. Usage: /kill entity id x y, or /kn entity id x y.");
-return;
-}
-}
-else if (base_command == "kl" || base_command == "killall")
-{
-if (parsed.length() == 1)
-{
-if(npcs.length()==0)
-{
-speak("There are no npcs on this map.");
-return;
-}
-int total_kills=0;
-for(uint i=0; i<npcs.length(); i++)
-{
-if(@npcs[i] == null) continue;
-if(npcs[i].health>0)
-{
-sound_pool@ pool = npc_pool(npcs[i].category);
-if(npcs[i].tauntsound != -1) { pool.destroy_sound(npcs[i].tauntsound); npcs[i].tauntsound = -1; }
-if(npcs[i].category == "humans" && npcs[i].refsound2 != -1) { pool.destroy_sound(npcs[i].refsound2); npcs[i].refsound2 = -1; }
-npcs[i].defsound=pool.play_extended_3d(get_map_sound("builder/kombat/npc/"+npcs[i].category+"/"+npcs[i].subtype+"/general/*death*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,npcs[i].z,calculate_theta(me_rotation),0,0,0,0,0,0,false,0,0,0,100,false);
-if(xpmod>=1) xp+=npcs[i].xpvalue*npcs[i].level*xpmod;
-kills+=1;
-int falldelay = round(pool.get_sound_length(npcs[i].defsound), 0);
-spawn_bodyfall(npcs[i].x, npcs[i].y, (falldelay <= 0 ? random(500, 1000) : falldelay), resolve_npc_fall_sound(npcs[i]));
-string[] heal_folders={"health", "stamina"};
-string chosen_folder = random_string(heal_folders);
-string[] healtypes = get_map_sound_folders("builder/interaction/items/" + chosen_folder + "/*");
-if(healtypes.length()!=0 and npcs[i].dropitem==true) spawn_obj(npcs[i].x, npcs[i].y, 500, chosen_folder, random_string(healtypes), true);
-p.play_stationary(get_pack_sound("main/characters/"+chartype+"/general/*kill*"),false);
-p.play_3d(get_pack_sound("main/misc/*punch*"),me.x,me.y,me.z,npcs[i].x,npcs[i].y,npcs[i].z,calculate_theta(me_rotation),false);
-}
-total_kills++;
-}
-destroy_npc_bullets();
-npcs.resize(0);
-speak("Killed all npcs.");
-}
-else
-{
-speak("Invalid command syntax. Usage: /killall, or /kl.");
+speak("Invalid command syntax. Usage: /killall, or /killall object.");
 return;
 }
 }
