@@ -1950,11 +1950,11 @@ else if(npcs[i].currentlives <= 1 and paused == 0)
 if(npcs[i].tauntsound != -1) { pool.destroy_sound(npcs[i].tauntsound); npcs[i].tauntsound = -1; }
 if(npcs[i].refsound2 != -1) { pool.destroy_sound(npcs[i].refsound2); npcs[i].refsound2 = -1; }
 npcs[i].defsound = pool.play_extended_3d(get_map_sound(sound_base+"/*death*"), me.x, me.y, me.z, npcs[i].x, npcs[i].y, npcs[i].z, calculate_theta(me_rotation), 0, 0, 0, 0, 0, 0, false, 0, 0, 0, 100, false);
-// No XP (and no "defeated" credit line) for a creature that a FALL finished off -- you didn't land the blow. The kill itself still counts below, since it did die by your doing.
-if(xpmod >= 1 && !npcs[i].killed_by_fall)
-{
+// No XP (and no "defeated" credit line) for a creature that a FALL finished off -- you didn't land the blow. The kill itself still counts below, since it did die by your doing. A creature set to give 0 xp is also defeated silently -- no "0 experience gained" line, like the hazard entities.
 double effx_xp = in_normal ? npcs[i].xpvalue : (in_wounded ? npcs[i].w_xpvalue : npcs[i].h_xpvalue);
 double gained_xp = effx_xp * eff_level * xpmod;
+if(xpmod >= 1 && !npcs[i].killed_by_fall && gained_xp > 0)
+{
 xp += gained_xp;
 kombatlog.insert_last(gained_xp + " experience gained. Defeated " + npcs[i].subtype + " level " + eff_level + ".");
 }
