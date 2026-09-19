@@ -389,6 +389,78 @@ if(x<minx or x>maxx or y<miny or y>maxy) return false;
 if(mapmode=="3d" and (z<minz or z>maxz)) return false;
 return true;
 }
+
+/* Count the live instances of a type on the map, for the %count:type% token and the /count command. Scope =
+the 17 killable types plus item (dev-chosen). Sentinel-null arrays are walked skipping nulls; projectiles are
+compacted so their length is the count; platforms skip wrapped (wall/staircase/slant backing) tiles like the
+kill/move helpers. Unknown/uncountable types return 0. The type keyword is normalized so friendly names work. */
+int count_entity(string type)
+{
+type = normalize_buildtype(type);
+int c = 0;
+if(type=="npc") { for(uint i=0;i<npcs.length();i++) if(@npcs[i]!=null) c++; }
+else if(type=="camera") { for(uint i=0;i<sucams.length();i++) if(@sucams[i]!=null) c++; }
+else if(type=="jet") { for(uint i=0;i<jets.length();i++) if(@jets[i]!=null) c++; }
+else if(type=="container") { for(uint i=0;i<containers.length();i++) if(@containers[i]!=null) c++; }
+else if(type=="ttsenemie") { for(uint i=0;i<ttsenemies.length();i++) if(@ttsenemies[i]!=null) c++; }
+else if(type=="projectile") { c = int(projectiles.length()); }
+else if(type=="aircraft") { for(uint i=0;i<aircrafts.length();i++) if(@aircrafts[i]!=null) c++; }
+else if(type=="vehicle") { for(uint i=0;i<vehicles.length();i++) if(@vehicles[i]!=null) c++; }
+else if(type=="bike") { for(uint i=0;i<bikes.length();i++) if(@bikes[i]!=null) c++; }
+else if(type=="wall") { for(uint i=0;i<walls.length();i++) if(@walls[i]!=null) c++; }
+else if(type=="platform") { for(uint i=0;i<platforms.length();i++) if(@platforms[i]!=null && !platform_is_wrapped(int(i))) c++; }
+else if(type=="staircase") { for(uint i=0;i<staircases.length();i++) if(@staircases[i]!=null) c++; }
+else if(type=="door") { for(uint i=0;i<doors.length();i++) if(@doors[i]!=null) c++; }
+else if(type=="spike") { for(uint i=0;i<spikes.length();i++) if(@spikes[i]!=null) c++; }
+else if(type=="sign") { for(uint i=0;i<signs.length();i++) if(@signs[i]!=null) c++; }
+else if(type=="clock") { for(uint i=0;i<clocks.length();i++) if(@clocks[i]!=null) c++; }
+else if(type=="calendar") { for(uint i=0;i<calendars.length();i++) if(@calendars[i]!=null) c++; }
+else if(type=="item") { for(uint i=0;i<objs.length();i++) if(@objs[i]!=null) c++; }
+return c;
+}
+
+/* Whether a type keyword can be counted (the 17 killable types plus item) -- lets /count reject an
+uncountable type ("you can't count a switch"). %count:type% just yields 0 for an uncountable type. */
+bool is_countable_type(string type)
+{
+return is_killable_type(type) || type=="item";
+}
+
+/* Substitute every %count:type% token with the live on-map count of that type (0 for an uncountable type),
+scanning like expand_item_tokens. Wired into the command pipeline, logic conditions, and element display text.
+The type between the colon and the closing % is read whole so multi-word names survive. */
+string expand_count_tokens(string cmd)
+{
+if(string_contains(cmd, "%count:", 1) < 0) return cmd;
+string result = "";
+int n = int(cmd.length());
+int i = 0;
+while(i < n)
+{
+if(cmd.substr(i, 7) == "%count:")
+{
+int j = i + 7;
+string name = "";
+bool closed = false;
+while(j < n)
+{
+string c = cmd.substr(j, 1);
+if(c == "%") { closed = true; break; }
+name += c;
+j++;
+}
+if(closed and name.length() > 0)
+{
+result += ("" + count_entity(name));
+i = j + 1;
+continue;
+}
+}
+result += cmd.substr(i, 1);
+i++;
+}
+return result;
+}
 string entity_line_error(string[] sd, string mode)
 {
 if(sd.length()==0) return "";

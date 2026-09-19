@@ -87,7 +87,7 @@ literal text (the structure check will trip on it). */
 string logic_neutralize_tokens(string cond, string &out bad)
 {
 bad = "";
-string[] state = {"health","maxhealth","healthpc","stam","maxstam","stampc","level","xp","points","lives","kills","x","y","z"};
+string[] state = {"health","maxhealth","healthpc","stam","maxstam","stampc","level","xp","points","lives","kills","x","y","z","mapname","mapmode"};
 string result = "";
 int n = int(cond.length());
 int i = 0;
@@ -103,6 +103,7 @@ bool ok = false;
 for(uint s=0; s<state.length(); s++)
 if(inner == state[s]) { ok = true; break; }
 if(!ok and inner.length() >= 6 and (inner.substr(0,5) == "flag:" or inner.substr(0,5) == "item:")) ok = true;
+if(!ok and inner.length() >= 7 and inner.substr(0,6) == "count:") ok = true;
 if(!ok and bad == "") bad = "%"+inner+"%";
 result += "0";
 i = j + 1;
@@ -249,6 +250,7 @@ string c = conditions[i];
 c = expand_state_tokens(c);
 c = expand_flag_tokens(c);
 c = expand_item_tokens(c);
+c = expand_count_tokens(c);
 if(evaluate_condition(c)) return int(i);
 }
 return int(conditions.length());

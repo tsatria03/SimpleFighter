@@ -44,6 +44,9 @@ Alongside random, a set of tokens expands to your character's live values the mo
 %minz% - the current map's minimum z edge.
 %maxz% - the current map's maximum z edge.
 
+%mapname% - the name of the map you are currently on.
+%mapmode% - the current map's mode, either 2d, topdown, or 3d.
+
 So /speak %health% of %maxhealth%, %healthpc% percent speaks something like 140 of 200, 70 percent, and a command can compare your position against the map's edges or place something relative to them.
 
 Because each token is resolved when its own command actually runs, a token placed after a command that changed the value reads the new value: setx 50; speak you moved to x %x% speaks 50, and sethealth 50 true; speak your health is now %healthpc% percent reports the health you just set. These tokens work in every command, everywhere a command can appear: the console, a macro, a switch or sensor, an input, or a map timer.
@@ -56,13 +59,17 @@ Item count tokens.
 
 Alongside the flag token, %item:name% is replaced with how many of an item you are currently carrying, or with zero if you have none, so /speak you have %item:coin% coins reports your running coin count. The name is read up to the closing percent sign, so it works even for item names that contain spaces. Like the other tokens it is universal, working in any command or text everywhere a command can appear, and it reads your live inventory the moment the command runs. It is especially handy in a logic condition, such as testing %item:keycard% >= 1 before opening a door.
 
+Entity count tokens.
+
+%count:type% is replaced with how many of that kind of entity are currently on the map, so %count:npc% reads the number of npcs left. It counts the same kinds the kill command acts on — npcs, security cameras, security jets, containers, tts enemies, projectiles, aircraft, vehicles, bikes, walls, platforms, staircases, doors, spikes, signs, clocks, and calendars — plus items; any other kind reads zero. Like the other tokens it is universal and reads the live map the moment the command runs, so it is ideal in a logic condition, such as opening the exit when %count:npc% == 0.
+
 Sequence progress token.
 
 %seq:name% is replaced with how many steps of the named sequence have been entered correctly so far, or zero if it hasn't been started or doesn't exist. It lets a switch report progress, as in /speak %seq:vault% of 3, so a player hears each correct step land. Like the other tokens it is universal and reads the live value the moment the command runs. See the sequences topic.
 
 Tokens in map element text.
 
-Every token above -- the character and position tokens, random, and the flag, item, and sequence tokens -- also works inside the text that some elements show the player, not just inside commands. Write a token into a sign, a text square, a story zone dialog, a timed text, a blockage, or the prompt, title, or choice labels of a text or menu input, and it is filled in with its live value the moment that text is read, so a sign can say you have %flag:coins% coins and %health% health, and random(1,100) rolls fresh every time the text is shown. A percent sign in your own text is left alone unless it exactly spells one of these tokens.
+Every token above -- the character and position tokens, random, and the flag, item, count, and sequence tokens -- also works inside the text that some elements show the player, not just inside commands. Write a token into a sign, a text square, a story zone dialog, a timed text, a blockage, or the prompt, title, or choice labels of a text or menu input, and it is filled in with its live value the moment that text is read, so a sign can say you have %flag:coins% coins and %health% health, and random(1,100) rolls fresh every time the text is shown. A percent sign in your own text is left alone unless it exactly spells one of these tokens.
 
 Command stacking and delays.
 
@@ -99,6 +106,7 @@ The object name accepts either the friendly form (the same name the builder menu
 /changemap mapname x y, or /cm mapname x y: Changes your map to a specified coordinate. On 3d maps the form is /changemap mapname x y z, or /cm mapname x y z, where z is the height to drop you in at. This works on both decompiled and compiled maps; on a compiled map it loads the destination's compiled copy when one exists, otherwise its decompiled version.
 /charset category, or /chr category: Changes your current character theme to a different one. Typing /chr with no arguments will display a menu of all available character themes.
 /clearflag name, or /cfg name: Removes the named map flag entirely, so it reads as zero again; it does nothing if the flag isn't set. Runs silently; on a compiled map it works only when fired by a switch, sensor, input, map timer, or logic condition, not when typed. See the map flags topic.
+/count object, or /cnt object: Speaks how many of that kind of object are currently on the map, such as /count npc. It counts the same kinds the kill command acts on, plus items; naming anything else says you can't count it. It only reads a number and changes nothing, so it works on any map.
 /delmap, or /dm: Deletes the map you're currently playing after a yes/no confirmation dialog. Append false to skip the prompt and delete immediately, e.g. /delmap false from a macro that doesn't want the safety question; true is accepted as the explicit form of the default. The deletion is permanent — false should be used with care. It works only on decompiled maps.
 /despawn object, or /dsp object: Removes an object from the running map, the in-memory counterpart to /spawn. Typing the object name alone removes the most recently spawned or built one of that type; appending coordinates removes the one at that spot, as in /despawn sign 5 0, or /despawn sign 5 0 3 on a 3d map, matching a ranged object such as a wall by its minimum corner. It plays any removal sound the object has, such as a helper's or a floor breaker's, and drops any backing tiles the object laid down. Removal is in memory only, so nothing is written to the map file and a reload brings everything back. It runs silently, saying only that there's nothing of that type when none is found. Unlike /unbuild it also works on a compiled map, but there only when a switch, sensor, input, map timer, or logic condition fires it, not when typed.
 /drawshield shieldtype, or /drs shieldtype: Equips a shield of the given type, the same as selecting it in the shields menu — it plays the shield's draw sound and readies it, ready to be raised with the shield key. The shield type is one of the folder names under the shields equipment folder.

@@ -35,6 +35,7 @@ string command = sd[1];
 command = expand_state_tokens(command);   // universal live state/position tokens (%health%, %x%, etc.), resolved per command at run time
 command = expand_flag_tokens(command);   // universal %flag:name% map-flag tokens (0 if unset), resolved right after the state tokens
 command = expand_item_tokens(command);   // universal %item:name% inventory-count tokens (0 if none held)
+command = expand_count_tokens(command);   // universal %count:type% on-map entity-count tokens (0 if uncountable)
 command = expand_seq_tokens(command);   // universal %seq:name% sequence-progress tokens (0 if none/unstarted)
 string[] parsed = string_split(command, " ", true);
 if (parsed.length() < 1)
@@ -100,6 +101,15 @@ speak("Invalid command syntax. Usage: /go x y, or /go object x y.");
 return;
 }
 }
+}
+else if (base_command == "count" || base_command == "cnt")
+{
+if (parsed.length() != 2) { speak("Invalid command syntax. Usage: /count object, or /cnt object."); return; }
+string ctype = normalize_buildtype(parsed[1]);
+if (!is_countable_type(ctype)) { speak("You can't count a " + parsed[1] + "."); return; }
+int cn = count_entity(ctype);
+if (cn == 1) speak("There is 1 " + parsed[1] + ".");
+else speak("There are " + cn + " " + parsed[1] + "s.");
 }
 else if ((base_command == "ax" || base_command == "addx") && (!map_is_compiled || trusted))
 {
