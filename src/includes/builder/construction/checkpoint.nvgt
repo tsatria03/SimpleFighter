@@ -176,6 +176,21 @@ checkpool.destroy_sound(checkpoints[target].getsound);
 return true;
 }
 
+/* Command-move (used by /go): relocate the newest checkpoint, repositioning its ambient loop if it has one.
+No roam timer. Caller bounds-checks + speaks. */
+bool move_checkpoint(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<checkpoints.length(); i++) { if(@checkpoints[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+checkpoints[target].checkx = int(destx);
+checkpoints[target].checky = int(desty);
+if(mapmode == "3d") checkpoints[target].checkz = int(destz);
+double usz = (mapmode == "3d") ? checkpoints[target].checkz : 0;
+if(checkpoints[target].checksound != -1) checkpool.update_sound_3d(checkpoints[target].checksound, checkpoints[target].checkx, checkpoints[target].checky, usz);
+return true;
+}
+
 void build_checkpoint()
 {
 string[] checks_list = get_map_sound_folders("builder/construction/checkpoints/*");

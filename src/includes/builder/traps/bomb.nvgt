@@ -240,6 +240,20 @@ bombpool.destroy_sound(bombs[target].fallsound);
 @bombs[target] = null;
 return true;
 }
+
+/* Command-move (used by /go): relocate the newest bomb, repositioning its falling cue if it's mid-drop. The
+fuse keeps counting (no timer reset). Caller bounds-checks + speaks. */
+bool move_bomb(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<bombs.length(); i++) { if(@bombs[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+bombs[target].bombx = int(destx);
+bombs[target].bomby = int(desty);
+if(mapmode == "3d") bombs[target].bombz = int(destz);
+if(bombs[target].fallsound != -1) bombpool.update_sound_3d(bombs[target].fallsound, bombs[target].bombx, bombs[target].bomby, 0);
+return true;
+}
 void destroy_all_bombs()
 {
 for(uint i=0; i<bombs.length(); i++)

@@ -280,6 +280,20 @@ bombpool.destroy_sound(timebombs[target].loopsound);
 @timebombs[target] = null;
 return true;
 }
+
+/* Command-move (used by /go): relocate the newest time bomb, repositioning its looping tick if it has one.
+The fuse keeps counting (no timer reset). Caller bounds-checks + speaks. */
+bool move_timebomb(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<timebombs.length(); i++) { if(@timebombs[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+timebombs[target].timbombx = int(destx);
+timebombs[target].timbomby = int(desty);
+if(mapmode == "3d") timebombs[target].timbombz = int(destz);
+if(timebombs[target].loopsound != -1) bombpool.update_sound_3d(timebombs[target].loopsound, timebombs[target].timbombx, timebombs[target].timbomby, timebombs[target].timbombz);
+return true;
+}
 void destroy_all_timebombs()
 {
 for(uint i=0;i<timebombs.length();i++)

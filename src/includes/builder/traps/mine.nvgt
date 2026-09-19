@@ -264,6 +264,21 @@ minepool.destroy_sound(mines[target].minesound);
 @mines[target] = null;
 return true;
 }
+
+/* Command-move (used by /go): relocate the newest mine, repositioning its light and triggered slots if
+active. Stationary, so no timer. Caller bounds-checks + speaks. */
+bool move_mine(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<mines.length(); i++) { if(@mines[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+mines[target].minex = int(destx);
+mines[target].miney = int(desty);
+if(mapmode == "3d") mines[target].minez = int(destz);
+if(mines[target].lightsound != -1) minepool.update_sound_3d(mines[target].lightsound, mines[target].minex, mines[target].miney, mines[target].minez);
+if(mines[target].minesound != -1) minepool.update_sound_3d(mines[target].minesound, mines[target].minex, mines[target].miney, mines[target].minez);
+return true;
+}
 void destroy_all_mines()
 {
 for(uint i=0; i<mines.length(); i++)

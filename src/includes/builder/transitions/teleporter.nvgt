@@ -115,6 +115,23 @@ telpool.destroy_sound(teleporters[target].telsound);
 @teleporters[target] = null;
 return true;
 }
+
+/* Command-move (used by /go): relocate the newest teleporter's OWN position, reposition its looping slot, and
+restart its move timer. Its dtelx/y/z (where it sends the player) is a separate destination and is left
+untouched. Caller bounds-checks + speaks. */
+bool move_teleporter(double destx, double desty, double destz)
+{
+int target = -1;
+for(uint i=0; i<teleporters.length(); i++) { if(@teleporters[i]==null) continue; target = int(i); }
+if(target < 0) return false;
+teleporters[target].telx = int(destx);
+teleporters[target].tely = int(desty);
+if(mapmode == "3d") teleporters[target].telz = int(destz);
+double usz = (mapmode == "3d") ? teleporters[target].telz : 0;
+telpool.update_sound_3d(teleporters[target].telsound, teleporters[target].telx, teleporters[target].tely, usz);
+teleporters[target].teltimer.restart();
+return true;
+}
 void destroy_all_teleporters()
 {
 for(uint i=0; i<teleporters.length(); i++)
