@@ -11,7 +11,7 @@
 # EDIT THESE SETTINGS:
 # ---------------------------------------------------------------------------
 ROOT = r"C:\Users\Administrator\Desktop\SimpleFighter"  # the folder holding index.txt and the maps folder
-PORT = 80                                               # 80 is the normal web port
+PORT = 8080                                             # alternate HTTP port (80 is used by another server on this box)
 UPLOAD_TOKEN = "vIOmjLLpBhn2J6aLoDcAVL8jNfY9e6nLVbYyEzwov8onZCa7McywBa78BzDzzgbJs3RAxmRlW3VRvy0T6j36zXtnWCjWpfQt0EIUWsqxjWhYlRQqP7vScI8Ptm1ChYPOCPgfZCsbLWr6fcdzlY0K10DGNA"                        # shared secret an uploading game must send - CHANGE THIS
 ADMIN_TOKEN = "y1nIO3RowtqLThgHzrXSjB9TaNLzwdNBxrLzB7w4v5T0kXhQFmc0UfF1uuMW6aPruGmNT1baRoQwydGhIRuru8wsQv9bMcadfXKxc0BjYian0SvNlEC7nawYfGMZm8JhbeEk7iOXs5gL9bNBJH7EqQNfOeS3fvSUdh7HrlsVLFEduXryZpCUng5o4EOghutE7F1YQP52gcyPYHN2f3Dc2PGpCEvoLBuDRJoyquBJenEwzcT46weijDmYTaCx2EsrT"  # SEPARATE, private admin secret for approving/rejecting maps - never put this in any src/*.nvgt file
 ADMIN_USER = "administrator"                            # the ONLY username the browser panel's login accepts (case-insensitive); the password is ADMIN_TOKEN
@@ -321,7 +321,7 @@ class Handler(BaseHTTPRequestHandler):
         return self._reply(200, "OK")
 
     def log_message(self, fmt, *args):
-        # An open port 80 gets constant drive-by scanning from the internet, often
+        # An open port gets constant drive-by scanning from the internet, often
         # with methods we don't implement (HEAD, OPTIONS, PUT, ...), each of which
         # would otherwise print a noisy 501 line. Silence anything that isn't our
         # real GET/POST traffic; genuine requests still log as before.

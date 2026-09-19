@@ -5,6 +5,8 @@ metadata:
   type: project
 ---
 
+**PORT CHANGE (2026-09-18, post-15.0):** the map server moved from **port 80 → 8080** (the dev runs another server on 80 on the same box). BOTH sides updated: `PORT = 8080` in `scripts/sf_map_server.py`, and the client base URL is now `http://reality-breaker-studios.net:8080` in `map_server.nvgt` (both client parsers read the `:port` suffix; upload/download/admin all build from that one URL). OPERATIONAL: the VPS firewall must now open inbound TCP **8080** (Windows Defender + the provider's network firewall) instead of 80 — every `80` reference below is now historical.
+
 Plan + running record for the **map server** — letting players fetch compiled maps from the dev's VPS from inside the game AND upload their own for the dev to moderate. **Both halves are built and proven working (2026-08-29).** The download side came first (a static server can *serve* but can't *receive*); the upload side then replaced the static server with a stdlib Python server that both serves downloads and accepts moderated uploads, plus a local `sf_map_approver.py` the dev runs to approve/reject the queue. Historically built one section at a time, confirming each before coding ([[feedback_confirm_before_implementing]]), committing between. **NOTE: the "Server side — Caddy" and "Phase 1 / Sections to build" material below is HISTORICAL** — Caddy was replaced by `sf_map_server.py`; read the "Phase 2 — upload" section for the current server/approver architecture.
 
 ## Why the VPS (not GitHub)

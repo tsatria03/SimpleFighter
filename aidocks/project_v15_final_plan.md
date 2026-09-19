@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-**STATUS: planning (opened 2026-09-15).** 15.0 is the **last version the game will ever get** — a send-off, closing two years of development (this repo's own numbering runs v5.0 -> v15.0). Scope not yet settled; treat as a design conversation ([[feedback_confirm_before_implementing]]).
+**STATUS: COMPLETE (2026-09-18).** 15.0 shipped its full feature set (20 changelog entries) and the closing capstone is written (see the firm-commitment section below). 15.0 is the **last version the game will ever get** — a send-off, closing two years of development (this repo's own numbering runs v5.0 -> v15.0). Scope not yet settled; treat as a design conversation ([[feedback_confirm_before_implementing]]).
 
 ## Shipped in 15.0 so far (changelog entries used)
 
@@ -19,7 +19,7 @@ metadata:
 
 ## Firm commitments so far
 
-- **Final capstone in the change-log summaries.** WHEN 15.0 is done, write one last summary in [[project_change_log_summaries]] (`aidocks/project_change_log_summaries.txt`) that ties the *entire package* together — the bow on the whole two-year arc, not just a V15 era section. This is the closing note for the whole file (which currently runs V1 -> V14.9 with three capstones). Do this LAST, after 15.0's features/docs are settled, so it can reflect what actually shipped.
+- **Final capstone in the change-log summaries. [DONE 2026-09-18.]** All 20 15.0 changelog entries shipped, then the capstone was written in [[project_change_log_summaries]]: a new **V15 individual section** (after V14, before the overviews), and BOTH closing overviews extended to V15 — "the modern era (V10 -> V15)" (opening + a V15 paragraph + closing) and "the whole story (V1 -> V15)" (header + arc paragraph + a final bow: "A little over two years from that first hard-coded arena, SimpleFighter is complete."). The two-year arc is now closed in that file.
 
 ## Open (to settle with the dev)
 
