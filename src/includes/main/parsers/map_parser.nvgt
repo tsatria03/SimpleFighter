@@ -310,8 +310,10 @@ The 13 loop-driven types are zeroed in place -- their own loops run the death (c
 we iterate the array directly rather than via kill_*, which finds the newest and, since a zeroed entity isn't
 removed until its loop fires, would loop forever. The 4 immediate types (projectile, sign, clock, calendar)
 ARE removed the instant they're killed, so draining them with while(kill_*) is safe and reuses their
-destroyable-only + reward logic. Platform-wrapped tiles (wall/staircase/slant backing) are skipped, matching
-kill_platform. Returns whether anything was killed. */
+destroyable-only + reward logic. The 5 structural types (wall, platform, staircase, door, spike) are
+destroyable-gated inline too, so a non-destroyable structure is left standing just as a weapon can't touch it.
+Platform-wrapped tiles (wall/staircase/slant backing) are skipped, matching kill_platform. Returns whether
+anything was killed. */
 bool kill_all_of_type(string type)
 {
 bool killed = false;
@@ -323,11 +325,11 @@ else if(type=="ttsenemie") { for(uint i=0; i<ttsenemies.length(); i++) if(@ttsen
 else if(type=="aircraft") { for(uint i=0; i<aircrafts.length(); i++) if(@aircrafts[i]!=null) { aircrafts[i].plainhealth=0; killed=true; } }
 else if(type=="vehicle") { for(uint i=0; i<vehicles.length(); i++) if(@vehicles[i]!=null) { vehicles[i].vehhealth=0; killed=true; } }
 else if(type=="bike") { for(uint i=0; i<bikes.length(); i++) if(@bikes[i]!=null) { bikes[i].bikehealth=0; killed=true; } }
-else if(type=="wall") { for(uint i=0; i<walls.length(); i++) if(@walls[i]!=null) { walls[i].wallhealth=0; killed=true; } }
-else if(type=="platform") { for(uint i=0; i<platforms.length(); i++) if(@platforms[i]!=null && !platform_is_wrapped(int(i))) { platforms[i].plathealth=0; killed=true; } }
-else if(type=="staircase") { for(uint i=0; i<staircases.length(); i++) if(@staircases[i]!=null) { staircases[i].stairshealth=0; killed=true; } }
-else if(type=="door") { for(uint i=0; i<doors.length(); i++) if(@doors[i]!=null) { doors[i].doorhealth=0; killed=true; } }
-else if(type=="spike") { for(uint i=0; i<spikes.length(); i++) if(@spikes[i]!=null) { spikes[i].spikehealth=0; killed=true; } }
+else if(type=="wall") { for(uint i=0; i<walls.length(); i++) if(@walls[i]!=null && walls[i].destroyable) { walls[i].wallhealth=0; killed=true; } }
+else if(type=="platform") { for(uint i=0; i<platforms.length(); i++) if(@platforms[i]!=null && !platform_is_wrapped(int(i)) && platforms[i].destroyable) { platforms[i].plathealth=0; killed=true; } }
+else if(type=="staircase") { for(uint i=0; i<staircases.length(); i++) if(@staircases[i]!=null && staircases[i].destroyable) { staircases[i].stairshealth=0; killed=true; } }
+else if(type=="door") { for(uint i=0; i<doors.length(); i++) if(@doors[i]!=null && doors[i].destroyable) { doors[i].doorhealth=0; killed=true; } }
+else if(type=="spike") { for(uint i=0; i<spikes.length(); i++) if(@spikes[i]!=null && spikes[i].destroyable) { spikes[i].spikehealth=0; killed=true; } }
 else if(type=="projectile") { while(kill_projectile(false, 0, 0, 0)) killed=true; }
 else if(type=="sign") { while(kill_sign(false, 0, 0, 0)) killed=true; }
 else if(type=="clock") { while(kill_clock(false, 0, 0, 0)) killed=true; }
