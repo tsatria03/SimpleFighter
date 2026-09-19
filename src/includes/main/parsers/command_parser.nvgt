@@ -52,47 +52,51 @@ if (base_command == "go" && (!map_is_compiled || trusted))
 {
 if (mapmode == "3d")
 {
-if (parsed.length() == 4)
+if (parsed.length() == 4)  // go x y z -> move the player
 {
-double x = stn(parsed[1]);
-double y = stn(parsed[2]);
-double z = stn(parsed[3]);
-gop("me", "", x, y, z);
+gop("me", "", stn(parsed[1]), stn(parsed[2]), stn(parsed[3]));
 }
-else if (parsed.length() == 6)
+else if (parsed.length() == 5)  // go object x y z -> move the newest of that type
 {
-string entity = parsed[1];
-string id = parsed[2];
-double x = stn(parsed[3]);
-double y = stn(parsed[4]);
-double z = stn(parsed[5]);
-gop(entity, id, x, y, z);
+string mtype = normalize_buildtype(parsed[1]);
+if (!is_movable_type(mtype)) { speak("You can't move a " + parsed[1] + "."); return; }
+double mx = stn(parsed[2]), my = stn(parsed[3]), mz = stn(parsed[4]);
+if (!dest_in_bounds(mx, my, mz)) { speak("You can't move an entity out of map boundries."); return; }
+if (move_entity(mtype, mx, my, mz))
+{
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*move*"), false);
+speak("Moved the " + parsed[1] + " to " + int(mx) + ", " + int(my) + ", " + int(mz) + ".");
+}
+else speak("There's no " + parsed[1] + " to move.");
 }
 else
 {
-speak("Invalid command syntax. Usage: /go x y z, or /go entity id x y z.");
+speak("Invalid command syntax. Usage: /go x y z, or /go object x y z.");
 return;
 }
 }
 else
 {
-if (parsed.length() == 3)
+if (parsed.length() == 3)  // go x y -> move the player
 {
-double x = stn(parsed[1]);
-double y = stn(parsed[2]);
-gop("me", "", x, y);
+gop("me", "", stn(parsed[1]), stn(parsed[2]));
 }
-else if (parsed.length() == 5)
+else if (parsed.length() == 4)  // go object x y -> move the newest of that type
 {
-string entity = parsed[1];
-string id = parsed[2];
-double x = stn(parsed[3]);
-double y = stn(parsed[4]);
-gop(entity, id, x, y);
+string mtype = normalize_buildtype(parsed[1]);
+if (!is_movable_type(mtype)) { speak("You can't move a " + parsed[1] + "."); return; }
+double mx = stn(parsed[2]), my = stn(parsed[3]);
+if (!dest_in_bounds(mx, my, 0)) { speak("You can't move an entity out of map boundries."); return; }
+if (move_entity(mtype, mx, my, 0))
+{
+mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*move*"), false);
+speak("Moved the " + parsed[1] + " to " + int(mx) + ", " + int(my) + ".");
+}
+else speak("There's no " + parsed[1] + " to move.");
 }
 else
 {
-speak("Invalid command syntax. Usage: /go x y, or /go entity id x y.");
+speak("Invalid command syntax. Usage: /go x y, or /go object x y.");
 return;
 }
 }

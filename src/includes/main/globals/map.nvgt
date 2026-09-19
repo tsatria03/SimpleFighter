@@ -142,20 +142,55 @@ destroy_all_winds();
 }
 }
 
+/* If the player is riding an aircraft, vehicle, or bike, snap that machine to the player's current position
+so a self-move keeps them aboard (the ride keeps me and the machine in lockstep, so they must stay equal).
+The ridden machine is the one with moveable == true. Called from gop after the player is relocated. (The
+broader axis-command / knockback moves are a planned follow-up that will reuse this same helper.) */
+void carry_transport()
+{
+if(invehicle)
+{
+for(uint i=0; i<vehicles.length(); i++)
+{
+if(@vehicles[i]==null or !vehicles[i].moveable) continue;
+vehicles[i].vehx=int(me.x); vehicles[i].vehy=int(me.y); if(mapmode=="3d") vehicles[i].vehz=int(me.z);
+double sz=(mapmode=="3d")?vehicles[i].vehz:0;
+vehpool.update_sound_3d(vehicles[i].vehsound, vehicles[i].vehx, vehicles[i].vehy, sz);
+return;
+}
+}
+else if(onbike)
+{
+for(uint i=0; i<bikes.length(); i++)
+{
+if(@bikes[i]==null or !bikes[i].moveable) continue;
+bikes[i].bikex=int(me.x); bikes[i].bikey=int(me.y); if(mapmode=="3d") bikes[i].bikez=int(me.z);
+double sz=(mapmode=="3d")?bikes[i].bikez:0;
+bikepool.update_sound_3d(bikes[i].bikesound, bikes[i].bikex, bikes[i].bikey, sz);
+return;
+}
+}
+else if(inplain)
+{
+for(uint i=0; i<aircrafts.length(); i++)
+{
+if(@aircrafts[i]==null or !aircrafts[i].moveable) continue;
+aircrafts[i].plainx=int(me.x); aircrafts[i].plainy=int(me.y); if(mapmode=="3d") aircrafts[i].plainz=int(me.z);
+return;
+}
+}
+}
+/* Teleport the player to a coordinate (the /go command, gozone, and the position commands all route here).
+Entity moves now go through move_entity, so this is player-only -- the entity/id params are kept only for the
+existing callers and are ignored. Clamps to the map via dest_in_bounds, resets fall state, and carries any
+ridden transport along so the player stays aboard. */
 void gop(string entity,string id,double x,double y,double z=0)
 {
-if(x<minx or x>maxx or y<miny or y>maxy)
+if(!dest_in_bounds(x, y, z))
 {
 speak("You can't move yourself or an entity out of map boundries.");
 return;
 }
-if(mapmode == "3d" and (z<minz or z>maxz))
-{
-speak("You can't move yourself or an entity out of map boundries.");
-return;
-}
-if (entity == "me")
-{
 me.x=x;
 me.y=y;
 me.z=z;
@@ -163,36 +198,10 @@ fallcounter=0;
 jumping=0;
 falling=false;
 if(fallcounter>=0) p.destroy_sound(fallslot);
+carry_transport();
 mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*move*"),false);
 if(mapmode == "3d") speak("Player moved to "+me.x+", "+me.y+", "+me.z+".");
 else speak("Player moved to "+me.x+", "+me.y+".");
-}
-else if(entity=="animal" || entity=="boss" || entity=="helper" || entity=="human" || entity=="robot" || entity=="special" || entity=="zombie")
-{
-string target_cat = (entity == "boss") ? "bosses" : (entity + "s");
-for(uint i=0; i<npcs.length(); i++)
-{
-if(@npcs[i] == null) continue;
-if(npcs[i].category == target_cat && npcs[i].subtype == id)
-{
-npcs[i].x = int(x);
-npcs[i].y = int(y);
-if(mapmode == "3d") npcs[i].z = int(z);
-sound_pool@ pool = npc_pool(npcs[i].category);
-if(npcs[i].tauntsound != -1) pool.update_sound_3d(npcs[i].tauntsound, npcs[i].x, npcs[i].y, npcs[i].z);
-npcs[i].movetimer.restart();
-mpool.play_stationary(get_pack_sound("main/characters/"+chartype+"/map/*move*"),false);
-if(mapmode == "3d") speak(entity+" moved to "+npcs[i].x+", "+npcs[i].y+", "+npcs[i].z+".");
-else speak(entity+" moved to "+npcs[i].x+", "+npcs[i].y+".");
-return;
-}
-}
-}
-else
-{
-speak("Unknown entity type "+id+".");
-return;
-}
 }
 /* Silently nudge or teleport the player along one axis, clamped to the map bounds -- the quiet,
 single-axis counterpart to gop, used by the add/sub/set x/y/z commands. absolute true sets the axis
