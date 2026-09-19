@@ -346,6 +346,49 @@ string[] kt = {"npc", "camera", "jet", "container", "ttsenemie", "aircraft", "ve
 for(uint i=0; i<kt.length(); i++) { if(kill_all_of_type(kt[i])) killed = true; }
 return killed;
 }
+
+/* Command-move dispatch for /go's type form: relocate the newest entity of a movable type to the destination
+via its move_<type> helper. Only the 16 SINGLE-POINT types are handled (ranged/min-max entities and built
+tile structures are excluded by design); any other keyword falls through to false so the caller reports it as
+unmovable rather than as "nothing found". Returns whether a target was found and moved. The caller
+bounds-checks the destination first (dest_in_bounds) and speaks the feedback. */
+bool move_entity(string type, double destx, double desty, double destz)
+{
+if(type=="npc") return move_npc(destx, desty, destz);
+else if(type=="camera") return move_camera(destx, desty, destz);
+else if(type=="jet") return move_security_jet(destx, desty, destz);
+else if(type=="container") return move_container(destx, desty, destz);
+else if(type=="ttsenemie") return move_ttsenemie(destx, desty, destz);
+else if(type=="aircraft") return move_aircraft(destx, desty, destz);
+else if(type=="vehicle") return move_vehicle(destx, desty, destz);
+else if(type=="bike") return move_bike(destx, desty, destz);
+else if(type=="fire") return move_fire(destx, desty, destz);
+else if(type=="teleporter") return move_teleporter(destx, desty, destz);
+else if(type=="bomb") return move_bomb(destx, desty, destz);
+else if(type=="time_bomb") return move_timebomb(destx, desty, destz);
+else if(type=="mine") return move_mine(destx, desty, destz);
+else if(type=="wind") return move_wind(destx, desty, destz);
+else if(type=="spawnpoint") return move_spawnpoint(destx, desty, destz);
+else if(type=="checkpoint") return move_checkpoint(destx, desty, destz);
+return false;
+}
+
+/* Whether a type keyword is one of the 16 single-point types /go can move -- lets the command tell an
+unmovable type apart ("you can't move a wall") from a movable one with nothing on the map ("there's no npc to
+move"). Keep in sync with move_entity. */
+bool is_movable_type(string type)
+{
+return type=="npc" || type=="camera" || type=="jet" || type=="container" || type=="ttsenemie" || type=="aircraft" || type=="vehicle" || type=="bike" || type=="fire" || type=="teleporter" || type=="bomb" || type=="time_bomb" || type=="mine" || type=="wind" || type=="spawnpoint" || type=="checkpoint";
+}
+
+/* Shared destination bounds check for /go (both the player form via gop and the entity form). True if the
+point is inside the map; the z check applies only on 3d maps. */
+bool dest_in_bounds(double x, double y, double z)
+{
+if(x<minx or x>maxx or y<miny or y>maxy) return false;
+if(mapmode=="3d" and (z<minz or z>maxz)) return false;
+return true;
+}
 string entity_line_error(string[] sd, string mode)
 {
 if(sd.length()==0) return "";
